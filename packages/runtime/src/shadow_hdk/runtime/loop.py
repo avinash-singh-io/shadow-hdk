@@ -126,7 +126,10 @@ async def _stream(
         principal=options.principal,
         parent_run_id=parent.run_id if parent is not None else None,
     )
-    emitter = Emitter(run_id, ports.clock, ports.observer)
+    # Only the **root** feeds the observer. A child forwards its events to its parent, which
+    # forwards them on, so the observer is reached exactly once however deep the tree; a child that
+    # also called it would report an event once per level it sits under.
+    emitter = Emitter(run_id, ports.clock, ports.observer if parent is None else None)
     registry = Registry(ports.components)
     context = RunContext(session, emitter, ports, registry)
     driving = asyncio.create_task(

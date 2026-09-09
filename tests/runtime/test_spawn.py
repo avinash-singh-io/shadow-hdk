@@ -22,11 +22,12 @@ from shadow_hdk.kernel import (
     Provenance,
 )
 from shadow_hdk.runtime import RunOptions, current_run, run
-from shadow_hdk.runtime.testing import FixedClock, ListSink, make_registration
+from shadow_hdk.runtime.testing import FixedClock, ListObserver, ListSink, make_registration
 from tests.runtime.conftest import ports_over
 
 CHILD_WORK = make_registration("child_work")
 PARENT_AGENT = make_registration("agent", labels=frozenset({"agent"}))
+MIDDLE = make_registration("middle", labels=frozenset({"agent"}))
 
 
 def _ended(events: list[Event]) -> Ended:
@@ -253,3 +254,43 @@ async def test_children_in_a_row_do_not_drain_the_parent_with_reservations() -> 
     # Before settle existed this read [14, 9, 4] and the fourth child could not be carved.
     assert remaining_seen == [18, 17, 16]
     assert _ended(events).reason == "completed"
+
+
+async def test_an_observer_sees_each_event_once_however_deep_the_tree() -> None:
+    """The observer is the *host's* window on a run, and a host binds one. A child inheriting it
+    would call it too, so an event two levels down reached it three times — once per level — while
+    the yielded stream was correct. Found by reading the bare-harness demo's output, not by a test.
+    """
+    observer = ListObserver()
+
+    async def spawn_a_grandchild(_inputs: JsonValue) -> Observation:
+        ctx = current_run()
+        assert ctx is not None
+        inner = Composition((Invoke("c1", CHILD_WORK.id),))
+        async for _e in run(inner, ctx.ports, options=ctx.spawn_options(Ceiling(5, 600, 100))):
+            pass
+        return Completed(None)
+
+    async def spawn_a_child(_inputs: JsonValue) -> Observation:
+        ctx = current_run()
+        assert ctx is not None
+        middle = Composition((Invoke("m1", MIDDLE.id),))
+        async for _e in run(middle, ctx.ports, options=ctx.spawn_options(Ceiling(9, 600, 200))):
+            pass
+        return Completed(None)
+
+    ports, _ = ports_over(
+        [(PARENT_AGENT, spawn_a_child), (MIDDLE, spawn_a_grandchild), (CHILD_WORK, "done")],
+        observer=observer,
+    )
+    yielded = [
+        e
+        async for e in run(
+            Composition((Invoke("p1", PARENT_AGENT.id),)),
+            ports,
+            options=RunOptions(lease=a_lease(steps=40)),
+        )
+    ]
+    seen = [(e.run_id, e.seq, e.kind) for e in observer.events]
+    assert len(seen) == len(set(seen)), "the observer saw an event more than once"
+    assert seen == [(e.run_id, e.seq, e.kind) for e in yielded]

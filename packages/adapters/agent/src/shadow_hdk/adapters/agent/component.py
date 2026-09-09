@@ -27,7 +27,6 @@ from shadow_hdk.kernel.components import (
 from shadow_hdk.kernel.composition import Binding, Composition, FanOut, Invoke, Step
 from shadow_hdk.kernel.contracts import load
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Proposal
 from shadow_hdk.kernel.ports import (
     ComponentPort,
@@ -106,6 +105,7 @@ class _Turnwise:
         self.spent = Usage(0, 0, 0)
         self.nudged = False
         self.proposed = 0
+        self.turns = 0
 
     # ------------------------------------------------------------------ the loop
 
@@ -113,14 +113,15 @@ class _Turnwise:
         self.messages = [Message("system", self.pattern.system), Message("user", brief)]
         for turn in range(self.pattern.max_turns):
             if self.ctx.remaining().ceiling.max_steps <= 0:
-                return self.finished("lease_exhausted", turn)
+                return self.finished("lease_exhausted")
+            self.turns = turn + 1
             response = await self.ctx.ports.model.complete(
                 ModelRequest(tuple(self.messages), await self.catalogue())
             )
             self.charge(response.usage)
             if not response.tool_calls:
                 self.messages.append(Message("assistant", response.text))
-                return self.finished("answered", turn + 1, text=response.text)
+                return self.finished("answered", text=response.text)
             self.messages.append(Message("assistant", response.text))
 
             for call in [c for c in response.tool_calls if c.name == PROPOSE]:
@@ -136,7 +137,7 @@ class _Turnwise:
             if composition is None:
                 continue
             await self.carry_out(composition, response.tool_calls)
-        return self.finished("out_of_turns", self.pattern.max_turns)
+        return self.finished("out_of_turns")
 
     # ------------------------------------------------------------------ the moves
 
@@ -173,7 +174,7 @@ class _Turnwise:
         arguments = call.arguments if isinstance(call.arguments, dict) else {}
         summary = str(arguments.get("summary", ""))
         reason = "done" if self.ctx.floor_met() else "gave_up"
-        return self.finished(reason, None, text=summary)
+        return self.finished(reason, text=summary)
 
     def compose(self, calls: tuple[ToolCall, ...]) -> Composition | None:
         """Turn what the model asked for into a plan. One call is a plan of one step."""
@@ -196,12 +197,12 @@ class _Turnwise:
         return Composition(steps if len(steps) == 1 else (FanOut("fan", steps),))
 
     async def carry_out(self, composition: Composition, calls: tuple[ToolCall, ...]) -> None:
-        remaining = self.ctx.remaining().ceiling
-        ceiling = Ceiling(
-            max_steps=min(_size(composition) + 1, remaining.max_steps),
-            max_wall_seconds=remaining.max_wall_seconds,
-            max_cost_cents=remaining.max_cost_cents,
-        )
+        # **Whatever is left, not a guess.** The first version carved `len(steps) + 1`, which is
+        # right for tool calls and wrong the moment a step is itself an agent: a sub-agent needs
+        # steps for its own turns and got two, then died `lease_exhausted` — silently, because a
+        # lease ending a run is not an error. Turns are sequential and each settles before the
+        # next, so the parent's remaining is the honest ceiling; its own still bounds the lot.
+        ceiling = self.ctx.remaining().ceiling
         observed: dict[str, Observation] = {}
         async for event in run(
             composition, self.ctx.ports, options=self.ctx.spawn_options(ceiling)
@@ -226,12 +227,17 @@ class _Turnwise:
             cost_cents=_add(self.spent.cost_cents, usage.cost_cents),
         )
 
-    def finished(self, reason: str, turns: int | None, *, text: str = "") -> Observation:
+    def finished(self, reason: str, *, text: str = "") -> Observation:
+        """What the agent hands back.
+
+        `turns` is model calls made, whichever way it ended: a run that stopped for its lease and
+        one that answered are told apart by `reason`, never by a gap in the numbers.
+        """
         return Completed(
             {
                 "text": text or _last_words(self.messages),
                 "reason": reason,
-                "turns": turns,
+                "turns": self.turns,
                 "proposals": self.proposed,
                 "usage": {
                     "input_tokens": self.spent.input_tokens,
@@ -252,19 +258,6 @@ def _invoke(call: ToolCall) -> Step:
         component=call.name,
         inputs=tuple(Binding(name=key, value=value) for key, value in arguments.items()),
     )
-
-
-def _size(composition: Composition) -> int:
-    def count(step: Step) -> int:
-        children = getattr(step, "steps", None)
-        if children is not None:
-            return sum(count(child) for child in children)
-        body = getattr(step, "step", None)
-        if body is not None:
-            return count(body) * getattr(step, "max_iterations", 1)
-        return 1
-
-    return sum(count(step) for step in composition.steps)
 
 
 def _as_json(arguments: JsonValue) -> str:

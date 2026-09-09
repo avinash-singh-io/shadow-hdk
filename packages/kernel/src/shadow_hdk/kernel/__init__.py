@@ -4,7 +4,13 @@ Everything an adapter or a host touches is defined here and nowhere else. The ru
 this package; this package depends on nothing but pydantic, and only for the published schemas.
 """
 
-from shadow_hdk.kernel.components import Component, Interface, Provenance, Registration
+from shadow_hdk.kernel.components import (
+    Component,
+    Interface,
+    Provenance,
+    Registration,
+    RegistrationId,
+)
 from shadow_hdk.kernel.composition import (
     Await,
     Binding,
@@ -14,9 +20,16 @@ from shadow_hdk.kernel.composition import (
     Invoke,
     Sequence,
     Step,
+    StepId,
     Until,
 )
-from shadow_hdk.kernel.effects import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
+from shadow_hdk.kernel.effects import (
+    ASSUME_WORST,
+    NOTHING,
+    EffectProfile,
+    Scope,
+    ScopeSet,
+)
 from shadow_hdk.kernel.events import (
     Asked as AskedEvent,
 )
@@ -27,6 +40,7 @@ from shadow_hdk.kernel.events import (
     Invoked,
     Observed,
     Proposed,
+    RunId,
     Spawned,
     Started,
 )
@@ -100,17 +114,21 @@ __all__ = [
     "Pending",
     "Proposal",
     "Proposed",
+    "RunId",
     "Provenance",
     "Refuse",
     "Refused",
     "RefusedEvent",
     "Registration",
+    "RegistrationId",
+    "Scope",
     "ScopeSet",
     "Sequence",
     "SinkPort",
     "Spawned",
     "Started",
     "Step",
+    "StepId",
     "ToolCall",
     "Until",
     "Usage",

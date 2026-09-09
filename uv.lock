@@ -765,7 +765,7 @@ wheels = [
 
 [[package]]
 name = "shadow-hdk"
-version = "0.0.1"
+version = "0.1.0"
 source = { editable = "packages/runtime" }
 dependencies = [
     { name = "langgraph" },
@@ -780,7 +780,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-agent"
-version = "0.0.1"
+version = "0.1.0"
 source = { editable = "packages/adapters/agent" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -795,7 +795,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-basic"
-version = "0.0.1"
+version = "0.1.0"
 source = { editable = "packages/adapters/basic" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -810,7 +810,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-kernel"
-version = "0.0.1"
+version = "0.1.0"
 source = { editable = "packages/kernel" }
 dependencies = [
     { name = "pydantic" },

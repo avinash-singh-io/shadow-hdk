@@ -29,6 +29,7 @@ PACKAGES = ROOT / "packages"
 KERNEL = PACKAGES / "kernel" / "src" / "shadow_hdk" / "kernel"
 RUNTIME = PACKAGES / "runtime" / "src" / "shadow_hdk" / "runtime"
 ADAPTERS = PACKAGES / "adapters"
+EXAMPLES = ROOT / "examples"
 
 ADAPTER_ROOT = "shadow_hdk.adapters"
 

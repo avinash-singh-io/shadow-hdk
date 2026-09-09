@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
 jobs:
   check:
@@ -15,4 +15,9 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy
-      - run: uv run pytest -q
+      - name: tests, with the runtime's coverage floor
+        run: >
+          uv run pytest -q
+          --cov=shadow_hdk.runtime --cov-report=term-missing --cov-fail-under=90
+      - name: the latency budget, printed
+        run: uv run pytest tests/runtime/test_benchmark.py -q -s

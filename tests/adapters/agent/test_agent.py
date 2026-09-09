@@ -12,6 +12,7 @@ from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
+    Binding,
     Ceiling,
     Completed,
     Composed,
@@ -360,3 +361,55 @@ async def test_max_turns_stops_a_model_that_never_finishes() -> None:
     )
     assert outcome(events)["reason"] == "out_of_turns"
     assert outcome(events)["turns"] == 3
+
+
+async def test_a_sub_agent_gets_what_is_left_rather_than_a_guess() -> None:
+    """A turn's plan was carved `len(steps) + 1`, which is right for tool calls and wrong the moment
+    a step is itself an agent: a sub-agent needs steps for its own turns, and got two. It died
+    `lease_exhausted` after one turn, and — worse — silently, because a lease ending a run is not an
+    error. Turns are sequential and each settles before the next, so the honest ceiling is whatever
+    the parent has left; the parent's own ceiling still bounds the lot.
+    """
+    tools = CallableComponents(registered_by="tests", at="2026-01-01T00:00:00+00:00")
+    tools.add(search, effects=READS)
+    junior = AgentComponent(
+        pattern=Pattern("junior", "…", tool_names=frozenset({"search"})),
+        effects=AGENT_EFFECTS,
+        name="junior",
+        at="2026-01-01T00:00:00+00:00",
+    )
+    senior = AgentComponent(
+        pattern=Pattern("senior", "…", tool_names=frozenset({"junior"})),
+        effects=AGENT_EFFECTS,
+        name="senior",
+        at="2026-01-01T00:00:00+00:00",
+    )
+    model = ScriptedModel(
+        [
+            says(call("junior", "s1", brief="look it up twice")),  # senior turn 1
+            says(call("search", "j1", query="a")),  # junior turn 1
+            says(call("search", "j2", query="b")),  # junior turn 2
+            says(call(DONE, "j3", summary="both found")),  # junior turn 3
+            says(call(DONE, "s2", summary="delegated")),  # senior turn 2
+        ]
+    )
+    ports = Ports(
+        model=model,
+        components=(tools, junior, senior),
+        governance=AllowAll(),
+        sink=ListSink(),
+        clock=FixedClock(),
+    )
+    events = [
+        e
+        async for e in run(
+            Composition((Invoke("top", "senior", (Binding(name="brief", value="go"),)),)),
+            ports,
+            options=RunOptions(lease=Lease(Ceiling(40, 3600, 1000), Floor(0))),
+        )
+    ]
+    junior_result = observations(events, "s1")[-1]
+    assert isinstance(junior_result, Completed)
+    assert isinstance(junior_result.output, dict)
+    assert junior_result.output["reason"] == "done", junior_result.output
+    assert junior_result.output["turns"] == 3
