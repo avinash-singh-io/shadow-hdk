@@ -11,17 +11,17 @@ group is claimed done.
 
 ## Group 0 — the spine
 
-- [ ] `packages/runtime/pyproject.toml` — distribution `shadow-hdk`, `shadow_hdk.runtime`, depends on `shadow-hdk-kernel` + `langgraph>=1.2,<2`; workspace member + source registered in the root
-- [ ] `bindings.py` — `Ports` (model · components · governance · sink · observer? · clock), `RunOptions` (lease · context · principal · checkpointer? · run_id? · parent), `RunContext`, `_CURRENT` contextvar
-- [ ] `session.py` — `Session.open`, `Handles` (put · get · as_json), `LeaseMeter`: `charge` · `check` · `floor_met` · `carve` · `remaining`
-- [ ] `emit.py` — `Emitter`: `seq` from 0 and monotone, `at` from the clock port, an `asyncio.Queue`, the observer on its own task, failures counted not raised
-- [ ] `state.py` — `RunState` TypedDict; `merge_dicts` and `merge_counts`, both commutative
-- [ ] `errors.py` — `LeaseExhausted(reason)`, `Cancelled`, `PortFailure`, `DanglingRef`
-- [ ] `testing/` — `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock`
-- [ ] RED: `tests/runtime/test_leases.py` — step ceiling · wall ceiling · cost ceiling · carve debits the parent · child over-ask → `Failed` · unknown usage is not zero · floor visible
-- [ ] RED: `tests/runtime/test_events.py` — seq from 0, strictly increasing · every stamp from the clock port · `Started` first and `Ended` last, once each · a raising observer does not fail a step · iterator and observer agree
-- [ ] `tests/invariants/test_stands_alone.py` — add: the runtime imports no adapter; no adapter imports another
-- [ ] Gate: ruff · ruff format · mypy · pytest
+- [x] `packages/runtime/pyproject.toml` — distribution `shadow-hdk`, `shadow_hdk.runtime`, depends on `shadow-hdk-kernel` + `langgraph>=1.2,<2`; workspace member + source registered in the root
+- [x] `bindings.py` — `Ports` (model · components · governance · sink · observer? · clock), `RunOptions` (lease · context · principal · checkpointer? · run_id? · parent), `RunContext`, `_CURRENT` contextvar
+- [x] `session.py` — `Session.open`, `Handles` (put · get · as_json), `LeaseMeter`: `charge` · `check` · `floor_met` · `carve` · `remaining`
+- [x] `emit.py` — `Emitter`: `seq` from 0 and monotone, `at` from the clock port, an `asyncio.Queue`, the observer on its own task, failures counted not raised
+- [x] `state.py` — `RunState` TypedDict; `merge_dicts` and `merge_counts`, both commutative
+- [x] `errors.py` — `LeaseExhausted(reason)`, `Cancelled`, `PortFailure`, `DanglingRef`
+- [x] `testing/` — `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock`
+- [x] RED: `tests/runtime/test_leases.py` — step ceiling · wall ceiling · cost ceiling · carve debits the parent · child over-ask → `Failed` · unknown usage is not zero · floor visible
+- [x] RED: `tests/runtime/test_events.py` — seq from 0, strictly increasing · every stamp from the clock port · `Started` first and `Ended` last, once each · a raising observer does not fail a step · iterator and observer agree
+- [x] `tests/invariants/test_stands_alone.py` — add: the runtime imports no adapter; no adapter imports another
+- [x] Gate: ruff · ruff format · mypy · pytest
 
 ## Group 1 — one governed step
 

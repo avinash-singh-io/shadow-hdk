@@ -8,19 +8,22 @@
 name = "shadow-hdk-workspace"
 version = "0.0.0"
 requires-python = ">=3.12"
-dependencies = ["shadow-hdk-kernel"]
+dependencies = ["shadow-hdk-kernel", "shadow-hdk"]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["packages/*"]
+# Adapters nest one level deeper (`packages/adapters/<name>/`), so a bare `packages/*` would match
+# the container directory and fail the sync with "missing a pyproject.toml".
+members = ["packages/kernel", "packages/runtime", "packages/adapters/*"]
 
 [tool.uv.sources]
 shadow-hdk-kernel = { workspace = true }
+shadow-hdk = { workspace = true }
 
 [dependency-groups]
-dev = ["pytest>=8.3", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=5.0", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
 
 [tool.ruff]
 line-length = 100
@@ -37,10 +40,12 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 python_version = "3.12"
 strict = true
 packages = ["shadow_hdk", "tests"]
-mypy_path = "packages/kernel/src"
+mypy_path = "packages/kernel/src:packages/runtime/src"
 namespace_packages = true
 explicit_package_bases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 xfail_strict = true
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

@@ -1,0 +1,16 @@
+[project]
+name = "shadow-hdk"
+version = "0.0.1"
+description = "The shadow-hdk runtime: compositions compiled to graphs, every step governed, proposals to a sink."
+readme = "README.md"
+requires-python = ">=3.12"
+# The kernel, and the engine that executes what we compile (D12). Nothing else: a model client, an
+# MCP server or a sandbox is an adapter's dependency, never the runtime's.
+dependencies = ["shadow-hdk-kernel", "langgraph>=1.2,<2"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]

@@ -13,7 +13,10 @@ import importlib
 import pytest
 
 
-@pytest.mark.xfail(raises=ImportError, reason="R0: the runtime does not exist yet")
+@pytest.mark.xfail(
+    raises=(ImportError, AttributeError),
+    reason="R0 in progress: the runtime package exists; its entry point lands in Group 3",
+)
 def test_the_bare_harness_runs_with_zero_product_code() -> None:
     # The plain async entry point, 09 §3 — resolved at run time so the test can exist before it.
     run = importlib.import_module("shadow_hdk.runtime").run

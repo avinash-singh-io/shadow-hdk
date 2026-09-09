@@ -112,3 +112,46 @@ owner.
 The roadmap is ordered by what lane P needs at each product release (R0 → R3), and every phase names
 the release it serves. Everything after the R3 join is the harness's own growth, pulled forward the
 moment a product asks.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 0: the spine, and four layering guards that now bite
+Topics: runtime, session, meter, emitter, doubles, invariants
+Affects-phases: phase-0-the-runtime
+Affects-specs: specs/phases/phase-0-the-runtime/tasks.md
+
+`packages/runtime` exists: `Ports` and `RunOptions` (D4), `RunContext` and the contextvar (D2),
+`Session` with `Handles` and `LeaseMeter`, the `Emitter`, `RunState` with commutative reducers, the
+four errors, and the five doubles. 44 tests green, mypy strict clean over 21 files.
+
+**The meter distinguishes three things the draft collapsed into two.** `charge(None)` means *this
+step made no model call* — no cost, and that is known. `charge(Usage(..., cost_cents=None))` means
+*a model call nobody could price* — after one of those the meter stops claiming to know the total,
+`cost_is_known` goes false, and `remaining().ceiling.max_cost_cents` becomes `None` rather than a
+number it cannot stand behind. R2's rule — *unknown, never zero* — is therefore arithmetic here
+rather than a note in a document.
+
+**The emitter has two queues, not one.** One consumer would have made D6 impossible: `run()` yields
+from the stream queue while the observer is drained by a task of its own, so `emit()` puts twice and
+returns. A test asserts that with a timeout rather than an assertion, because an emitter that
+awaited its observer would hang rather than fail — and a hang is a worse test than a failure.
+
+**Nine assertions mutation-checked, and the harness that checked them had a bug.** The first pass
+reported *"one adapter imports another — still passes"*, which read as a vacuous guard. It was not:
+`[tool.uv.workspace] members = ["packages/*"]` matched `packages/adapters`, a container with no
+`pyproject.toml`, so `uv run` errored, pytest never ran, and a check that grepped for the word
+*failed* saw none and called it a pass. Two real defects, both fixed: the glob is now
+`["packages/kernel", "packages/runtime", "packages/adapters/*"]`, and the mutation helper reports
+INCONCLUSIVE rather than folding an error into either outcome.
+
+The four layering guards are proven at the subject rather than at the guard — a temporary file that
+imports an adapter from the runtime, an adapter that imports another adapter, a package that imports
+the product, a kernel module that imports `time`. Each fails the build; each is removed after.
+
+### [DISCOVERY] 2026-09-10 — ruff 0.16 formats Python inside markdown
+Topics: gate, specs
+
+`ruff format --check` rewrote the fenced Python in the architecture documents — illustrative code
+with aligned comments, which a formatter is right to dislike and wrong to own. `specs`, `.claude`,
+`.agent`, `.githooks` and `.momentum` are excluded from the formatter: prose is not source, and
+momentum's scaffold is vendored.
