@@ -285,3 +285,44 @@ dropped.
 
 `:` cannot appear in a node name — LangGraph reserves it for checkpoint namespaces — so synthetic
 nodes use `__`.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 3: the drive, and what a disposable runtime cannot remember
+Topics: run, resume, spawn, forward, replay, g3
+
+`run()` is an async generator that yields events **while** the graph runs on a task of its own, so a
+host watching a long run sees it happen rather than hearing about it afterwards. `Started` … `Ended`,
+five end reasons, and a parked run emits no `Ended` at all — it has not ended, and whoever resumes
+it will close it.
+
+**[CORRECTION] `resume` takes the composition back.** The plan wrote
+`resume(run_id, answer, ports, options)`. That cannot work: the runtime owns nothing durable (`09`
+§6), so it does not have the shape of the run it parked. The checkpointer holds the state and
+whoever resumes holds the plan — which is the disposability property showing up as an API rather
+than as a paragraph. `options.run_id` and `options.checkpointer` are both required, and both raise
+by name when absent.
+
+**A child is carved, announced and forwarded.** `Spawned` is stamped on the parent (so it carries
+the parent's sequence); the child's own events are forwarded **verbatim**, keeping the child's run
+id and its own sequence. One consumer therefore sees the whole tree and every event says whose it
+is, without the runtime inventing a hierarchy in the numbering.
+
+**A stop is a reason, not a traceback.** LangGraph may wrap a node's exception, so the drive walks
+the `__cause__`/`__context__` chain for a `RuntimeStop` rather than checking the top.
+
+### [DISCOVERY] 2026-09-10 — five mutations, and the one that found a hole in the tests
+Topics: g3, d2, mutation-check
+
+Four of five mutations failed the suite as they should. The fifth — making `_parent_of` ignore the
+contextvar entirely — **left every test green**, and the reason matters: every spawn test reached
+its child through `ctx.spawn_options(...)`, which names the parent explicitly. So D2's actual claim
+— that a run started inside a step becomes a child *without being told* — was never exercised. The
+tests proved the explicit path and the design's headline was untested.
+
+`test_a_plain_run_inside_a_step_becomes_a_child_without_being_told` starts a run the way a naive
+component would, with no parent argument, and asserts it is carved, announced and forwarded. The
+mutation now fails the suite.
+
+This is the second time a mutation check has found a vacuous test rather than a bug, and the second
+time the fix was a better test rather than better code.

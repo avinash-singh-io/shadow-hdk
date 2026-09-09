@@ -14,11 +14,12 @@ import pytest
 
 
 @pytest.mark.xfail(
-    raises=(ImportError, AttributeError),
-    reason="R0 in progress: the runtime package exists; its entry point lands in Group 3",
+    raises=NotImplementedError,
+    reason="R0 in progress: run() exists (Group 3); the demo needs the agent component (Group 4)",
 )
 def test_the_bare_harness_runs_with_zero_product_code() -> None:
     # The plain async entry point, 09 §3 — resolved at run time so the test can exist before it.
     run = importlib.import_module("shadow_hdk.runtime").run
 
-    raise AssertionError(f"write the run with {run}: MCP + Ollama + sub-agent, allow-all, stdout")
+    assert callable(run), "the entry point exists; what is missing is the demo it drives"
+    raise NotImplementedError("Group 4/5: an agent component, a sub-agent, allow-all, stdout")

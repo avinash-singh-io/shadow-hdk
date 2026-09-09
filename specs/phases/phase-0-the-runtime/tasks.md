@@ -50,16 +50,17 @@ group is claimed done.
 
 ## Group 3 — the drive
 
-- [ ] `loop.py::run` — `Started` (with lease and parent) · `Composed` · steps · `Ended`, the five end reasons
-- [ ] `_resolve_parent` — ambient by default, `parent=None` forces a root (D2)
-- [ ] `Spawned` on the parent; the child's events forwarded into the parent's stream in order
-- [ ] `RunContext.propose` → `Proposed` event **and** `sink.propose`, carrying the child's provenance
-- [ ] `RunContext.remaining` and `spawn_options(ceiling)` — carve from the parent's meter
-- [ ] `loop.py::resume(run_id, answer, ...)` — `Command(resume=…)` against `thread_id = run_id`
-- [ ] `current_run()` returns `None` outside a step, the context inside one
-- [ ] RED: `tests/runtime/test_spawn.py` — child spawn · forwarding order · child proposals carry child provenance · `parent=None` is a root
-- [ ] RED: `tests/runtime/test_replay.py` — two runs JSON-identical, with and without a `FanOut`
-- [ ] Gate
+- [x] `loop.py::run` — `Started` (with lease and parent) · `Composed` · steps · `Ended`, the five end reasons
+- [x] `_resolve_parent` — ambient by default, `parent=None` forces a root (D2)
+- [x] `Spawned` on the parent; the child's events forwarded into the parent's stream in order
+- [x] `RunContext.propose` → `Proposed` event **and** `sink.propose`, carrying the child's provenance
+- [x] `RunContext.remaining` and `spawn_options(ceiling)` — carve from the parent's meter
+- [x] `loop.py::resume(composition, answer, ...)` — the **composition is passed back in**: the
+      runtime owns nothing durable, so it cannot remember the shape of a run it parked
+- [x] `current_run()` returns `None` outside a step, the context inside one
+- [x] RED: `tests/runtime/test_spawn.py` — child spawn · forwarding order · child proposals carry child provenance · `parent=None` is a root
+- [x] RED: `tests/runtime/test_replay.py` — two runs JSON-identical, with and without a `FanOut`
+- [x] Gate
 
 ## Group 4 — the agent, and the small real adapters
 

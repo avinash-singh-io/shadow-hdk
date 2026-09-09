@@ -85,6 +85,17 @@ class RunContext:
         """A child's options, carved from what this run has left."""
         return RunOptions(lease=self._session.meter.carve(ceiling), parent=self, **overrides)
 
+    async def announce_child(self, child_run_id: RunId, lease: Lease) -> None:
+        """Say on this run's stream that a child began. The child's own events arrive by forward."""
+        from shadow_hdk.kernel.events import Spawned
+
+        await self._emitter.emit(lambda **k: Spawned(child_run_id=child_run_id, lease=lease, **k))
+
+    async def forward(self, event: Any) -> None:
+        """Pass a child's event into this run's stream, unstamped: it keeps the child's run id and
+        the child's own sequence, so one consumer sees the whole tree and every event says whose."""
+        await self._emitter.forward(event)
+
     async def propose(self, proposal: Proposal) -> None:
         """Hand something to the sink. The runtime never decides whether it is kept."""
         from shadow_hdk.kernel.events import Proposed

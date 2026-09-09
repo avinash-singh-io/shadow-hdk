@@ -43,6 +43,14 @@ class Emitter:
             self._to_observer.put_nowait(event)
         return event
 
+    async def forward(self, event: Event) -> None:
+        """Put an event that was stamped elsewhere — a child's — onto this stream unchanged."""
+        self._stream.put_nowait(event)
+        if self._observer is not None:
+            if self._pump is None:
+                self._pump = asyncio.create_task(self._drain_to_observer())
+            self._to_observer.put_nowait(event)
+
     async def _drain_to_observer(self) -> None:
         assert self._observer is not None
         while True:
