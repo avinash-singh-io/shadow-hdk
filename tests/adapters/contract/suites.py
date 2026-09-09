@@ -14,6 +14,9 @@ Subclass with a name starting `Test` so pytest collects the inherited methods.
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import Provenance, RegistrationId
@@ -51,7 +54,12 @@ PROFILE_SHAPES: tuple[EffectProfile, ...] = (
 
 
 class ComponentPortContract:
-    """Override `port` and `valid_call`."""
+    """Override `port` and `valid_call` — or `using`, when the adapter has a lifetime.
+
+    Some component ports are a live thing: an MCP server is a subprocess and a handshake. Those are
+    entered and exited **inside each test**, because a session opened in one task and closed in
+    another is exactly what anyio refuses.
+    """
 
     def port(self) -> ComponentPort:
         raise NotImplementedError
@@ -59,26 +67,34 @@ class ComponentPortContract:
     def valid_call(self) -> tuple[RegistrationId, JsonValue]:
         raise NotImplementedError
 
+    @asynccontextmanager
+    async def using(self) -> AsyncIterator[ComponentPort]:
+        yield self.port()
+
     async def test_registrations_are_well_formed(self) -> None:
-        registrations = list(await self.port().registrations())
-        assert registrations, "a component port with nothing in it cannot be contract-tested"
-        assert len({r.id for r in registrations}) == len(registrations), "ids must be unique"
-        for registration in registrations:
-            assert registration.component.interface.name
-            assert isinstance(registration.component.effects, EffectProfile)
-            assert registration.component.provenance.adapter
+        async with self.using() as port:
+            registrations = list(await port.registrations())
+            assert registrations, "a component port with nothing in it cannot be contract-tested"
+            assert len({r.id for r in registrations}) == len(registrations), "ids must be unique"
+            for registration in registrations:
+                assert registration.component.interface.name
+                assert isinstance(registration.component.effects, EffectProfile)
+                assert registration.component.provenance.adapter
 
     async def test_every_registration_round_trips_through_json(self) -> None:
-        for registration in await self.port().registrations():
-            assert round_trip(registration, CONTRACTS["Registration"]) == registration
+        async with self.using() as port:
+            for registration in await port.registrations():
+                assert round_trip(registration, CONTRACTS["Registration"]) == registration
 
     async def test_an_unknown_id_is_an_observation_not_an_exception(self) -> None:
-        observation = await self.port().invoke("no-such-component", {})
+        async with self.using() as port:
+            observation = await port.invoke("no-such-component", {})
         assert observation.kind == "failed", "an unknown id is data the agent can route around"
 
     async def test_a_known_call_returns_an_observation_that_round_trips(self) -> None:
         registration, inputs = self.valid_call()
-        observation = await self.port().invoke(registration, inputs)
+        async with self.using() as port:
+            observation = await port.invoke(registration, inputs)
         assert round_trip(observation, CONTRACTS["Observation"]) == observation
 
 

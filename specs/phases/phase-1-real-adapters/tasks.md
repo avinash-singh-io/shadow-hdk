@@ -33,15 +33,15 @@ phase: 1-real-adapters
 
 ## Group 2 — components arriving over MCP
 
-- [ ] `packages/adapters/mcp/pyproject.toml` depending on the official `mcp` SDK
-- [ ] `McpComponents` — a stdio session, opened once and held
-- [ ] `tools/list` → registrations, `inputSchema` carried verbatim
-- [ ] annotations → `EffectProfile.from_mcp_annotations`; **absent → `ASSUME_WORST`**
-- [ ] `tools/call` → `Completed`; `isError` → `Failed`; a transport error → `Failed`, never a raise
-- [ ] RED: `tests/adapters/mcp/` against a **real** server over stdio, written for the test
-- [ ] a tool that declares nothing is `ASSUME_WORST`, and a mode that forbids reaching refuses it
-- [ ] `TestMcpComponentsIsAComponentPort(ComponentPortContract)`
-- [ ] Gate
+- [x] `packages/adapters/mcp/pyproject.toml` depending on the official `mcp` SDK
+- [x] `McpComponents` — a stdio session, opened once and held
+- [x] `tools/list` → registrations, `inputSchema` carried verbatim
+- [x] annotations → `EffectProfile.from_mcp_annotations`; **absent → `ASSUME_WORST`**
+- [x] `tools/call` → `Completed`; `isError` → `Failed`; a transport error → `Failed`, never a raise
+- [x] RED: `tests/adapters/mcp/` against a **real** server over stdio, written for the test
+- [x] a tool that declares nothing is `ASSUME_WORST`, and a mode that forbids reaching refuses it
+- [x] `TestMcpComponentsIsAComponentPort(ComponentPortContract)`
+- [x] Gate
 
 ## Group 3 — modes
 

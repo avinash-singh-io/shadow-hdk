@@ -166,3 +166,62 @@ When a step is asked about, the question **names the field that crossed the line
 usual, reaches outside, is irreversible — so a person being asked is told what they are answering.
 
 Five mutations, all failing. The mutation harness now clears `__pycache__` after each restore.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 2: an MCP server's tools become components
+Topics: mcp, annotations, effects, assume-worst, g2
+
+`McpComponents` over the official SDK's stdio client, tested against a **real MCP server run as a
+subprocess** — `tests/adapters/mcp/server.py`. A seam tested against a stand-in for the other side
+is a seam tested against your own idea of it, and this is the seam most components will arrive
+through.
+
+**The interesting part is not the plumbing.** MCP's annotations cover about half our six fields, and
+the adapter derives what it can and hardens the rest. Measured against the real server:
+
+| tool | declares | comes out as |
+|---|---|---|
+| `look_up` | read-only, closed-world | writes nothing, reaches nothing, reversible — **and still uncontained and costly**, because a server saying it only reads has said nothing about where it runs |
+| `wipe` | destructive | irreversible |
+| `append` | not read-only, **not** destructive | writes, reversible |
+| `mystery` | **nothing at all** | `ASSUME_WORST` |
+
+The last row is the property the open registry rests on, and it is governed end to end: a `read`
+mode allows `look_up` and refuses `mystery` and `wipe`, and nobody had to know those tools existed.
+That is the whole argument for governing effects rather than names.
+
+### [DISCOVERY] 2026-09-10 — a session belongs to the task that opened it
+Topics: mcp, anyio, tests
+
+The contract suite's `port()` is synchronous, so the first version started the server in an autouse
+async fixture. Every inherited test errored: *"Attempted to exit cancel scope in a different task
+than it was entered in"* — anyio refusing, correctly, to let a session cross tasks.
+
+Rather than work around it, it is written down: **an `McpComponents` belongs to whoever entered
+it.** `ComponentPortContract` gained a `using()` hook — an async context manager, defaulting to the
+plain `port()` — so an adapter with a lifetime is opened and closed *inside each test*. Ports
+without a lifetime are unaffected.
+
+### [CORRECTION] 2026-09-10 — the ceiling was wrong, the arithmetic was right
+Topics: modes, contained
+
+The end-to-end mode test failed: a `read` mode refused `look_up`. The mode's ceiling had left
+`contained` at its default `True` — *containment required* — and `look_up` is uncontained, because
+nothing declared otherwise. The refusal was correct. `contained=False` in a **ceiling** means
+*uncontained is permitted*, which is the truthful setting for a laptop with no sandbox.
+
+### [DISCOVERY] 2026-09-10 — two mutations found two missing tests
+Topics: mutation-check, mcp
+
+*Dropping the destructive hint left the suite green*, because MCP's default for an unstated
+`destructiveHint` is **destructive** — so a tool that omits it and an adapter that ignores it look
+identical. The only shape that tells them apart is a tool declaring `destructive_hint=False`, and
+the reference server now has one (`append`).
+
+*Narrowing the transport `except` left the suite green*, because every test exercised a server that
+answered — even `explode`, which answers with an error result rather than dying. A server is a
+process on the other end of a pipe and processes die; there is now a test where the transport raises
+mid-call and the agent gets an observation rather than a traceback.
+
+Seven mutations, all failing.

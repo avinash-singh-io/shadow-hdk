@@ -8,7 +8,7 @@
 name = "shadow-hdk-workspace"
 version = "0.0.0"
 requires-python = ">=3.12"
-dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes"]
+dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp"]
 
 [tool.uv]
 package = false
@@ -25,6 +25,7 @@ shadow-hdk-adapters-basic = { workspace = true }
 shadow-hdk-adapters-agent = { workspace = true }
 shadow-hdk-adapters-langchain = { workspace = true }
 shadow-hdk-adapters-modes = { workspace = true }
+shadow-hdk-adapters-mcp = { workspace = true }
 
 [dependency-groups]
 dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=5.0", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
@@ -32,7 +33,7 @@ dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=5.0", "hypothesis>=6.
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src", "tests"]
+src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src", "tests"]
 # Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
 # and a design document is not the formatter's business. momentum's own scaffold is vendored.
 extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
@@ -44,7 +45,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 python_version = "3.12"
 strict = true
 packages = ["shadow_hdk", "tests"]
-mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src"
+mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src"
 namespace_packages = true
 explicit_package_bases = true
 
