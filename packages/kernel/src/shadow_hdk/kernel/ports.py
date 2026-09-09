@@ -15,6 +15,11 @@ non-determinism the runtime has, time and identity, behind a port so a replay co
     ObserverPort    on(event)                            the only channel out; fire-and-forget
     ClockPort       now() · new_id()                     so two runs of the same inputs compare
 
+Six is the starting set, not a ceiling (09 §3). A port is added the way an effect field or a
+step kind is: a kernel change with an ADR and a minor version, and a default the runtime applies
+when a host does not implement it — refuse the steps that need it, never crash. A host or adapter
+that ignores a new port keeps working.
+
 Sandboxes have no port of their own: a sandbox is an adapter that registers a component with
 ``contained: true`` (09 §5), and it is absent on deployments that have none.
 """
