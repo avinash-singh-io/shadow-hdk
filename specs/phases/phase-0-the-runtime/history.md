@@ -363,3 +363,40 @@ Five mutations, all failing the suite. Two of them reported TARGET MISSING on th
 because the labels contained apostrophes and broke the mutation script's own quoting — caught
 because the script prints TARGET MISSING rather than treating a no-op as a pass, which is the
 guard added after the same thing happened silently in Group 1.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 4: the agent is a component, and a pattern is what makes it one kind
+Topics: agent, pattern, single, adapters, basic, contracts, g4
+
+`packages/adapters/basic` and `packages/adapters/agent` exist. 135 tests green, mypy strict over 35
+files, fourteen mutations checked across the two.
+
+**A turn is a child run.** The agent shows the model what it can see, reads what it wants to do,
+turns that into a **composition**, and calls `run()` — the same entry point a host uses. So a turn's
+work has its own lease, its own events and its own `Composed`, and the plan the model made is on the
+record whether or not it worked. That is D1 paying for itself: there is no second execution path to
+keep in step with the first.
+
+**What the model may do is the pattern's decision.** `single` offers `propose` and `done` and not
+`compose`, so it cannot change its own shape — a fully deterministic one-agent product on the same
+runtime a dynamic one uses. A mutation that hands every meta-tool to every pattern fails the suite.
+
+**A pattern holds no callables.** The draft had `tool_filter: Callable[[Registration], bool]`. A
+pattern is meant to ship as a *file* a team can read and edit, so a filter is a set of names —
+`tool_names` — and it is a display choice, not a permission. Permission stays `ceiling`, and stays
+effects.
+
+**One registry per run.** The agent needs to know what the model may see, and the first version
+built its own `Registry` and asked governance itself. That was two answers to one question and they
+could drift: what the model was *offered* and what the runtime will *let it invoke*. `RunContext`
+now carries the run's registry and answers `visible()`, and the executor resolves against the same
+object.
+
+**The floor gets exactly one nudge.** A model trained to be agreeable gives up early; a second nudge
+would be nagging and the run would never end. Two mutations cover it — removing the nudge, and
+letting it repeat.
+
+`patterns/single.md` is deliberately **not** written. The role already travels inside the `Pattern`;
+a markdown file nothing reads would be a second source of truth for the same prompt. The loader that
+makes a pattern a file is Phase 8, and the file arrives with it.

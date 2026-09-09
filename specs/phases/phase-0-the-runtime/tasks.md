@@ -64,18 +64,22 @@ group is claimed done.
 
 ## Group 4 — the agent, and the small real adapters
 
-- [ ] `packages/adapters/basic` — `AllowAll`, `StdoutSink` (one JSON line per proposal), `CallbackObserver`, `SystemClock`
-- [ ] `callable_component(fn, *, effects, name?, description?)` and `CallableComponents` — schema from the signature, exception → `Failed`
-- [ ] `packages/adapters/agent` — `Pattern(name, system, meta_tools, tool_filter, ceiling?, max_turns)`
-- [ ] the `single` pattern + `patterns/single.md`; meta-tools `propose` and `done` only (D3)
-- [ ] `AgentComponent.invoke` — the turn loop; catalogue = visible tools + the pattern's meta-tools
-- [ ] one tool call → an `Invoke`; several → a `FanOut`; `compose` → the model's composition verbatim
-- [ ] `propose` → `ctx.propose`; `done` → `Completed`; no tool calls → `Completed`
-- [ ] the floor: done before `min_steps` → exactly one nudge, then accepted → `gave_up`
-- [ ] `tests/adapters/contract/` — `ComponentPortContract`, `ModelPortContract`, `GovernancePortContract`, `SinkPortContract`, `ObserverPortContract`, `ClockPortContract`
-- [ ] RED: `tests/adapters/agent/` and `tests/adapters/basic/` — the cases in `architecture/testing.md`
-- [ ] the doubles, `basic` and `agent` each subclass their contract suite
-- [ ] Gate
+- [x] `packages/adapters/basic` — `AllowAll`, `StdoutSink` (one JSON line per proposal), `CallbackObserver`, `SystemClock`
+- [x] `callable_component(fn, *, effects, name?, description?)` and `CallableComponents` — schema from the signature, exception → `Failed`
+- [x] `packages/adapters/agent` — `Pattern(name, system, meta_tools, tool_filter, ceiling?, max_turns)`
+- [x] the `single` pattern; meta-tools `propose` and `done` only (D3)
+- [~] `patterns/single.md` — **not written, deliberately.** A `Pattern` is already data and the
+      role travels inside it; a markdown file nothing reads would be a second source of truth for
+      the same prompt. The *loader* that makes a pattern a file is Phase 8, and the file arrives
+      with it
+- [x] `AgentComponent.invoke` — the turn loop; catalogue = visible tools + the pattern's meta-tools
+- [x] one tool call → an `Invoke`; several → a `FanOut`; `compose` → the model's composition verbatim
+- [x] `propose` → `ctx.propose`; `done` → `Completed`; no tool calls → `Completed`
+- [x] the floor: done before `min_steps` → exactly one nudge, then accepted → `gave_up`
+- [x] `tests/adapters/contract/` — `ComponentPortContract`, `ModelPortContract`, `GovernancePortContract`, `SinkPortContract`, `ObserverPortContract`, `ClockPortContract`
+- [x] RED: `tests/adapters/agent/` and `tests/adapters/basic/` — the cases in `architecture/testing.md`
+- [x] the doubles, `basic` and `agent` each subclass their contract suite
+- [x] Gate
 
 ## Group 5 — verification
 

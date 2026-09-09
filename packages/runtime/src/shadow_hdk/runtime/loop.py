@@ -58,6 +58,7 @@ async def _drive(
     session: Session,
     emitter: Emitter,
     context: RunContext,
+    registry: Registry,
     parent: RunContext | None,
     payload: Any,
     checkpointer: Any,
@@ -74,7 +75,7 @@ async def _drive(
                 await parent.announce_child(session.run_id, session.meter.lease)
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
-        executor = StepExecutor(session, emitter, ports, Registry(ports.components))
+        executor = StepExecutor(session, emitter, ports, registry)
         graph = compile_composition(composition, executor, checkpointer)
         config = {
             "configurable": {"thread_id": session.run_id},
@@ -126,7 +127,8 @@ async def _stream(
         parent_run_id=parent.run_id if parent is not None else None,
     )
     emitter = Emitter(run_id, ports.clock, ports.observer)
-    context = RunContext(session, emitter, ports)
+    registry = Registry(ports.components)
+    context = RunContext(session, emitter, ports, registry)
     driving = asyncio.create_task(
         _drive(
             composition,
@@ -134,6 +136,7 @@ async def _stream(
             session,
             emitter,
             context,
+            registry,
             parent,
             payload,
             options.checkpointer or InMemorySaver(),

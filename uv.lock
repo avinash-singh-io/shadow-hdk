@@ -9,6 +9,7 @@ resolution-markers = [
 [manifest]
 members = [
     "shadow-hdk",
+    "shadow-hdk-adapters-agent",
     "shadow-hdk-adapters-basic",
     "shadow-hdk-kernel",
     "shadow-hdk-workspace",
@@ -778,6 +779,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "shadow-hdk-adapters-agent"
+version = "0.0.1"
+source = { editable = "packages/adapters/agent" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
 name = "shadow-hdk-adapters-basic"
 version = "0.0.1"
 source = { editable = "packages/adapters/basic" }
@@ -809,6 +825,7 @@ version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "shadow-hdk" },
+    { name = "shadow-hdk-adapters-agent" },
     { name = "shadow-hdk-adapters-basic" },
     { name = "shadow-hdk-kernel" },
 ]
@@ -826,6 +843,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
     { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
 ]

@@ -8,7 +8,7 @@
 name = "shadow-hdk-workspace"
 version = "0.0.0"
 requires-python = ">=3.12"
-dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic"]
+dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent"]
 
 [tool.uv]
 package = false
@@ -22,6 +22,7 @@ members = ["packages/kernel", "packages/runtime", "packages/adapters/*"]
 shadow-hdk-kernel = { workspace = true }
 shadow-hdk = { workspace = true }
 shadow-hdk-adapters-basic = { workspace = true }
+shadow-hdk-adapters-agent = { workspace = true }
 
 [dependency-groups]
 dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=5.0", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
@@ -29,7 +30,7 @@ dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "pytest-cov>=5.0", "hypothesis>=6.
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src", "tests"]
+src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src", "tests"]
 # Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
 # and a design document is not the formatter's business. momentum's own scaffold is vendored.
 extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
@@ -41,7 +42,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 python_version = "3.12"
 strict = true
 packages = ["shadow_hdk", "tests"]
-mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src"
+mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src"
 namespace_packages = true
 explicit_package_bases = true
 

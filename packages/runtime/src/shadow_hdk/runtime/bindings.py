@@ -14,20 +14,24 @@ from typing import TYPE_CHECKING, Any, Final
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.events import RunId
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import (
     ClockPort,
     ComponentPort,
+    Context,
     GovernancePort,
     ModelPort,
     ObserverPort,
+    Refuse,
     SinkPort,
 )
 
 if TYPE_CHECKING:
     from shadow_hdk.runtime.emit import Emitter
+    from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
 
 MISSING: Final = object()
@@ -59,10 +63,13 @@ class RunOptions:
 class RunContext:
     """What a component sees of the run it is inside. Returned by `current_run()`."""
 
-    def __init__(self, session: Session, emitter: Emitter, ports: Ports) -> None:
+    def __init__(
+        self, session: Session, emitter: Emitter, ports: Ports, registry: Registry
+    ) -> None:
         self._session = session
         self._emitter = emitter
         self._ports = ports
+        self._registry = registry
 
     @property
     def run_id(self) -> RunId:
@@ -74,6 +81,27 @@ class RunContext:
 
     def now(self) -> str:
         return self._ports.clock.now()
+
+    async def visible(self) -> list[Registration]:
+        """What this run may see, as the policy leaves it.
+
+        The same registry the executor resolves against, so *what the model was offered* and *what
+        the runtime will let it invoke* cannot drift apart. A component the policy would refuse for
+        every input is absent rather than greyed out (`09` §4).
+        """
+        await self._registry.refresh()
+        context = self.context("<catalogue>")
+        shown = []
+        for registration in self._registry.all():
+            judgement = await self._ports.governance.judge(registration.component.effects, context)
+            if not isinstance(judgement, Refuse):
+                shown.append(registration)
+        return shown
+
+    def context(self, step: str = "<catalogue>") -> Context:
+        """What this run tells a policy about itself. An adapter that wants to know what the model
+        may see asks the governance port with this."""
+        return self._session.context_for(step)
 
     def remaining(self) -> Lease:
         return self._session.meter.remaining()
