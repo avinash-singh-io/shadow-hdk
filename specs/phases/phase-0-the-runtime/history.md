@@ -400,3 +400,41 @@ letting it repeat.
 `patterns/single.md` is deliberately **not** written. The role already travels inside the `Pattern`;
 a markdown file nothing reads would be a second source of truth for the same prompt. The loader that
 makes a pattern a file is Phase 8, and the file arrives with it.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 5: the bare harness is green, and the demo found two defects
+Topics: bare-harness, examples, observer, leases, benchmark, versions, g5
+
+Phase 0 is complete. 150 tests, mypy strict over 37 files, 96 % line coverage on the runtime, every
+package at 0.1.0. **The `xfail` marker is off `tests/test_bare_harness.py`**, and four invariants
+keep it that way.
+
+**The demo found two things no unit test had**, which is the argument for building it rather than
+asserting it.
+
+*An observer was called once per nesting level.* Every child run inherited the host's observer, so
+an event two levels down reached it three times — while the yielded stream was perfectly correct,
+which is why nothing had caught it. Read straight off the demo's own output: twenty-three events,
+forty-four lines. Only the root feeds the observer now; children forward to their parent and the
+parent forwards on, so the observer is reached exactly once however deep the tree.
+
+*A turn's plan was carved `len(steps) + 1` steps.* Right for tool calls; wrong the moment a step is
+itself an agent, because a sub-agent needs steps for its own turns and got two. It died
+`lease_exhausted` after one turn — **silently**, because a lease ending a run is not an error, and
+the parent then read the sub-agent's next scripted answer as its own. Turns are sequential and each
+settles before the next, so a turn now gets whatever the parent has left; the parent's own ceiling
+still bounds the lot. Also fixed: finishing via `done` reported `turns: None`.
+
+**The latency budget is measured, not hoped for** (D11). 100 sequential no-op steps in **58.6 ms
+(0.586 ms/step)** and a 50-way fan-out in **26.5 ms**, against targets of 100 ms, 1 ms and 50 ms.
+The assertions sit at three times the target so a shared runner cannot flake them, which means they
+catch an order of magnitude rather than a drift — the printed numbers are the real signal, and CI
+prints them.
+
+`patterns/single.md` was deliberately not written: the role travels inside the `Pattern`, and a
+markdown file nothing reads would be a second source of truth for one prompt. The loader that makes
+a pattern a file is Phase 8, and the file arrives with it.
+
+**Not run: `/complete-phase`'s merge step.** Nothing merges to `staging` or `main` without the
+owner. Phase 1 branches from `phase-0-the-runtime`, and the chain is what carries the code.

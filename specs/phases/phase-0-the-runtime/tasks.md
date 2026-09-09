@@ -83,12 +83,12 @@ group is claimed done.
 
 ## Group 5 — verification
 
-- [ ] `tests/runtime/test_benchmark.py` — 100 sequential no-op steps < 100 ms · 50-way fan-out < 50 ms · p50 per-step overhead reported
-- [ ] `examples/bare.py` — a composition over a stub MCP-shaped component, the agent, and a sub-agent, allow-all, stdout; output committed as evidence
-- [ ] `tests/test_bare_harness.py` — **the `xfail` marker removed**, the real assertion written
-- [ ] `tests/test_versions.py` — every package at `0.1.0`
-- [ ] coverage ≥ 90 % on `packages/runtime`
-- [ ] `.github/workflows/ci.yml` — run the benchmark and print its numbers
-- [ ] README — the four public names, a two-line quickstart, the status line updated
-- [ ] Board: lane H row → H0 done, with the commit; the log line
-- [ ] Gate, then `/complete-phase`
+- [x] `tests/runtime/test_benchmark.py` — 100 sequential no-op steps < 100 ms · 50-way fan-out < 50 ms · p50 per-step overhead reported
+- [x] `examples/bare.py` — a composition over a stub MCP-shaped component, the agent, and a sub-agent, allow-all, stdout; output committed as evidence
+- [x] `tests/test_bare_harness.py` — **the `xfail` marker removed**, the real assertion written
+- [x] `tests/test_versions.py` — every package at `0.1.0`
+- [x] coverage ≥ 90 % on `packages/runtime`
+- [x] `.github/workflows/ci.yml` — run the benchmark and print its numbers
+- [x] README — the four public names, a two-line quickstart, the status line updated
+- [x] Board: lane H row → H0 done, with the commit; the log line
+- [x] Gate. `/complete-phase`'s merge step is **not** run: nothing merges without the owner.

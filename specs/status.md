@@ -24,7 +24,7 @@ runtime that turns the bare-harness test green.
 
 | Phase | Name | Status | Released |
 |-------|------|--------|---------|
-| _(none yet)_ | | | |
+| 0 | The runtime, and the bare test goes green | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -36,7 +36,7 @@ runtime that turns the bare-harness test green.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 0 — the runtime | `phase-0-the-runtime` | in progress | 4 / 6 groups — spine, governed step, compiler, drive. 73 passed, 1 xfailed; ruff and mypy strict clean over 27 files. Pushed, nothing merged. |
+| 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. 150 passed; ruff and mypy strict clean over 37 files; runtime coverage 96 %; 0.586 ms/step against a 1 ms budget. Every package at 0.1.0. |
 
 ## Upcoming Phases
 
@@ -62,8 +62,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Group 4 — the agent as a component: `Pattern`, the `single` pattern, and the `basic` adapters (allow-all, stdout sink, callback observer, system clock, `callable`)
-2. Group 5 — the bare-harness test green with its marker removed, the benchmark inside D11's budget, 0.1.0 across every package
+1. Phase 1 — real adapters, on `phase-1-real-adapters` branched from `phase-0-the-runtime`: one `ModelPort` over LangChain's providers (OpenAI-compatible, Anthropic, Ollama, HuggingFace) with `stream`; the MCP component adapter; `adapters/modes`
+2. Phase 2 — the MCP-stub spike, which answers J1 on the board
 
 ## Key Decisions Made
 
@@ -72,6 +72,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 0 complete**: the runtime, the agent as a component, the basic adapters, the bare harness green with zero product code
 - 2026-09-10 — founded: charter, principles, success criteria, roadmap, architecture, Epic 0001, Phase 0
 - 2026-09-10 — momentum installed; joined `intent-ecosystem` as member `shadow-hdk`
 - 2026-09-10 — the kernel, two invariants and the strict-xfail bare-harness test (`0ca2d2b`, `9befb80`)
