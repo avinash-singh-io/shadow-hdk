@@ -8,3 +8,9 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# momentum runtime coordination and sentinels (not source)
+.momentum/team/
+.momentum/brainstorm-active
+.momentum/merge-approved
+.momentum/run-stop
