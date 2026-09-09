@@ -1,0 +1,14 @@
+[project]
+name = "shadow-hdk-adapters-modes"
+version = "0.2.0"
+description = "Governance as data: a mode is a ceiling and an ask line."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["shadow-hdk-kernel", "shadow-hdk"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]

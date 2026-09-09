@@ -12,6 +12,7 @@ members = [
     "shadow-hdk-adapters-agent",
     "shadow-hdk-adapters-basic",
     "shadow-hdk-adapters-langchain",
+    "shadow-hdk-adapters-modes",
     "shadow-hdk-kernel",
     "shadow-hdk-workspace",
 ]
@@ -1082,6 +1083,21 @@ requires-dist = [
 provides-extras = ["openai", "anthropic", "ollama", "huggingface"]
 
 [[package]]
+name = "shadow-hdk-adapters-modes"
+version = "0.2.0"
+source = { editable = "packages/adapters/modes" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
 name = "shadow-hdk-kernel"
 version = "0.2.0"
 source = { editable = "packages/kernel" }
@@ -1101,6 +1117,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-agent" },
     { name = "shadow-hdk-adapters-basic" },
     { name = "shadow-hdk-adapters-langchain", extra = ["huggingface", "openai"] },
+    { name = "shadow-hdk-adapters-modes" },
     { name = "shadow-hdk-kernel" },
 ]
 
@@ -1120,6 +1137,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
     { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
     { name = "shadow-hdk-adapters-langchain", extras = ["openai", "huggingface"], editable = "packages/adapters/langchain" },
+    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
 ]
 

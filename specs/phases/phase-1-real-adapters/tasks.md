@@ -45,13 +45,13 @@ phase: 1-real-adapters
 
 ## Group 3 — modes
 
-- [ ] `packages/adapters/modes/pyproject.toml`
-- [ ] `Mode(name, ceiling, ask_above)`; `ModeGovernance(modes, key, default)`
-- [ ] `Allow` when the profile narrows the ceiling; `Ask` when it narrows the ceiling but not the ask line; `Refuse` otherwise
-- [ ] `layer(base, over)` — composition by `EffectProfile.meet`
-- [ ] RED: `tests/adapters/modes/` — the four example modes; an unknown mode refuses and says so; a hypothesis property that a layer can only narrow
-- [ ] `TestModeGovernanceIsAGovernancePort(GovernancePortContract)`
-- [ ] Gate
+- [x] `packages/adapters/modes/pyproject.toml`
+- [x] `Mode(name, ceiling, ask_above)`; `ModeGovernance(modes, key, default)`
+- [x] `Allow` when the profile narrows the ceiling; `Ask` when it narrows the ceiling but not the ask line; `Refuse` otherwise
+- [x] `layer(base, over)` — composition by `EffectProfile.meet`
+- [x] RED: `tests/adapters/modes/` — the four example modes; an unknown mode refuses and says so; a hypothesis property that a layer can only narrow
+- [x] `TestModeGovernanceIsAGovernancePort(GovernancePortContract)`
+- [x] Gate
 
 ## Group 4 — the demo on real components
 

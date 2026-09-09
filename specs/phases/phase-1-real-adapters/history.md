@@ -139,3 +139,30 @@ hour spent because a tool lied, and worth the entry so the next occurrence costs
 Also fixed while here: `aclosing` around the provider's generator, so the HTTP stream under it
 closes the moment we stop reading. It removed a real teardown error from httpcore2 that appeared on
 every live streaming call.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 3: a mode is a ceiling and an ask line
+Topics: modes, governance, layering, meet, g3
+
+`Mode(name, ceiling, ask_above)` and `ModeGovernance(modes, default, key)`. Two modes, ten, or one
+called `auto` is a different **mapping**, not different code — the runtime knows no mode names, and
+this adapter knows only the ones a product hands it. The four in the tests (`read`, `build`, `act`,
+`auto`) are examples, not a vocabulary the adapter imposes.
+
+**An unknown mode refuses and says which name it did not recognise.** The dangerous failure here is
+silent widening: a typo in a mode name resolving to whatever the default happens to be. A mutation
+that made it fall back to the default fails the suite.
+
+**`ask_above=None` means never ask** — a thing a product may legitimately want, and the adapter will
+not second-guess it, but it has to be *said* rather than inherited from a neighbouring mode.
+
+**A layer can only narrow, and that is arithmetic.** `layer(base, over)` is `EffectProfile.meet`,
+which the kernel already property-tests as a greatest lower bound, so "a team may tighten what it
+was given and never loosen it" is not a review comment. A hypothesis property asserts it over
+arbitrary profiles, and a mutation that takes the layer's ceiling instead of the meet fails.
+
+When a step is asked about, the question **names the field that crossed the line** — reads more than
+usual, reaches outside, is irreversible — so a person being asked is told what they are answering.
+
+Five mutations, all failing. The mutation harness now clears `__pycache__` after each restore.
