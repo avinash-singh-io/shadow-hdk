@@ -25,7 +25,10 @@ dev = ["pytest>=8.3", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "tests"]
+src = ["packages/kernel/src", "packages/runtime/src", "tests"]
+# Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
+# and a design document is not the formatter's business. momentum's own scaffold is vendored.
+extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]

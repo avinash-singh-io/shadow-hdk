@@ -6,6 +6,7 @@ okf_version: "0.1"
 
 * [Status](/status.md) - current project state — the first file to read
 * [Backlog](/backlog/backlog.md) - bugs, features, tech debt, enhancements
+* [Roadmap](/planning/roadmap.md) - phase timeline and upcoming work
 
 # Directories
 

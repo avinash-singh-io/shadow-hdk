@@ -4,20 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: YYYY-MM-DD
-> **Current Phase**: _Not founded_ — run `/brainstorm-idea`, then `/start-project`
-> **Latest Release**: None
+> **Last Updated**: 2026-09-10
+> **Current Phase**: Phase 0 — The runtime, the bare test goes green — `not started`
+> **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
 ## Summary
 
-_Not founded yet. momentum machinery is installed, but this project has no
-foundation docs (charter, principles, success criteria, roadmap) — they are
-authored at founding, never scaffolded. Explore the idea with
-`/brainstorm-idea` (writes nothing), then run `/start-project` to found the
-project: it authors the foundation docs from your brainstorm and plans
-Phase 0. Phase commands stop and route you here until the project is
-founded._
+shadow-hdk is the generic agentic system designed in
+`intent-ecosystem/vision/09-the-agentic-system.md`: a runtime that runs an agent over an open set of
+components under a governance policy and hands what it produces to whoever is listening. It governs
+effects, not names; the agent's plan is data compiled to a LangGraph graph; the runtime acts through
+components and records through the sink. Three packages — kernel, runtime, adapters — one import
+name, six ports. Intent Studio is its first user (lane P, joining at R3); any system that implements
+the six ports is its intended user. The kernel exists and is green (`0ca2d2b`); Phase 0 builds the
+runtime that turns the bare-harness test green.
 
 ## Completed Phases
 
@@ -27,29 +28,25 @@ founded._
 
 ## Ad-hoc / Patch Releases
 
-> Releases NOT tied to a numbered phase — hotfixes, patch/audit releases,
-> chores. Keep these out of the Completed Phases table. Work records live in
-> `specs/adhoc/`. See Rule 14 for when ad-hoc work must become a phase instead.
-
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
 | _(none yet)_ | | | |
 
 ## Active Phase
 
-> One row per active lane (Rule 15, ADR-0001). Each session's phase is the
-> one bound to its branch; this table is the cross-lane overview and the
-> fallback for branches that don't resolve. Lanes touch only their own row.
-
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none — project not founded yet)_ | | | |
+| 0 — the runtime | `phase-0-the-runtime` | not started | 0 / 6 groups |
 
 ## Upcoming Phases
 
 | Phase | Name | Status | Key Deliverables |
 |-------|------|--------|-----------------|
-| _(defined at founding — see `/start-project`)_ | | | |
+| 1 | Real adapters, streaming, modes | Not Started | `adapters/langchain`, `adapters/mcp`, `adapters/modes`; the demo on real components |
+| 2 | The spike | Not Started | J1 answered over `agent-client-protocol` |
+| 3 | The workspace and code | Not Started | files and a subprocess sandbox as components |
+| 4–5 | The ACP bridge, the RecordingServer | Not Started | your subscription answers the turn |
+| 6–9 | The compiler complete, sub-agents, patterns, the wire | Not Started | R3's join; `v0.1.0` |
 
 ## Blockers
 
@@ -65,13 +62,16 @@ founded._
 
 ## Next Actions
 
-1. Run `/brainstorm-idea` to explore the idea (conversation only — writes nothing)
-2. Run `/start-project` to found the project — authors charter, principles, success criteria, and roadmap, then plans Phase 0
+1. `/start-phase` on `phase-0-the-runtime` from `staging`
+2. Group 0 red first: the runtime package, `Ports`, `RunOptions`, `Session`, `LeaseMeter`, `Emitter`, the doubles
 
 ## Key Decisions Made
 
-_(none yet)_
+- D1–D13 in `specs/architecture/decisions.md`, settled at founding from `09` and the founding conversation; recorded on Epic 0001
+- The name and the repository: `10-the-roadmap.md` §7d; the two-lane plan: §3b; the board: `intent-ecosystem/lanes/board.md`
 
 ## Recent Changes
 
-_(none yet)_
+- 2026-09-10 — founded: charter, principles, success criteria, roadmap, architecture, Epic 0001, Phase 0
+- 2026-09-10 — momentum installed; joined `intent-ecosystem` as member `shadow-hdk`
+- 2026-09-10 — the kernel, two invariants and the strict-xfail bare-harness test (`0ca2d2b`, `9befb80`)

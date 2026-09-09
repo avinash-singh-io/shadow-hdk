@@ -4,21 +4,19 @@ type: Config
 
 # Project Config
 
-> Inferred by momentum init — confirm at `/start-project` or edit anytime.
-> Recipes read these at execution time; missing/unknown values fall back to
-> npm/GitHub defaults with a warning. This file is version-controlled project
-> content — edit freely.
+> Recipes read these at execution time; missing values fall back to npm/GitHub defaults. Edit freely.
+> Confirmed at founding, 2026-09-10.
 
 | Key | Value |
 |-----|-------|
 | language | python |
-| framework | none |
-| test_command | pytest |
-| build_command | none |
+| framework | langgraph |
+| test_command | uv run pytest |
+| build_command | uv sync --all-packages |
 | publish_target | pypi |
 | git_forge | github |
 | release_command | gh release create |
-| release_flow | tag-and-publish |
+| release_flow | tag-only |
 | end_state | merge-after-yes |
 | branch_flow | staging, main |
 | protected_branches | staging, main |
@@ -29,4 +27,14 @@ type: Config
 
 ## Notes
 
-_(none — edit freely)_
+### Branch flow: `phase → staging → main`
+
+`staging` is the permanent integration branch; every phase lands there with the owner's single-use
+approval sentinel (Rule 6). `main` is touched only at a release: a promotion from staging, tagged.
+Both are protected by momentum's hook floor whatever this file says.
+
+### Release flow: `tag-only` until a licence is chosen
+
+The repository is private and unlicensed. A permissive licence grants rights for that version
+irrevocably, so publishing to PyPI waits for the owner's decision; `release_flow` becomes
+`tag-and-publish` the day it is made.
