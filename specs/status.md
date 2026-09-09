@@ -36,7 +36,7 @@ runtime that turns the bare-harness test green.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 0 — the runtime | `phase-0-the-runtime` | in progress | 2 / 6 groups (spine, governed step) |
+| 0 — the runtime | `phase-0-the-runtime` | in progress | 4 / 6 groups — spine, governed step, compiler, drive. 73 passed, 1 xfailed; ruff and mypy strict clean over 27 files. Pushed, nothing merged. |
 
 ## Upcoming Phases
 
@@ -62,8 +62,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Group 2 — `compile.py`: compositions become LangGraph graphs (`Send` for `FanOut`, a conditional edge for `Until`, `interrupt()` for `Ask`)
-2. Then Group 3 — the drive: `run` / `resume` / `current_run`, child carving and event forwarding
+1. Group 4 — the agent as a component: `Pattern`, the `single` pattern, and the `basic` adapters (allow-all, stdout sink, callback observer, system clock, `callable`)
+2. Group 5 — the bare-harness test green with its marker removed, the benchmark inside D11's budget, 0.1.0 across every package
 
 ## Key Decisions Made
 
