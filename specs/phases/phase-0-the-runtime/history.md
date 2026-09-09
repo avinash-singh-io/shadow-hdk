@@ -194,3 +194,94 @@ Five assertions mutation-checked. One of the five did not apply on its first att
 pattern missed a reformatted line — and reported *"still passes"*, which would have read as a
 vacuous test. The mutation script now asserts its own target is present before running, so a
 mutation that changes nothing fails loudly instead of quietly passing.
+
+---
+
+### [CORRECTION] 2026-09-10 — handles had two homes; the graph state is the one that survives concurrency
+Topics: runtime, state, handles, fanout
+Affects-phases: phase-0-the-runtime
+Affects-specs: specs/architecture/runtime.md
+Detail: Group 0 shipped a `Handles` object on `Session` *and* a `handles` field in `RunState`. Group
+1 made the conflict concrete: `resolve_inputs` has to read one of them, and `FanOut` writes from
+several branches at once. `RunState` is merged by commutative reducers, which is exactly what
+concurrent writes need; `Session.handles` is shared mutable state across branches and would diverge
+under the one condition the reducers exist to handle. `Handles` is deleted and `invoke` reads
+`state["handles"]`. Two sources of truth for the same fact is the defect, not the size of either.
+
+---
+
+### [DECISION] 2026-09-10 — a catalogue that will not answer is empty, not fatal
+Topics: registry, resilience, ports
+Affects-phases: phase-0-the-runtime
+Affects-specs: specs/architecture/runtime.md
+Detail: `Registry.refresh` calls `registrations()` on every component port, every step, because the
+registry is live (`09` §4). D7 says a port raising ends the run — but applied here it would mean one
+unreachable MCP server costs a whole turn's work. So the catalogue call is the exception to the
+exception: a port that will not list contributes nothing this step and is recorded in
+`Registry.unreachable`. `invoke()` raising is unchanged and still becomes a `Failed` observation.
+This is the design's own "the registry can shrink, and that is as ordinary as it growing".
+
+---
+
+### [DISCOVERY] 2026-09-10 — the mutation harness lied nine times, and the shell was why
+Topics: testing, tdd, rule-13, verification
+Affects-phases: phase-0-the-runtime
+Affects-specs: none
+Detail: The first Group 1 mutation pass reported all nine mutations "still passing", which read as
+nine assertions that could not fail. None of it was true. The harness held its test paths in a shell
+variable and expanded it unquoted; zsh does not word-split unquoted parameters, so pytest received
+one path made of two filenames joined by a space, found nothing, and printed a message the verdict
+regex did not match — which the harness scored as "the test still passed".
+
+Two failure modes, one lesson. A mutation check must prove **the patch applied** and **tests were
+collected** before it is allowed to report anything; a verdict derived from absence is not a verdict.
+The harness is now a Python script that refuses a pattern it cannot find and refuses a run that
+collected zero tests. Re-run against Group 1: ten mutations, ten killed — including two the shell
+version had reported as survivors.
+
+---
+
+---
+
+### [DISCOVERY] 2026-09-10 — LangGraph re-runs the whole node on resume, so `Asked` was recorded twice
+Topics: interrupt, resume, events, g2
+Affects-specs: specs/architecture/runtime.md
+
+The Ask test failed in a way the design did not predict: after `resume(Allow())` the stream read
+`asked · invoked · observed` rather than `invoked · observed`. Measured against langgraph directly
+rather than reasoned about — a three-node probe confirms that `interrupt()` raises on the first
+pass, the graph parks, and on resume **the node is executed again from its first line**, with
+`interrupt()` returning the resume value the second time.
+
+Everything above the interrupt therefore happens twice: the lease check, the registry refresh, the
+governance call — all harmless, all arguably correct on a resume — and the `Asked` event, which is
+not: one question would have appeared in the record as two asks.
+
+The fix is to move the emit onto the raising path. The interrupter's contract is now *raise to
+park, return to proceed*, and `Asked` is emitted in the `except` before re-raising. Exactly one ask
+per question, and the event still precedes the park, so a host learns the question before the
+process may end.
+
+### [ARCH_CHANGE] 2026-09-10 — Group 2: compositions compile to graphs
+Topics: compile, fanout, until, send, plan-cache, g2
+
+`compile.py` walks a composition once into a `Plan` — nodes, edges, fan-out dispatchers, loop
+routers — and then binds an executor to it. The plan carries no executor, which is what makes it
+cacheable: the same shape, however often an agent re-authors it, is planned once (D11), and the
+test asserts five hits and no new misses.
+
+`Sequence` becomes edges, `FanOut` becomes a dispatcher returning `Send`s plus a join, `Until`
+becomes a tick node and a conditional edge on condition-or-count, `Ask` becomes `interrupt()`.
+
+**Fan-out is proven parallel by a barrier no sequential implementation can pass** — each of three
+children waits for the other two to arrive before any returns. It is written under
+`asyncio.wait_for` because a sequential compiler would hang here rather than fail, and a hang is a
+worse test than a failure.
+
+**A composite nested in another is inlined**, not compiled to a subgraph. The plan said subgraph;
+inlining is correct, simpler, and observably identical here. True subgraphs earn their cost in
+Phase 6, where a sub-agent needs its own checkpoint namespace — recorded rather than silently
+dropped.
+
+`:` cannot appear in a node name — LangGraph reserves it for checkpoint namespaces — so synthetic
+nodes use `__`.

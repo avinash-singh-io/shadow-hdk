@@ -10,37 +10,10 @@ from datetime import datetime
 
 from pydantic import JsonValue
 
-from shadow_hdk.kernel.composition import Handle, StepId
+from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import EndReason, RunId
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
-from shadow_hdk.kernel.observations import Completed, Observation
 from shadow_hdk.kernel.ports import ClockPort, Context, Usage
-
-
-class Handles:
-    """Named references to what earlier steps produced.
-
-    Values stay as observations — passed between components without being flattened into tokens
-    (`09` §6). `as_json` is the projection a later step's binding reads.
-    """
-
-    def __init__(self) -> None:
-        self._by_step: dict[StepId, Observation] = {}
-
-    def put(self, step: StepId, observation: Observation) -> None:
-        self._by_step[step] = observation
-
-    def get(self, step: StepId) -> Observation | None:
-        return self._by_step.get(step)
-
-    def as_json(self, handle: Handle) -> JsonValue:
-        observation = self._by_step.get(handle)
-        if observation is None:
-            raise KeyError(handle)
-        return observation.output if isinstance(observation, Completed) else None
-
-    def __contains__(self, handle: object) -> bool:
-        return handle in self._by_step
 
 
 class LeaseMeter:

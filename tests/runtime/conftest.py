@@ -7,7 +7,15 @@ from typing import Any
 
 from pydantic import JsonValue
 
-from shadow_hdk.kernel import Ceiling, Completed, Floor, Lease, Observation, Registration
+from shadow_hdk.kernel import (
+    Ceiling,
+    Completed,
+    Composition,
+    Floor,
+    Lease,
+    Observation,
+    Registration,
+)
 from shadow_hdk.runtime.bindings import Ports
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.registry import Registry
@@ -81,3 +89,54 @@ def executor_over(
     emitter = Emitter(session.run_id, clock, None)
     registry = Registry(ports.components)
     return StepExecutor(session, emitter, ports, registry), components, emitter
+
+
+async def drive(
+    composition: Composition,
+    entries: Sequence[tuple[Registration, Behaviour]],
+    *,
+    judge: Judge | None = None,
+    lease: Lease | None = None,
+    interruptible: bool = False,
+    context: dict[str, JsonValue] | None = None,
+) -> Any:
+    """Compile and run one composition, returning its events.
+
+    A thin stand-in for `run()`, which lands in Group 3. The point here is the *shape* of the
+    graph, so this driver stays deliberately dumb. With `interruptible=True` it returns
+    `(events_so_far, resume)` so a parked run can be let through.
+    """
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.types import Command
+
+    from shadow_hdk.runtime.compile import compile_composition
+    from shadow_hdk.runtime.state import initial_state
+
+    clock = FixedClock()
+    ports, _ = ports_over(entries, judge=judge, clock=clock)
+    session = Session(
+        run_id="run-under-test",
+        lease=lease or Lease(Ceiling(100, 3600, 10_000), Floor(0)),
+        clock=clock,
+        context=context,
+    )
+    emitter = Emitter(session.run_id, clock, None)
+    executor = StepExecutor(session, emitter, ports, Registry(ports.components))
+    graph = compile_composition(composition, executor, InMemorySaver())
+    config = {"configurable": {"thread_id": session.run_id}, "recursion_limit": 100}
+
+    async def collect(payload: Any) -> list[Any]:
+        await graph.ainvoke(payload, config=config)
+        events: list[Any] = []
+        while not emitter._stream.empty():  # noqa: SLF001 — a test driver, not the API
+            events.append(emitter._stream.get_nowait())  # noqa: SLF001
+        return events
+
+    first = await collect(initial_state())
+    if not interruptible:
+        return first
+
+    async def resume(answer: Any) -> list[Any]:
+        return await collect(Command(resume=answer))
+
+    return first, resume

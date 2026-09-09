@@ -1,12 +1,13 @@
-"""Bindings become JSON: a literal passes through, a reference reads an earlier step's output.
+"""Bindings become the JSON a component is invoked with.
 
-A reference to a step that produced nothing is the agent's mistake, not a crash — the caller turns
-`DanglingRef` into a `Failed` observation the agent can see and route around (D7).
+A binding is either a literal or a reference to what an earlier step produced. A reference to a step
+that produced nothing is the agent's mistake, not a crash: `DanglingRef` becomes a `Failed`
+observation the agent can see and route around (D7).
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from pydantic import JsonValue
 
@@ -14,15 +15,17 @@ from shadow_hdk.kernel.composition import Binding, StepId
 from shadow_hdk.runtime.errors import DanglingRef
 
 
-def resolve_inputs(bindings: tuple[Binding, ...], handles: Mapping[StepId, JsonValue]) -> JsonValue:
-    resolved: dict[str, JsonValue] = {}
+def resolve_inputs(
+    bindings: Sequence[Binding], handles: Mapping[StepId, JsonValue]
+) -> dict[str, JsonValue]:
+    inputs: dict[str, JsonValue] = {}
     for binding in bindings:
         if binding.ref is None:
-            resolved[binding.name] = binding.value
+            inputs[binding.name] = binding.value
             continue
         if binding.ref not in handles:
             raise DanglingRef(
-                f"{binding.name!r} refers to {binding.ref!r}, which has produced nothing"
+                f"{binding.name!r} binds to step {binding.ref!r}, which has produced nothing"
             )
-        resolved[binding.name] = handles[binding.ref]
-    return resolved
+        inputs[binding.name] = handles[binding.ref]
+    return inputs

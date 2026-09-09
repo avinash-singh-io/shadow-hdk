@@ -13,7 +13,7 @@ group is claimed done.
 
 - [x] `packages/runtime/pyproject.toml` — distribution `shadow-hdk`, `shadow_hdk.runtime`, depends on `shadow-hdk-kernel` + `langgraph>=1.2,<2`; workspace member + source registered in the root
 - [x] `bindings.py` — `Ports` (model · components · governance · sink · observer? · clock), `RunOptions` (lease · context · principal · checkpointer? · run_id? · parent), `RunContext`, `_CURRENT` contextvar
-- [x] `session.py` — `Session.open`, `Handles` (put · get · as_json), `LeaseMeter`: `charge` · `check` · `floor_met` · `carve` · `remaining`
+- [x] `session.py` — `Session`, `LeaseMeter`: `charge` · `check` · `floor_met` · `carve` · `remaining`. **`Handles` removed in Group 1** — the graph state is the one source of truth for handles (see history)
 - [x] `emit.py` — `Emitter`: `seq` from 0 and monotone, `at` from the clock port, an `asyncio.Queue`, the observer on its own task, failures counted not raised
 - [x] `state.py` — `RunState` TypedDict; `merge_dicts` and `merge_counts`, both commutative
 - [x] `errors.py` — `LeaseExhausted(reason)`, `Cancelled`, `PortFailure`, `DanglingRef`
@@ -25,7 +25,7 @@ group is claimed done.
 
 ## Group 1 — one governed step
 
-- [x] `registry.py` — union of component ports, `refresh`, `resolve` (unknown → `KeyError`), `visible(governance, ctx)` filtering by `judge`
+- [x] `registry.py` — union of component ports, `refresh` (per step; a port whose catalogue fails contributes nothing rather than ending the run), `resolve` (unknown → `KeyError`). Filtering by `judge` lives on the executor as `visible()` — the registry answers *what exists*, governance answers *what may be seen*
 - [x] `inputs.py` — `resolve_inputs(bindings, handles)`; literal values pass through; `ref` reads an earlier observation's output; unknown ref → `DanglingRef`
 - [x] `step.py` — the seven moves in order: lease check → resolve → inputs → judge → invoke → charge → observe
 - [x] `Refuse` emits `Refused` **and** returns `Refused`; the component is never called
@@ -37,15 +37,16 @@ group is claimed done.
 
 ## Group 2 — compositions become graphs
 
-- [ ] `compile.py` — `compile_composition(c, executor, checkpointer) -> CompiledStateGraph`
-- [ ] `Invoke` and `Await` → nodes calling `executor.invoke`
-- [ ] `Sequence` → its children wired in order
-- [ ] `FanOut` → a dispatcher returning `[Send(...)]` + a join node; real concurrency
-- [ ] `Until` → body node + conditional edge on `condition satisfied or iterations >= max`
-- [ ] a nested composite → a subgraph node with its own checkpoint namespace
-- [ ] the structural-hash cache — the same shape compiles once per process (D11)
-- [ ] RED: `tests/runtime/test_compile.py` — the ten cases in `architecture/testing.md`
-- [ ] Gate
+- [x] `compile.py` — `compile_composition(c, executor, checkpointer) -> CompiledStateGraph`
+- [x] `Invoke` and `Await` → nodes calling `executor.invoke`
+- [x] `Sequence` → its children wired in order
+- [x] `FanOut` → a dispatcher returning `[Send(...)]` + a join node; real concurrency
+- [x] `Until` → body node + conditional edge on `condition satisfied or iterations >= max`
+- [x] a nested composite runs in order — **inlined**, not a subgraph. True subgraphs with their
+      own checkpoint namespaces arrive in Phase 6, the first thing that needs them (sub-agents)
+- [x] the structural-hash cache — the same shape compiles once per process (D11)
+- [x] RED: `tests/runtime/test_compile.py` — the ten cases in `architecture/testing.md`
+- [x] Gate
 
 ## Group 3 — the drive
 

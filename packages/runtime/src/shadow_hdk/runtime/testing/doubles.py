@@ -148,7 +148,11 @@ class ListObserver(ObserverPort):
 
 
 class Judge(GovernancePort):
-    """Governance as a function of the six fields, so a test states its policy in one line."""
+    """Governance as a function of the six fields, so a test states its policy in one line.
+
+    The decision function is **sync** on purpose: a test that wants the port to fail writes a
+    function that raises, and the executor's `PortFailure` wrapping is what is under test.
+    """
 
     def __init__(self, decide: Callable[[EffectProfile, Context], Judgement]) -> None:
         self._decide = decide

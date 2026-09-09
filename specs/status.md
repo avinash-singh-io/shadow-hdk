@@ -36,7 +36,7 @@ runtime that turns the bare-harness test green.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 0 — the runtime | `phase-0-the-runtime` | not started | 0 / 6 groups |
+| 0 — the runtime | `phase-0-the-runtime` | in progress | 2 / 6 groups (spine, governed step) |
 
 ## Upcoming Phases
 
@@ -62,8 +62,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. `/start-phase` on `phase-0-the-runtime` from `staging`
-2. Group 0 red first: the runtime package, `Ports`, `RunOptions`, `Session`, `LeaseMeter`, `Emitter`, the doubles
+1. Group 2 — `compile.py`: compositions become LangGraph graphs (`Send` for `FanOut`, a conditional edge for `Until`, `interrupt()` for `Ask`)
+2. Then Group 3 — the drive: `run` / `resume` / `current_run`, child carving and event forwarding
 
 ## Key Decisions Made
 
