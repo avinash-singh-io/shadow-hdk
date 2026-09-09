@@ -1,0 +1,43 @@
+# The workspace root. It is not a distribution — `package = false` — it exists so one `uv sync`
+# installs every package under packages/ with one lockfile and one toolchain config.
+#
+# Distributions (10-the-roadmap §7d): `shadow-hdk-kernel` (here), `shadow-hdk` (the runtime,
+# R3), `shadow-hdk-adapters-<x>` (R1 onward). One import name, `shadow_hdk`, as a PEP 420
+# namespace package, so `shadow_hdk.kernel` and `shadow_hdk.runtime` can ship separately.
+[project]
+name = "shadow-hdk-workspace"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = ["shadow-hdk-kernel"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+shadow-hdk-kernel = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest>=8.3", "hypothesis>=6.100", "ruff>=0.6", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages/kernel/src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["shadow_hdk", "tests"]
+mypy_path = "packages/kernel/src"
+namespace_packages = true
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+xfail_strict = true
