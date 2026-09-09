@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from datetime import datetime, timedelta
 
 from pydantic import JsonValue
@@ -25,6 +25,7 @@ from shadow_hdk.kernel.ports import (
     Context,
     GovernancePort,
     Judgement,
+    ModelChunk,
     ModelPort,
     ModelRequest,
     ModelResponse,
@@ -126,6 +127,16 @@ class ScriptedModel(ModelPort):
         if not self._responses:
             raise AssertionError("the scripted model ran out of responses")
         return self._responses.pop(0)
+
+    async def stream(self, request: ModelRequest) -> AsyncIterator[ModelChunk]:
+        """The scripted answer, cut into deltas at word boundaries — deterministically, so a replay
+        of a streamed run is still byte-for-byte the same as the one before it."""
+        response = await self.complete(request)
+        words = response.text.split(" ")
+        for index, word in enumerate(words):
+            if word or index:
+                yield ModelChunk(text=word if index == 0 else " " + word)
+        yield ModelChunk(tool_calls=response.tool_calls, usage=response.usage, done=True)
 
 
 class ListSink(SinkPort):

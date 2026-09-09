@@ -26,7 +26,7 @@ Sandboxes have no port of their own: a sandbox is an adapter that registers a co
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from typing import Annotated, Literal, Protocol, runtime_checkable
 
@@ -78,9 +78,41 @@ class ModelResponse:
     usage: Usage | None = None
 
 
+@dataclass(frozen=True)
+class ModelChunk:
+    """A piece of an answer as it arrives.
+
+    ``text`` is the **delta**, never the accumulation: concatenating every chunk's text gives what
+    `complete` would have returned. ``usage`` arrives on the last chunk, because what a call cost
+    cannot be known until it ends.
+    """
+
+    text: str = ""
+    tool_calls: tuple[ToolCall, ...] = ()
+    usage: Usage | None = None
+    done: bool = False
+
+
 @runtime_checkable
 class ModelPort(Protocol):
     async def complete(self, request: ModelRequest) -> ModelResponse: ...
+
+    async def stream(self, request: ModelRequest) -> AsyncIterator[ModelChunk]:
+        """Tokens as they arrive — with a default, so growing this port broke no adapter (D14).
+
+        `09` §3 gives a **port** a refuse-not-crash default when it is added. A *method* added to an
+        existing port follows the same rule one level down: this implementation calls `complete` and
+        yields the whole answer as one chunk. That is honest rather than pretend — a provider that
+        answers all at once really does produce one chunk, and the default does not chop it into
+        fake deltas to look like streaming. An adapter that can do better overrides it.
+        """
+        response = await self.complete(request)
+        yield ModelChunk(
+            text=response.text,
+            tool_calls=response.tool_calls,
+            usage=response.usage,
+            done=True,
+        )
 
 
 # ---------------------------------------------------------------- components

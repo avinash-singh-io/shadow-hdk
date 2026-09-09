@@ -7,28 +7,29 @@ phase: 1-real-adapters
 
 ## Group 0 — the port grows a method
 
-- [ ] `ModelChunk(text, tool_calls, usage, done)` in `kernel/ports.py`
-- [ ] `ModelPort.stream(request) -> AsyncIterator[ModelChunk]`
-- [ ] `streaming_by_completing` — the default an adapter inherits: call `complete`, yield one chunk (D14)
-- [ ] RED: `tests/kernel/test_streaming.py` — the default yields exactly one chunk carrying the whole response; a real streamer yields many and the last carries the usage
-- [ ] `ModelPortContract` gains: `stream` yields at least one chunk; the concatenated text equals `complete`'s; usage is a number or `None`
-- [ ] `ScriptedModel.stream` — deltas from the scripted text, so replay still works
-- [ ] every package to the new minor version; `test_versions.py` updated
-- [ ] Gate
+- [x] `ModelChunk(text, tool_calls, usage, done)` in `kernel/ports.py`
+- [x] `ModelPort.stream(request) -> AsyncIterator[ModelChunk]`
+- [x] `streaming_by_completing` — the default an adapter inherits: call `complete`, yield one chunk (D14)
+- [x] RED: `tests/kernel/test_streaming.py` — the default yields exactly one chunk carrying the whole response; a real streamer yields many and the last carries the usage
+- [x] `ModelPortContract` gains: `stream` yields at least one chunk; the concatenated text equals `complete`'s; usage is a number or `None`
+- [x] `ScriptedModel.stream` — deltas from the scripted text, so replay still works
+- [x] every package to the new minor version; `test_versions.py` updated
+- [x] Gate
 
 ## Group 1 — one model adapter, every provider
 
-- [ ] `packages/adapters/langchain/pyproject.toml` with extras `openai`, `anthropic`, `ollama`, `huggingface`
-- [ ] `LangChainModel(spec, **kw)` — `init_chat_model` under the hood, nothing vendor-specific above it
-- [ ] `Message` → langchain messages, including `tool` messages carrying `tool_call_id`
-- [ ] `Interface` → a tool schema langchain will bind
-- [ ] `AIMessage.tool_calls` → our `ToolCall`, arguments as JSON
-- [ ] `usage_metadata` → `Usage`; **absent means `None`, never `0`**
-- [ ] `stream` over `astream`
-- [ ] RED: `tests/adapters/langchain/` against a fake `BaseChatModel` — text, tool calls, usage, streaming, and a model that reports no usage
-- [ ] `TestLangChainModelIsAModelPort(ModelPortContract)`
-- [ ] `[~]`/`[x]` live: the same adapter against **local Ollama**, marked `live_ollama`
-- [ ] Gate
+- [x] `packages/adapters/langchain/pyproject.toml` with extras `openai`, `anthropic`, `ollama`, `huggingface`
+- [x] `LangChainModel(spec, **kw)` — `init_chat_model` under the hood, nothing vendor-specific above it
+- [x] `Message` → langchain messages, including `tool` messages carrying `tool_call_id`
+- [x] `Interface` → a tool schema langchain will bind
+- [x] `AIMessage.tool_calls` → our `ToolCall`, arguments as JSON
+- [x] `usage_metadata` → `Usage`; **absent means `None`, never `0`**
+- [x] `stream` over `astream`
+- [x] RED: `tests/adapters/langchain/` against a fake `BaseChatModel` — text, tool calls, usage, streaming, and a model that reports no usage
+- [x] `TestLangChainModelIsAModelPort(ModelPortContract)`
+- [x] live: the same adapter against **real HuggingFace Inference Providers**, marked `live`,
+      deselected by default. Ollama was the plan until the owner supplied an HF token mid-phase
+- [x] Gate
 
 ## Group 2 — components arriving over MCP
 

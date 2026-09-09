@@ -100,6 +100,27 @@ class ModelPortContract:
         response = await self.port().complete(self.a_request())
         assert round_trip(response, CONTRACTS["ModelResponse"]) == response
 
+    async def test_streaming_yields_at_least_one_chunk(self) -> None:
+        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        assert chunks, "a stream that yields nothing is not a stream"
+
+    async def test_exactly_one_chunk_says_it_is_the_last(self) -> None:
+        """Written so it holds for a live model too: nothing here compares two calls, because two
+        calls to a real provider are two different answers."""
+        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        assert chunks[-1].done, "the last chunk must say so"
+        assert not any(chunk.done for chunk in chunks[:-1]), "only the last chunk is the last"
+
+    async def test_what_the_call_cost_arrives_at_the_end_or_not_at_all(self) -> None:
+        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        priced = [chunk for chunk in chunks if chunk.usage is not None]
+        assert priced in ([], [chunks[-1]]), "cost is not known until the call ends"
+        for chunk in priced:
+            usage = chunk.usage
+            assert usage is not None
+            for value in (usage.input_tokens, usage.output_tokens, usage.cost_cents):
+                assert value is None or isinstance(value, int)
+
     async def test_usage_is_a_number_or_unknown_never_a_guess(self) -> None:
         usage = (await self.port().complete(self.a_request())).usage
         if usage is None:

@@ -11,7 +11,8 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.1.0"
+EXPECTED = "0.2.0"
+"""0.2.0 because `ModelPort` grew `stream` — a contract change, so every package moves (D9)."""
 
 
 def _packages() -> dict[str, str]:
@@ -28,10 +29,12 @@ def test_every_package_is_at_the_same_version() -> None:
     assert set(versions.values()) == {EXPECTED}, versions
 
 
-def test_the_four_packages_phase_zero_ships_are_all_here() -> None:
-    assert set(_packages()) == {
+def test_the_packages_every_phase_relies_on_are_still_here() -> None:
+    """A subset, not an equality: each phase adds adapters, and a test that had to be edited every
+    time one arrived would be edited without being read."""
+    assert {
         "shadow-hdk-kernel",
         "shadow-hdk",
         "shadow-hdk-adapters-basic",
         "shadow-hdk-adapters-agent",
-    }
+    } <= set(_packages())
