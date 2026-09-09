@@ -8,6 +8,7 @@ it is what a host needs to test its own governance and sink without a provider a
 from shadow_hdk.runtime.testing.doubles import (
     FixedClock,
     InMemoryComponents,
+    Judge,
     ListObserver,
     ListSink,
     ScriptedModel,
@@ -17,6 +18,7 @@ from shadow_hdk.runtime.testing.doubles import (
 __all__ = [
     "FixedClock",
     "InMemoryComponents",
+    "Judge",
     "ListObserver",
     "ListSink",
     "ScriptedModel",

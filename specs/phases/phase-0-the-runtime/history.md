@@ -155,3 +155,42 @@ Topics: gate, specs
 with aligned comments, which a formatter is right to dislike and wrong to own. `specs`, `.claude`,
 `.agent`, `.githooks` and `.momentum` are excluded from the formatter: prose is not source, and
 momentum's scaffold is vendored.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 1: the seven moves, and three things the design had wrong
+Topics: registry, inputs, step, governance, errors
+Affects-specs: specs/architecture/runtime.md, specs/phases/phase-0-the-runtime/tasks.md
+
+`registry.py`, `inputs.py` and `step.py` exist. Every node of every compiled graph calls
+`StepExecutor.invoke`, and nothing else touches a component or asks the governance port — which is
+what makes *"was this judged?"* a structural fact rather than a review question. 54 tests green.
+
+**[CORRECTION] Handles live in the graph state, not on the Session.** Group 0 put them on
+`Session`, which is wrong the moment a run parks on `interrupt()`: a resume may be a different
+process, and what comes back is a checkpoint, never a Python object. `Session.handles` is deleted;
+the executor reads `state["handles"]` and the compiler writes them back through the reducers.
+
+**[CORRECTION] A refusal emits one event, not two.** The draft had `Refused` *and* `Observed`. The
+refusal is the record of what happened to that step; a second event saying the same thing twice is
+how two narrations come to disagree.
+
+**[CORRECTION] `Invoked` is emitted only where a component is actually called.** The first version
+emitted it from the shared observe path, so a step that failed to resolve or whose input referred to
+a step that produced nothing would have put a call in the record that never happened. Pre-invocation
+failures now emit `Observed` alone.
+
+**The registry is refreshed on every step**, because `09` §4 says the registry is live and connecting
+an MCP server mid-session must show its tools on the next step. That is one `await` per component
+port per step; making it cheap is the *adapter's* business — an adapter over something remote caches
+and decides when to re-read. Group 5's benchmark is where the claim gets checked rather than
+asserted.
+
+**The kernel stopped hiding a name.** `Refuse` was exported as `RefuseJudgement` to avoid a clash
+that does not exist: `Refused` is the observation, `RefusedEvent` is the event, and `Refuse` was
+free all along. Renamed while it costs nothing.
+
+Five assertions mutation-checked. One of the five did not apply on its first attempt — the sed
+pattern missed a reformatted line — and reported *"still passes"*, which would have read as a
+vacuous test. The mutation script now asserts its own target is present before running, so a
+mutation that changes nothing fails loudly instead of quietly passing.

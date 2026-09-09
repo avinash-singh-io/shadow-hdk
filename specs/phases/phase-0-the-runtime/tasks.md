@@ -25,15 +25,15 @@ group is claimed done.
 
 ## Group 1 — one governed step
 
-- [ ] `registry.py` — union of component ports, `refresh`, `resolve` (unknown → `KeyError`), `visible(governance, ctx)` filtering by `judge`
-- [ ] `inputs.py` — `resolve_inputs(bindings, handles)`; literal values pass through; `ref` reads an earlier observation's output; unknown ref → `DanglingRef`
-- [ ] `step.py` — the seven moves in order: lease check → resolve → inputs → judge → invoke → charge → observe
-- [ ] `Refuse` emits `Refused` **and** returns `Refused`; the component is never called
-- [ ] `Ask` emits `Asked` then `interrupt({run_id, step, question})`; a non-`Allow` resume → `Refused`
-- [ ] D7: a component's exception → `Failed`; a port's exception → `PortFailure`
-- [ ] RED: `tests/runtime/test_governance.py` — refuse · ask → resume(Allow) · resume(Refuse) · `Context` carries run/step/principal/attributes verbatim · judged inside a `FanOut` child too
-- [ ] RED: `tests/runtime/test_errors.py` — component raises → run continues · model/sink/governance raises → `Ended(failed)` · nothing escapes `run()`
-- [ ] Gate
+- [x] `registry.py` — union of component ports, `refresh`, `resolve` (unknown → `KeyError`), `visible(governance, ctx)` filtering by `judge`
+- [x] `inputs.py` — `resolve_inputs(bindings, handles)`; literal values pass through; `ref` reads an earlier observation's output; unknown ref → `DanglingRef`
+- [x] `step.py` — the seven moves in order: lease check → resolve → inputs → judge → invoke → charge → observe
+- [x] `Refuse` emits `Refused` **and** returns `Refused`; the component is never called
+- [x] `Ask` emits `Asked` then `interrupt({run_id, step, question})`; a non-`Allow` resume → `Refused`
+- [x] D7: a component's exception → `Failed`; a port's exception → `PortFailure`
+- [x] RED: `tests/runtime/test_governance.py` — refuse · ask → resume(Allow) · resume(Refuse) · `Context` carries run/step/principal/attributes verbatim · judged inside a `FanOut` child too
+- [x] RED: `tests/runtime/test_errors.py` — component raises → run continues · model/sink/governance raises → `Ended(failed)` · nothing escapes `run()`
+- [x] Gate
 
 ## Group 2 — compositions become graphs
 

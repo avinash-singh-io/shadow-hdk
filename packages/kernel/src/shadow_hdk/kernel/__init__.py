@@ -55,12 +55,10 @@ from shadow_hdk.kernel.ports import (
     ModelRequest,
     ModelResponse,
     ObserverPort,
+    Refuse,
     SinkPort,
     ToolCall,
     Usage,
-)
-from shadow_hdk.kernel.ports import (
-    Refuse as RefuseJudgement,
 )
 
 __all__ = [
@@ -103,7 +101,7 @@ __all__ = [
     "Proposal",
     "Proposed",
     "Provenance",
-    "RefuseJudgement",
+    "Refuse",
     "Refused",
     "RefusedEvent",
     "Registration",

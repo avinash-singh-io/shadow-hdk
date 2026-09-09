@@ -149,7 +149,6 @@ class Session:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
         self.principal = principal
-        self.handles = Handles()
         self.meter = LeaseMeter(lease, clock)
         self._context = dict(context or {})
 

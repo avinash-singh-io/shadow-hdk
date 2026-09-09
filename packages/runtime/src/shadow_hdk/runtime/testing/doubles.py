@@ -19,8 +19,12 @@ from shadow_hdk.kernel.effects import NOTHING, EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Proposal
 from shadow_hdk.kernel.ports import (
+    Allow,
     ClockPort,
     ComponentPort,
+    Context,
+    GovernancePort,
+    Judgement,
     ModelPort,
     ModelRequest,
     ModelResponse,
@@ -141,3 +145,19 @@ class ListObserver(ObserverPort):
         if self._raises:
             raise RuntimeError("this observer is broken on purpose")
         self.events.append(event)
+
+
+class Judge(GovernancePort):
+    """Governance as a function of the six fields, so a test states its policy in one line."""
+
+    def __init__(self, decide: Callable[[EffectProfile, Context], Judgement]) -> None:
+        self._decide = decide
+        self.calls: list[tuple[EffectProfile, Context]] = []
+
+    @classmethod
+    def allow_all(cls) -> Judge:
+        return cls(lambda _effects, _context: Allow())
+
+    async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
+        self.calls.append((effects, context))
+        return self._decide(effects, context)
