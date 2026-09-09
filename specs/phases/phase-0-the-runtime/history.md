@@ -326,3 +326,40 @@ mutation now fails the suite.
 
 This is the second time a mutation check has found a vacuous test rather than a bug, and the second
 time the fix was a better test rather than better code.
+
+---
+
+### [CORRECTION] 2026-09-10 — a carve was a spend, and a step's price had stopped arriving
+Topics: leases, reservation, usage, g4
+
+Two defects found while writing Group 4, both in code that was already green, and both found by
+asking *what will the agent's turn loop do to this?* rather than by reading it again.
+
+**A carve reserved and never released.** `LeaseMeter.carve` added the child's worst case to
+`_carved_steps` and nothing ever took it away. An agent running twelve turns — each turn a child
+composition asking for five steps and spending one — would have drained sixty steps from a parent
+that had twenty, and the fourth turn could not have been carved at all. The end-to-end test reads
+`[18, 17, 16]` now; before the fix it read `[14, 9, 4]`.
+
+The fix makes the pair symmetric and puts it in one place. `carve` is a **reservation**: it holds
+the child's worst case so two concurrent children cannot both be promised the same budget.
+`settle` releases the hold and charges what the child actually spent, and the drive calls it in a
+`finally`, so a run that ended badly still gives its budget back. `spawn_options` no longer carves —
+it proposes a ceiling, and the *drive* carves, whoever asked. So a child passing its own lease is
+carved from the parent exactly like one that asked politely.
+
+**A step's price had stopped reaching the meter.** The Group 1 refactor moved `meter.charge()` to
+the top of `invoke` — which is right, because a step counted when it *begins* tells against the
+ceiling and stops concurrent children collectively overrunning it — but it dropped the `usage`
+argument on the way, and `_usage_of` went with it. The cost ceiling could no longer bite in a real
+run; only the meter's own unit tests still exercised it, and they passed.
+
+Counting and pricing are now two moves because they happen at two moments: `charge()` counts the
+step as it starts, `charge_cost(usage)` prices it when the observation comes back. Two tests assert
+the second one arrives — one for a priced call, one for a call the provider would not price, which
+must leave `cost_is_known` false rather than charging zero.
+
+Five mutations, all failing the suite. Two of them reported TARGET MISSING on the first attempt
+because the labels contained apostrophes and broke the mutation script's own quoting — caught
+because the script prints TARGET MISSING rather than treating a no-op as a pass, which is the
+guard added after the same thing happened silently in Group 1.

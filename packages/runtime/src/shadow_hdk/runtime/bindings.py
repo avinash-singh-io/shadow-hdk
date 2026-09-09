@@ -82,8 +82,22 @@ class RunContext:
         return self._session.meter.floor_met()
 
     def spawn_options(self, ceiling: Ceiling, **overrides: Any) -> RunOptions:
-        """A child's options, carved from what this run has left."""
-        return RunOptions(lease=self._session.meter.carve(ceiling), parent=self, **overrides)
+        """A child's options. The ceiling is a *request*: the drive carves it from what this run has
+        left, so a child can never be promised more than its parent still holds — whoever asked."""
+        from shadow_hdk.kernel.leases import Floor
+
+        floor = Floor(min(self._session.meter.lease.floor.min_steps, ceiling.max_steps))
+        return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
+
+    def reserve(self, ceiling: Ceiling) -> Lease:
+        """Hold a child's worst case against this run's remaining budget."""
+        return self._session.meter.carve(ceiling)
+
+    def settle(self, reserved: Ceiling, *, steps: int, cost_cents: int, cost_known: bool) -> None:
+        """Release that hold and charge what the child really spent."""
+        self._session.meter.settle(
+            reserved, steps=steps, cost_cents=cost_cents, cost_known=cost_known
+        )
 
     async def announce_child(self, child_run_id: RunId, lease: Lease) -> None:
         """Say on this run's stream that a child began. The child's own events arrive by forward."""

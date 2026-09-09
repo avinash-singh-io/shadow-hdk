@@ -59,6 +59,15 @@ class LeaseMeter:
         not zero, and the meter stops claiming to know the total.
         """
         self._steps += 1
+        self.charge_cost(usage)
+
+    def charge_cost(self, usage: Usage | None) -> None:
+        """Price a step that has already been counted.
+
+        A step is counted when it **begins**, so a step in flight tells against the ceiling and
+        concurrent children cannot collectively overrun it. What it cost can only be known when it
+        **ends** — so the two are charged at different moments, and this is the second one.
+        """
         if usage is None:
             return
         if usage.cost_cents is None:
@@ -99,11 +108,31 @@ class LeaseMeter:
         return Lease(left, Floor(min(self._lease.floor.min_steps, left.max_steps)))
 
     def carve(self, child: Ceiling) -> Lease:
-        """Hand a child part of what is left. Raises if it would exceed it."""
+        """**Reserve** part of what is left for a child. Raises if it would exceed it.
+
+        A reservation is not a spend. It holds the child's worst case so two concurrent children
+        cannot both be promised the same budget — and it must be released by `settle` when the child
+        ends, or an agent running twelve turns would drain its parent with money nobody used.
+        """
         child_lease, _ = self.remaining().carve(child)
         self._carved_steps += child.max_steps
         self._carved_cost += child.max_cost_cents or 0
         return child_lease
+
+    def settle(self, reserved: Ceiling, *, steps: int, cost_cents: int, cost_known: bool) -> None:
+        """Release a child's reservation and charge what it actually spent.
+
+        Always paired with `carve`, and called by the drive when a child run ends — including when
+        it ends badly, because a reservation held by a run that has stopped is money lost to
+        nobody.
+        """
+        self._carved_steps -= reserved.max_steps
+        self._carved_cost -= reserved.max_cost_cents or 0
+        self._steps += steps
+        if cost_known:
+            self._cost += cost_cents
+        else:
+            self._cost_known = False
 
 
 class Session:

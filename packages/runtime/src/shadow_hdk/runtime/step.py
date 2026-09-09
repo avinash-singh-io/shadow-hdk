@@ -23,8 +23,8 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
 from shadow_hdk.kernel.events import Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
-from shadow_hdk.kernel.observations import Failed, Observation, Refused
-from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse
+from shadow_hdk.kernel.observations import Completed, Failed, Observation, Refused
+from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse, Usage
 from shadow_hdk.runtime.bindings import Ports
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import DanglingRef, LeaseExhausted, PortFailure, RuntimeStop
@@ -101,6 +101,7 @@ class StepExecutor:
             observation = await port.invoke(registration.id, inputs)
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
+        self.session.meter.charge_cost(_usage_of(observation))
         return await self._observe(step, observation)
 
     # ------------------------------------------------------------------ the seams
@@ -146,3 +147,23 @@ class StepExecutor:
     async def _observe(self, step: Invoke | Await, observation: Observation) -> Observation:
         await self._emit(lambda **k: Observed(step=step.id, observation=observation, **k))
         return observation
+
+
+def _usage_of(observation: Observation) -> Usage | None:
+    """What a step cost, if it says. A component that made no model call reports nothing, which is
+    *no cost and that is known* — never *unknown*. A model adapter that cannot price its call
+    reports `cost_cents: None`, which is unknown, and the meter stops claiming to know the total.
+    """
+    if isinstance(observation, Completed) and isinstance(observation.output, dict):
+        usage = observation.output.get("usage")
+        if isinstance(usage, dict):
+            return Usage(
+                input_tokens=_int_or_none(usage.get("input_tokens")),
+                output_tokens=_int_or_none(usage.get("output_tokens")),
+                cost_cents=_int_or_none(usage.get("cost_cents")),
+            )
+    return None
+
+
+def _int_or_none(value: object) -> int | None:
+    return value if isinstance(value, int) else None

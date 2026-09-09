@@ -98,6 +98,15 @@ async def _drive(
             )
     finally:
         _CURRENT.reset(token)
+        if parent is not None:
+            # Always paired with the carve, including when the run ended badly: a reservation held
+            # by a run that has stopped is budget lost to nobody.
+            parent.settle(
+                session.meter.lease.ceiling,
+                steps=session.meter.steps,
+                cost_cents=session.meter.cost_cents,
+                cost_known=session.meter.cost_is_known,
+            )
         emitter.close()
 
 
@@ -106,9 +115,11 @@ async def _stream(
 ) -> AsyncIterator[Event]:
     parent = _parent_of(options)
     run_id = options.run_id or ports.clock.new_id()
+    # One place carves, whoever asked: a child is never promised more than its parent still holds.
+    lease = parent.reserve(options.lease.ceiling) if parent is not None else options.lease
     session = Session(
         run_id=run_id,
-        lease=options.lease,
+        lease=lease,
         clock=ports.clock,
         context=dict(options.context),
         principal=options.principal,

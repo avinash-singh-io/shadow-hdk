@@ -12,6 +12,8 @@ from shadow_hdk.kernel import (
     Ceiling,
     Completed,
     Composition,
+    Ended,
+    Event,
     Floor,
     Invoke,
     Lease,
@@ -25,6 +27,12 @@ from tests.runtime.conftest import ports_over
 
 CHILD_WORK = make_registration("child_work")
 PARENT_AGENT = make_registration("agent", labels=frozenset({"agent"}))
+
+
+def _ended(events: list[Event]) -> Ended:
+    last = events[-1]
+    assert isinstance(last, Ended), f"a finished run ends with Ended, not {last.kind}"
+    return last
 
 
 def a_lease(steps: int = 20, cost: int = 1000) -> Lease:
@@ -183,9 +191,9 @@ async def test_a_run_that_spends_its_ceiling_ends_saying_so() -> None:
             options=RunOptions(lease=Lease(Ceiling(3, 3600, 100), Floor(0))),
         )
     ]
-    assert events[-1].kind == "ended"
-    assert events[-1].reason == "lease_exhausted"
-    assert events[-1].steps_taken == 3
+    ended = _ended(events)
+    assert ended.reason == "lease_exhausted"
+    assert ended.steps_taken == 3
 
 
 async def test_a_plain_run_inside_a_step_becomes_a_child_without_being_told() -> None:
@@ -212,3 +220,36 @@ async def test_a_plain_run_inside_a_step_becomes_a_child_without_being_told() ->
     assert [e.kind for e in events if e.kind == "spawned"] == ["spawned"]
     child_started = next(e for e in events if e.kind == "started" and e.parent_run_id)
     assert child_started.parent_run_id == events[0].run_id
+
+
+async def test_children_in_a_row_do_not_drain_the_parent_with_reservations() -> None:
+    """The end-to-end of the same rule: three children, each asking five steps and spending one.
+
+    Before the reservation was settled this drained fifteen of the parent's twenty steps and the
+    fourth child could not be carved at all — which is exactly what an agent's turn loop does.
+    """
+    remaining_seen: list[int] = []
+
+    async def spawn_three(_inputs: JsonValue) -> Observation:
+        ctx = current_run()
+        assert ctx is not None
+        for _ in range(3):
+            child = Composition((Invoke("c1", CHILD_WORK.id),))
+            async for _e in run(child, ctx.ports, options=ctx.spawn_options(Ceiling(5, 600, 100))):
+                pass
+            remaining_seen.append(ctx.remaining().ceiling.max_steps)
+        return Completed(None)
+
+    ports, _ = ports_over([(PARENT_AGENT, spawn_three), (CHILD_WORK, "done")])
+    events = [
+        e
+        async for e in run(
+            Composition((Invoke("p1", PARENT_AGENT.id),)),
+            ports,
+            options=RunOptions(lease=a_lease(steps=20)),
+        )
+    ]
+    # 20 - 1 (the parent's own step, counted when it began) - 1 per child that spent one.
+    # Before settle existed this read [14, 9, 4] and the fourth child could not be carved.
+    assert remaining_seen == [18, 17, 16]
+    assert _ended(events).reason == "completed"
