@@ -115,6 +115,9 @@ class Ended:
     at: str
     reason: EndReason
     steps_taken: int
+    detail: str | None = None
+    """Why, in the words of whoever stopped it — the host's cancellation reason, the lease's
+    complaint, the failing port. Optional because `completed` has nothing to add."""
     kind: Literal["ended"] = "ended"
 
 

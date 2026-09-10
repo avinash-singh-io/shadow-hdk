@@ -62,6 +62,9 @@ class StepExecutor:
     # ------------------------------------------------------------------ the seven moves
 
     async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
+        # First, before the lease: a cancelled run should not spend the step it was about to be
+        # refused for, and the reason on the record should be the host's, not the budget's (D15).
+        self.session.cancellation.check()
         if reason := self.session.meter.check():
             raise LeaseExhausted(reason)
         self.session.meter.charge()

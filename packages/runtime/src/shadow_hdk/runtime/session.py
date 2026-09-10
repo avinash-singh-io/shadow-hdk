@@ -14,6 +14,7 @@ from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import EndReason, RunId
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
 from shadow_hdk.kernel.ports import ClockPort, Context, Usage
+from shadow_hdk.runtime.cancel import Cancellation
 
 
 class LeaseMeter:
@@ -147,11 +148,13 @@ class Session:
         context: dict[str, JsonValue] | None = None,
         principal: str | None = None,
         parent_run_id: RunId | None = None,
+        cancellation: Cancellation | None = None,
     ) -> None:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
         self.principal = principal
         self.meter = LeaseMeter(lease, clock)
+        self.cancellation = cancellation if cancellation is not None else Cancellation()
         self._context = dict(context or {})
 
     def context_for(self, step: StepId) -> Context:

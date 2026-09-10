@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-workspace"
-version = "0.3.0"
+version = "0.4.0"
 description = "A filesystem the agent can write to, confined to a root it cannot leave."
 readme = "README.md"
 requires-python = ">=3.12"

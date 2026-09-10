@@ -30,6 +30,7 @@ from shadow_hdk.kernel.ports import (
 )
 
 if TYPE_CHECKING:
+    from shadow_hdk.runtime.cancel import Cancellation
     from shadow_hdk.runtime.emit import Emitter
     from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
@@ -58,6 +59,8 @@ class RunOptions:
     checkpointer: Any = None
     run_id: RunId | None = None
     parent: Any = MISSING
+    cancellation: Cancellation | None = None
+    """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
 
 
 class RunContext:
@@ -115,6 +118,9 @@ class RunContext:
         from shadow_hdk.kernel.leases import Floor
 
         floor = Floor(min(self._session.meter.lease.floor.min_steps, ceiling.max_steps))
+        # The parent's handle by default: a child that outlived the run which spawned it is a leak
+        # with a budget. `cancellation=` in the overrides makes the child its own to stop (D15).
+        overrides.setdefault("cancellation", self._session.cancellation)
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:

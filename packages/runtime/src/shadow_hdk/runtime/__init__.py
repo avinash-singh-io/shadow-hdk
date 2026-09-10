@@ -11,6 +11,7 @@ Everything else in this package is internal.
 """
 
 from shadow_hdk.runtime.bindings import Ports, RunContext, RunOptions, current_run
+from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.loop import resume, run
 
-__all__ = ["Ports", "RunContext", "RunOptions", "current_run", "resume", "run"]
+__all__ = ["Cancellation", "Ports", "RunContext", "RunOptions", "current_run", "resume", "run"]

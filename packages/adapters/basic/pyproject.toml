@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-basic"
-version = "0.3.0"
+version = "0.4.0"
 description = "The small real adapters every deployment has: allow-all governance, a stdout sink, a system clock, and Python callables as components."
 readme = "README.md"
 requires-python = ">=3.12"

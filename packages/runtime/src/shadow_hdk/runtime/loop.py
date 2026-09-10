@@ -42,12 +42,16 @@ def _parent_of(options: RunOptions) -> RunContext | None:
     return parent
 
 
-def _stop_reason(error: BaseException) -> EndReason | None:
-    """LangGraph may wrap a node's exception, so the chain is walked rather than the top checked."""
+def _stop_reason(error: BaseException) -> tuple[EndReason, str | None] | None:
+    """LangGraph may wrap a node's exception, so the chain is walked rather than the top checked.
+
+    The *words* come back too: a host reading the record should be able to tell "the user closed the
+    tab" from a budget ceiling, and both from a port that broke.
+    """
     seen: BaseException | None = error
     while seen is not None:
         if isinstance(seen, RuntimeStop):
-            return seen.reason
+            return seen.reason, str(seen) or None
         seen = seen.__cause__ or seen.__context__
     return None
 
@@ -83,19 +87,23 @@ async def _drive(
         }
 
         reason: EndReason = "completed"
+        detail: str | None = None
         parked = False
         try:
             result = await graph.ainvoke(payload, config=config)
             parked = isinstance(result, dict) and "__interrupt__" in result
         except BaseException as error:  # noqa: BLE001 — every stop is a reason, never a traceback
-            reason = _stop_reason(error) or "failed"
+            stop = _stop_reason(error)
+            reason, detail = stop if stop is not None else ("failed", str(error) or None)
             if reason == "failed" and not isinstance(error, Exception):
                 raise
 
         # A parked run has not ended. `Ended` waits for whoever resumes it.
         if not parked:
             await emitter.emit(
-                lambda **k: Ended(reason=reason, steps_taken=session.meter.steps, **k)
+                lambda **k: Ended(
+                    reason=reason, steps_taken=session.meter.steps, detail=detail, **k
+                )
             )
     finally:
         _CURRENT.reset(token)
@@ -125,6 +133,7 @@ async def _stream(
         context=dict(options.context),
         principal=options.principal,
         parent_run_id=parent.run_id if parent is not None else None,
+        cancellation=options.cancellation,
     )
     # Only the **root** feeds the observer. A child forwards its events to its parent, which
     # forwards them on, so the observer is reached exactly once however deep the tree; a child that
