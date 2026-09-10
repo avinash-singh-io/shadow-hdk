@@ -5,15 +5,15 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: Phase 17 — what the audit found — **complete, unmerged** (3 / 3 groups). **BUG-004** (D33, contract 0.9.0): what a run has spent survives a park. **BUG-005** (contract 0.10.0): an assistant message carries the calls it made. **BUG-006** (D34): a parked run resumes over the wire, `initialize` is required, callbacks time out, and `serve` is loopback-only until the run token is built — it survived seventeen phases because every agent test used `ScriptedModel`, which never checks the pairing rule a real provider enforces. Phases 0–16 are complete and
+> **Current Phase**: Phase 18 — the audit's P1s — `group 1 of 5`. **BUG-008** (a hard link let `read_file` return outside content and `write_file` overwrite it) and the leash half of **BUG-009** (D35: a step owns the process tree it starts; `HOME` gone; `memory_mb` real where the platform enforces it) are closed. Phase 17 is complete and unmerged before it. **BUG-004** (D33, contract 0.9.0): what a run has spent survives a park. **BUG-005** (contract 0.10.0): an assistant message carries the calls it made. **BUG-006** (D34): a parked run resumes over the wire, `initialize` is required, callbacks time out, and `serve` is loopback-only until the run token is built — it survived seventeen phases because every agent test used `ScriptedModel`, which never checks the pairing rule a real provider enforces. Phases 0–16 are complete and
 > unmerged; BUG-001 and BUG-007 are fixed as quick-tasks.
 >
 > **A full-codebase audit landed in the backlog on 2026-09-10** — four P0s, six P1s, seven tech-debt
 > items — and it is the whole of what remains buildable here. **BUG-007 is confirmed and fixed:**
 > `mypy_path` omitted `wire`, `contained` and `derivation`, so every mypy-0 this lane reported from
 > Phase 9 to Phase 16 excluded the wire package, where nine errors sat. The gate now covers all 116
-> files and an invariant asserts it. All four P0s are closed. What remains is the audit's **six P1s** — BUG-015 (a held child
-> orphaned by its parent's park, already reproduced), BUG-008, BUG-009, BUG-010, BUG-011, BUG-012 —
+> files and an invariant asserts it. All four P0s are closed. What remains is **BUG-009's containment proof** (a five-line fake `runsc`
+> passed it — Group 2, D36), BUG-015, BUG-010, BUG-011, BUG-012 —
 > plus TD-003 and TD-009 (CI has never run on any phase commit), and then the P2s, and BUG-015 (a held child orphaned by its parent's park) was split out and filed. The roadmap's own phases are done;
 > OPC-UA, ROS 2 and TLS still wait on a server, a ROS distribution and a TLS broker
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)

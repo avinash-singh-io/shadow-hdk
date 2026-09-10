@@ -42,3 +42,32 @@ the deployment must name its trust in an argument. Same shape as BUG-007: a chec
 gate and is not is worse than no check, because `ContainedSandbox` refuses to exist without one.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 1: two deadlocks of my own, and four claims nothing could see
+Topics: leash, workspace, mutation, deadlock
+Affects-phases: none
+Affects-specs: specs/architecture/adapters.md
+
+The workspace fix is four lines and a docstring. The leash was not: **the first implementation
+deadlocked twice, and its own tests found both.** Reading stdout to its end while stderr fills its
+pipe leaves the child blocked on a write nobody drains. And *stopping* reading at the cap — the
+obvious way to bound memory — leaves a paused pipe that never reports EOF, so the process can
+never be reaped: the step hung until the test runner gave up, with the child already dead. Both
+streams are read at once now, the overflow is drained and discarded, and the tree ends the moment
+a cap is reached.
+
+`preexec_fn` was the other wrong turn. It runs between fork and exec in a process that has threads,
+and on the one platform that refuses `RLIMIT_AS` its failure surfaced as *Exception occurred in
+preexec_fn* — taking the whole step with it. The limit is set from the parent with `prlimit`
+instead, which exists only where the limit does. A probe that measured the platform by setting a
+limit on **this** process and putting the old one back could not put it back, so
+`MEMORY_LIMIT_ENFORCED` is a plain statement and `adapters.md` says the same.
+
+Fifteen mutations, four survivors, each a claim nothing could see: ending the tree at the cap
+bounds *time*, not output; reading both streams at once was masked by that same kill, so its test
+runs with no cap in play; the memory limit skips on macOS, so what is asserted everywhere is that
+the leash *asks*, with the child's pid; and collecting only to the cap is invisible in the output —
+identical text either way — so it is measured with `tracemalloc`, where twenty megabytes of output
+must not become twenty megabytes of memory.
+
+---
