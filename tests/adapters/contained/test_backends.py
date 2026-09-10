@@ -36,10 +36,10 @@ def test_gvisor_wraps_argv_into_a_sandboxed_do_without_network() -> None:
     assert GVisor().wrap(ARGV) == ["runsc", "--network=none", "do", *ARGV]
 
 
-def test_gvisor_does_not_claim_a_proof_when_absent() -> None:
+def test_gvisor_declares_nothing_when_absent() -> None:
     if shutil.which("runsc") is not None:
         pytest.skip("runsc is present here; the absent-path test does not apply")
-    assert GVisor().probe() is None
+    assert GVisor().declares() is None
 
 
 def test_gvisor_absent_refuses_the_sandbox_naming_runsc(tmp_path) -> None:  # type: ignore[no-untyped-def]
@@ -64,7 +64,7 @@ def test_firecracker_needs_a_launcher_because_it_has_no_do() -> None:
 def test_firecracker_reports_presence_by_its_launcher() -> None:
     backend = Firecracker(launch=["definitely-not-installed-anywhere"])
     assert backend.present() is False
-    assert backend.probe() is None
+    assert backend.declares() is None
 
 
 def test_firecracker_with_no_launcher_is_refused_at_construction() -> None:
@@ -82,7 +82,9 @@ def test_gvisor_proves_itself_on_a_host_that_has_it(tmp_path) -> None:  # type: 
     if shutil.which("runsc") is None:
         pytest.skip("runsc is not present; this proof needs a Linux host with gVisor")
     sandbox = ContainedSandbox(tmp_path, backend=GVisor())
-    assert "gVisor" in sandbox.proof.observed
+    # The proof is what was **denied** (D36); what gVisor says about itself rides beside it.
+    assert sandbox.proof.checks and "reach a listening socket" in sandbox.proof.checks[0].what
+    assert sandbox.proof.declared is None or "gVisor" in sandbox.proof.declared
 
 
 @pytest.mark.live
@@ -96,4 +98,5 @@ def test_firecracker_proves_itself_on_a_host_that_has_it(tmp_path) -> None:  # t
     if not launch or shutil.which(launch[0]) is None:
         pytest.skip("no Firecracker launcher configured; this proof needs a Linux host with one")
     sandbox = ContainedSandbox(tmp_path, backend=Firecracker(launch=launch))
-    assert "Firecracker" in sandbox.proof.observed
+    assert sandbox.proof.checks and "reach a listening socket" in sandbox.proof.checks[0].what
+    assert sandbox.proof.declared is None or "Firecracker" in sandbox.proof.declared

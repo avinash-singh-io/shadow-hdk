@@ -20,9 +20,12 @@ the machine, and a machine that loses its sandbox between two steps has bigger p
 
 from __future__ import annotations
 
+import socket
+import subprocess
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -42,15 +45,39 @@ from shadow_hdk.runtime.leash import run_leashed
 
 
 @dataclass(frozen=True)
+class Denied:
+    """One thing a contained program must not be able to do, attempted and refused.
+
+    `what` is the capability in words; `evidence` is what came back. Both are on the record,
+    because a proof nobody can re-read is a flag with a longer name.
+    """
+
+    what: str
+    evidence: str
+
+
+@dataclass(frozen=True)
 class Proof:
-    """What a backend showed, when. A proof with no observation is a flag with a longer name."""
+    """Why this sandbox is believed to contain anything (D36).
+
+    `checks` is the evidence: capabilities attempted **inside** the box by the sandbox itself and
+    denied. `declared` is what the backend *says* about itself — a **claim**, kept because it is
+    useful in a record, and never treated as evidence. Before D36 the claim was the whole proof:
+    `probe()` ran `dmesg` inside the sandbox and matched the string `gVisor`, so a five-line shell
+    script produced a proof, and `ContainedSandbox` refuses to exist without one.
+    """
 
     backend: str
-    observed: str
+    checks: tuple[Denied, ...]
+    declared: str | None
     at: str
 
     def __str__(self) -> str:
-        return f"{self.backend} proved containment: {self.observed}"
+        if not self.checks:
+            claim = f" — it says: {self.declared}" if self.declared else ""
+            return f"{self.backend} is TRUSTED, not proven: nothing was denied under test{claim}"
+        denials = "; ".join(f"{check.what} ({check.evidence})" for check in self.checks)
+        return f"{self.backend} proved containment by denying: {denials}"
 
 
 class NotContained(RuntimeError):
@@ -59,7 +86,13 @@ class NotContained(RuntimeError):
 
 @runtime_checkable
 class IsolationBackend(Protocol):
-    """One way of putting a program in a box, and one way of showing the box is there."""
+    """One way of putting a program in a box.
+
+    A backend no longer judges itself (D36). It says what it is, whether it is here, and how to run
+    argv inside it; **the sandbox** runs the capability test through `wrap` and decides. A backend
+    could still lie about that one operation — it owns the box — but the bar is now *deny the
+    thing* rather than *print the right word*, and nothing local can do better than that.
+    """
 
     @property
     def name(self) -> str: ...
@@ -71,14 +104,101 @@ class IsolationBackend(Protocol):
 
     def present(self) -> bool: ...
 
-    def probe(self) -> Proof | None:
-        """Run something inside the backend that answers differently than the host would.
-        `None` means it could not be shown — the sandbox treats that as absent, not as unknown."""
+    def declares(self) -> str | None:
+        """What the backend says about itself, if anything. A claim for the record, never
+        evidence: this is the field the old `probe()` mistook for a proof."""
         ...
 
     def wrap(self, argv: list[str]) -> list[str]:
         """The argv that runs `argv` inside the backend rather than on the host."""
         ...
+
+
+REACHES_A_LISTENER = "reach a listening socket on the host"
+
+PROBE_TIMEOUT_S = 20.0
+
+_PROBE = (
+    "import socket, sys\n"
+    "s = socket.socket(); s.settimeout(3)\n"
+    "reached = s.connect_ex(('127.0.0.1', {port})) == 0\n"
+    "print('REACHED' if reached else 'DENIED')\n"
+)
+
+
+def _probe_argv(port: int) -> list[str]:
+    return [sys.executable, "-c", _PROBE.format(port=port)]
+
+
+class Inconclusive(RuntimeError):
+    """The capability test could not be run, which is not the capability being denied.
+
+    The trap this exists to avoid: a probe that fails to *start* also fails to connect, so a check
+    that looked only for the absence of success would certify every backend that can run nothing.
+    """
+
+
+def prove(backend: IsolationBackend) -> Denied:
+    """Attempt, inside the box, something a contained program must not manage (D36).
+
+    A listener is opened on loopback — a real one, so reaching it is genuinely possible — and the
+    sandbox is asked to connect to it. Reaching it means the box is not a box. Failing to reach it
+    **while saying so** is the proof. Saying nothing is inconclusive, and inconclusive is not a
+    denial.
+
+    The check belongs here rather than to the backend, so no backend decides that it passed. One
+    could still lie about this single operation — it owns the box — but the bar is now *deny the
+    thing* instead of *print the right word*, and nothing local does better than that.
+    """
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    port = int(listener.getsockname()[1])
+    try:
+        try:
+            seen = subprocess.run(  # noqa: S603 — the argv is ours, not a model's
+                backend.wrap(_probe_argv(port)),
+                capture_output=True,
+                text=True,
+                timeout=PROBE_TIMEOUT_S,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as broken:
+            raise Inconclusive(
+                f"{backend.name!r} could not run the capability test at all ({broken}); "
+                "a check that cannot run proves nothing"
+            ) from broken
+    finally:
+        listener.close()
+    said = seen.stdout or ""
+    if "REACHED" in said:
+        raise NotContained(
+            f"{backend.name!r} did not contain the probe: inside it, a program could "
+            f"{REACHES_A_LISTENER}, so whatever it is, it is not a box"
+        )
+    if "DENIED" not in said:
+        raise Inconclusive(
+            f"{backend.name!r} left the capability test inconclusive — the probe neither reached "
+            f"the listener nor reported being denied (exit {seen.returncode}); a check that "
+            "cannot run proves nothing"
+        )
+    evidence = f"the probe reported DENIED (exit {seen.returncode})"
+    return Denied(what=REACHES_A_LISTENER, evidence=evidence)
+
+
+def _proven(backend: IsolationBackend, *, trusting: bool) -> Proof:
+    declared = backend.declares()
+    try:
+        denied = prove(backend)
+    except Inconclusive:
+        if not trusting:
+            raise
+        return Proof(backend=backend.name, checks=(), declared=declared, at=_now())
+    return Proof(backend=backend.name, checks=(denied,), declared=declared, at=_now())
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 class ContainedSandbox(ComponentPort):
@@ -99,20 +219,20 @@ class ContainedSandbox(ComponentPort):
         output_limit: int = 64_000,
         at: str = "",
         source: str = "sandbox",
+        trusting_the_backend_without_proof: bool = False,
     ) -> None:
+        """`trusting_the_backend_without_proof` is the sentence an operator signs when the
+        capability test cannot run here. It is not a silent pass and it is not a default (D36)."""
         if not backend.present():
             raise NotContained(
                 f"{backend.name!r} cannot contain anything here: {backend.binary!r} is not present"
             )
-        proof = backend.probe()
-        if proof is None:
-            raise NotContained(
-                f"{backend.name!r} is present but could not prove it contains anything; "
-                "refusing rather than running on the host"
-            )
         self._backend = backend
-        self.proof: Proof = proof
         self._root = Path(root).resolve()
+        try:
+            self.proof: Proof = _proven(backend, trusting=trusting_the_backend_without_proof)
+        except Inconclusive as unproven:
+            raise NotContained(str(unproven)) from unproven
         self._timeout_s = timeout_s
         self._output_limit = output_limit
         self._at = at
@@ -196,4 +316,12 @@ class ContainedSandbox(ComponentPort):
         )
 
 
-__all__ = ["ContainedSandbox", "IsolationBackend", "NotContained", "Proof"]
+__all__ = [
+    "ContainedSandbox",
+    "Denied",
+    "Inconclusive",
+    "IsolationBackend",
+    "NotContained",
+    "Proof",
+    "prove",
+]

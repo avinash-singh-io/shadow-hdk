@@ -4,6 +4,8 @@ from shadow_hdk.adapters.contained.backends import Firecracker, GVisor
 from shadow_hdk.adapters.contained.doubles import FakeIsolation
 from shadow_hdk.adapters.contained.sandbox import (
     ContainedSandbox,
+    Denied,
+    Inconclusive,
     IsolationBackend,
     NotContained,
     Proof,
@@ -11,6 +13,8 @@ from shadow_hdk.adapters.contained.sandbox import (
 
 __all__ = [
     "ContainedSandbox",
+    "Denied",
+    "Inconclusive",
     "FakeIsolation",
     "Firecracker",
     "GVisor",

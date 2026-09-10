@@ -4,29 +4,20 @@ Written on a machine that has neither, under a rule against installing either �
 claimed here is the **shape**, and each backend's proof is a `[~]` until a Linux host runs it. A
 backend that has never been run is not done, and this module does not say it is.
 
-What each knows that is true inside it and false on the host:
-
-* **gVisor** runs a user-space kernel, and that kernel announces itself: `dmesg` inside a sandbox
-  begins with lines naming gVisor. On the host it does not.
-* **Firecracker** boots a microVM whose virtual hardware names its maker: the DMI product name in
-  the guest reads `Firecracker`. On the host it reads whatever the host is.
-
-Both probes run *through* `wrap`, so a proof is observed by the same path the real work takes.
+Each **says** what it is, and neither is believed on its word (D36). `declares()` is a claim for
+the record: gVisor's user-space kernel announces itself in `dmesg`, and Firecracker's virtual
+hardware names its maker in the guest's DMI product name. That is *all* it is — matching those
+strings was once the whole proof, and a five-line shell script called `runsc` passed it. The proof
+is now a capability test the **sandbox** runs through `wrap`: something a contained program must
+not manage, attempted and denied.
 """
 
 from __future__ import annotations
 
 import shutil
 import subprocess
-from datetime import UTC, datetime
-
-from shadow_hdk.adapters.contained.sandbox import Proof
 
 PROBE_TIMEOUT_S = 15.0
-
-
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
 
 
 def _run_quietly(argv: list[str]) -> str | None:
@@ -54,16 +45,15 @@ class GVisor:
         # `reaches = network or not contained`), declared as such rather than this one with a flag.
         return [self.binary, "--network=none", "do", *argv]
 
-    def probe(self) -> Proof | None:
+    def declares(self) -> str | None:
+        """What gVisor says about itself — a claim, never the proof (D36)."""
         if not self.present():
             return None
         out = _run_quietly(self.wrap(["dmesg"]))
         if out is None:
             return None
         announced = next((line for line in out.splitlines() if "gVisor" in line), None)
-        if announced is None:
-            return None
-        return Proof(backend=self.name, observed=announced.strip(), at=_now())
+        return announced.strip() if announced else None
 
 
 class Firecracker:
@@ -95,19 +85,18 @@ class Firecracker:
     def wrap(self, argv: list[str]) -> list[str]:
         return [*self.launch, *argv]
 
-    def probe(self) -> Proof | None:
+    def declares(self) -> str | None:
+        """What the guest says about itself — a claim, never the proof (D36)."""
         if not self.present():
             return None
         out = _run_quietly(self.wrap(["cat", "/sys/devices/virtual/dmi/id/product_name"]))
         if out is not None and "Firecracker" in out:
-            return Proof(backend=self.name, observed=f"DMI product name: {out.strip()}", at=_now())
+            return f"DMI product name: {out.strip()}"
         out = _run_quietly(self.wrap(["dmesg"]))
         if out is None:
             return None
         announced = next((line for line in out.splitlines() if "Firecracker" in line), None)
-        if announced is None:
-            return None
-        return Proof(backend=self.name, observed=announced.strip(), at=_now())
+        return announced.strip() if announced else None
 
 
 __all__ = ["Firecracker", "GVisor", "PROBE_TIMEOUT_S"]
