@@ -7,16 +7,16 @@ phase: 3-workspace-and-code
 
 ## Group 0 — the workspace
 
-- [ ] `packages/adapters/workspace/pyproject.toml`
-- [ ] `WorkspaceComponents(root, *, at, writable=True)`
-- [ ] `_resolve(path)` — one resolver, `Path.resolve()` then `is_relative_to(root)`, used by all four
-- [ ] `read_file`, `write_file`, `list_dir`, `delete_file`
-- [ ] effects: reads `{workspace}`; writes `{workspace}` and `reversible: true`
-- [ ] RED: `..` refused · absolute path refused · **a real symlink out of the root** refused
-- [ ] RED: a missing file is `Failed`, not a raise; a write creates parents; a read round-trips text
-- [ ] `writable=False` makes the write and delete components absent, not refused at call time
-- [ ] `TestWorkspaceComponentsIsAComponentPort(ComponentPortContract)`
-- [ ] Gate
+- [x] `packages/adapters/workspace/pyproject.toml`
+- [x] `WorkspaceComponents(root, *, at, writable=True)`
+- [x] `_resolve(path)` — one resolver, `Path.resolve()` then `is_relative_to(root)`, used by all four
+- [x] `read_file`, `write_file`, `list_dir`, `delete_file`
+- [x] effects: reads `{workspace}`; writes `{workspace}` and `reversible: true`
+- [x] RED: `..` refused · absolute path refused · **a real symlink out of the root** refused
+- [x] RED: a missing file is `Failed`, not a raise; a write creates parents; a read round-trips text
+- [x] `writable=False` makes the write and delete components absent, not refused at call time
+- [x] `TestWorkspaceComponentsIsAComponentPort(ComponentPortContract)`
+- [x] Gate
 
 ## Group 1 — the sandbox
 

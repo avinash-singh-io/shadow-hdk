@@ -34,7 +34,20 @@ CI_SLACK = 3.0
 """A shared runner is not the development machine. Three times the target, and no more."""
 
 
-async def _time(composition: Composition, steps: int) -> tuple[float, int]:
+ROUNDS = 3
+"""**Best of three, not the average.**
+
+A busy machine makes a run slower and never faster, so the minimum is the cleanest estimate of what
+the code actually costs — and it is what stops this test failing for the wrong reason. It has
+already done so once: during a run that was spawning MCP subprocesses, one hundred steps measured
+**308 ms** against a 300 ms ceiling, while the same code alone measured 52.7, 56.2 and 60.7 ms.
+Averaging would have hidden the real number under the contention; a single run reported the
+contention as if it were the number. A flaky gate is worse than no gate, because it teaches you to
+ignore it.
+"""
+
+
+async def _once(composition: Composition, steps: int) -> tuple[float, int]:
     ports, _ = ports_over([(REG, "ok")], clock=FixedClock())
     options = RunOptions(lease=Lease(Ceiling(steps + 10, 10_000, None), Floor(0)))
     started = time.perf_counter()
@@ -44,12 +57,17 @@ async def _time(composition: Composition, steps: int) -> tuple[float, int]:
     return (time.perf_counter() - started) * 1000, count
 
 
+async def _time(composition: Composition, steps: int) -> tuple[float, int]:
+    results = [await _once(composition, steps) for _ in range(ROUNDS)]
+    return min(elapsed for elapsed, _ in results), results[0][1]
+
+
 async def test_a_hundred_sequential_steps() -> None:
     plan = Composition((Sequence("seq", tuple(Invoke(f"s{i}", REG.id) for i in range(STEPS))),))
     elapsed, events = await _time(plan, STEPS)
     print(
         f"\n  {STEPS} sequential steps: {elapsed:.1f} ms "
-        f"({elapsed / STEPS:.3f} ms/step), {events} events"
+        f"({elapsed / STEPS:.3f} ms/step, best of {ROUNDS}), {events} events"
     )
     assert elapsed < D11_SEQUENTIAL_MS * CI_SLACK
     assert elapsed / STEPS < D11_PER_STEP_MS * CI_SLACK
@@ -58,7 +76,7 @@ async def test_a_hundred_sequential_steps() -> None:
 async def test_a_fifty_way_fan_out() -> None:
     plan = Composition((FanOut("fan", tuple(Invoke(f"c{i}", REG.id) for i in range(FAN))),))
     elapsed, events = await _time(plan, FAN)
-    print(f"\n  {FAN}-way fan-out: {elapsed:.1f} ms, {events} events")
+    print(f"\n  {FAN}-way fan-out: {elapsed:.1f} ms (best of {ROUNDS}), {events} events")
     assert elapsed < D11_FAN_OUT_MS * CI_SLACK
 
 
