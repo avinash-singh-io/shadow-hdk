@@ -16,6 +16,7 @@ from collections.abc import Callable
 from typing import Any
 
 from langgraph.types import interrupt
+from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.composition import Await, Invoke
@@ -23,7 +24,13 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
 from shadow_hdk.kernel.events import Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
-from shadow_hdk.kernel.observations import Completed, Failed, Observation, Refused
+from shadow_hdk.kernel.observations import (
+    Completed,
+    Failed,
+    Observation,
+    Pending,
+    Refused,
+)
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse, Usage
 from shadow_hdk.runtime.bindings import Ports
 from shadow_hdk.runtime.emit import Emitter
@@ -105,6 +112,10 @@ class StepExecutor:
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
         self.session.meter.charge_cost(_usage_of(observation))
+        if isinstance(step, Await) and isinstance(observation, Pending):
+            # The grammar's other half. `Invoke` is *do it now*; `Await` is *this may take a while*,
+            # so a component that says `Pending` there is taken at its word and the run parks.
+            observation = Completed(await self._wait(step, observation))
         return await self._observe(step, observation)
 
     # ------------------------------------------------------------------ the seams
@@ -126,6 +137,24 @@ class StepExecutor:
             await self._emit(
                 lambda **k: AskedEvent(step=step.id, question=question, handle=handle, **k)
             )
+            raise
+
+    async def _wait(self, step: Await, pending: Pending) -> JsonValue:
+        """Park on a handle the component named, and come back with whatever answered it.
+
+        Same contract as `_ask`: **raise to park, return to proceed**, and the record is written on
+        the raising path. LangGraph re-runs the node on resume, so the component is asked a second
+        time and says `Pending` again — and this time `interrupt()` returns the answer instead of
+        raising, so the wait ends rather than repeating. A component put on an `Await` therefore has
+        to tolerate being called twice, which is the same rule everything above `interrupt()` obeys.
+        """
+        payload = {"run_id": self.session.run_id, "step": step.id, "handle": pending.handle}
+        try:
+            answer: JsonValue = interrupt(payload)
+            return answer
+        except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
+            # On the parking path only: the record says the step is waiting, and says it once.
+            await self._observe(step, pending)
             raise
 
     async def _judge(self, effects: EffectProfile, context: Context) -> Judgement:
