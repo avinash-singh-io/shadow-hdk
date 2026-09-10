@@ -1,8 +1,15 @@
 """Every package moves together until 1.0 (D9).
 
-Pre-1.0 the four are one thing released four ways: a contract change is a minor bump here *and* a
-row on `intent-ecosystem/lanes/board.md` under *Pins*, because the join with the product lane is the
-only place two lanes can break each other.
+Pre-1.0 the seventeen are one thing released seventeen ways: a contract change is a minor bump here
+*and* a row on `intent-ecosystem/lanes/board.md` under *Pins*, because the join with the product
+lane is the only place two lanes can break each other. *(It said **four** for nineteen phases, which
+was true at Phase 0 and has been wrong since Phase 1 added adapters.)*
+
+**A patch bump is not a contract change and takes no *Pins* row.** Every entry below until 0.13.1
+was a minor, and each says what a host would have to change; 0.13.1 is the first that says nobody
+has to change anything. The packages still move together, because they pin each other by equality
+and a lockstep set with one member behind is a resolver error waiting to happen — but *moving
+together* and *breaking the join* are different claims, and only the second belongs on the board.
 """
 
 from __future__ import annotations
@@ -11,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.13.0"
-"""0.13.0 because a stop signal is no longer an ordinary exception, and a sink that cannot write
+EXPECTED = "0.13.1"
+"""0.13.1 is a **patch**: nothing a host depends on moved. `served_over_http` stopped printing a
+`CancelledError` traceback on a clean exit (BUG-017) — it cancelled uvicorn mid-`serve` instead of
+asking it to stop and waiting, and no wire test could see it because pytest's anyio runner absorbs
+an unretrieved exception. Everything else in the release is documentation. No *Pins* row.
+
+0.13.0 because a stop signal is no longer an ordinary exception, and a sink that cannot write
 ends the run rather than the step (TD-006). A host catching `Exception` around a component no
 longer swallows a lease that ran out, a cancellation, or a port that broke — which is what it was
 doing, because every component adapter catches `Exception` and D7 says it should.

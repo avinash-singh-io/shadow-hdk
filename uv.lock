@@ -1313,7 +1313,7 @@ wheels = [
 
 [[package]]
 name = "shadow-hdk"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/runtime" }
 dependencies = [
     { name = "langgraph" },
@@ -1328,7 +1328,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-acp"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/acp" }
 dependencies = [
     { name = "agent-client-protocol" },
@@ -1345,7 +1345,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-agent"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/agent" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1360,7 +1360,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-basic"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/basic" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1375,7 +1375,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-contained"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/contained" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1390,7 +1390,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-derivation"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/derivation" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1405,7 +1405,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-devices"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/devices" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1420,7 +1420,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-langchain"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/langchain" }
 dependencies = [
     { name = "langchain" },
@@ -1456,7 +1456,7 @@ provides-extras = ["openai", "anthropic", "ollama", "huggingface"]
 
 [[package]]
 name = "shadow-hdk-adapters-mcp"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/mcp" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1473,7 +1473,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-modes"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/modes" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1488,7 +1488,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-mqtt"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/mqtt" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1505,7 +1505,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-otel"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/otel" }
 dependencies = [
     { name = "shadow-hdk-kernel" },
@@ -1520,7 +1520,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-recording"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/recording" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1537,7 +1537,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-sandbox-subprocess"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/sandbox_subprocess" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1552,7 +1552,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-workspace"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/adapters/workspace" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1567,7 +1567,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-kernel"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/kernel" }
 dependencies = [
     { name = "pydantic" },
@@ -1578,7 +1578,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
 
 [[package]]
 name = "shadow-hdk-wire"
-version = "0.13.0"
+version = "0.13.1"
 source = { editable = "packages/wire" }
 dependencies = [
     { name = "shadow-hdk" },

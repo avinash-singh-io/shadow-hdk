@@ -119,3 +119,27 @@ pytest          0    949 passed, 1 skipped, 10 deselected in 61.08s
 closing records, the release notes and the prepared pull request all repeated it rather than
 re-measuring after four more groups landed. Measured at the phase-19 tree with this change's one new
 test removed: **146**. With it: **147**.
+
+## Release
+
+**v0.13.1**, 2026-09-11, on the owner's word. Seventeen distributions 0.13.0 → 0.13.1 with the
+sixteen intra-workspace pins, because equality is what *every package moves together* means.
+
+**A patch, not a minor.** No contract changed, so there is no *Pins* row on the ecosystem board.
+`tests/test_versions.py` records the reason beside every previous bump — until now every entry was
+a minor and said what a host would have to change; this is the first that says nobody has to change
+anything. Its module docstring also said *the four are one thing released four ways*, true at
+Phase 0 and wrong since Phase 1 added adapters; it says seventeen now.
+
+**The gate caught the bump.** `test_every_package_is_at_the_same_version` failed on the first pass
+because `EXPECTED` still read `0.13.0` — the single place that has to be edited deliberately, which
+is the point of it.
+
+Wheels built and read back:
+
+```
+shadow-hdk-kernel | 0.13.1 | License-Expression: MIT | LICENSE file: True
+shadow-hdk-wire   | 0.13.1 | License-Expression: MIT | LICENSE file: True
+   Requires-Dist: shadow-hdk-kernel==0.13.1
+   Requires-Dist: shadow-hdk==0.13.1
+```

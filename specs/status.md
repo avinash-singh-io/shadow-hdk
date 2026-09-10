@@ -37,7 +37,11 @@ type: Status
 > cancellation in the derivation engine, a twelfth event kind for an unreachable port, ENH-002 (a
 > TLS broker), ENH-003 (a second protocol adapter), and Phase 11's live gVisor and Firecracker
 > proofs (a Linux host).
-> **Latest Release**: **v0.13.0**, released 2026-09-10 — the first. Every package at 0.13.0, all MIT
+> **Latest Release**: **v0.13.1**, released 2026-09-11 — a patch. BUG-017 (the wire listener left
+> quietly), the README rewritten from its Phase 0 state, and three stale tables in this file
+> corrected. **No contract change, so no *Pins* row** (D9): every package moves to 0.13.1
+> together because they are pinned to each other by equality, not because anything a host
+> depends on moved. All MIT
 > **Health**: On Track
 
 ## Summary
