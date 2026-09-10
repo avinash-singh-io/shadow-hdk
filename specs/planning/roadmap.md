@@ -23,14 +23,14 @@ computed from each phase's `deps`, never from this list.
 
 **Nine phases done, one under way, five plus an epic to go.** Every phase is on its own branch,
 each branched from the one before, **all pushed and none merged** — landing is the owner's gate
-(Rule 6). The suite is **460 tests**, mypy strict over **87 source files**, every package at
+(Rule 6). The suite is **501 tests**, mypy strict over **90 source files**, every package at
 **0.6.0**.
 
 | | phases | state |
 |---|---|---|
-| done | 0 – 9 | every task ticked; each left the gate green |
-| under way | — | nothing; Phase 10 is next |
-| not started | 10 – 14, the environment epic | Phase 10 (effect rules) is next |
+| done | 0 – 10 | every task ticked; each left the gate green |
+| under way | — | nothing; Phase 11 is next |
+| not started | 11 – 14, the environment epic | Phase 11 (contained sandboxes) is next |
 
 Everything R0–R3 depends on is built **except the wire**, which is J2. Lane P can already embed the
 runtime in-process; what Phase 9 adds is reaching it from another process or language.
@@ -38,7 +38,8 @@ runtime in-process; what Phase 9 adds is reaching it from another process or lan
 **Decisions settled so far:** D1–D14 (`specs/epics/0001-the-bare-harness.md`), D15 cancellation
 (phase 6), D16 held children (phase 7), D17 patterns and skills as files (phase 8), D18 compaction
 as a meta-tool (phase 8), D19 the graph state holds JSON, D20 the `Spent` event and D21 the context a crossed component gets
-(phase 9).
+(phase 9), D22 the port set is open, D23 a rule selects by name and D24 the check runs on the rules
+(phase 10).
 
 **Closed by the owner 2026-09-10:** the licence is **MIT** (O3), and the six-port question is
 settled as **D22 — the port set is open**, six being a count rather than a constraint (O4). The
@@ -64,7 +65,7 @@ carry is the true one and the plan's was stale.
 | 7 | Sub-agents | **DONE** · `phase-7-sub-agents` | 6 | R3 | spawn · send · release; held children; branch-level cancel; `run.*` events |
 | 8 | Patterns, skills, replay | **DONE** · `phase-8-patterns-skills-replay` | 7 | R3 | `plan-and-execute`, `orchestrator-workers`, `critic-pair`, `reflect-until`; skill file loader; compaction component; recorded model port; catalogue compaction (`describe`) |
 | 9 | The wire | **DONE** · `phase-9-the-wire` | 6, 7 | R3 → J2 | `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`; schemas published; **`v0.1.0`** |
-| 10 | Effect rules | Not started | 0 | R5 → J4 | rules as rows over profiles, intersection, the narrowing check as a library, mode files |
+| 10 | Effect rules | **DONE** · `phase-10-effect-rules` | 0 | R5 → J4 | rules as rows over profiles, intersection, the narrowing check as a library, mode files |
 | 11 | Contained sandboxes | Not started | 3 | R9 | gVisor, Firecracker as `contained: true` components |
 | 12 | Derivation | Not started | 0 | R8 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |
 | 13 | Leases on effects, driver supply chain | Not started | 7, 9 | R9 | `EffectPort` takes a lease; keys, signatures, receipts, revocation |

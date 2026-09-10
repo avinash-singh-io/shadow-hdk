@@ -53,3 +53,41 @@ It is a library function rather than a method, because two callers need it that 
 stores them.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-10 — the engine: rows, the check, and files
+Topics: governance, effect-rules, rows, widens, rule-files, r5
+Affects-phases: none
+Affects-specs: specs/architecture/adapters.md
+
+`Rule`, `RuleSet`, `RuleGovernance` in `adapters/modes`; `widens()` as a library function; `load_rules()`
+with a shipped example. A `Mode` is the one-row case and `layer` still works. R5's three claims are
+each pinned: rows intersect and only narrow; a set that widens is refused at load naming rule and
+field; a refusal at run time names the rule.
+
+### [DISCOVERY] 2026-09-10 — fail-closed was open at N=0
+Topics: governance, empty-set, mutation-check, safety
+Affects-phases: none
+Affects-specs: none
+
+A mutation making an empty intersection permit everything survived, so I wrote the test — and the
+test failed against the **unmutated** code. Governance over an empty rule set returned `Allow` for
+a harmless step. The refusal logic looked for a *row* that refused, found none, and let the step
+through. A rule file that failed to load, or a selection that matched nothing, would have granted
+everything and said nothing.
+
+The fix checks the composed ceiling first, and a set that grants nothing now refuses with *no rule
+is in force here, so nothing is permitted*. Recorded because the mutation did not find a test gap;
+it found the one place the design's central promise did not hold.
+
+### [DISCOVERY] 2026-09-10 — a guard for the seventh field
+Topics: effects, vocabulary, d22
+Affects-phases: none
+Affects-specs: none
+
+`09` §2 says the vocabulary may grow and D22 says the port set is open, so a seventh effect field
+is expected rather than hypothetical. A check that silently ignored one would keep passing while
+permitting whatever it allows — the worst way for a safety check to fail. Two tests now hold the
+line: `FIELDS` must equal the kernel's dataclass fields, and each named field must actually be
+compared.
+
+---
