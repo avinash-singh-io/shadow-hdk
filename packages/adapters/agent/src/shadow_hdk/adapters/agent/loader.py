@@ -26,7 +26,18 @@ from shadow_hdk.adapters.agent.pattern import META_TOOLS, Pattern
 from shadow_hdk.kernel.contracts import load
 from shadow_hdk.kernel.effects import EffectProfile
 
-KEYS = frozenset({"name", "system", "meta_tools", "tool_names", "ceiling", "max_turns", "nudge"})
+KEYS = frozenset(
+    {
+        "name",
+        "system",
+        "meta_tools",
+        "tool_names",
+        "ceiling",
+        "max_turns",
+        "nudge",
+        "catalogue_threshold",
+    }
+)
 REQUIRED = ("name", "system")
 LIBRARY = "library"
 
@@ -57,6 +68,11 @@ def pattern_from(data: dict[str, Any], *, where: str) -> Pattern:
         tool_names=None if tools is None else frozenset(tools),
         ceiling=None if ceiling is None else load(json.dumps(ceiling), EffectProfile),
         **({"max_turns": int(data["max_turns"])} if "max_turns" in data else {}),
+        **(
+            {"catalogue_threshold": int(data["catalogue_threshold"])}
+            if "catalogue_threshold" in data
+            else {}
+        ),
         **({"nudge": str(data["nudge"]).strip()} if "nudge" in data else {}),
     )
 

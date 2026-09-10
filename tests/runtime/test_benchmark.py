@@ -34,16 +34,22 @@ CI_SLACK = 3.0
 """A shared runner is not the development machine. Three times the target, and no more."""
 
 
-ROUNDS = 3
-"""**Best of three, not the average.**
+ROUNDS = 9
+"""**Best of nine, not the average.**
 
 A busy machine makes a run slower and never faster, so the minimum is the cleanest estimate of what
 the code actually costs — and it is what stops this test failing for the wrong reason. It has
-already done so once: during a run that was spawning MCP subprocesses, one hundred steps measured
-**308 ms** against a 300 ms ceiling, while the same code alone measured 52.7, 56.2 and 60.7 ms.
-Averaging would have hidden the real number under the contention; a single run reported the
-contention as if it were the number. A flaky gate is worse than no gate, because it teaches you to
-ignore it.
+already done so twice. First at **308 ms** against a 300 ms ceiling during a run spawning MCP
+subprocesses, while the same code alone measured 52.7, 56.2 and 60.7 ms. Then again at **309.9 ms**,
+in a suite that by then spawned subprocesses of its own for the sandbox, the recording server and
+the held-child tests — 56.9 ms when run alone a minute later.
+
+Three was not enough, because the contention is now **inside the suite** rather than beside it:
+tests that spawn processes run before this one, and three samples can all land while the machine is
+still settling. Nine costs about half a second and gives the minimum a real chance at a quiet
+moment. Averaging would have hidden the true number under the contention; a single run reports the
+contention as if it were the number; and raising the slack instead would have bought quiet by making
+the gate unable to fail. A flaky gate is worse than no gate, because it teaches you to ignore it.
 """
 
 

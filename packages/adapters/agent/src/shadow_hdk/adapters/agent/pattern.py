@@ -18,7 +18,8 @@ from shadow_hdk.kernel.effects import EffectProfile
 COMPOSE = "compose"
 PROPOSE = "propose"
 DONE = "done"
-META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE})
+DESCRIBE = "describe"
+META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE, DESCRIBE})
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,10 @@ class Pattern:
     """`None` means every component the policy leaves visible; a set names this role's own."""
     ceiling: EffectProfile | None = None
     max_turns: int = 12
+    catalogue_threshold: int = 30
+    """D13's fourth mechanism. At or above this many components the model is offered names and
+    one-line descriptions, and pulls a schema on demand with `describe`. Below it nothing changes:
+    a catalogue small enough to read whole is cheaper read whole than fetched twice."""
     nudge: str = field(
         default=(
             "You have not done enough work to say that yet. Try what is still open, "

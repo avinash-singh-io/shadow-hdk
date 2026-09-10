@@ -13,8 +13,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from shadow_hdk.adapters.agent.catalogue import describe_for, thin
 from shadow_hdk.adapters.agent.meta import BY_NAME
-from shadow_hdk.adapters.agent.pattern import COMPOSE, DONE, PROPOSE, Pattern
+from shadow_hdk.adapters.agent.pattern import COMPOSE, DESCRIBE, DONE, PROPOSE, Pattern
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
@@ -25,7 +26,7 @@ from shadow_hdk.kernel.components import (
     RegistrationId,
 )
 from shadow_hdk.kernel.composition import Binding, Composition, FanOut, Invoke, Step
-from shadow_hdk.kernel.contracts import load
+from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Proposal
 from shadow_hdk.kernel.ports import (
@@ -126,6 +127,8 @@ class _Turnwise:
 
             for call in [c for c in response.tool_calls if c.name == PROPOSE]:
                 await self.propose(call)
+            for call in [c for c in response.tool_calls if c.name == DESCRIBE]:
+                await self.describe(call)
             done = next((c for c in response.tool_calls if c.name == DONE), None)
             if done is not None:
                 verdict = self.done(done)
@@ -149,7 +152,11 @@ class _Turnwise:
             if registration.id != self.agent.registration_id
             and self.pattern.shows(registration.component.interface.name)
         ]
-        return tuple(tools) + tuple(BY_NAME[name] for name in sorted(self.pattern.meta_tools))
+        # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
+        # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
+        return thin(tools, self.pattern) + tuple(
+            BY_NAME[name] for name in sorted(self.pattern.meta_tools)
+        )
 
     async def propose(self, call: ToolCall) -> None:
         arguments = call.arguments if isinstance(call.arguments, dict) else {}
@@ -164,6 +171,14 @@ class _Turnwise:
         )
         self.proposed += 1
         self.messages.append(Message("tool", "proposed", tool_call_id=call.id))
+
+    async def describe(self, call: ToolCall) -> None:
+        """Answer what one tool takes — from `visible()` only, so a describe cannot reach past what
+        the policy left."""
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        answer = describe_for(str(arguments.get("name", "")), await self.ctx.visible())
+        text = answer if isinstance(answer, str) else dump(answer, Interface)
+        self.messages.append(Message("tool", text, tool_call_id=call.id))
 
     def done(self, call: ToolCall) -> Observation | None:
         """`None` means *not yet* — the floor is not met and this is the one nudge it gets."""

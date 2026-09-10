@@ -7,7 +7,7 @@ would not notice.
 
 from __future__ import annotations
 
-from shadow_hdk.adapters.agent.pattern import COMPOSE, DONE, PROPOSE
+from shadow_hdk.adapters.agent.pattern import COMPOSE, DESCRIBE, DONE, PROPOSE
 
 from shadow_hdk.kernel.components import Interface
 
@@ -49,10 +49,30 @@ COMPOSE_INTERFACE = Interface(
     },
 )
 
+DESCRIBE_INTERFACE = Interface(
+    name=DESCRIBE,
+    description=(
+        "Ask what a tool takes. The list you were given has names and one-line descriptions; "
+        "this returns the full input schema for one of them."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": ["name"],
+    },
+)
+
 BY_NAME = {
+    DESCRIBE: DESCRIBE_INTERFACE,
     DONE: DONE_INTERFACE,
     PROPOSE: PROPOSE_INTERFACE,
     COMPOSE: COMPOSE_INTERFACE,
 }
 
-__all__ = ["BY_NAME", "COMPOSE_INTERFACE", "DONE_INTERFACE", "PROPOSE_INTERFACE"]
+__all__ = [
+    "BY_NAME",
+    "COMPOSE_INTERFACE",
+    "DESCRIBE_INTERFACE",
+    "DONE_INTERFACE",
+    "PROPOSE_INTERFACE",
+]
