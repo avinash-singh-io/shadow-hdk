@@ -24,17 +24,20 @@ type: Status
 > **CI is green** and runs on every push. It had never run on any of 141 commits until this phase
 > widened a trigger that only fired on branches nothing has ever landed on.
 >
-> 946 tests; mypy strict over 133 files; seventeen distributions at **0.13.0**, all MIT. Phases 0–19
-> complete, pushed, **unmerged** — landing is the owner's gate.
+> 946 tests; mypy strict over 133 files; seventeen distributions at **0.13.0**, all MIT.
 >
-> **Nothing further is buildable here.** What remains is the owner's: **ADR-1** (which gates
-> TD-007's other half — whether an irreversible step must produce an `Acted` whichever port it came
-> through), **ADR-2**, landing the stack in one merge (**the pull request is prepared and not
-> opened**, in `specs/adhoc/TD-009/`), and the **v0.13.0** tag. Recorded deferrals: unit
+> **LANDED AND RELEASED, 2026-09-10.** The owner approved the merge end to end. The linear stack
+> fast-forwarded onto `staging` and then onto `main` — no merge commit, because `main` was a strict
+> ancestor — and `main`, `staging` and `phase-19-the-p2s` are all at `81d4b6a`. **v0.13.0 is tagged
+> and released.** CI is green on `main`. This is the first release this repository has had.
+>
+> **Nothing further is buildable here.** What remains open is **ADR-1** (which gates TD-007's other
+> half — whether an irreversible step must produce an `Acted` whichever port it came through) and
+> **ADR-2**. The merge and the tag are done. Recorded deferrals: unit
 > cancellation in the derivation engine, a twelfth event kind for an unreachable port, ENH-002 (a
 > TLS broker), ENH-003 (a second protocol adapter), and Phase 11's live gVisor and Firecracker
 > proofs (a Linux host).
-> **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
+> **Latest Release**: **v0.13.0**, released 2026-09-10 — the first. Every package at 0.13.0, all MIT
 > **Health**: On Track
 
 ## Summary

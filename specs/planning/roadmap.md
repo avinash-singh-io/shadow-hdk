@@ -28,8 +28,9 @@ it.
 
 ## Where this stands — 2026-09-10
 
-**Phases 0–18 are done. Every phase branch is pushed and none is merged** — landing is the owner's
-gate (Rule 6). The suite is **940 tests**, mypy strict over **133 source files**, all seventeen
+**Phases 0–19 are done, merged and released.** The owner approved the merge on 2026-09-10: the
+stack fast-forwarded onto `staging` and then `main`, and **v0.13.0** is tagged and released — the
+first release this repository has had. The suite is **940 tests**, mypy strict over **133 source files**, all seventeen
 distributions at **0.13.0**, all MIT.
 
 | | phases | state |
@@ -56,8 +57,8 @@ comes back holding its children, D38 a parked step resumes where it parked (phas
 **Closed by the owner 2026-09-10:** the licence is **MIT** (O3), and the six-port question is
 settled as **D22 — the port set is open**, six being a count rather than a constraint (O4).
 
-**Still with the owner:** ADR-1 and ADR-2; landing the linear stack — **the pull request is prepared
-and not opened**, in `specs/adhoc/TD-009/`; and the first release tag, which is **v0.13.0**. Thirteen
+**Still with the owner:** ADR-1 and ADR-2. The merge and the tag are done — **v0.13.0**, released
+2026-09-10. Thirteen
 contract changes have each moved every package under D9, so the number the packages carry is the
 true one and this plan's founding `v0.1.0` was stale.
 
