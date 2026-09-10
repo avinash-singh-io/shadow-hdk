@@ -7,7 +7,7 @@ cross a wire.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, overload
 
 from pydantic import JsonValue, TypeAdapter
 
@@ -54,9 +54,22 @@ def dump(value: object, as_type: Any) -> str:
     return TypeAdapter(as_type).dump_json(value).decode()
 
 
-def load[T](text: str, as_type: type[T]) -> T:
-    loaded: T = TypeAdapter(as_type).validate_json(text)
-    return loaded
+@overload
+def load[T](text: str, as_type: type[T]) -> T: ...
+
+
+@overload
+def load(text: str, as_type: Any) -> Any: ...
+
+
+def load(text: str, as_type: Any) -> Any:
+    """Two shapes, because our contracts are of two shapes. A concrete type gives back that type.
+    A **union** — `Event`, `Observation`, `Judgement` — satisfies no `type[T]`, and the old
+    signature made every `load(text, Event)` in the wire an `arg-type` error that nobody saw,
+    because those packages were outside the gate (BUG-007). A union caller annotates what it
+    expects, and `TypeAdapter` is what makes the annotation true rather than a hope.
+    """
+    return TypeAdapter(as_type).validate_json(text)
 
 
 def round_trip[T](value: T, as_type: Any) -> T:

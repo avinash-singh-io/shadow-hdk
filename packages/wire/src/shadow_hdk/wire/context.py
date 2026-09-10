@@ -92,7 +92,8 @@ class WireRunContext(RunContext):
         return self._across("spawn_options()")
 
     def floor_met(self) -> bool:
-        return self._across("floor_met()")
+        answered = self._across("floor_met()")
+        return bool(answered)
 
 
 class NotAcrossTheWire(NotImplementedError):

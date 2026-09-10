@@ -230,7 +230,7 @@ class HostSide:
         return None
 
     async def _event(self, params: dict[str, Any]) -> None:
-        event = load(json.dumps(params["event"]), Event)
+        event: Event = load(json.dumps(params["event"]), Event)
         self.events.append(event)
         if self.watching is not None:
             self.watching(event)

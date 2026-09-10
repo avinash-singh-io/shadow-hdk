@@ -59,7 +59,8 @@ class RemoteGovernance:
                 "context": _as_json(context, Context),
             },
         )
-        return load(json.dumps(answered), Judgement)
+        judgement: Judgement = load(json.dumps(answered), Judgement)
+        return judgement
 
 
 class RemoteModel:
@@ -133,7 +134,8 @@ class RemoteComponents:
                 "run_id": _run_id_of(self._live()),
             },
         )
-        return load(json.dumps(answered), Observation)
+        observation: Observation = load(json.dumps(answered), Observation)
+        return observation
 
 
 class RemoteSink:
