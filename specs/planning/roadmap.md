@@ -28,9 +28,9 @@ each branched from the one before, **all pushed and none merged** — landing is
 
 | | phases | state |
 |---|---|---|
-| done | 0 – 13 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
-| under way | — | nothing; Phase 14 is next |
-| not started | 14, the environment epic | Phase 14 (telemetry) is next |
+| done | 0 – 14 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
+| under way | — | nothing; the environment epic is next |
+| not started | the environment epic | last on the roadmap; read `09` before deciding its phases |
 
 Everything R0–R3 depends on is built **except the wire**, which is J2. Lane P can already embed the
 runtime in-process; what Phase 9 adds is reaching it from another process or language.
@@ -70,7 +70,7 @@ carry is the true one and the plan's was stale.
 | 11 | Contained sandboxes | **DONE here** · live proofs `[~]` Linux · `phase-11-contained-sandboxes` | 3 | R9 | gVisor, Firecracker as `contained: true` components |
 | 12 | Derivation | **DONE** · `phase-12-derivation` | 0 | R8 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |
 | 13 | Leases on effects, driver supply chain | Complete, unmerged (mechanism; policy `[~]` ADR-1) | 7, 9 | R9 | `EffectPort` takes a lease; keys, signatures, receipts, revocation |
-| 14 | Telemetry | Not started | 0 | — | OpenTelemetry observer; file sink |
+| 14 | Telemetry | Complete, unmerged | 0 | — | OpenTelemetry observer; file sink |
 | — | **The environment** (epic) | Not started | 3, 7, 13 | — | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
 
 ## Epics

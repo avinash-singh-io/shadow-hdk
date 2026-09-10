@@ -13,7 +13,7 @@ type: Architecture
 
 | adapter | port | phase | notes |
 |---|---|---|---|
-| `basic` — allow-all, stdout sink, callback observer, system clock, **callable** | governance · sink · observer · clock · component | 0 | `callable` turns a Python function into a component; it is how a product registers its own tools |
+| `basic` — allow-all, stdout sink, **file sink** (JSON lines, on disk before it returns), callback observer, system clock, **callable** | governance · sink · observer · clock · component | 0 | `callable` turns a Python function into a component; it is how a product registers its own tools |
 | `agent` | component | 0 | the model loop as a component (D1); patterns decide its meta-tools (D3) |
 | `langchain` | model | 1 | one adapter over LangChain's integrations; `stream` for tokens |
 | `mcp` | component | 1 | an MCP server's tools become components; annotations fill half a profile |
@@ -25,7 +25,7 @@ type: Architecture
 | `effect_rules` | governance | 10 | rules as rows over profiles, composed by intersection, with the narrowing check |
 | `sandbox_gvisor`, `sandbox_firecracker` | component | 11 | contained execution |
 | `derivation` | component | 12 | total expressions over typed tables |
-| `otel` | observer | 14 | the event stream exported |
+| `otel` | observer | 14 | the run's shape as a trace over the OpenTelemetry API alone — ids, kinds, reasons, the lease, usage, an act's receipt; never a payload (D28) |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
 
 ## The agent adapter — how one product gets ReAct and another gets an orchestrator
