@@ -21,7 +21,7 @@ phase: 17-the-audit
 - [x] Gate — ruff 0 / format 0 / mypy 0 (118 files) / pytest 717 passed, 10 deselected; 5 mutations bite and one was a redundant literal, deleted
 
 ## Group 3 — BUG-006: the wire resumes, or says it cannot
-- [ ] a checkpointer per session; `initialize` required; callback timeouts; `wire.md` corrected
-- [ ] RED: resume over the loopback; run before initialize refused; a hanging callback ends the run
-- [ ] records, board, *Pins* rows, status, roadmap
-- [ ] Gate
+- [x] a checkpointer per session (`RuntimeSide(checkpointer=…)`, defaulting to one that lives as long as the session); `initialize` required for **both** `run` and `resume`; an omitted version is a mismatch; a callback timeout on the runtime's peer, defaulting finite; a token on `serve`, and loopback-only without one; `wire.md` corrected on all four points and on HTTP/2
+- [x] RED: resume over the loopback; the resumed run keeps its lease (D33 across the wire); run and resume before initialize refused; silence is not agreement; a wrong version still refused; a hanging `judge` ends the run naming the method; the default timeout is finite; a session on loopback; a token required, a wrong token refused; a routable host without a token refused before it binds — 12 tests
+- [x] records, board, status, roadmap — no *Pins* row: no contract moved (the wire's own protocol version is unchanged)
+- [x] Gate — ruff 0 / format 0 / mypy 0 (119 files) / pytest 729 passed, 10 deselected; 15 mutations, all bite

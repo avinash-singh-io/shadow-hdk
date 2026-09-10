@@ -87,3 +87,43 @@ One mutation survived and was **equivalent**: `_calls_for` wrote `"type": "tool_
 its absence is deleted, not tested around — the test asserts LangChain's output shape instead.
 
 ---
+
+### [DECISION] 2026-09-10 — D34: a wire session owns a checkpointer; the callback timeout is the wire's
+Topics: wire, resume, timeouts, d34
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md
+
+A `RuntimeSide` owns a checkpointer for its session — defaulting to one that lives as long as the
+session, and replaceable by a host that wants a parked run to outlive the process, exactly as
+`Children.spawn` already allows. Rejected: threading a checkpointer through every `run` message
+(the host would have to describe an object across JSON), and dropping `resume` from the protocol
+(an Ask that crosses the wire is the case the wire exists for).
+
+The callback timeout belongs to the **wire**, not the lease. A lease bounds a run; a run waiting on
+a peer that will never answer is not running, so it can never notice its own ceiling. The runtime's
+peer therefore gives up on a callback and names the method in the message, so the record says which
+end stopped answering. The host's peer has no timeout: a host waiting for a run to finish is
+waiting exactly as long as that run's lease allows.
+
+---
+
+### [NOTE] 2026-09-10 — Group 3 measured; and what is not built is now said where it was claimed
+Topics: wire, serve, trust, mutation
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md
+
+Four failures under one row, each reproduced over the loopback first. The one worth naming is the
+handshake: `initialized` was set and never read, and an omitted `protocol_version` **defaulted to
+this build's own** — so a peer that said nothing counted as agreeing, in a protocol whose stated
+rule is *refuse, never degrade*. Silence is not agreement.
+
+`wire.md` listed a run token under **rules already fixed** and it is not built. Rather than build a
+credential design nobody has decided, `served_over_http` is loopback-only by default and refuses
+any other host without a `token=` — a deployment-wide stop-gap, said to be one, and the spec now
+carries the correction where the false claim was. Fifteen mutations, three survivors, all missing
+coverage rather than wrong lines: `resume`'s door was untested while `run`'s was; the **default**
+timeout was untested because the hang test passes its own, so `None` there would have restored the
+hang for everyone who did not pass a number; and the token check had only ever been sent the right
+credential or none, so a check for mere presence would have admitted anyone who sent anything.
+
+---
