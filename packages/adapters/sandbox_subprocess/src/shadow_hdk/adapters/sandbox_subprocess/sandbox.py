@@ -13,8 +13,6 @@ that one boolean.
 
 from __future__ import annotations
 
-import asyncio
-import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -29,14 +27,14 @@ from shadow_hdk.kernel.components import (
     RegistrationId,
 )
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
-from shadow_hdk.kernel.observations import Completed, Failed, Observation
+from shadow_hdk.kernel.observations import Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.runtime.leash import run_leashed
 
 WORKSPACE = ScopeSet.of("workspace")
 
 #: What a child process is allowed to inherit. Everything else — tokens, keys, proxies — is dropped,
 #: because a script the model wrote should not be handed the operator's credentials by accident.
-KEPT_ENV = ("PATH", "LANG", "LC_ALL", "TMPDIR", "HOME")
 
 
 class SubprocessSandbox(ComponentPort):
@@ -113,41 +111,11 @@ class SubprocessSandbox(ComponentPort):
     # ------------------------------------------------------------------ the leash
 
     async def _run(self, argv: list[str]) -> Observation:
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *argv,
-                cwd=self._root,
-                env={name: os.environ[name] for name in KEPT_ENV if name in os.environ},
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-        except OSError as broken:
-            return Failed(f"{type(broken).__name__}: {broken}")
-        try:
-            out, err = await asyncio.wait_for(process.communicate(), self._timeout_s)
-        except TimeoutError:
-            process.kill()
-            await process.wait()
-            return Failed(f"timed out after {self._timeout_s:g}s")
-
-        stdout, cut_out = self._cap(out)
-        stderr, cut_err = self._cap(err)
-        return Completed(
-            {
-                "exit_code": process.returncode,
-                "stdout": stdout,
-                "stderr": stderr,
-                # Said, not silent: an agent reasoning from half an answer while believing it whole
-                # is a worse failure than one told it only got half.
-                "truncated": cut_out or cut_err,
-            }
+        # The leash lives in the runtime since Phase 11, so a second sandbox can share it without
+        # this package and that one importing each other.
+        return await run_leashed(
+            argv, cwd=self._root, timeout_s=self._timeout_s, output_limit=self._output_limit
         )
-
-    def _cap(self, raw: bytes) -> tuple[str, bool]:
-        text = raw.decode("utf-8", errors="replace")
-        if len(text) <= self._output_limit:
-            return text, False
-        return text[: self._output_limit], True
 
     def _registration(
         self, name: str, description: str, properties: dict[str, JsonValue], required: list[str]

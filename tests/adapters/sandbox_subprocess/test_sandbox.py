@@ -200,3 +200,27 @@ async def test_what_a_script_does_need_still_reaches_it(tmp_path: Path) -> None:
         )
     )
     assert "True" in str(result["stdout"])
+
+
+async def test_a_timed_out_program_is_dead_not_merely_abandoned(tmp_path: Path) -> None:
+    """The mutation that found this gap deleted the kill, and every test stayed green.
+
+    The earlier timeout test asserts the error text and the elapsed time, and both are identical
+    whether the child was killed or simply left running: `wait_for` returns on the deadline either
+    way, and the orphan carries on in the background. That is the vacuous-test shape recorded in
+    Phase 4 — *nothing checked a timed-out child was actually dead* — and here it was, again.
+
+    So this asks the child to leave a mark if it survives. It sleeps past the timeout and then
+    touches a file; if the leash really killed it, the file never appears.
+    """
+    import anyio
+
+    marker = tmp_path / "SURVIVED"
+    with anyio.fail_after(10):
+        observation = await sandbox(tmp_path, timeout_s=0.3).invoke(
+            "run_shell", {"command": f"sleep 1.5; touch {marker.name}"}
+        )
+        assert observation.kind == "failed" and "timed out" in observation.error
+        # Give an abandoned child more than enough time to reach its `touch`.
+        await anyio.sleep(2.0)
+    assert not marker.exists(), "the timed-out program was abandoned, not killed — it kept running"
