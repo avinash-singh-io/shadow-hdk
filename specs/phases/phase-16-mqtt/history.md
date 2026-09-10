@@ -48,7 +48,10 @@ Topics: mqtt, mutation, environment
 Affects-phases: none
 Affects-specs: none
 
-Group 1: 18 tests, 23 of 24 mutations bite. Group 2: 3 tests, 4 mutations bite. Two races were
+Group 1: 18 tests, 23 of 24 mutations bite. Group 2: 3 tests, 3 of 4 mutations bite — the
+fourth, *a failed connect keeps the client*, is a network thread not joined rather than anything a
+run can see (the next use finds the session closed and reopens), so it is equivalent for the suite
+and kept as hygiene in the code. Two races were
 the tests' own, not the adapter's: a first read on a fresh subscription must wait a short grace
 for a retained message (3.1.1 has no end marker — the adapter now does), and a publish right after
 connect must wait for the SUBACK (the link now tracks them and offers `subscribed()`). Two claims
