@@ -50,6 +50,9 @@ class Overheard:
     at: str
     exit: str = "done"
     idempotency_key: str | None = None
+    dropped_before: int = 0
+    """How many acts the device lost between the last one reported and this one, when it keeps a
+    bounded queue. A lost event is data, the way a late reading is."""
 
 
 @runtime_checkable

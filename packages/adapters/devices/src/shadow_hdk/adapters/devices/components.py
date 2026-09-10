@@ -133,16 +133,19 @@ async def _report(witness: Witness) -> Observation:
     overheard = await witness.overheard()
     if overheard is None:
         return Completed({"overheard": 0})
+    grounds: dict[str, JsonValue] = {
+        "reported_by": witness.id,
+        "at": overheard.at,
+        "what": overheard.what,
+        "posture": "observed",
+    }
+    if overheard.dropped_before:
+        grounds["dropped_before"] = overheard.dropped_before
     return Acted(
         foreign_id=overheard.foreign_id,
         idempotency_key=overheard.idempotency_key or f"{witness.id}/{overheard.foreign_id}",
         exit=overheard.exit,
-        grounds={
-            "reported_by": witness.id,
-            "at": overheard.at,
-            "what": overheard.what,
-            "posture": "observed",
-        },
+        grounds=grounds,
     )
 
 
