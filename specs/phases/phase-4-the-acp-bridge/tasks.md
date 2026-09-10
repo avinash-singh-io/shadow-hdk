@@ -7,30 +7,30 @@ phase: 4-the-acp-bridge
 
 ## Group 0 — what a child agent is asking for
 
-- [ ] `packages/adapters/acp/pyproject.toml`, depending on `agent-client-protocol`
-- [ ] `effects_for(kind, *, contained, network)` covering all ten `ToolCallKind` values
-- [ ] `read`, `search` → reads only; `think` → `NOTHING`
-- [ ] `edit`, `move` → writes, reversible; `delete` → writes, **not** reversible
-- [ ] `execute` → writes, not reversible, `contained` from the deployment, `reaches` per Phase 3's rule
-- [ ] `fetch` → reaches
-- [ ] `other`, `None`, unknown → `ASSUME_WORST`
-- [ ] profiles for `write_text_file`, `read_text_file`, `create_terminal`
-- [ ] RED: one test per kind, and one that an unrecognised kind is the worst case
-- [ ] Gate
+- [x] `packages/adapters/acp/pyproject.toml`, depending on `agent-client-protocol`
+- [x] `effects_for(kind, *, contained, network)` covering all ten `ToolCallKind` values
+- [x] `read`, `search` → reads only; `think` → `NOTHING`
+- [x] `edit`, `move` → writes, reversible; `delete` → writes, **not** reversible
+- [x] `execute` → writes, not reversible, `contained` from the deployment, `reaches` per Phase 3's rule
+- [x] `fetch` → reaches
+- [x] `other`, `None`, unknown → `ASSUME_WORST`
+- [x] profiles for `write_text_file`, `read_text_file`, `create_terminal`
+- [x] RED: one test per kind, and one that an unrecognised kind is the worst case
+- [x] Gate
 
 ## Group 1 — the client half
 
-- [ ] `_BridgeClient` with all fourteen methods
-- [ ] `request_permission` — judge the tool call's effects; never answer blind
-- [ ] **`Refuse` → the agent's own `reject_once` option when offered, else `DeniedOutcome`**
-- [ ] `reject_once` and not `reject_always`: our governance was not asked about permanence
-- [ ] **`Ask` → a rejection naming the question**, with the limitation recorded
-- [ ] `write_text_file`, `read_text_file` judged, then performed through a workspace root
-- [ ] `create_terminal` judged; the follow-ups (`terminal_output`, `wait_for_terminal_exit`, `kill_terminal`, `release_terminal`) not re-judged, because the grant was at creation
-- [ ] `create_elicitation`, `complete_elicitation`, `ext_method` → refused by default, and said
-- [ ] `session_update` collects `UsageUpdate` including `cost`
-- [ ] RED: each governable method allowed under one mode and refused under another
-- [ ] Gate
+- [x] `_BridgeClient` with all fourteen methods
+- [x] `request_permission` — judge the tool call's effects; never answer blind
+- [x] **`Refuse` → the agent's own `reject_once` option when offered, else `DeniedOutcome`**
+- [x] `reject_once` and not `reject_always`: our governance was not asked about permanence
+- [x] **`Ask` → a rejection naming the question**, with the limitation recorded
+- [x] `write_text_file`, `read_text_file` judged, then performed through a workspace root
+- [x] `create_terminal` judged; the follow-ups (`terminal_output`, `wait_for_terminal_exit`, `kill_terminal`, `release_terminal`) not re-judged, because the grant was at creation
+- [x] `create_elicitation`, `complete_elicitation`, `ext_method` → refused by default, and said
+- [x] `session_update` collects `UsageUpdate` including `cost`
+- [x] RED: each governable method allowed under one mode and refused under another
+- [x] Gate
 
 ## Group 2 — the agent as a component
 
