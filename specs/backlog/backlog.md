@@ -25,6 +25,7 @@ type: Backlog
 
 | ID | Title | Priority | Status | Phase | Detail |
 |----|-------|----------|--------|-------|--------|
+| BUG-001 | A component named like an agent meta-tool is shadowed silently | P2 | open (found 2026-09-10) | 13 | A registration whose id matches a name in `Pattern.meta_tools` (`send`, `spawn`, `release`, `done`, …) never runs: the agent adapter builds the model-facing tools from the meta-tools by name (`adapters/agent/component.py:184`) and the meta-tool answers the call. Observed: a tool `send(to)` got *there is no helper ''; spawn one first*. Fix: refuse at the point the agent builds its tool list, naming both the registration and the meta-tool. |
 | _(none)_ | | | | | |
 
 ## Features

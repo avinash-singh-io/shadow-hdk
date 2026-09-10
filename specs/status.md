@@ -4,8 +4,8 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-10
-> **Current Phase**: Phase 0 — The runtime, the bare test goes green — `not started`
+> **Last Updated**: 2026-09-10 (Phase 13)
+> **Current Phase**: Phase 13 — leases on effects, and the driver supply chain — `complete, unmerged` (mechanism; policy `[~]` ADR-1). Next: Phase 14 — telemetry
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
@@ -29,6 +29,15 @@ runtime that turns the bare-harness test green.
 | 2 | The spike — J1 | Complete, unmerged (2026-09-10) | — |
 | 3 | The workspace, and code | Complete, unmerged (2026-09-10) | — |
 | 4 | The ACP bridge | Complete, unmerged (2026-09-10) | — |
+| 5 | Checkpoints, and a parked run survives | Complete, unmerged (2026-09-10) | — |
+| 6 | The compiler completed | Complete, unmerged (2026-09-10) | — |
+| 7 | Sub-agents | Complete, unmerged (2026-09-10) | — |
+| 8 | Patterns, skills, replay, compaction | Complete, unmerged (2026-09-10) | — |
+| 9 | The wire | Complete, unmerged (2026-09-10) | — |
+| 10 | Effect rules | Complete, unmerged (2026-09-10) | — |
+| 11 | Contained sandboxes | Complete, unmerged (2026-09-10) | — |
+| 12 | Derivation | Complete, unmerged (2026-09-10) | — |
+| 13 | Leases on effects, driver supply chain | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -52,15 +61,16 @@ runtime that turns the bare-harness test green.
 | 9 — the wire | `phase-9-the-wire` | **complete, unmerged** | 5 / 5 groups. The runtime is reachable from another process or another language: the ports invert over a loopback (D21), `--stdio` drives a child process, and **`serve` listens** — Phase 5's debt paid. Twelve schemas published and checked against the code. 460 tests; mypy strict over 87 files. **Releasable at v0.6.0** — tagging is the owner's. Superseded as the active row by Phase 10. |
 | 10 — effect rules | `phase-10-effect-rules` | **complete, unmerged** | 3 / 3 groups. Rules as rows that intersect and only narrow (D23); a team rule that widens is refused at load, naming rule and field (D24); rules load from a file with a shipped example. A mutation found fail-closed open at N=0 — fixed. 501 tests; mypy strict over 90 files. Superseded as the active row by Phase 11. |
 | 11 — contained sandboxes | `phase-11-contained-sandboxes` | **complete here, unmerged** | 3 / 3 groups. A sandbox proves containment at construction or refuses to exist (D25); gVisor and Firecracker as backends whose live proofs **skip** on this machine and are `[~]` for a Linux host. The leash moved into the runtime so no adapter imports another. 517 tests; mypy strict over 93 files. Superseded as the active row by Phase 12. |
-| 12 — derivation | `phase-12-derivation` | **complete, unmerged** | 3 / 3 groups. A ground is data and one engine is its interpreter (D26): fixed-point at scale 12, units and denominators on every value, a total evaluator that answers indeterminate, a canonical fingerprint, and the engine as a component whose observation and proposal are the same claim. 565 tests; mypy strict over 97 files. |
+| 12 — derivation | `phase-12-derivation` | **complete, unmerged** | 3 / 3 groups. A ground is data and one engine is its interpreter (D26): fixed-point at scale 12, units and denominators on every value, a total evaluator that answers indeterminate, a canonical fingerprint, and the engine as a component whose observation and proposal are the same claim. 565 tests; mypy strict over 97 files. Superseded as the active row by Phase 13. |
+| 13 — leases on effects | `phase-13-effect-leases` | **complete, unmerged** | 3 / 3 groups. A driver signs what it declares and is checked at the registry on every refresh (D27): unsigned where required, unknown, revoked or forged is *absent* with the reason; a revoked key is refused as revoked however valid its signature. `Acted` is the sixth observation kind — the receipt of any world-effect; the lease is read at the moment of the act; `run/step` tells a resume re-run from a second act. The policy — which effects must be signed, who holds a key, what a warrant is — waits on ADR-1 as `[~]`. Contract 0.6.0 → 0.7.0. 608 tests; mypy strict over 101 files. |
 
 ## Upcoming Phases
 
 | Phase | Name | Status | Key Deliverables |
 |-------|------|--------|-----------------|
-| 1 | Real adapters, streaming, modes | Not Started | `adapters/langchain`, `adapters/mcp`, `adapters/modes`; the demo on real components |
-| 2 | The spike | Not Started | J1 answered over `agent-client-protocol` |
-| 3 | The workspace and code | Not Started | files and a subprocess sandbox as components |
+| 1 | Real adapters, streaming, modes | Complete, unmerged | `adapters/langchain`, `adapters/mcp`, `adapters/modes`; the demo on real components |
+| 2 | The spike | Complete, unmerged | J1 answered over `agent-client-protocol` |
+| 3 | The workspace and code | Complete, unmerged | files and a subprocess sandbox as components |
 | 4–5 | The ACP bridge, the RecordingServer | Not Started | your subscription answers the turn |
 | 6–9 | The compiler complete, sub-agents, patterns, the wire | Not Started | R3's join; `v0.1.0` |
 

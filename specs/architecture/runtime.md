@@ -75,6 +75,8 @@ classDiagram
     +run_id: RunId
     +propose(Proposal) None
     +remaining() Lease
+    +step: StepId|None
+    +idempotency_key() str
     +spawn_options(Ceiling) RunOptions
   }
   class Session {
@@ -107,6 +109,8 @@ classDiagram
     +close() None
   }
   class Registry {
+    +trust: Trust|None
+    +refused: list~str~
     +refresh() None
     +resolve(id: RegistrationId) tuple
     +visible(gov, ctx) list~Registration~
@@ -132,11 +136,13 @@ classDiagram
 
 | module | holds |
 |---|---|
-| `__init__.py` | `run`, `resume`, `current_run`, `Ports`, `RunOptions`, `RunContext` |
-| `bindings.py` | `Ports`, `RunOptions`, `RunContext`, the contextvar (D2) |
+| `__init__.py` | `run`, `resume`, `current_run`, `Ports`, `RunOptions`, `RunContext`, `Trust` |
+| `bindings.py` | `Ports`, `RunOptions`, `RunContext`, the contextvar (D2); `executing(step)` — the scope within which `current_run().step` is set, the component's invoke only |
 | `session.py` | `Session`, `LeaseMeter`, `Handles` |
 | `emit.py` | `Emitter` — seq, clock stamp, queue, observer task |
-| `registry.py` | `Registry` — union of component ports, `resolve`, `visible` |
+| `registry.py` | `Registry` — union of component ports, `resolve`, `visible`; with a `Trust`, a driver that cannot prove itself is refused at `refresh` — absent, reason in `refused` (D27) |
+| `trust.py` | `Trust(keys, revoked, must_sign)`, `sign`, `verify`, `signing_bytes` — HMAC-SHA256 over the registration's canonical form minus the signature (D27) |
+| `acting.py` | `exhausted(lease)`, `grounds(context, argv=, warrant=)` — what a driver reads at the moment of the act and what its `Acted` receipt carries (R9); the warrant is carried, not judged (ADR-1) |
 | `inputs.py` | `resolve_inputs(bindings, handles) -> JsonValue`; `DanglingRef` |
 | `step.py` | `StepExecutor.invoke` — the seven moves |
 | `compile.py` | `compile_composition`; the structural-hash cache (D11) |
