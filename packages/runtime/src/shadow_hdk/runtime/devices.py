@@ -4,6 +4,12 @@ A `Sensor` reads the world; an `Actuator` writes it and cannot take it back; a `
 world's own log and reports what happened without us. Posture follows the role: a read we asked
 for and a command we gave are `controlled`; what a witness reports is `observed` (D30). A protocol
 adapter — MQTT, OPC-UA, ROS 2 — is written over these three and nothing else.
+
+Lives in the runtime, beside `acting.py`, rather than in `adapters/devices`, because no adapter may
+import another (`tests/invariants`) and every protocol adapter implements this: three protocols and
+three dataclasses with no I/O, the vocabulary of the act's world-facing half. Not the kernel — the
+kernel names ports, events, effects and observations, and a device is none of those; it is a
+component, and how a component reaches the world is the runtime's business.
 """
 
 from __future__ import annotations

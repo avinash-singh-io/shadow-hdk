@@ -15,7 +15,6 @@ from datetime import datetime
 
 from pydantic import JsonValue
 
-from shadow_hdk.adapters.devices.contract import Actuator, Sensor, Witness
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -29,6 +28,7 @@ from shadow_hdk.kernel.observations import Acted, Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort
 from shadow_hdk.runtime import current_run
 from shadow_hdk.runtime.acting import exhausted, grounds
+from shadow_hdk.runtime.devices import Actuator, Sensor, Witness
 
 WORLD = ScopeSet.of("world")
 SENSES = EffectProfile(reads=WORLD)

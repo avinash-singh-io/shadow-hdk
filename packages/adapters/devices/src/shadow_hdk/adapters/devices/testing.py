@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import JsonValue
 
-from shadow_hdk.adapters.devices.contract import Ack, Overheard, Reading
+from shadow_hdk.runtime.devices import Ack, Overheard, Reading
 
 
 class FakeSensor:
