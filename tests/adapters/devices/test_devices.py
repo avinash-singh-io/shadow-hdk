@@ -126,7 +126,13 @@ async def test_a_reading_carries_the_devices_stamp_and_its_age_by_the_runtimes_c
     events = await _run(devices, Invoke("s1", "thermometer"), clock=clock)
     reading = _observed(events, "s1").observation
     assert reading == Completed(
-        {"value": 21.5, "unit": "C", "at": "2026-01-01T11:59:00+00:00", "age_seconds": 60.0}
+        {
+            "value": 21.5,
+            "unit": "C",
+            "at": "2026-01-01T11:59:00+00:00",
+            "stamped_by": "device",
+            "age_seconds": 60.0,
+        }
     )
     clock.advance(30)
     events = await _run(devices, Invoke("s1", "thermometer"), clock=clock)

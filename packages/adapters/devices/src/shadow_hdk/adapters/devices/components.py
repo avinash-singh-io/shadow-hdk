@@ -107,6 +107,7 @@ async def _read(sensor: Sensor) -> Observation:
             "value": reading.value,
             "unit": reading.unit,
             "at": reading.at,
+            "stamped_by": reading.stamped_by,
             "age_seconds": _age(reading.at, context.now()) if context is not None else None,
         }
     )

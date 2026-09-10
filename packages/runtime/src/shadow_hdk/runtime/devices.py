@@ -15,7 +15,7 @@ component, and how a component reaches the world is the runtime's business.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 from pydantic import JsonValue
 
@@ -27,6 +27,9 @@ class Reading:
     value: JsonValue
     unit: str | None
     at: str
+    stamped_by: Literal["device", "receiver"] = "device"
+    """Whose clock `at` came from: the device's own measurement time, or the time the adapter
+    received it because the device sent none. An agent should be able to tell the two apart."""
 
 
 @dataclass(frozen=True)

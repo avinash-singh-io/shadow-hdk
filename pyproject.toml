@@ -74,6 +74,11 @@ mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/sr
 namespace_packages = true
 explicit_package_bases = true
 
+[[tool.mypy.overrides]]
+# The dev broker ships no type information; the adapter never imports it — only the suite does.
+module = ["amqtt.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 xfail_strict = true
