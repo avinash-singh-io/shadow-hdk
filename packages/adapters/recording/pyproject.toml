@@ -1,0 +1,14 @@
+[project]
+name = "shadow-hdk-adapters-recording"
+version = "0.3.0"
+description = "The run's registry, offered to a child agent as an MCP server — so what it does is routed, and therefore recorded."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["shadow-hdk-kernel", "shadow-hdk", "mcp>=2.0,<3"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]
