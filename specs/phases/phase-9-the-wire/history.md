@@ -145,3 +145,58 @@ first: `children` (a real design question — which side does a spawned child li
 than a rediscovery.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 2: `--stdio`, and a refusal that reaches the model
+Topics: wire, stdio, refusal, j1, research
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md, specs/architecture/refusal.md
+
+The second transport: JSON-RPC over a pipe, the runtime as the child, proven against a real second
+interpreter rather than a simulated one. Newline-delimited framing, so a host that already speaks to
+an MCP or ACP server needs no second framing.
+
+Alongside it, `specs/architecture/refusal.md` — the answer to J1, asked generically at the owner's
+direction rather than as a coding-CLI question.
+
+### [DISCOVERY] 2026-09-10 — a pipe read that blocks for a full buffer
+Topics: stdio, pipes, wire
+Affects-phases: none
+Affects-specs: none
+
+The child read its own stdin with `read(65536)`. `BufferedReader.read(n)` blocks until it has all n
+bytes or the pipe closes, so the child answered nothing until its parent hung up — indistinguishable
+from a hung child.
+
+What made it expensive: piping a single frame in from a shell **hides it completely**, because the
+shell closes the pipe and the read returns at end-of-file. The child looked perfect by hand and hung
+under a live parent. A line-framed protocol reads lines.
+
+### [DISCOVERY] 2026-09-10 — the research found a bug in our own refusal path
+Topics: refusal, governance, j1, agent-adapter
+Affects-phases: none
+Affects-specs: specs/architecture/refusal.md
+
+Two findings from the survey landed on our code. We already satisfied the harder one — every tool
+call is answered, which the provider APIs require and which is the most commonly filed bug in
+approval implementations. And our observation types already separate *you may not* from *it broke*,
+which almost nothing surveyed does on the wire.
+
+**That structure is what made the bug invisible.** `carry_out` collected only `observed` events, and
+a refusal emits `refused` and no `observed` — the same fact Phase 5 recorded when the RecordingServer
+fell into it. So a refused tool call reached the model as *"that step did not run"*: no reason, and
+indistinguishable from a step that never happened. The governance decision reached the record and
+never reached the model.
+
+### [NOTE] 2026-09-10 — a gate run invalidated by a background mutation harness
+Topics: process, gate, mutation-check
+Affects-phases: none
+Affects-specs: none
+
+A full-suite run reported five stdio failures that were not real: a mutation harness was running in
+the background, rewriting the very files the suite was importing. The harness restores each file
+after each mutation, so nothing was corrupted — but for the minutes it ran, the source on disk was
+not the source under test.
+
+The gate means nothing unless it is the only thing touching the tree. Re-run clean, all four zero.
+
+---

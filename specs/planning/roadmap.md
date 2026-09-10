@@ -23,13 +23,13 @@ computed from each phase's `deps`, never from this list.
 
 **Nine phases done, one under way, five plus an epic to go.** Every phase is on its own branch,
 each branched from the one before, **all pushed and none merged** — landing is the owner's gate
-(Rule 6). The suite is **417 tests**, mypy strict over **83 source files**, every package at
+(Rule 6). The suite is **427 tests**, mypy strict over **85 source files**, every package at
 **0.6.0**.
 
 | | phases | state |
 |---|---|---|
 | done | 0 – 8 | every task ticked; each left the gate green |
-| under way | 9 — the wire | groups 0–1 of 5 (D19, D20, D21) |
+| under way | 9 — the wire | groups 0–2 of 5 (D19, D20, D21) |
 | not started | 10 – 14, the environment epic | |
 
 Everything R0–R3 depends on is built **except the wire**, which is J2. Lane P can already embed the
@@ -40,10 +40,13 @@ runtime in-process; what Phase 9 adds is reaching it from another process or lan
 as a meta-tool (phase 8), D19 the graph state holds JSON, D20 the `Spent` event and D21 the context a crossed component gets
 (phase 9).
 
-**Open, and needing the owner:** the licence (O3), ADR-1 and ADR-2, the six-port reading (O4), and
-running `spikes/acp/drive_real.py` against a real Codex or Claude Code — which needs a global npm
-install and a paid turn, so it is recorded unmeasured with the command that would settle it. The
-**v0.1.0 tag** at the end of Phase 9 is the owner's too.
+**Closed by the owner 2026-09-10:** the licence is **MIT** (O3), and the six-port question is
+settled as **D22 — the port set is open**, six being a count rather than a constraint (O4). The
+open spike was reframed from *what does a coding CLI do when refused* to the generic question and
+answered by research rather than by spending a subscription: `specs/architecture/refusal.md`.
+
+**Still with the owner:** ADR-1 and ADR-2, landing the linear stack, and the **v0.1.0 tag** at the
+end of Phase 9.
 
 ## Timeline
 
@@ -58,7 +61,7 @@ install and a paid turn, so it is recorded unmeasured with the command that woul
 | 6 | The compiler, complete | **DONE** · `phase-6-the-compiler-complete` | 0 | R3 | nested composites as subgraphs, checkpoint namespaces, `resume`, cancellation, host checkpointers |
 | 7 | Sub-agents | **DONE** · `phase-7-sub-agents` | 6 | R3 | spawn · send · release; held children; branch-level cancel; `run.*` events |
 | 8 | Patterns, skills, replay | **DONE** · `phase-8-patterns-skills-replay` | 7 | R3 | `plan-and-execute`, `orchestrator-workers`, `critic-pair`, `reflect-until`; skill file loader; compaction component; recorded model port; catalogue compaction (`describe`) |
-| 9 | The wire | **IN PROGRESS** · 2 / 5 groups · `phase-9-the-wire` | 6, 7 | R3 → J2 | `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`; schemas published; **`v0.1.0`** |
+| 9 | The wire | **IN PROGRESS** · 3 / 5 groups · `phase-9-the-wire` | 6, 7 | R3 → J2 | `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`; schemas published; **`v0.1.0`** |
 | 10 | Effect rules | Not started | 0 | R5 → J4 | rules as rows over profiles, intersection, the narrowing check as a library, mode files |
 | 11 | Contained sandboxes | Not started | 3 | R9 | gVisor, Firecracker as `contained: true` components |
 | 12 | Derivation | Not started | 0 | R8 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |

@@ -42,9 +42,12 @@ phase: 9-the-wire
 
 ## Group 2 — `--stdio`
 
-- [ ] the protocol over stdin/stdout
-- [ ] RED: a real child process drives a composition end to end
-- [ ] Gate
+- [x] the protocol over stdin/stdout, newline-delimited
+- [x] RED: a real child process drives a composition end to end; the host's policy refuses across
+      the pipe; a proposal from a component the host runs lands on the child's record; the child is
+      proven a genuinely separate process; a dead peer raises rather than hanging; `--stdio` is a
+      mode rather than a default
+- [x] Gate
 
 ## Group 3 — `serve`, which listens
 
