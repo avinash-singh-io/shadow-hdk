@@ -27,7 +27,17 @@ phase: 19-the-p2s
 - [x] **Phase 14's *a torn line can only be the last* retired** — true within one process, false across a restart, which is the only time one exists
 - [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 871 passed, 1 skipped, 10 deselected; 24 mutations, 23 bite, 1 equivalent and named
 
-## Groups 3–4
-- [ ] TD-004, TD-005
+## Group 3 — the shared shape and what bounds growth (TD-004, TD-005)
+- [x] the contract suites reached 7 of 14 adapters; **the fix is an invariant**, not the wiring — every port implementation must name the module that contracts it, and that module is checked to really contain a contract
+- [x] the scan found **29** implementations, not fourteen: the runtime's testing doubles are ports hosts depend on
+- [x] five adapters wired plus `Controlled`, `RuleGovernance`, `Mailbox`; **`mqtt` and `recording` implement no port at all** and are recorded as such
+- [x] **the suites found no defects**, so the net was widened by one question while being cast: inputs of the wrong shape are an observation, not an exception — eleven component ports answer it
+- [x] the plan cache: 2000 compositions → 2000 entries, ~6.3 MiB; now 512, least-recently-used, evictions counted
+- [x] the observer queue: a slow observer handled 1 event while 49,999 queued; bounded at 4096, **dropping the oldest and counting**, because D11 keeps the observer off the critical path
+- [x] the caller's stream stays **unbounded and argued** — same task fills and drains it, so a bound deadlocks the run against itself
+- [x] **two of TD-005's three claims were stale** — the witness queue was bounded in Phase 16, and the wire has no queues
+- [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 924 passed, 1 skipped, 10 deselected; 11 mutations, all bite
+
+## Group 4
 - [ ] TD-006, TD-007, TD-008
 - [ ] records, board, status, roadmap

@@ -211,3 +211,58 @@ This group's own equivalent mutant is named in `sinks.py` for that reason, with 
 makes it equivalent rather than the conclusion alone.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 3: the net found nothing, which is what a net is for
+Topics: contracts, invariants, td-004
+Affects-phases: none
+Affects-specs: none
+
+Half the adapters had never been run against the contract suites, and wiring the missing ones found
+**no defects at all**. Every one already answered the shared shape.
+
+That is worth recording as a result rather than a shrug. It is the same wiring that caught nine mypy
+errors the moment BUG-007's gate was widened, and here the same move caught nothing — which says the
+adapters were built to the shape rather than merely tested into it. The value of the exercise is
+what remains: the net, and the invariant that keeps it cast.
+
+**What was not done is copy the seven names into a list.** A list of adapters is a list somebody has
+to remember to extend, which is the failure that produced this row. The file scans for port
+implementations and requires an answer for each, and it checks that a named module **really contains
+a contract** rather than merely mentioning one — because a filename in a table is a promise and
+nothing was making it one.
+
+The scan also found more than expected: **29 implementations, not fourteen**. The runtime's own
+testing doubles implement ports, are imported by hosts, and are therefore depended upon — so they
+are contracted like anything else. Two adapters implement no port at all and never reach the file,
+which is the honest answer for both: `mqtt` is a transport the devices adapter speaks over, and
+`recording` exposes the registry outward, an arrow pointing the other way.
+
+Since the net caught nothing, it was widened by one question while being cast: a known id called
+with **inputs of the wrong shape**. That is D7 from its commoner side — a model misreading a schema
+is far likelier than one inventing an id — and all eleven component ports already answered it too.
+
+---
+
+### [NOTE] 2026-09-10 — Group 3: three ways a test of a bound can fail to test anything
+Topics: mutation, testing, td-005
+Affects-phases: none
+Affects-specs: none
+
+Eleven mutations, three survivors, and all three were the tests rather than the code.
+
+**Two rules could not be seen to work.** The invariant's predicates were inlined in their guards, so
+deleting either body left the suite green — the real tree satisfies them, which is the whole point
+and also the trap. `test_stands_alone.py` learned this twice under a mutation pass and its remedy is
+now copied deliberately: each rule is written **once** as a function and called from both the guard
+and a synthetic case built to break it.
+
+**One arrangement took two attempts to become a test at all.** The claim was that the
+least-recently-used shape is what gets evicted. The first version inserted `PLAN_CACHE_MAX - 1`
+shapes, so the bound was never crossed and nothing was evicted under either policy. The second
+crossed it and asserted the **end state** — which is identical either way, because a shape evicted
+on one turn is re-planned and re-inserted on the next, so it is present by the time anyone looks.
+
+What differs is not whether the shape is there at the end. It is **how often it had to be rebuilt on
+the way**, and counting the misses is the assertion that could always have failed.
+
+---
