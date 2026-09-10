@@ -171,12 +171,29 @@ class _Turnwise:
     # ------------------------------------------------------------------ the moves
 
     async def catalogue(self) -> tuple[Interface, ...]:
-        """What the model sees: the policy's answer, this role's names, and the pattern's verbs."""
-        tools = [
-            registration.component.interface
+        """What the model sees: the policy's answer, this role's names, and the pattern's verbs.
+
+        A registered tool named like a meta-tool is refused here, before the model is asked
+        (BUG-001): every call whose name is in `BY_NAME` is routed to the meta handler, enabled by
+        the pattern or not, so such a tool would be shadowed silently. A deployment's naming is not
+        the model's to work around, and a rename on the fly would lie about the registration's id.
+        """
+        visible = [
+            registration
             for registration in await self.ctx.visible()
             if registration.id != self.agent.registration_id
-            and self.pattern.shows(registration.component.interface.name)
+        ]
+        colliding = [r for r in visible if r.component.interface.name in BY_NAME]
+        if colliding:
+            named = "; ".join(
+                f"registration {r.id!r} is named like the meta-tool {r.component.interface.name!r}"
+                for r in colliding
+            )
+            raise ValueError(f"a registered tool would be shadowed by a meta-tool: {named}")
+        tools = [
+            registration.component.interface
+            for registration in visible
+            if self.pattern.shows(registration.component.interface.name)
         ]
         # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
         # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
