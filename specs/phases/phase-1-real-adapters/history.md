@@ -286,3 +286,28 @@ The errors themselves were narrowing in the new live test — reading `.output` 
 union rather than off a `Completed`. Trivial to fix; the point is that a tool was allowed to lie
 about whether the work was done, which is exactly the class of thing the mutation-check discipline
 exists to catch, applied to the gate rather than to a test.
+
+### [DECISION] 2026-09-10 — streaming stops at the port, and the last hop waits for Phase 9
+Topics: streaming, events, exit-criteria
+
+Phase 1's acceptance list said *"tokens from a streaming model reach the observer before the call
+returns"*. Four of five criteria are met; this one is **not**, and is carried forward rather than
+ticked or fudged.
+
+`ModelPort.stream` exists, defaults sensibly, and is contract-tested against a fake and against a
+live provider. What is missing is the last hop: the agent adapter calls `complete`, and carrying
+deltas onward would need a **tenth event kind** — `09` §7's stream has nine and none of them is a
+token.
+
+That is a kernel change with an ADR, and it belongs where it is needed: **Phase 9, the wire**, where
+a host watching over SSE is the whole reason tokens matter. Adding an event kind here that nothing
+consumes, to satisfy a line written before the shape was understood, would be the sort of thing
+this project keeps deleting.
+
+### [ARCH_CHANGE] 2026-09-10 — Phase 1 complete; Phase 2 branches from here
+Topics: phase, chain, exit
+
+Four groups, five commits, on `phase-1-real-adapters` off `phase-0-the-runtime`. **202 offline tests
+and 7 live**; ruff and mypy strict clean over 48 files. Nothing merged.
+
+Phase 2 — the MCP-stub spike that answers J1 — branches from this one.

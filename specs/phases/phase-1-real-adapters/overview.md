@@ -59,14 +59,26 @@ Inherited from Epic 0001 (D1–D13). Three that shape this phase, and one new:
 | 6 | The demo on real components | `uv run python examples/real.py` |
 | 7 | Every package at the new minor version | `uv run pytest tests/test_versions.py` |
 
-## Acceptance criteria
+## Acceptance criteria — checked 2026-09-10
 
-- A composition runs end to end with a **real** model and a **real** MCP server, zero product code.
-- An MCP tool that declares nothing is registered as `ASSUME_WORST` and a mode that forbids reaching
-  refuses it — proving annotations are read, not trusted.
-- A team mode layered on a base mode can only narrow, and the property test says so.
-- Tokens from a streaming model reach the observer before the call returns.
-- Every adapter passes the contract suite for the port it implements.
+| | criterion | evidence |
+|---|---|---|
+| ✅ | A composition runs end to end with a **real** model and a **real** MCP server, zero product code | `tests/test_real_harness.py`, 7 live tests, 34.6 s |
+| ✅ | An MCP tool that declares nothing is `ASSUME_WORST`, and a mode refuses it | `test_a_tool_that_declares_nothing_is_assumed_to_be_the_worst`; and live, where `wipe`/`mystery`/`explode` never entered the catalogue |
+| ✅ | A team mode layered on a base can only narrow | `test_layering_is_narrowing_whatever_the_layers_say` (hypothesis) |
+| ⏸ | **Tokens from a streaming model reach the observer before the call returns** | **Not met, and deliberately not forced** — see below |
+| ✅ | Every adapter passes the contract suite for the port it implements | 5 suites, 6 adapters + 5 doubles |
+
+**Why the streaming criterion is left open.** `ModelPort.stream` exists, has a default, and is
+contract-tested against a fake *and* a live provider. What is missing is the last hop: the agent
+adapter calls `complete`, and carrying deltas onward would need a **tenth event kind**, because
+`09` §7's stream is `Started · Composed · Invoked · Observed · Proposed · Refused · Asked · Spawned
+· Ended` and none of them is a token.
+
+Adding one is a kernel change with an ADR (D9, D14), and it belongs where it is actually needed:
+**Phase 9, the wire**, where a host watching over SSE is the reason tokens matter at all. Forcing it
+here would add an event kind nothing consumes, to satisfy a line in this document. The criterion was
+written before that was understood; it is carried forward rather than ticked.
 
 ## Non-goals worth stating
 

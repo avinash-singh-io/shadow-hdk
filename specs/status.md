@@ -25,6 +25,7 @@ runtime that turns the bare-harness test green.
 | Phase | Name | Status | Released |
 |-------|------|--------|---------|
 | 0 | The runtime, and the bare test goes green | Complete, unmerged (2026-09-10) | — |
+| 1 | Real adapters, streaming, modes | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -36,7 +37,8 @@ runtime that turns the bare-harness test green.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. 150 passed; ruff and mypy strict clean over 37 files; runtime coverage 96 %; 0.586 ms/step against a 1 ms budget. Every package at 0.1.0. |
+| 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. Superseded as the active row by Phase 1, which branches from it. |
+| 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. One model adapter over every LangChain provider (live against HuggingFace), MCP components with derived effects, modes as data, the demo on real everything. 202 offline + 7 live; mypy strict over 48 files. |
 
 ## Upcoming Phases
 
@@ -62,8 +64,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 1 — real adapters, on `phase-1-real-adapters` branched from `phase-0-the-runtime`: one `ModelPort` over LangChain's providers (OpenAI-compatible, Anthropic, Ollama, HuggingFace) with `stream`; the MCP component adapter; `adapters/modes`
-2. Phase 2 — the MCP-stub spike, which answers J1 on the board
+1. Phase 2 — the spike that answers **J1** on the board: does a CLI whose tool call is refused end its turn cleanly, and does ACP report token usage. Branch `phase-2-the-spike` from `phase-1-real-adapters`
+2. Phase 3 — the workspace and code: files within a root, and a subprocess sandbox
 
 ## Key Decisions Made
 
@@ -72,6 +74,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 1 complete**: one model adapter over every LangChain provider, proven live against HuggingFace; MCP components with effects derived from annotations; modes as data; the harness on real everything
 - 2026-09-10 — **Phase 0 complete**: the runtime, the agent as a component, the basic adapters, the bare harness green with zero product code
 - 2026-09-10 — founded: charter, principles, success criteria, roadmap, architecture, Epic 0001, Phase 0
 - 2026-09-10 — momentum installed; joined `intent-ecosystem` as member `shadow-hdk`
