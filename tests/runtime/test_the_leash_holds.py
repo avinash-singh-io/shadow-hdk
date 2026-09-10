@@ -152,3 +152,100 @@ async def test_a_full_stderr_does_not_deadlock_the_step(tmp_path: Path) -> None:
 async def test_a_program_that_cannot_start_is_data(tmp_path: Path) -> None:
     done = await run_leashed(["no-such-program-here"], cwd=tmp_path, timeout_s=5, output_limit=10)
     assert isinstance(done, Failed) and "FileNotFoundError" in done.error
+
+
+async def test_the_tree_ends_the_moment_the_cap_is_reached(tmp_path: Path) -> None:
+    """Draining the overflow bounds memory; ending the tree bounds *time*. A program that says
+    more than the step will keep and then sits there must not hold the step until its timeout."""
+    import sys
+
+    says_then_sits = (
+        "import sys, time\nsys.stdout.write('o' * 200000); sys.stdout.flush()\ntime.sleep(30)\n"
+    )
+    began = time.monotonic()
+    done = await run_leashed(
+        [sys.executable, "-c", says_then_sits], cwd=tmp_path, timeout_s=25, output_limit=50
+    )
+    took = time.monotonic() - began
+    output = said(done)
+    assert output["truncated"] is True
+    assert took < 15, f"the step waited {took:.1f}s for a program it had stopped listening to"
+
+
+async def test_a_second_stream_is_read_while_the_first_is_still_open(tmp_path: Path) -> None:
+    """No cap here, so nothing is killed: this is only about reading both at once. Reading stdout
+    to its end while stderr fills its pipe leaves the child blocked on a write nobody drains."""
+    import sys
+
+    both = (
+        "import sys\n"
+        "sys.stdout.write('o' * 400000); sys.stdout.flush()\n"
+        "sys.stderr.write('e' * 400000); sys.stderr.flush()\n"
+        "sys.stdout.write('done'); sys.stdout.flush()\n"
+    )
+    done = await run_leashed(
+        [sys.executable, "-c", both], cwd=tmp_path, timeout_s=15, output_limit=10_000_000
+    )
+    output = said(done)
+    assert output["truncated"] is False
+    assert output["stdout"].endswith("done")
+    assert len(output["stderr"]) == 400000
+
+
+async def test_a_memory_limit_is_asked_for_with_the_childs_own_pid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """What the harness can promise on every platform is that it *asks*. Whether the kernel
+    obliges is `MEMORY_LIMIT_ENFORCED`, and the test above covers where it does."""
+    from shadow_hdk.runtime import leash
+
+    asked: list[tuple[int, int]] = []
+    monkeypatch.setattr(leash, "_limit_memory", lambda pid, mb: asked.append((pid, mb)))
+    done = await run_leashed(
+        ["sh", "-c", "echo ran"], cwd=tmp_path, timeout_s=10, output_limit=200, memory_mb=64
+    )
+    assert said(done)["stdout"].strip() == "ran"
+    assert len(asked) == 1 and asked[0][1] == 64
+    assert asked[0][0] > 0
+
+
+async def test_no_memory_limit_is_asked_for_when_none_was_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from shadow_hdk.runtime import leash
+
+    asked: list[tuple[int, int]] = []
+    monkeypatch.setattr(leash, "_limit_memory", lambda pid, mb: asked.append((pid, mb)))
+    await run_leashed(["sh", "-c", "echo ran"], cwd=tmp_path, timeout_s=10, output_limit=200)
+    assert asked == []
+
+
+async def test_the_cap_bounds_memory_and_not_only_what_is_shown() -> None:
+    """`communicate()` buffered forty megabytes before the cap took a hundred bytes of it, so
+    `output_limit` bounded the *observation* and not the host's memory. Collecting only up to the
+    cap is invisible in the output — the text is the same either way — so it is measured where the
+    difference actually is."""
+    import tracemalloc
+
+    from shadow_hdk.runtime.leash import _read_capped
+
+    class Floods:
+        """Twenty megabytes, in chunks, as a stream reader would deliver them."""
+
+        def __init__(self) -> None:
+            self.left = 320
+
+        async def read(self, _n: int) -> bytes:
+            if self.left == 0:
+                return b""
+            self.left -= 1
+            return b"x" * 65536
+
+    tracemalloc.start()
+    before = tracemalloc.get_traced_memory()[1]
+    text, truncated = await _read_capped(Floods(), 100, lambda: None)  # type: ignore[arg-type]
+    peak = tracemalloc.get_traced_memory()[1]
+    tracemalloc.stop()
+    assert len(text) == 100 and truncated is True
+    grew = peak - before
+    assert grew < 4 * 1024 * 1024, f"twenty megabytes of output held {grew / 1e6:.1f}MB"
