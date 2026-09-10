@@ -71,3 +71,27 @@ identical text either way — so it is measured with `tracemalloc`, where twenty
 must not become twenty megabytes of memory.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 2: the two lines the mutation pass drew
+Topics: contained, d36, proof, mutation
+Affects-phases: none
+Affects-specs: specs/architecture/adapters.md
+
+The fix is small; the two distinctions inside it are the point, and both came out of mutations that
+survived a first pass.
+
+**Inconclusive is not a denial.** A probe that fails to *start* also fails to connect, so a check
+looking only for the absence of success certifies every backend that can run nothing — which is how
+the original bug would have come back wearing a capability test's clothes. The probe therefore says
+`DENIED` or `REACHED`, and silence is `Inconclusive`.
+
+**Trust covers an unknown, never a fact.** `trusting_the_backend_without_proof` is for a check that
+could not run. A backend that *ran* the check and reached the host is refused however much the
+operator trusts it: an operator may sign for something nobody could establish, not for something
+established against them. Nothing tested that combination until a mutation asked.
+
+Also worth recording: the reproduction was re-run against the fix rather than assumed. The fake
+`runsc` still announces *Starting gVisor...* — `declares()` returns it — and `ContainedSandbox`
+now refuses it, naming the capability it failed to deny.
+
+---

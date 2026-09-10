@@ -14,9 +14,10 @@ phase: 18-the-p1s
 
 ## Group 2 — a proof is a capability test (D36)
 - [x] reproduce: a five-line fake `runsc` on `PATH` produced a `Proof`
-- [ ] `Proof.declared` / `Proof.checks`; a capability test; refusal without one unless trust is named
-- [ ] RED: a backend that does not contain cannot prove; a banner is not a proof
-- [ ] Gate
+- [x] `Proof.checks` (what was attempted and denied) and `Proof.declared` (the backend's own word, a claim); `prove()` in the **sandbox** so no backend judges itself; `Inconclusive` distinct from a denial; `trusting_the_backend_without_proof` named for the sentence it signs
+- [x] the backends moved from `probe()` to `declares()`; the live gVisor and Firecracker tests still skip, now reading the new shape
+- [x] RED: a box that does not box cannot prove; a banner is not a proof; an inconclusive check is not a denial; trust covers an unknown and **not** a fact; the probe goes through `wrap`; the proof carries its evidence — 12 tests, plus the six existing ones moved over
+- [x] Gate — ruff 0 / format 0 / mypy 0 (122 files) / pytest 764 passed, 1 skipped, 10 deselected; 12 mutations, all bite
 
 ## Groups 3–5
 - [ ] BUG-015 — a held child across its parent's park
