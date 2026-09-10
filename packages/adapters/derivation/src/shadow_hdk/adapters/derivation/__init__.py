@@ -1,5 +1,6 @@
 """A derivation engine as a component: exact values, re-executable grounds."""
 
+from shadow_hdk.adapters.derivation.component import DERIVE, DerivationComponents
 from shadow_hdk.adapters.derivation.ground import (
     VOCABULARY,
     Ground,
@@ -29,6 +30,7 @@ from shadow_hdk.adapters.derivation.values import (
 
 __all__ = [
     "COLUMN_TYPES",
+    "DERIVE",
     "CONTEXT",
     "QUANTUM",
     "SCALE",
@@ -36,6 +38,7 @@ __all__ = [
     "VOCABULARY",
     "ColumnType",
     "Comparison",
+    "DerivationComponents",
     "Ground",
     "Indeterminate",
     "Quantity",
