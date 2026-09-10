@@ -46,7 +46,8 @@ runtime that turns the bare-harness test green.
 | 3 — the workspace and code | `phase-3-workspace-and-code` | **complete, unmerged** | Superseded as the active row by Phase 4. |
 | 4 — the ACP bridge | `phase-4-the-acp-bridge` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 5. Another agent as a governed component: fourteen client doors judged, refusals in the agent's own vocabulary, our clock over their runaway, money accumulated before converting. 302 tests; mypy strict over 61 files. What Codex and Claude Code do is still unmeasured. |
 | 5 — the recording server | `phase-5-the-recording-server` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 6. Our registry offered to a child agent as an MCP server: what it does is on the parent's record because it was routed. Proven over a real `ClientSession` and over a real OS subprocess. 326 tests; mypy strict over 67 files. A child on another *machine* still needs a listening transport → Phase 9. |
-| 6 — the compiler, complete | `phase-6-the-compiler-complete` | **complete, unmerged** | 3 / 3 groups. A nested composite is a subgraph with a name of its own; a host can stop a run and the record says who asked (D15); a parked run survives the process that parked it, proven on a file. 343 tests; mypy strict over 70 files. Subgraphs cost 0.607 ms/step against D11's 1 ms. |
+| 6 — the compiler, complete | `phase-6-the-compiler-complete` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 7. A nested composite is a subgraph with a name of its own; a host can stop a run and the record says who asked (D15); a parked run survives the process that parked it, proven on a file. 343 tests; mypy strict over 70 files. Subgraphs cost 0.607 ms/step against D11's 1 ms. |
+| 7 — sub-agents | `phase-7-sub-agents` | **complete, unmerged** | 3 / 3 groups. Spawn, send, release over parked runs (D16): a held child is a checkpoint, not a resident object. `Await` now actually parks — it never had. The tenth event kind, `Held`. 354 tests; mypy strict over 73 files. The model-facing verbs move to Phase 8, because a `spawn` a model can call has to say what the child *is*, and that is a pattern. |
 
 ## Upcoming Phases
 
@@ -72,9 +73,9 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 7 — sub-agents, on `phase-7-…` branched from `phase-6-the-compiler-complete`: spawn · send · release; held children; branch-level cancel (which now has a scope to point at); `run.*` events
-2. Phase 8 onward in roadmap order; the environment epic after
-3. Carried to Phase 9, both stated with what would settle them: a tenth event kind so tokens reach the observer, and a **listening** transport (streamable HTTP) for a child on another machine — the recording server can only be connected to, never launched
+1. Phase 8 — patterns, skills, replay, on `phase-8-…` branched from `phase-7-sub-agents`: `plan-and-execute`, `orchestrator-workers`, `critic-pair`, `reflect-until`; the skill file loader; compaction; the recorded model port; catalogue compaction (`describe`). It also inherits Phase 7's deferral — the `spawn` / `send` / `release` meta-tools, which need a pattern to shape the child
+2. Phase 9 onward in roadmap order; the environment epic after
+3. Carried to Phase 9, each with what would settle it: tokens reaching the observer (the tenth event kind arrived in Phase 7 as `Held`, so this still needs its own); a **listening** transport (streamable HTTP) for a child on another machine, since the recording server can only be connected to, never launched; and **TD-001**, our observation classes riding in graph state where a future LangGraph will block them
 
 ## Key Decisions Made
 
@@ -83,6 +84,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 7 complete**: a child can be kept between messages, and it is a checkpoint rather than an object left running. Building it found that `Await` had never parked — the architecture said `interrupt()` since Phase 0 and the compiler treated it like `Invoke`, so half the grammar's waiting was a type nothing exercised
 - 2026-09-10 — **Phase 6 complete**: the compiler says *where*. A nested composite is a subgraph with its own checkpoint namespace, a host can stop a run and the record carries the words of whoever asked, and a parked run resumes from a file after the saver that wrote it is gone. Two steps sharing an id used to loop until the lease was spent; now the run ends and names the id
 - 2026-09-10 — **Phase 5 complete**: a child agent uses the parent's registry through an MCP server, and what it did is on the parent's record because it was routed. The MCP topology is inverted — the parent spawns the child and serves over its pipes, because this server holds a live run and cannot be launched fresh
 - 2026-09-10 — **Phase 4 complete**: another agent driven as a governed component. A mode written for the harness governs somebody else's agent without knowing it exists
