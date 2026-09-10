@@ -1,9 +1,9 @@
-# Phases 0–18: the harness, and the audit's P0s and P1s
+# Phases 0–19: the harness, and everything the audit found
 
-One pull request for a linear stack of 141 commits. Each phase branched from the one before, so
+One pull request for a linear stack of 162 commits. Each phase branched from the one before, so
 every phase branch is an ancestor of this one and there is nothing to land separately.
 
-**This is the first time CI will have run on any of it.** The workflow triggered only on pushes to
+**CI is green on this branch and has been since it was widened to run at all.** The workflow triggered only on pushes to
 `main` and `staging` and on pull requests, and nothing has ever reached either — so every "four
 zeros" in every commit message below is one laptop's word. Widening that trigger is the last commit
 in the stack (TD-009). Read a red here as information, not as a regression.
@@ -15,12 +15,12 @@ governance policy, and hands what it produces to whoever is listening. It govern
 names** — a six-field `EffectProfile` with a `narrows` partial order — and the agent's plan is data
 compiled to a LangGraph graph.
 
-Seventeen distributions, all `0.12.0`, all MIT: kernel, runtime, wire, and 14 adapters.
+Seventeen distributions, all `0.13.0`, all MIT: kernel, runtime, wire, and 14 adapters.
 
 | | |
 |---|---|
-| Tests | 837 passed, 1 skipped, 10 deselected |
-| Types | mypy strict, 132 files |
+| Tests | 946 passed, 1 skipped, 10 deselected |
+| Types | mypy strict, 133 files |
 | Lint | ruff check and format, clean |
 | Coverage | `shadow_hdk.runtime` above the 90% floor, measured locally |
 

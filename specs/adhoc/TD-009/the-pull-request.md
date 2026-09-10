@@ -29,27 +29,41 @@ So the command is written out below, ready, and deliberately not run.
 
 | | |
 |---|---|
-| Head | `phase-18-the-p1s` — the top of the linear stack |
-| Base | `staging` |
-| Commits | 141 |
-| Files | 508 changed |
-| Phases | 0–18 (Phase 18 is groups 1–5 of 5) |
-| Packages | kernel, runtime, wire, and 14 adapters, all `0.12.0`, all MIT |
-| Tests | 837 passed, 1 skipped, 10 deselected |
-| Types | mypy strict over 132 files |
+| Head | `phase-19-the-p2s` — the top of the linear stack |
+| Base | `main` |
+| Commits | 162 |
+| Files | 528 changed |
+| Phases | 0–19 |
+| Packages | kernel, runtime, wire, and 14 adapters, all `0.13.0`, all MIT |
+| Tests | 946 passed, 1 skipped, 10 deselected |
+| Types | mypy strict over 133 files |
 
-**One pull request, not eighteen.** Each phase branched from the one before it, so the stack is
-linear and every branch is an ancestor of this one. Opening it against `staging` rather than `main`
-is the staging-first rule, and it means the first CI run in this repository's history happens
-somewhere a failure costs nothing.
+**Two corrections to this record, made 2026-09-10 and worth stating rather than quietly editing.**
+
+It named `phase-18-the-p1s` as the head. Phase 19 came after it, so the command would have opened a
+pull request that left the last twenty-one commits out.
+
+And it named **`staging` as the base, which does not exist.** This lane worked under a rule never to
+push to `staging` or `main`, and never checked that the first of those was a branch. `git ls-remote
+--heads origin staging` returns nothing. The command would have failed outright.
+
+**The base is `main`, and no merge commit is needed.** Verified: `git merge-base --is-ancestor
+origin/main origin/phase-19-the-p2s` succeeds, so `main` is a strict ancestor — 162 commits behind
+and none of its own. It fast-forwards.
+
+**One pull request, not twenty.** Every phase branched from the one before, and all twenty-one
+branches were checked to be ancestors of this one, so there is nothing to land separately.
 
 ## The command
 
-Run from the repository root, on a machine authenticated as the owner:
+Run from the repository root, on a machine authenticated as the owner. **Or skip the pull request
+entirely** — `main` fast-forwards, so `git push origin phase-19-the-p2s:main` lands the stack with
+no merge commit and no review ceremony. The pull request is worth opening only if you want the
+diff in one readable place or a second pair of eyes; the merge itself needs neither.
 
 ```bash
-gh pr create --base staging --head phase-18-the-p1s \
-  --title "Phases 0-18: the harness, and the audit's P0s and P1s" \
+gh pr create --base main --head phase-19-the-p2s \
+  --title "Phases 0-19: the harness, and everything the audit found" \
   --body-file specs/adhoc/TD-009/pull-request-body.md
 ```
 
