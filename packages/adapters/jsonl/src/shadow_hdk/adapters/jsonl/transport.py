@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -92,9 +93,9 @@ class JsonlProvider(AgentPort):
     async def open(
         self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
     ) -> AgentSession:
-        launched = self._provider.__class__(
-            **{**self._provider.__dict__, "launch_args": tuple(argv_for(self._provider, tools))}
-        )
+        # `replace`, not `__class__(**__dict__)` — see the note in `examples/coder/session.py`:
+        # copying a frozen dataclass around its own constructor discards every argument's type.
+        launched = replace(self._provider, launch_args=tuple(argv_for(self._provider, tools)))
         return JsonlSession(
             launched,
             binary=self._binary,

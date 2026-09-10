@@ -15,6 +15,7 @@ from __future__ import annotations
 import shutil
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -122,11 +123,12 @@ async def a_conversation(
     held["finished"] = asyncio.get_running_loop().create_future()
 
     ports = workshop(root)
-    ports = ports.__class__(
-        **{
-            **ports.__dict__,
-            "components": (*ports.components, InMemoryComponents([(CONVERSE, converse)])),
-        }
+    # `replace`, not `__class__(**__dict__)`: the latter copies a frozen dataclass by side-stepping
+    # its own constructor, so every argument arrives untyped and nothing can see that the component
+    # tuple went to `components` rather than to `governance`. It type-checks by accident, which is
+    # worse than not type-checking at all.
+    ports = replace(
+        ports, components=(*ports.components, InMemoryComponents([(CONVERSE, converse)]))
     )
     plan = Composition((Invoke("converse", "converse", (Binding("brief", value=""),)),))
 
