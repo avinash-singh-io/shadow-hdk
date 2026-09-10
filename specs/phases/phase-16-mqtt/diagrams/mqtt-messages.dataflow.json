@@ -2,48 +2,277 @@
   "schema_version": 1,
   "diagram_type": "dataflow",
   "meta": {
-    "title": "MQTT Envelope — Where Each Payload Goes",
+    "title": "MQTT Envelope \u2014 Where Each Payload Goes",
     "quality_profile": "showcase",
-    "viewBox": [1160, 720],
+    "viewBox": [
+      1800,
+      720
+    ],
     "views": [
-      { "id": "a-reading", "label": "A reading", "focus": ["device", "broker", "router", "latest", "reading"], "note": "A reading lands in the latest slot for its filter; read() is a look at that slot." },
-      { "id": "an-event", "label": "An event", "focus": ["device", "broker", "router", "queue", "overheard"], "note": "Events queue per witness filter and are handed over one per invoke as observed receipts." },
-      { "id": "a-command", "label": "A command and its ack", "focus": ["command", "broker", "router", "waiter", "ack"], "note": "The command carries the key; the ack that carries the same key completes the receipt." }
+      {
+        "id": "a-reading",
+        "label": "A reading",
+        "focus": [
+          "device",
+          "broker",
+          "router",
+          "latest",
+          "reading"
+        ],
+        "note": "A reading lands in the latest slot for its filter; read() is a look at that slot."
+      },
+      {
+        "id": "an-event",
+        "label": "An event",
+        "focus": [
+          "device",
+          "broker",
+          "router",
+          "queue",
+          "overheard"
+        ],
+        "note": "Events queue per witness filter and are handed over one per invoke as observed receipts."
+      },
+      {
+        "id": "a-command",
+        "label": "A command and its ack",
+        "focus": [
+          "command",
+          "broker",
+          "router",
+          "waiter",
+          "ack"
+        ],
+        "note": "The command carries the key; the ack that carries the same key completes the receipt."
+      }
     ]
   },
   "stages": [
-    { "label": "Sources" },
-    { "label": "Transit" },
-    { "label": "Routing — paho thread" },
-    { "label": "Adapter state — under one lock" },
-    { "label": "Observations" }
+    {
+      "label": "Sources"
+    },
+    {
+      "label": "Transit"
+    },
+    {
+      "label": "Routing \u2014 paho thread"
+    },
+    {
+      "label": "Adapter state \u2014 one lock"
+    },
+    {
+      "label": "Observations"
+    }
   ],
   "nodes": [
-    { "id": "device", "type": "external", "label": "Device", "sublabel": "readings · events · acks", "stage": 0, "row": 0, "tag": "JSON envelope" },
-    { "id": "command", "type": "backend", "label": "MqttActuator.command", "sublabel": "{key, argv}", "stage": 0, "row": 2, "tag": "QoS 1" },
-    { "id": "broker", "type": "messagebus", "label": "Broker topics", "sublabel": "retained · QoS 1", "stage": 1, "row": 1 },
-    { "id": "router", "type": "backend", "label": "_on_message", "sublabel": "match every filter", "stage": 2, "row": 1, "tag": "clock.now()" },
-    { "id": "latest", "type": "database", "label": "latest[filter]", "sublabel": "one per sensor filter", "stage": 3, "row": 0 },
-    { "id": "queue", "type": "database", "label": "queues[filter]", "sublabel": "deque per witness filter", "stage": 3, "row": 1, "tag": "unbounded" },
-    { "id": "waiter", "type": "database", "label": "waiters[(ack_topic, key)]", "sublabel": "one per act in flight", "stage": 3, "row": 2 },
-    { "id": "reading", "type": "backend", "label": "Completed reading", "sublabel": "value · unit · at · stamped_by · age", "stage": 4, "row": 0, "tag": "controlled" },
-    { "id": "overheard", "type": "backend", "label": "Acted (observed)", "sublabel": "id · what · at · exit · key", "stage": 4, "row": 1, "tag": "observed" },
-    { "id": "ack", "type": "backend", "label": "Acted (controlled)", "sublabel": "id · exit · key · grounds", "stage": 4, "row": 2, "tag": "controlled" }
+    {
+      "id": "device",
+      "type": "external",
+      "label": "Device",
+      "sublabel": "readings \u00b7 events \u00b7 acks",
+      "stage": 0,
+      "row": 0,
+      "width": 150,
+      "tag": "JSON envelope"
+    },
+    {
+      "id": "command",
+      "type": "backend",
+      "label": "Actuator.command",
+      "sublabel": "{key, argv}",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "tag": "QoS 1"
+    },
+    {
+      "id": "broker",
+      "type": "messagebus",
+      "label": "Broker topics",
+      "sublabel": "retained \u00b7 QoS 1",
+      "stage": 1,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "_on_message",
+      "sublabel": "match every filter",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "tag": "clock.now()"
+    },
+    {
+      "id": "latest",
+      "type": "database",
+      "label": "latest[filter]",
+      "sublabel": "one per sensor filter",
+      "stage": 3,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "queue",
+      "type": "database",
+      "label": "queues[filter]",
+      "sublabel": "deque per witness filter",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "tag": "unbounded"
+    },
+    {
+      "id": "waiter",
+      "type": "database",
+      "label": "waiters[ack_topic, key]",
+      "sublabel": "one per act in flight",
+      "stage": 3,
+      "row": 2,
+      "width": 170
+    },
+    {
+      "id": "reading",
+      "type": "backend",
+      "label": "Completed reading",
+      "sublabel": "value \u00b7 unit \u00b7 at \u00b7 stamped_by",
+      "stage": 4,
+      "row": 0,
+      "width": 170,
+      "tag": "controlled"
+    },
+    {
+      "id": "overheard",
+      "type": "backend",
+      "label": "Acted (observed)",
+      "sublabel": "id \u00b7 what \u00b7 at \u00b7 exit \u00b7 key",
+      "stage": 4,
+      "row": 1,
+      "width": 170,
+      "tag": "observed"
+    },
+    {
+      "id": "ack",
+      "type": "backend",
+      "label": "Acted (controlled)",
+      "sublabel": "id \u00b7 exit \u00b7 key \u00b7 grounds",
+      "stage": 4,
+      "row": 2,
+      "width": 170,
+      "tag": "controlled"
+    }
   ],
   "flows": [
-    { "id": "inbound", "from": "device", "to": "broker", "label": "PUBLISH", "classification": "reading · event · ack", "variant": "emphasis" },
-    { "id": "outbound", "from": "command", "to": "broker", "label": "PUBLISH {key, argv}", "classification": "PUBACK expected", "variant": "emphasis" },
-    { "id": "deliver", "from": "broker", "to": "router", "label": "deliver", "classification": "subscribed filters", "variant": "emphasis" },
-    { "id": "to-latest", "from": "router", "to": "latest", "label": "sensor filter matches", "classification": "overwrite" },
-    { "id": "to-queue", "from": "router", "to": "queue", "label": "witness filter matches", "classification": "append" },
-    { "id": "to-waiter", "from": "router", "to": "waiter", "label": "ack whose key is ours", "classification": "set event", "variant": "security" },
-    { "id": "read", "from": "latest", "to": "reading", "label": "read()", "classification": "Reading" },
-    { "id": "report", "from": "queue", "to": "overheard", "label": "overheard()", "classification": "one per invoke" },
-    { "id": "answer", "from": "waiter", "to": "ack", "label": "command() returns", "classification": "Ack", "variant": "security" }
+    {
+      "id": "inbound",
+      "from": "device",
+      "to": "broker",
+      "label": "PUBLISH",
+      "classification": "reading \u00b7 event \u00b7 ack",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "outbound",
+      "from": "command",
+      "to": "broker",
+      "label": "PUBLISH {key, argv}",
+      "classification": "PUBACK expected",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "deliver",
+      "from": "broker",
+      "to": "router",
+      "label": "deliver",
+      "classification": "subscribed filters",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "id": "to-latest",
+      "from": "router",
+      "to": "latest",
+      "label": "sensor filter",
+      "classification": "overwrite",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "to-queue",
+      "from": "router",
+      "to": "queue",
+      "label": "witness filter",
+      "classification": "append",
+      "route": "straight"
+    },
+    {
+      "id": "to-waiter",
+      "from": "router",
+      "to": "waiter",
+      "label": "ack for our key",
+      "classification": "wake the waiter",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "read",
+      "from": "latest",
+      "to": "reading",
+      "label": "read()",
+      "classification": "Reading",
+      "route": "straight"
+    },
+    {
+      "id": "report",
+      "from": "queue",
+      "to": "overheard",
+      "label": "overheard()",
+      "classification": "one per invoke",
+      "route": "straight"
+    },
+    {
+      "id": "answer",
+      "from": "waiter",
+      "to": "ack",
+      "label": "command() returns",
+      "classification": "Ack",
+      "variant": "security",
+      "route": "straight"
+    }
   ],
   "cards": [
-    { "dot": "amber", "title": "The envelope (D32)", "items": ["A JSON object in the payload carries key, stamp and exit; anything else is a reading of its text", "A reading with no at is stamped with the receive time and says stamped_by: receiver", "MQTT v5 properties were rejected: only a 3.1.1 broker can be proven here"] },
-    { "dot": "emerald", "title": "Three slots, one lock", "items": ["A sensor filter keeps only the latest message; staleness is data via age_seconds", "A witness filter queues every message; one is handed over per invoke", "An ack is matched to the act in flight by (ack_topic, key) — an ack for another key is not ours"] },
-    { "dot": "rose", "title": "Known gaps", "items": ["The witness queue is unbounded — TD-002", "A wildcard sensor cannot say which concrete topic it read — ENH-001", "Registration mutates the filter sets outside the lock the router iterates under — BUG-003"] }
+    {
+      "dot": "amber",
+      "title": "The envelope (D32)",
+      "items": [
+        "A JSON object in the payload carries key, stamp and exit; anything else is a reading of its text",
+        "A reading with no at is stamped with the receive time and says stamped_by: receiver",
+        "MQTT v5 properties were rejected: only a 3.1.1 broker can be proven here"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Three slots, one lock",
+      "items": [
+        "A sensor filter keeps only the latest message; staleness is data via age_seconds",
+        "A witness filter queues every message; one is handed over per invoke",
+        "An ack is matched to the act in flight by (ack_topic, key) \u2014 an ack for another key is not ours"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Known gaps",
+      "items": [
+        "The witness queue is unbounded \u2014 TD-002",
+        "A wildcard sensor cannot say which concrete topic it read \u2014 ENH-001",
+        "Registration mutates the filter sets outside the lock the router iterates under \u2014 BUG-003"
+      ]
+    }
   ]
 }

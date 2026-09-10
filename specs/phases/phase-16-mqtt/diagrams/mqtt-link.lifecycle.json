@@ -4,46 +4,39 @@
   "meta": {
     "title": "MqttLink Lifecycle",
     "quality_profile": "showcase",
-    "viewBox": [1080, 700],
+    "viewBox": [1080, 620],
     "views": [
-      { "id": "steady-state", "label": "Open and acting", "focus": ["unopened", "opening", "open", "acting", "acked"], "note": "The link opens on first use, routes messages while open, and returns to open after each act." },
-      { "id": "recoverable", "label": "Recoverable failures", "focus": ["opening", "refused", "acting", "broken", "open", "gone"], "note": "Each failure is reported to the step; the next use opens a fresh clean session." },
-      { "id": "terminal", "label": "Closed is terminal", "focus": ["open", "closed"], "note": "A closed link is never reopened behind the caller's back." }
+      { "id": "steady-state", "label": "Open and acting", "focus": ["unopened", "opening", "open", "acting"], "note": "The link opens on first use, routes messages while open, and returns to open after each act." },
+      { "id": "recoverable", "label": "Session lost, then reopened", "focus": ["open", "acting", "lost", "opening"], "note": "Whether the broker left or we dropped the session after no PUBACK, the next use opens a fresh clean session." },
+      { "id": "terminal", "label": "Closed is terminal", "focus": ["acting", "closed"], "note": "A closed link is never reopened behind the caller's back." }
     ]
   },
   "lanes": [
     { "id": "main", "label": "Link states" },
-    { "id": "recovery", "label": "Recoverable failures" },
-    { "id": "terminal", "label": "Terminal" }
+    { "id": "recovery", "label": "Recoverable" }
   ],
   "states": [
-    { "id": "unopened", "type": "start", "label": "Unopened", "sublabel": "no client yet", "lane": "main", "col": 0, "step": "01" },
+    { "id": "unopened", "type": "start", "label": "Unopened", "sublabel": "no client until first use", "lane": "main", "col": 0, "step": "01" },
     { "id": "opening", "type": "active", "label": "Opening", "sublabel": "CONNECT · CONNACK · subscribe", "lane": "main", "col": 1, "step": "02", "tag": "to_thread" },
-    { "id": "open", "type": "active", "label": "Open", "sublabel": "routing by filter", "lane": "main", "col": 2, "step": "03", "tag": "reads served" },
-    { "id": "acting", "type": "waiting", "label": "In an act", "sublabel": "PUBACK, then ack — bounded", "lane": "main", "col": 3, "step": "04", "tag": "timeout" },
-    { "id": "acked", "type": "success", "label": "Ack returned", "sublabel": "Acted on the record", "lane": "main", "col": 4, "step": "05" },
-    { "id": "refused", "type": "failure", "label": "Unreachable / refused", "sublabel": "ConnectionError → Failed", "lane": "recovery", "col": 0, "tag": "nothing sent" },
-    { "id": "broken", "type": "failure", "label": "Broken", "sublabel": "no PUBACK: session dropped", "lane": "recovery", "col": 1, "tag": "never re-sent" },
-    { "id": "gone", "type": "failure", "label": "Gone", "sublabel": "broker left; thread noticed", "lane": "recovery", "col": 2, "tag": "keepalive 30 s" },
-    { "id": "closed", "type": "neutral", "label": "Closed", "sublabel": "close(); never reopened", "lane": "terminal", "col": 2, "tag": "terminal" }
+    { "id": "open", "type": "active", "label": "Open", "sublabel": "routes by filter", "lane": "main", "col": 2, "step": "03", "tag": "reads served" },
+    { "id": "acting", "type": "waiting", "label": "In an act", "sublabel": "PUBACK, then ack — bounded", "lane": "main", "col": 3, "step": "04", "tag": "command()" },
+    { "id": "closed", "type": "neutral", "label": "Closed", "sublabel": "close(); never reopened", "lane": "main", "col": 4, "step": "05", "tag": "terminal" },
+    { "id": "lost", "type": "failure", "label": "Session lost", "sublabel": "broker left, or dropped by us", "lane": "recovery", "col": 0, "tag": "nothing re-sent" }
   ],
   "transitions": [
-    { "id": "first-use", "from": "unopened", "to": "opening", "label": "first use or connect()" },
-    { "id": "connected", "from": "opening", "to": "open", "label": "CONNACK ok" },
-    { "id": "act", "from": "open", "to": "acting", "label": "command()" },
-    { "id": "acknowledged", "from": "acting", "to": "acked", "label": "PUBACK · ack" },
-    { "id": "next-act", "from": "acked", "to": "open", "label": "next use", "variant": "dashed" },
-    { "id": "connect-failed", "from": "opening", "to": "refused", "label": "no CONNACK", "variant": "security" },
-    { "id": "retry-open", "from": "refused", "to": "unopened", "label": "next use retries", "variant": "dashed" },
-    { "id": "no-puback", "from": "acting", "to": "broken", "label": "no PUBACK", "variant": "security" },
-    { "id": "fresh-session", "from": "broken", "to": "opening", "label": "next use: clean session", "variant": "emphasis" },
-    { "id": "broker-left", "from": "open", "to": "gone", "label": "broker leaves", "variant": "security" },
-    { "id": "reopen", "from": "gone", "to": "opening", "label": "next use", "variant": "emphasis" },
-    { "id": "close", "from": "open", "to": "closed", "label": "close()" }
+    { "id": "first-use", "from": "unopened", "to": "opening", "route": "straight" },
+    { "id": "connected", "from": "opening", "to": "open", "route": "straight" },
+    { "id": "act", "from": "open", "to": "acting", "route": "straight" },
+    { "id": "ack-returned", "from": "acting", "to": "open", "label": "Ack returned", "variant": "emphasis", "fromSide": "top", "toSide": "top", "via": [[556, 80], [402, 80]] },
+    { "id": "close", "from": "acting", "to": "closed", "route": "straight" },
+    { "id": "connect-failed", "from": "opening", "to": "unopened", "label": "refused / no CONNACK", "variant": "security", "fromSide": "top", "toSide": "top", "via": [[248, 80], [94, 80]] },
+    { "id": "broker-left", "from": "open", "to": "lost", "label": "broker leaves", "variant": "security", "route": "straight" },
+    { "id": "no-puback", "from": "acting", "to": "lost", "label": "no PUBACK: dropped", "variant": "security", "fromSide": "bottom", "toSide": "right", "via": [[556, 307]] },
+    { "id": "reopen", "from": "lost", "to": "opening", "label": "next use: clean session", "variant": "emphasis", "fromSide": "left", "toSide": "bottom", "via": [[248, 307]] }
   ],
   "cards": [
-    { "dot": "emerald", "title": "Broken reopens; closed does not", "items": ["Reopening is what makes a retry possible — a new act under the same key", "A close is the caller's decision and is never undone behind their back", "Every wait — CONNACK, PUBACK, ack, first-read grace — is bounded"] },
-    { "dot": "rose", "title": "Why Broken exists", "items": ["paho keeps an unacked QoS 1 message and re-sends it on reconnect with dup set", "A step that already returned Failed would then change the world later", "Dropping the client — DISCONNECT delivered, thread joined — is the only way the queue dies with it"] },
-    { "dot": "amber", "title": "What the step sees", "items": ["Unreachable or refused: Failed, nothing published", "No PUBACK: Failed, no receipt, and perhaps the command went out — that is what the key on the wire is for", "No ack after a PUBACK: Failed, no receipt, link kept — the command was certainly taken"] }
+    { "dot": "emerald", "title": "Lost reopens; closed does not", "items": ["Reopening on the next use is what makes a retry possible — a new act under the same key", "close() may be called from any state; a closed link is never reopened behind the caller's back", "Every wait — CONNACK, PUBACK, ack, first-read grace — is bounded"] },
+    { "dot": "rose", "title": "Why we drop the session ourselves", "items": ["paho keeps an unacked QoS 1 message and re-sends it on reconnect with dup set", "A step that already returned Failed would then change the world later", "Dropping the client — DISCONNECT delivered, thread joined — is the only way the queue dies with it"] },
+    { "dot": "amber", "title": "What the step sees", "items": ["Refused or unreachable: Failed, nothing published, the link stays unopened", "No PUBACK: Failed, no receipt, and perhaps the command went out — that is what the key on the wire is for", "PUBACK but no ack: Failed, no receipt, and the link stays open — the command was certainly taken"] }
   ]
 }
