@@ -29,7 +29,7 @@ each branched from the one before, **all pushed and none merged** — landing is
 | | phases | state |
 |---|---|---|
 | done | 0 – 16 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
-| under way | 17 — what the audit found | group 1 of 3: BUG-004 closed (D33, contract 0.9.0); BUG-005 and BUG-006 next |
+| under way | 17 — what the audit found | groups 1–2 of 3: BUG-004 (D33, 0.9.0) and BUG-005 (0.10.0) closed; BUG-006 next |
 | `[~]` | OPC-UA, ROS 2 (epic 0007) | need `asyncua` and a server, and a ROS distribution — not on this machine; shaped by `adapters/mqtt` |
 
 Everything R0–R3 depends on is built **except the wire**, which is J2. Lane P can already embed the

@@ -15,9 +15,10 @@ phase: 17-the-audit
 - [x] Gate — ruff 0 / format 0 / mypy 0 (117 files) / pytest 711 passed, 9 deselected; 17 mutations, all bite
 
 ## Group 2 — BUG-005: the assistant's calls are in the transcript
-- [ ] `Message.tool_calls`; the agent records them; the LangChain adapter builds them
-- [ ] RED: the second turn carries them; the adapter's message carries them; a live multi-turn test
-- [ ] Gate
+- [x] `Message.tool_calls`; the agent records them; the LangChain adapter builds them
+- [x] RED: every tool result's call is in some assistant message (asserted over the whole transcript); which tool and with what; a plain answer carries none; the contract round-trips; the adapter's `AIMessage` carries them; arguments that are not a mapping are carried, not dropped; **a live multi-turn test** behind `-m live` that skips without a key — 7 tests
+- [x] every package to 0.10.0 (`ModelRequest` is a published contract); schemas republished
+- [x] Gate — ruff 0 / format 0 / mypy 0 (118 files) / pytest 717 passed, 10 deselected; 5 mutations bite and one was a redundant literal, deleted
 
 ## Group 3 — BUG-006: the wire resumes, or says it cannot
 - [ ] a checkpointer per session; `initialize` required; callback timeouts; `wire.md` corrected

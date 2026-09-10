@@ -68,3 +68,22 @@ on an Ask, and resumes comes back with `children.held == ()`, spawns a *second* 
 checkpointer. Filed P1 with this evidence so somebody decides it rather than a phase mentioning it.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 2 measured; the double that never looked
+Topics: transcript, tool-calls, testing, mutation
+Affects-phases: none
+Affects-specs: none
+
+The fix is three lines in three packages. What is worth recording is why it survived seventeen
+phases: **every agent test used `ScriptedModel`, and a scripted model never checks the pairing
+rule.** A green suite proved nothing about a real second turn, because the only party that would
+have objected — a provider — was never in the room. So the tests added here are of two kinds: the
+pairing rule asserted over the whole transcript rather than at one message, and one **live**
+multi-turn test behind `-m live` which is the only place the bug could actually have been seen.
+The same shape as BUG-007: a check that silently narrows is worse than none.
+
+One mutation survived and was **equivalent**: `_calls_for` wrote `"type": "tool_call"`, and
+`AIMessage` stamps that itself with a wrong value or with none. A literal no test could tell from
+its absence is deleted, not tested around — the test asserts LangChain's output shape instead.
+
+---
