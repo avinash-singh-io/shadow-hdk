@@ -116,3 +116,74 @@ script in this session asserts its target now — the third time that has cost t
 
 **Group 1 was written code-first**, contrary to Rule 13, and the eleven mutation checks stand in for
 the red step. That is a weaker guarantee than red-first and is recorded as such rather than glossed.
+
+### [DISCOVERY] 2026-09-10 — the ambient contextvar does not cross into a library's own task
+Topics: d2, contextvars, acp, bridge
+
+The most interesting thing this phase found, and it is an **edge of D2 rather than a bug in it**.
+
+A child agent's `write_text_file` arrived and `current_run()` was `None`, so the bridge refused a
+write a writing mode plainly permitted. The reason: a contextvar is copied **when a task is
+created**, and the ACP SDK creates its reader task inside `connect_to_agent` — which happens when
+the *session opens*, not when a *turn runs*. Every callback the child makes therefore arrives on a
+task whose context was captured before any run existed.
+
+D2 says a run started inside a step finds its parent ambiently, and that holds for everything the
+runtime creates. It does not hold across a task somebody else made earlier. So the bridge **tells**
+the client which run governs it — `client.governed_by(current_run())` around the prompt — rather
+than hoping a contextvar propagates through a foreign event loop.
+
+Any adapter whose callbacks are driven by a library's own task has this problem and needs this
+answer. Worth stating in `09` if a second one appears.
+
+### [ARCH_CHANGE] 2026-09-10 — Groups 2 and 3: another agent, governed by the same six fields
+Topics: acp, bridge, residency, clock, usage, g2, g3
+
+`AcpAgent` is a `ComponentPort`. 51 tests in this adapter, 302 in the suite, all four gates zero.
+Everything below is measured against `spikes/acp/agent.py` — a real conformant agent in its own
+process, over a real stdio pipe.
+
+**Residency.** One process and one handshake for the session, asserted by `sessions_opened == 1`
+across two invocations. A child agent is expensive to start; a five-step composition should not be
+five cold starts.
+
+**Coarse at the door, fine inside.** A component's declared effects are judged *before* it is
+invoked, so a child claiming only to read is admitted by a reading mode — and when it then asks to
+write, the **inner** judgement refuses. A promise at the door is not a permission inside, and the
+test that says so is the one that made this design explicit rather than accidental.
+
+**Our clock over their runaway.** A looping child is stopped at `min(configured timeout, what the
+lease has left)`, measured with elapsed. An adapter constructed with a 600-second timeout cannot
+outlive a run whose lease has two seconds left.
+
+**What the child spent** comes back in the shape `_usage_of` reads, so the parent's meter charges it
+without knowing ACP exists.
+
+### [DISCOVERY] 2026-09-10 — two tests about a clock, with no clock over them
+Topics: tests, hangs, timeout, tooling
+
+Phase 2 wrote down that *a hang is a worse test than a failure*, and then this phase wrote two tests
+whose subject **is** the bridge's clock and gave them no outer bound. A mutation that broke the
+clock did not fail them — it stalled the suite for ten minutes, and the mutation script reported
+`INCONCLUSIVE` while a killed run left a mutated file on disk.
+
+Both are fixed and both fixes generalise. The tests take an `asyncio.wait_for` backstop, so a broken
+clock fails in thirty seconds. And **`pytest-timeout` is now a dev dependency with a 60-second
+global limit**: this suite drives MCP servers, sandboxes and ACP agents, several of them precisely
+to prove that something *stops*, and no test in it may hang. The whole suite runs in under twenty
+seconds, so sixty is far above anything healthy and far below "nobody noticed".
+
+A third finding, recorded because it recurred: a mutation script's `.replace()` silently did nothing
+when ruff had reformatted its target onto one line, and the report said a test was fixed when its
+old body was still there. Every edit and mutation script in this session asserts its target now.
+
+### [DISCOVERY] 2026-09-10 — three mutations, three tests that could not tell
+Topics: mutation-check
+
+*The extension test* could not distinguish a governance refusal from the "no such method" fallback.
+*The currency test* used one currency, where the total is zero either way — a dollar **and** a euro
+is the shape with a wrong answer available. *And nothing checked that a timed-out child is actually
+dead*: every test read the observation, none looked at the machine, so removing the kill left the
+suite green while leaking a process holding a subscription seat.
+
+Twenty-four mutations across this phase. Three found missing tests; the rest bit.

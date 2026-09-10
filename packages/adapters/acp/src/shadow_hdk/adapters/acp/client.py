@@ -12,6 +12,8 @@ exists**. Nobody had to enumerate Codex's tools.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -102,8 +104,30 @@ class BridgeClient(acp.Client):
         self.asked: list[tuple[str, str]] = []
         self.refusals: list[str] = []
         self.updates: list[Any] = []
+        self.said: list[str] = []
+        self._run: Any = None
 
     # ------------------------------------------------------------------ governance
+
+    @contextmanager
+    def governed_by(self, context: Any) -> Iterator[None]:
+        """Say which run this client's callbacks belong to, for as long as a turn lasts.
+
+        **The ambient lookup does not reach here**, and that is not a bug in D2 — it is its edge.
+        A contextvar is copied when a task is created, and the ACP SDK creates its reader task in
+        `connect_to_agent`, which happens when the session opens and not when a turn runs. Every
+        callback the child makes therefore arrives on a task whose context was captured before any
+        run existed, and `current_run()` in it is `None`.
+
+        So the bridge **tells** the client which run a prompt belongs to rather than hoping a
+        contextvar propagates through somebody else's task. Any adapter whose callbacks are driven
+        by a foreign event loop has the same problem and needs the same answer.
+        """
+        previous, self._run = self._run, context
+        try:
+            yield
+        finally:
+            self._run = previous
 
     async def _judge(self, effects: EffectProfile, what: str) -> str | None:
         """`None` means go ahead; a string is the reason it may not.
@@ -111,7 +135,7 @@ class BridgeClient(acp.Client):
         Outside a run there is no governance to ask, and the answer to *may this untrusted child
         write to your disk* with nobody to ask is no.
         """
-        context = current_run()
+        context = self._run or current_run()
         if context is None:
             return "there is no run to govern this"
         judgement = await context.ports.governance.judge(effects, context.context(what))
@@ -251,8 +275,13 @@ class BridgeClient(acp.Client):
 
     async def session_update(self, session_id: str, update: Any, **kwargs: Any) -> None:
         self.updates.append(update)
-        if getattr(update, "session_update", None) == "usage_update":
+        kind = getattr(update, "session_update", None)
+        if kind == "usage_update":
             self.spend.add_cost(getattr(update, "cost", None))
+        elif kind == "agent_message_chunk":
+            text = getattr(getattr(update, "content", None), "text", None)
+            if isinstance(text, str):
+                self.said.append(text)
 
     async def ext_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         """An extension nobody vouched for. `ASSUME_WORST` and, by default, no."""

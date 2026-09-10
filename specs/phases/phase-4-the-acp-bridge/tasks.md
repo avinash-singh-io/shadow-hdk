@@ -34,22 +34,24 @@ phase: 4-the-acp-bridge
 
 ## Group 2 — the agent as a component
 
-- [ ] `AcpAgent(command, args, *, name, effects, workspace, at)` — start / stop / `async with`
-- [ ] resident: one process and one `initialize` for the session, not one per step
-- [ ] `registrations()` — one component, labelled `agent`
-- [ ] `invoke({"brief": …})` → `session/prompt` → `Completed({text, stop_reason, usage, …})`
-- [ ] the clock: `min(configured, lease remaining wall)`; a timeout is `Failed`, and the child is killed
-- [ ] `Usage` translated; `Cost` accumulated as `Decimal` and converted **once**
-- [ ] a currency the bridge was not configured for → `cost_cents = None`, and the currency reported
-- [ ] `TestAcpAgentIsAComponentPort(ComponentPortContract)`
-- [ ] Gate
+- [x] `AcpAgent(command, args, *, name, effects, workspace, at)` — start / stop / `async with`
+- [x] resident: one process and one `initialize` for the session, not one per step
+- [x] `registrations()` — one component, labelled `agent`
+- [x] `invoke({"brief": …})` → `session/prompt` → `Completed({text, stop_reason, usage, …})`
+- [x] the clock: `min(configured, lease remaining wall)`; a timeout is `Failed`, and the child is killed
+- [x] `Usage` translated; `Cost` accumulated as `Decimal` and converted **once**
+- [x] a currency the bridge was not configured for → `cost_cents = None`, and the currency reported
+- [x] `TestAcpAgentIsAComponentPort(ComponentPortContract)`
+- [x] Gate
 
 ## Group 3 — proof over a real pipe
 
-- [ ] the spike agent extended: writes a file, asks for a terminal, loops on refusal
-- [ ] measured: a write allowed under a writing mode, refused under a reading one
-- [ ] measured: a looping child stopped by the bridge, with elapsed
-- [ ] measured: 200 × `0.004 USD` → 80 cents
-- [ ] `[~]` what remains: Codex and Claude Code, with the command
-- [ ] records, board, status
-- [ ] Gate
+- [x] the spike agent extended: writes a file, asks for a terminal, loops on refusal
+- [x] measured: a write allowed under a writing mode, refused under a reading one
+- [x] measured: a looping child stopped by the bridge, with elapsed
+- [x] measured: 200 × `0.004 USD` → 80 cents
+- [~] **what remains: Codex and Claude Code.** Neither speaks ACP on this machine without a
+      global npm install and a paid turn, which this session will not take. `spikes/acp/drive_real.py`
+      is the script; the commands are in `specs/phases/phase-2-the-spike/history.md`
+- [x] records, board, status
+- [x] Gate

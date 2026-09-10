@@ -39,6 +39,7 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "agent-client-protocol>=0.12",
+    "pytest-timeout>=2.3",
 ]
 
 [tool.ruff]
@@ -66,6 +67,11 @@ xfail_strict = true
 # Live-provider tests cost money, so they are deselected by default and opted into with
 # `uv run pytest -m live`. A normal run — and CI — calls nobody.
 addopts = "-m 'not live'"
+# **No test may hang.** This suite drives subprocesses — MCP servers, sandboxes, ACP agents — and
+# several of them exist to prove that something *stops*. A hang is a worse failure than a red test:
+# it stalls CI and it teaches you to stop reading the output. Sixty seconds is far above anything
+# healthy here (the whole suite runs in under twenty) and far below "nobody noticed".
+timeout = 60
 markers = ["live: calls a real provider; costs money; opt in with -m live"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

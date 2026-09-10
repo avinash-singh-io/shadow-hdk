@@ -14,6 +14,9 @@ Behaviour is chosen by the prompt text, so one agent covers every shape:
 * `refuse`   — end the turn with `stop_reason="refusal"` without asking
 * `no-usage` — ask permission, end without reporting usage at all
 * `loop`     — ask permission; if denied, ask again, forever. The shape J1 fears
+* `write`    — call the client back to write a file, so the bridge's own governance is exercised
+* `read`     — call the client back to read one
+* `terminal` — ask the client for a terminal
 """
 
 from __future__ import annotations
@@ -61,6 +64,22 @@ class SpikeAgent(acp.Agent):
         if "refuse" in asked:
             return schema.PromptResponse(stop_reason="refusal", usage=_usage())
 
+        # The client half of ACP is a governance surface, and these are the doors. The agent calls
+        # *back* into the client, which is where our own policy meets somebody else's agent.
+        if "write" in asked:
+            return await self._through_the_client(
+                session_id,
+                self._client.write_text_file(session_id, "from-the-child.md", "# hello\n"),
+            )
+        if "read" in asked:
+            return await self._through_the_client(
+                session_id, self._client.read_text_file(session_id, "from-the-child.md")
+            )
+        if "terminal" in asked:
+            return await self._through_the_client(
+                session_id, self._client.create_terminal(session_id, "echo hi")
+            )
+
         outcome = await self._ask_to_run(session_id, "call-1")
 
         if "loop" in asked:
@@ -90,6 +109,40 @@ class SpikeAgent(acp.Agent):
 
     async def cancel(self, session_id: str, **kwargs: Any) -> None:
         return None
+
+    async def _through_the_client(self, session_id: str, call: Any) -> schema.PromptResponse:
+        """Do something that needs the client's permission, and say plainly how it went.
+
+        A refusal arrives as a JSON-RPC error, which is what a governed no looks like from this end.
+        The agent reports it as a completed turn carrying the reason — an agent that crashed on
+        being told no would be a badly behaved agent, and the bridge should not need one.
+        """
+        await self._client.session_update(
+            session_id=session_id,
+            update=schema.AgentMessageChunk(
+                session_update="agent_message_chunk",
+                content=schema.TextContentBlock(type="text", text="trying it"),
+            ),
+        )
+        try:
+            await call
+        except Exception as refused:  # noqa: BLE001 — a refusal is a normal answer here
+            await self._client.session_update(
+                session_id=session_id,
+                update=schema.AgentMessageChunk(
+                    session_update="agent_message_chunk",
+                    content=schema.TextContentBlock(type="text", text=f" — refused: {refused}"),
+                ),
+            )
+            return schema.PromptResponse(stop_reason="refusal", usage=_usage())
+        await self._client.session_update(
+            session_id=session_id,
+            update=schema.AgentMessageChunk(
+                session_update="agent_message_chunk",
+                content=schema.TextContentBlock(type="text", text=" — done"),
+            ),
+        )
+        return schema.PromptResponse(stop_reason="end_turn", usage=_usage())
 
     async def _ask_to_run(self, session_id: str, call_id: str) -> Any:
         answer = await self._client.request_permission(
