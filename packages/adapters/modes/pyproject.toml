@@ -4,6 +4,8 @@ version = "0.6.0"
 description = "Governance as data: a mode is a ceiling and an ask line."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel", "shadow-hdk"]
 
 [build-system]

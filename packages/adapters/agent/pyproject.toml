@@ -4,6 +4,8 @@ version = "0.6.0"
 description = "The model-driven loop as a component, and agent architectures as data."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel", "shadow-hdk"]
 
 [build-system]

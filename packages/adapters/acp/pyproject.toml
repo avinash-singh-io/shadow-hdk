@@ -4,6 +4,8 @@ version = "0.6.0"
 description = "Another agent — Codex, Claude Code, anything speaking Zed's Agent Client Protocol — driven as a governed component."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel", "shadow-hdk", "agent-client-protocol>=0.12,<1"]
 
 [build-system]

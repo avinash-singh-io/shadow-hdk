@@ -4,6 +4,8 @@ version = "0.6.0"
 description = "The kernel of shadow-hdk: frozen types and ports for an effect-governed agent runtime. No I/O, no clock, no framework."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
 # pydantic is the one dependency, and only for the published contracts (09 §3b): every kernel type
 # is a stdlib dataclass; pydantic turns it into JSON Schema and proves the JSON round trip in CI.
 dependencies = ["pydantic>=2.9"]
