@@ -20,17 +20,17 @@ phase: 3-workspace-and-code
 
 ## Group 1 — the sandbox
 
-- [ ] `packages/adapters/sandbox_subprocess/pyproject.toml`
-- [ ] `SubprocessSandbox(root, *, contained, timeout_s=30, output_limit=64_000, network=False)`
-- [ ] `contained` keyword-only with **no default**
-- [ ] `run_python(source)` and `run_shell(command)` — cwd in the root, env stripped
-- [ ] output capped, and the cap **said** in the result rather than silently truncating
-- [ ] RED: a sleeping script is stopped by the timeout, and the elapsed time is measured
-- [ ] RED: a non-zero exit is `Completed` with the code, not `Failed` — a failing script ran fine
-- [ ] RED: output beyond the cap is truncated and says so
-- [ ] effects carry `contained` verbatim and `reaches=network`
-- [ ] `TestSubprocessSandboxIsAComponentPort(ComponentPortContract)`
-- [ ] Gate
+- [x] `packages/adapters/sandbox_subprocess/pyproject.toml`
+- [x] `SubprocessSandbox(root, *, contained, timeout_s=30, output_limit=64_000, network=False)`
+- [x] `contained` keyword-only with **no default**
+- [x] `run_python(source)` and `run_shell(command)` — cwd in the root, env stripped
+- [x] output capped, and the cap **said** in the result rather than silently truncating
+- [x] RED: a sleeping script is stopped by the timeout, and the elapsed time is measured
+- [x] RED: a non-zero exit is `Completed` with the code, not `Failed` — a failing script ran fine
+- [x] RED: output beyond the cap is truncated and says so
+- [x] effects carry `contained` verbatim and `reaches=network`
+- [x] `TestSubprocessSandboxIsAComponentPort(ComponentPortContract)`
+- [x] Gate
 
 ## Group 2 — containment decides visibility
 

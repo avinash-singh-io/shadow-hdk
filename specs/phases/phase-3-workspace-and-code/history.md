@@ -81,3 +81,49 @@ the contention as if it were the number.
 
 Now: **54.3 ms (0.543 ms/step, best of 3)** and a 50-way fan-out in **15.4 ms**, against D11's
 100 ms / 1 ms / 50 ms. The budget stays where it was.
+
+### [DISCOVERY] 2026-09-10 — an uncontained host cannot promise it will not reach the network
+Topics: sandbox, effects, reaches, honesty, g1
+
+The plan said the sandbox declares `reaches = network`. Building it made the flaw obvious: a plain
+subprocess on an ordinary host can open a socket whatever we pass it. `network=False` on an
+uncontained machine is not a restriction, it is a *wish*, and a profile that stated it would be
+feeding the governance system a claim nothing enforces.
+
+`reaches` is therefore **`network or not contained`**. Only a deployment asserting real isolation
+gets to say a run does not reach outside; everywhere else the answer is yes, because that is true.
+A mutation that reverts it to plain `network` fails the suite.
+
+This is the same shape as the MCP rule from Phase 1 — *an effect nobody vouched for is assumed to be
+the worst one* — arriving from the other direction: there, a server said nothing; here, we cannot
+keep the promise ourselves.
+
+### [ARCH_CHANGE] 2026-09-10 — Group 1: a leash, and an honest label
+Topics: sandbox, timeout, output, env, g1
+
+`SubprocessSandbox(root, *, contained, timeout_s=30, output_limit=64_000, network=False)` with
+`run_python` and `run_shell`. 18 tests, eight mutations, all biting.
+
+**A non-zero exit is `Completed`, not `Failed`.** The script ran perfectly well and told us it
+failed; that is a result the agent can read, not an error for the runtime to dress up. `Failed` is
+reserved for *the script did not run* — a timeout, a broken exec.
+
+**The timeout is measured rather than asserted.** A test that only checked for `Failed` would pass
+even if the timeout never fired and something else went wrong, so it times the call: a script
+sleeping sixty seconds under a one-second limit returns in under ten.
+
+**Truncation is said, not silent.** An agent reasoning from half an answer while believing it whole
+is a worse failure than one told it only got half.
+
+### [DISCOVERY] 2026-09-10 — a mutation found that nothing guarded the operator's secrets
+Topics: sandbox, environment, credentials, mutation-check
+
+Replacing the environment filter with `dict(os.environ)` **left the suite green**. The filter was
+written deliberately — a named few variables pass, everything else is dropped — and nothing tested
+it.
+
+That is the most serious gap a mutation check has found here. A script an agent wrote is untrusted
+code, and the environment is where credentials live: handing it `ANTHROPIC_API_KEY` because it
+happened to be in the parent process is how a tool that reads a file also exfiltrates a token. Two
+tests now — one that a planted secret comes back `ABSENT`, and one that `PATH` still arrives, because
+a filter that dropped everything would pass the first and break every script.
