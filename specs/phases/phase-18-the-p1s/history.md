@@ -95,3 +95,41 @@ Also worth recording: the reproduction was re-run against the fix rather than as
 now refuses it, naming the capability it failed to deny.
 
 ---
+
+### [DECISION] 2026-09-10 — D37: a parent that parks comes back holding its children
+Topics: children, resume, durability, d37
+Affects-phases: none
+Affects-specs: specs/architecture/runtime.md
+
+Four of a `HeldChild`'s six fields are JSON and ride in `RunState.children`. The other two are
+objects and were dealt with rather than wished away. The **checkpointer**: a child now shares its
+parent's by default instead of getting a private `InMemorySaver` — a child that must outlive its
+parent's park has to share its parent's durability, and a private saver never could. The
+**cancellation**: a fresh one, because nothing a run is still holding had been cancelled, or it
+would not still be held. A child spawned with a checkpointer of its own is named in
+`children.lost`, with the reason, so a parent can tell *this child is gone* from *I never had
+one* — the distinction whose absence made it quietly spawn a second child.
+
+Rejected: inventing a checkpointer for an unreachable child (a handle that answers nothing);
+keeping the registry in memory and hoping the parent never parks (an Ask is the ordinary pause);
+and dropping the child silently, which is the bug.
+
+---
+
+### [NOTE] 2026-09-10 — Group 3: four survivors were the tests looking in the wrong place
+Topics: children, mutation, testing
+Affects-phases: none
+Affects-specs: none
+
+Fourteen mutations, five survivors, and only one was about the code. Reporting a lost child could
+not be told from restoring it, because the parent only counted its spawns. The headstone tests
+released the child *after* the pause, where the record never says *held* — the only arrangement in
+which a headstone matters is a release **before** the park. Asserting the end state proved nothing,
+because a resurrected child was simply released a second time and the hand was empty again by the
+time anyone looked; what is asserted now is what the parent held **on entry** to the resumed step.
+And a child that *ended on a send* needs the same headstone as one released, which nothing covered.
+
+The fifth is **equivalent**: not re-recording a released handle at restore changes nothing, because
+the checkpoint already carries the `None` and `merge_dicts` keeps it across every later leg.
+
+---

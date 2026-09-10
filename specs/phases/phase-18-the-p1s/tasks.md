@@ -20,7 +20,12 @@ phase: 18-the-p1s
 - [x] Gate — ruff 0 / format 0 / mypy 0 (122 files) / pytest 764 passed, 1 skipped, 10 deselected; 12 mutations, all bite
 
 ## Groups 3–5
-- [ ] BUG-015 — a held child across its parent's park
+- [x] BUG-015 — a held child across its parent's park (**D37**, contract 0.10.0 → 0.11.0)
+  - [x] `RunState.children` carries handle, run id, composition and ceiling; a released handle stays as a `None` headstone so a `FanOut`'s branches merge the same in any order
+  - [x] a child shares its parent's checkpointer by default — a private in-memory saver could never have outlived the parent's park
+  - [x] one spawned with a checkpointer of its own is named in `children.lost` with the reason, never silently replaced
+  - [x] RED: the same handle either side of the park; a restored child answers a `send` where it slept; an unreachable one is reported; a released one and one that *ended on a send* both stay gone — 7 tests
+  - [x] Gate — ruff 0 / format 0 / mypy 0 (123 files) / pytest 771 passed, 1 skipped, 10 deselected; 14 mutations, 13 bite, 1 named equivalent
 - [ ] BUG-010 — the double invoke, and a re-run judgement overriding a human
 - [ ] BUG-011, BUG-012, TD-003
 - [ ] TD-009 — the workflow change, and the pull request prepared for the owner
