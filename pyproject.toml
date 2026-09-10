@@ -8,7 +8,7 @@
 name = "shadow-hdk-workspace"
 version = "0.0.0"
 requires-python = ">=3.12"
-dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp", "shadow-hdk-adapters-workspace", "shadow-hdk-adapters-sandbox-subprocess", "shadow-hdk-adapters-acp", "shadow-hdk-adapters-recording"]
+dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp", "shadow-hdk-adapters-workspace", "shadow-hdk-adapters-sandbox-subprocess", "shadow-hdk-adapters-acp", "shadow-hdk-adapters-recording", "shadow-hdk-wire"]
 
 [tool.uv]
 package = false
@@ -16,7 +16,7 @@ package = false
 [tool.uv.workspace]
 # Adapters nest one level deeper (`packages/adapters/<name>/`), so a bare `packages/*` would match
 # the container directory and fail the sync with "missing a pyproject.toml".
-members = ["packages/kernel", "packages/runtime", "packages/adapters/*"]
+members = ["packages/kernel", "packages/runtime", "packages/wire", "packages/adapters/*"]
 
 [tool.uv.sources]
 shadow-hdk-kernel = { workspace = true }
@@ -30,6 +30,7 @@ shadow-hdk-adapters-workspace = { workspace = true }
 shadow-hdk-adapters-sandbox-subprocess = { workspace = true }
 shadow-hdk-adapters-acp = { workspace = true }
 shadow-hdk-adapters-recording = { workspace = true }
+shadow-hdk-wire = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -49,7 +50,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src", "tests"]
+src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src", "packages/wire/src", "tests"]
 # Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
 # and a design document is not the formatter's business. momentum's own scaffold is vendored.
 extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
