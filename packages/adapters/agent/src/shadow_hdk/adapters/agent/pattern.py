@@ -19,7 +19,16 @@ COMPOSE = "compose"
 PROPOSE = "propose"
 DONE = "done"
 DESCRIBE = "describe"
-META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE, DESCRIBE})
+COMPACT = "compact"
+SPAWN = "spawn"
+SEND = "send"
+RELEASE = "release"
+META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE, DESCRIBE, COMPACT, SPAWN, SEND, RELEASE})
+
+MAILBOX = "mailbox"
+"""What a helper parks on, by convention (D16). This adapter cannot import `adapters/basic`, so the
+name lives on both sides and a test pins them together — a convention with nothing holding it is a
+rename waiting to break a spawn at runtime."""
 
 
 @dataclass(frozen=True)

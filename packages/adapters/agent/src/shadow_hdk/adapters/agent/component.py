@@ -15,7 +15,18 @@ from collections.abc import Sequence
 
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin
 from shadow_hdk.adapters.agent.meta import BY_NAME
-from shadow_hdk.adapters.agent.pattern import COMPOSE, DESCRIBE, DONE, PROPOSE, Pattern
+from shadow_hdk.adapters.agent.pattern import (
+    COMPACT,
+    COMPOSE,
+    DESCRIBE,
+    DONE,
+    MAILBOX,
+    PROPOSE,
+    RELEASE,
+    SEND,
+    SPAWN,
+    Pattern,
+)
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
@@ -25,9 +36,10 @@ from shadow_hdk.kernel.components import (
     Registration,
     RegistrationId,
 )
-from shadow_hdk.kernel.composition import Binding, Composition, FanOut, Invoke, Step
+from shadow_hdk.kernel.composition import Await, Binding, Composition, FanOut, Invoke, Step
 from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Proposal
 from shadow_hdk.kernel.ports import (
     ComponentPort,
@@ -107,6 +119,9 @@ class _Turnwise:
         self.nudged = False
         self.proposed = 0
         self.turns = 0
+        self.helpers: dict[str, str] = {}
+        """The model's own names for its helpers — `@1`, `@2` — over the runtime's run ids. A
+        model asked to carry a uuid between turns will eventually carry the wrong one."""
 
     # ------------------------------------------------------------------ the loop
 
@@ -129,6 +144,10 @@ class _Turnwise:
                 await self.propose(call)
             for call in [c for c in response.tool_calls if c.name == DESCRIBE]:
                 await self.describe(call)
+            for call in [c for c in response.tool_calls if c.name == COMPACT]:
+                await self.compact(call)
+            for call in [c for c in response.tool_calls if c.name in (SPAWN, SEND, RELEASE)]:
+                await self.helper(call)
             done = next((c for c in response.tool_calls if c.name == DONE), None)
             if done is not None:
                 verdict = self.done(done)
@@ -171,6 +190,79 @@ class _Turnwise:
         )
         self.proposed += 1
         self.messages.append(Message("tool", "proposed", tool_call_id=call.id))
+
+    async def helper(self, call: ToolCall) -> None:
+        """Start, message or let go of a helper — Phase 7's `children` verbs, offered to the model.
+
+        The **shape of the child is decided here**, which is why this could not land with the
+        runtime half (D3): a helper is *the named agent given a brief, then a wait on the mailbox*.
+        That composition is exactly D16's held child — a parked run — written down.
+
+        Every failure is an answer rather than a crash (D7): a handle the model invented, an agent
+        that is not registered, a deployment with no mailbox. It gets told, and keeps its turn.
+        """
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        try:
+            answer = await self._helper(call.name, arguments)
+        except KeyError as unknown:
+            answer = f"there is no helper {unknown.args[0]!r}; spawn one first"
+        except Exception as failed:  # noqa: BLE001 — the model's mistake is data, not a traceback
+            answer = f"that did not work: {type(failed).__name__}: {failed}"
+        self.messages.append(Message("tool", answer, tool_call_id=call.id))
+
+    async def _helper(self, verb: str, arguments: dict[str, JsonValue]) -> str:
+        if verb == SPAWN:
+            agent = str(arguments.get("agent", ""))
+            brief = str(arguments.get("brief", ""))
+            child = Composition(
+                (
+                    Invoke("brief", agent, (Binding(name="brief", value=brief),)),
+                    Await("inbox", MAILBOX),
+                )
+            )
+            handle, events = await self.ctx.children.spawn(child, self.ctx.remaining().ceiling)
+            self.helpers[f"@{len(self.helpers) + 1}"] = handle
+            name = f"@{len(self.helpers)}"
+            if handle not in self.ctx.children.held:
+                return f"{name} finished rather than waiting: {_last_observation(events)}"
+            return f"{name} is held and waiting. Send it something, or release it."
+        handle = self.helpers[str(arguments.get("handle", ""))]
+        if verb == RELEASE:
+            await self.ctx.children.release(handle)
+            return "released"
+        events = await self.ctx.children.send(handle, str(arguments.get("message", "")))
+        return f"answered: {_last_observation(events)}"
+
+    async def compact(self, call: ToolCall) -> None:
+        """The model summarises its own transcript (`09` §5).
+
+        Two things happen and neither is a runtime power. The summary goes to the **sink** as a
+        proposal, and whoever implements the sink decides whether it is kept and with what
+        provenance — this adapter writes it nowhere. And the transcript this loop carries is
+        shortened, because a compaction that proposed a summary and then kept talking to the whole
+        history would have saved nothing.
+
+        What it may drop is the **middle**. The role the agent was given and the request it was
+        asked to answer are not the model's to summarise away.
+        """
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        summary = str(arguments.get("summary", ""))
+        await self.ctx.propose(
+            Proposal(
+                kind="compaction",
+                payload=summary,
+                provenance=Provenance(
+                    registered_by=self.ctx.run_id, adapter="agent", at=self.ctx.now()
+                ),
+            )
+        )
+        # The role and the brief — `work()` puts them first and in that order.
+        kept = self.messages[:2]
+        self.messages = [
+            *kept,
+            Message("assistant", f"Summary of what happened before this point: {summary}"),
+            Message("tool", "compacted", tool_call_id=call.id),
+        ]
 
     async def describe(self, call: ToolCall) -> None:
         """Answer what one tool takes — from `visible()` only, so a describe cannot reach past what
@@ -279,6 +371,12 @@ def _as_json(arguments: JsonValue) -> str:
     import json
 
     return json.dumps(arguments)
+
+
+def _last_observation(events: Sequence[Event]) -> str:
+    """What a helper ended up saying, for the model to read."""
+    seen = [e for e in events if e.kind == "observed"]
+    return _readable(seen[-1].observation) if seen else "nothing"
 
 
 def _readable(observation: Observation | None) -> str:

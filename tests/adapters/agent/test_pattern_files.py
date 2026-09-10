@@ -16,10 +16,17 @@ from pathlib import Path
 import pytest
 from shadow_hdk.adapters.agent import Pattern, load_pattern, shipped
 
-SHIPPED = {"single", "plan-and-execute", "orchestrator-workers", "critic-pair", "reflect-until"}
+SHIPPED = {
+    "single",
+    "plan-and-execute",
+    "orchestrator-workers",
+    "critic-pair",
+    "reflect-until",
+    "keeps-helpers",
+}
 
 
-def test_the_framework_ships_five_patterns_as_files() -> None:
+def test_the_framework_ships_its_patterns_as_files() -> None:
     found = shipped()
     assert set(found) == SHIPPED
     assert all(isinstance(pattern, Pattern) for pattern in found.values())

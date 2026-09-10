@@ -7,7 +7,16 @@ would not notice.
 
 from __future__ import annotations
 
-from shadow_hdk.adapters.agent.pattern import COMPOSE, DESCRIBE, DONE, PROPOSE
+from shadow_hdk.adapters.agent.pattern import (
+    COMPACT,
+    COMPOSE,
+    DESCRIBE,
+    DONE,
+    PROPOSE,
+    RELEASE,
+    SEND,
+    SPAWN,
+)
 
 from shadow_hdk.kernel.components import Interface
 
@@ -62,7 +71,59 @@ DESCRIBE_INTERFACE = Interface(
     },
 )
 
+COMPACT_INTERFACE = Interface(
+    name=COMPACT,
+    description=(
+        "Summarise what has happened so far, when the transcript is getting long. What you write "
+        "replaces the middle of it — your role and the original request stay. It is offered to "
+        "whoever is listening; it is not yours to keep."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"summary": {"type": "string"}},
+        "required": ["summary"],
+    },
+)
+
+SPAWN_INTERFACE = Interface(
+    name=SPAWN,
+    description=(
+        "Start a helper and keep it. Name an agent and give it a brief. You get back a handle; "
+        "the helper does the brief and then waits, so you can ask it again without repeating "
+        "yourself. Let it go with `release` when you are finished with it."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"agent": {"type": "string"}, "brief": {"type": "string"}},
+        "required": ["agent", "brief"],
+    },
+)
+
+SEND_INTERFACE = Interface(
+    name=SEND,
+    description="Ask a helper you kept another question. It picks up where it left off.",
+    input_schema={
+        "type": "object",
+        "properties": {"handle": {"type": "string"}, "message": {"type": "string"}},
+        "required": ["handle", "message"],
+    },
+)
+
+RELEASE_INTERFACE = Interface(
+    name=RELEASE,
+    description="Let a helper go. It stops, and its budget goes back to you.",
+    input_schema={
+        "type": "object",
+        "properties": {"handle": {"type": "string"}},
+        "required": ["handle"],
+    },
+)
+
 BY_NAME = {
+    COMPACT: COMPACT_INTERFACE,
+    SPAWN: SPAWN_INTERFACE,
+    SEND: SEND_INTERFACE,
+    RELEASE: RELEASE_INTERFACE,
     DESCRIBE: DESCRIBE_INTERFACE,
     DONE: DONE_INTERFACE,
     PROPOSE: PROPOSE_INTERFACE,
@@ -71,6 +132,10 @@ BY_NAME = {
 
 __all__ = [
     "BY_NAME",
+    "COMPACT_INTERFACE",
+    "RELEASE_INTERFACE",
+    "SEND_INTERFACE",
+    "SPAWN_INTERFACE",
     "COMPOSE_INTERFACE",
     "DESCRIBE_INTERFACE",
     "DONE_INTERFACE",

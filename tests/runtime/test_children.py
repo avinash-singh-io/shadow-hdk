@@ -157,3 +157,27 @@ async def test_holding_a_child_costs_the_parent_nothing_while_it_waits() -> None
     spent = before - after
     assert spent == 2, f"holding a child cost {spent} steps, not the two it took"
     assert spent < 10, "the parent gave up the child ceiling rather than what the child spent"
+
+
+async def test_a_held_child_is_woken_within_what_the_parent_has_left_now() -> None:
+    """The ceiling a child was spawned with is a *request*, and the parent has spent since.
+
+    Found in Phase 8, not here: a coordinating agent spawned a helper, took two more turns, and then
+    could neither message nor release it — both re-asked for the ceiling it started with, and the
+    carve refused because the parent no longer had that much. The tests above missed it because
+    their parent spends nothing between spawning and sending.
+    """
+
+    async def spawn_spend_then_send(context: RunContext) -> list[Event]:
+        # Ask for nearly the parent's whole budget, so anything spent afterwards makes the
+        # original request unaffordable.
+        handle, _ = await context.children.spawn(CHILD, Ceiling(18, 600, 1000))
+        # Spend some of the parent's remaining on work of its own.
+        await context.children.spawn(Composition((Invoke("aside", BRIEF.id),)), Ceiling(2, 60, 100))
+        return await context.children.send(handle, {"say": "still there?"})
+
+    answered, _ = await _in_a_parent(spawn_spend_then_send, steps=20)
+    assert isinstance(answered, list)
+    inbox = [e for e in answered if isinstance(e, Observed) and e.step == "inbox"]
+    assert inbox, "the held child could not be woken after the parent had spent"
+    assert inbox[-1].observation == Completed({"say": "still there?"})

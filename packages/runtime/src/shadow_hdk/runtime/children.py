@@ -135,11 +135,38 @@ class Children:
 
     def _options_for(self, child: HeldChild) -> Any:
         return self._context.spawn_options(
-            child.ceiling,
+            _within(child.ceiling, self._context.remaining().ceiling),
             run_id=child.run_id,
             checkpointer=child.checkpointer,
             cancellation=child.cancellation,
         )
+
+
+def _within(asked: Ceiling, left: Ceiling) -> Ceiling:
+    """A child's ceiling, clamped to what the parent still has.
+
+    The ceiling a child was spawned with is a *request*, and the parent has spent since. Waking a
+    child on its original ceiling asks for budget that is no longer there, and the carve refuses —
+    which is right, but the answer is to ask for what is left rather than to fail.
+
+    Found in Phase 8: a coordinating agent spawned a helper, took two more turns, and then could
+    neither message nor release it, because both re-asked for the ceiling it started with. Phase 7's
+    own tests missed it because the parent there spent nothing in between.
+    """
+    return Ceiling(
+        max_steps=min(asked.max_steps, left.max_steps),
+        max_wall_seconds=min(asked.max_wall_seconds, left.max_wall_seconds),
+        max_cost_cents=_least(asked.max_cost_cents, left.max_cost_cents),
+    )
+
+
+def _least(asked: int | None, left: int | None) -> int | None:
+    """`None` is *unknown*, not *unlimited*: a known ceiling beside an unknown one is the answer."""
+    if asked is None:
+        return left
+    if left is None:
+        return asked
+    return min(asked, left)
 
 
 def _steps_in(events: list[Event]) -> int:
