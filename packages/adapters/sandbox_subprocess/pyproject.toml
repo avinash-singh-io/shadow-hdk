@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-sandbox-subprocess"
-version = "0.7.0"
+version = "0.8.0"
 description = "Run code with a leash — a timeout, an output cap, and an honest account of what it is not."
 readme = "README.md"
 requires-python = ">=3.12"

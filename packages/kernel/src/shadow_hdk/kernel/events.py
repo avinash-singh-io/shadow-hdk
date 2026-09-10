@@ -12,7 +12,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, JsonValue
 
-from shadow_hdk.kernel.components import RegistrationId
+from shadow_hdk.kernel.components import Posture, RegistrationId
 from shadow_hdk.kernel.composition import Composition, Handle, StepId
 from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Observation, Proposal
@@ -56,11 +56,17 @@ class Invoked:
 
 @dataclass(frozen=True)
 class Observed:
+    """What a step observed, and the **posture** of what produced it (D30): `controlled` is *we
+    gated it before it happened*; `observed` is *evidence recorded after something else acted* —
+    attributable, never pre-authorised by us. Stamped by the runtime from the registration, so a
+    component cannot claim a posture it does not have."""
+
     run_id: RunId
     seq: int
     at: str
     step: StepId
     observation: Observation
+    posture: Posture = "controlled"
     kind: Literal["observed"] = "observed"
 
 

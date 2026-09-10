@@ -523,6 +523,7 @@
       "type": "object"
     },
     "Observed": {
+      "description": "What a step observed, and the **posture** of what produced it (D30): `controlled` is *we\ngated it before it happened*; `observed` is *evidence recorded after something else acted* \u2014\nattributable, never pre-authorised by us. Stamped by the runtime from the registration, so a\ncomponent cannot claim a posture it does not have.",
       "properties": {
         "at": {
           "title": "At",
@@ -567,6 +568,15 @@
             }
           ],
           "title": "Observation"
+        },
+        "posture": {
+          "default": "controlled",
+          "enum": [
+            "controlled",
+            "observed"
+          ],
+          "title": "Posture",
+          "type": "string"
         },
         "run_id": {
           "title": "Run Id",

@@ -11,8 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.7.0"
-"""0.7.0 because two contracts grew: `Provenance.signature`, the proof beside the claim that
+EXPECTED = "0.8.0"
+"""0.8.0 because `Observed` grew `posture` — every observation carries the posture of the component
+that produced it, stamped by the runtime (D30); default `controlled`, so nothing that read the
+stream before needs to change.
+
+0.7.0 because two contracts grew: `Provenance.signature`, the proof beside the claim that
 `signed_by` had been making since Phase 0 without anything reading it, and `Acted`, the receipt of
 a world-effect — foreign id, idempotency key, exit, grounds — as a sixth observation kind. Both are
 D27. Before that:

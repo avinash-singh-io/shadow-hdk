@@ -18,7 +18,7 @@ from typing import Any
 from langgraph.types import interrupt
 from pydantic import JsonValue
 
-from shadow_hdk.kernel.components import Registration
+from shadow_hdk.kernel.components import Posture, Registration
 from shadow_hdk.kernel.composition import Await, Invoke
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
@@ -123,7 +123,7 @@ class StepExecutor:
             # The grammar's other half. `Invoke` is *do it now*; `Await` is *this may take a while*,
             # so a component that says `Pending` there is taken at its word and the run parks.
             observation = Completed(await self._wait(step, observation))
-        return await self._observe(step, observation)
+        return await self._observe(step, observation, registration.component.provenance.posture)
 
     # ------------------------------------------------------------------ the seams
 
@@ -183,8 +183,14 @@ class StepExecutor:
     async def _emit(self, make: Callable[..., Event]) -> Event:
         return await self._emitter.emit(make)
 
-    async def _observe(self, step: Invoke | Await, observation: Observation) -> Observation:
-        await self._emit(lambda **k: Observed(step=step.id, observation=observation, **k))
+    async def _observe(
+        self, step: Invoke | Await, observation: Observation, posture: Posture = "controlled"
+    ) -> Observation:
+        """Record it, with the posture of what produced it (D30). A step that never reached a
+        component is `controlled`: the runtime refused it, and refusing is control."""
+        await self._emit(
+            lambda **k: Observed(step=step.id, observation=observation, posture=posture, **k)
+        )
         return observation
 
 
