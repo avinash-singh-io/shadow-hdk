@@ -20,6 +20,7 @@ first thing that needs them.
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -209,27 +210,53 @@ def _build_plan(composition: Composition) -> Plan:
     return builder.finish(entry, exit_node)
 
 
-_PLAN_CACHE: dict[bytes, Plan] = {}
+PLAN_CACHE_MAX = 512
+"""How many distinct shapes are kept (TD-005).
+
+**Bounded because the key set grows with traffic.** It is the full JSON of a composition, and a
+model authors a new one on most turns — measured, 2000 distinct compositions gave 2000 entries and
+about 6.3 MiB that nothing ever released. That is the opposite of `contracts.adapter_for`, whose key
+is a *type*: a program holds finitely many of those and they come from module import, so bounding
+there would discard the expensive object from a set that cannot grow.
+
+**Safe here for a reason that does not generalise.** A plan is pure — no executor in it, which is
+what made it cacheable at all — so an evicted one costs exactly a rebuild. Five hundred and twelve
+is far past any single agent's repertoire of shapes and still a bound; a knob was rejected because a
+host cannot tell what to set it to and a wrong setting is worse than this one.
+"""
+
+_PLAN_CACHE: OrderedDict[bytes, Plan] = OrderedDict()
 _HITS = 0
 _MISSES = 0
+_EVICTED = 0
 
 
 def plan_for(composition: Composition) -> Plan:
-    """The same shape is planned once, however often an agent re-authors it (D11)."""
-    global _HITS, _MISSES
+    """The same shape is planned once, however often an agent re-authors it (D11).
+
+    **Least recently used**, not oldest inserted: a loop alternating between two shapes must keep
+    both, and evicting by age of insertion would drop the one it is about to need next.
+    """
+    global _HITS, _MISSES, _EVICTED
     key = dump(composition, Composition).encode()
     cached = _PLAN_CACHE.get(key)
     if cached is not None:
         _HITS += 1
+        _PLAN_CACHE.move_to_end(key)
         return cached
     _MISSES += 1
     plan = _build_plan(composition)
     _PLAN_CACHE[key] = plan
+    while len(_PLAN_CACHE) > PLAN_CACHE_MAX:
+        _PLAN_CACHE.popitem(last=False)
+        _EVICTED += 1
     return plan
 
 
 def plan_cache_stats() -> dict[str, int]:
-    return {"hits": _HITS, "misses": _MISSES, "size": len(_PLAN_CACHE)}
+    """`evicted` is not decoration: a cache that silently forgets is one nobody can size, and the
+    count is the only way to tell a bound being *hit* from a bound being merely *set*."""
+    return {"hits": _HITS, "misses": _MISSES, "size": len(_PLAN_CACHE), "evicted": _EVICTED}
 
 
 # ---------------------------------------------------------------- the graph
@@ -334,4 +361,11 @@ def compile_composition(
     return _graph_from(plan_for(composition), executor, checkpointer)
 
 
-__all__ = ["DuplicateStepId", "Plan", "compile_composition", "plan_cache_stats", "plan_for"]
+__all__ = [
+    "PLAN_CACHE_MAX",
+    "DuplicateStepId",
+    "Plan",
+    "compile_composition",
+    "plan_cache_stats",
+    "plan_for",
+]

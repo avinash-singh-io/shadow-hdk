@@ -39,6 +39,7 @@ from shadow_hdk.runtime.testing import (
     ScriptedModel,
     make_registration,
 )
+from tests.adapters.contract import GovernancePortContract
 
 WORLD = ScopeSet.of("world")
 
@@ -182,3 +183,15 @@ async def test_a_refusal_is_on_the_record_as_a_refusal() -> None:
     events = await _run(Controlled(AllowAll()), Invoke("s1", WITNESSED_VALVE.id))
     assert not [e for e in events if isinstance(e, Observed) and isinstance(e.observation, Refused)]
     assert [e for e in events if isinstance(e, RefusedEvent)]
+
+
+class TestControlledIsAGovernancePort(GovernancePortContract):
+    """Held to the shared shape as well as its own behaviour (TD-004).
+
+    `Controlled` wraps another governance, so the contract asks the question that matters for a
+    wrapper: does it still answer *every* profile shape with a judgement, including the ones its own
+    tests never send it?
+    """
+
+    def port(self) -> GovernancePort:
+        return Controlled(AllowAll())

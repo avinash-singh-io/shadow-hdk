@@ -29,9 +29,12 @@ from shadow_hdk.kernel import (
     Observed,
     ScopeSet,
 )
+from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.ports import ComponentPort
 from shadow_hdk.runtime import Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from tests.adapters.contract import ComponentPortContract
 
 AnyCallable = Callable[..., object]
 WORKSPACE = ScopeSet.of("workspace")
@@ -148,3 +151,17 @@ async def test_a_mode_that_allows_nothing_still_lets_a_child_wait() -> None:
     assert waiting[-1].observation.kind == "pending", (
         "waiting was refused by a mode allowing nothing"
     )
+
+
+class TestMailboxIsAComponentPort(ComponentPortContract):
+    """The component a held child parks on (D16), held to the shared shape like any other.
+
+    Its effect profile is empty and a test already proves that load-bearing — a child can be held
+    under a mode that allows nothing at all. The contract asks the other four questions.
+    """
+
+    def port(self) -> ComponentPort:
+        return Mailbox()
+
+    def valid_call(self) -> tuple[RegistrationId, JsonValue]:
+        return "mailbox", {}

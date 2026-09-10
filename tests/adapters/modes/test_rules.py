@@ -17,7 +17,8 @@ import pytest
 from shadow_hdk.adapters.modes import Rule, RuleGovernance, RuleSet
 
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
-from shadow_hdk.kernel.ports import Ask, Context, Refuse
+from shadow_hdk.kernel.ports import Ask, Context, GovernancePort, Refuse
+from tests.adapters.contract import GovernancePortContract
 
 EVERYTHING = ScopeSet(everything=True)
 WORKSPACE = ScopeSet.of("workspace")
@@ -139,3 +140,11 @@ async def test_governance_over_an_empty_set_refuses_even_a_harmless_step() -> No
     governance = RuleGovernance(RuleSet(()), selects="mode")
     judged = await governance.judge(EffectProfile(reads=WORKSPACE), a_context())
     assert isinstance(judged, Refuse), judged
+
+
+class TestRuleGovernanceIsAGovernancePort(GovernancePortContract):
+    """The rows, held to the shared shape (TD-004). A rule set that refuses everything is still a
+    governance port: it must *answer*, and its answer must round-trip."""
+
+    def port(self) -> GovernancePort:
+        return RuleGovernance(RuleSet((HOUSE, READING)))

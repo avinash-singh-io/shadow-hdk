@@ -97,6 +97,29 @@ class ComponentPortContract:
             observation = await port.invoke(registration, inputs)
         assert round_trip(observation, CONTRACTS["Observation"]) == observation
 
+    async def test_inputs_of_the_wrong_shape_are_an_observation_not_an_exception(self) -> None:
+        """D7 from the other side. An unknown **id** was already covered; a known id with inputs
+        the component cannot use is the commoner case by far — it is what a model produces when it
+        misreads a schema — and *the agent must be able to route around it*.
+
+        Four shapes, because a component that guards `dict` and forgets `None` guards nothing: a
+        model that omits the argument object entirely sends exactly that.
+        """
+        registration, _ = self.valid_call()
+        async with self.using() as port:
+            shapes: tuple[JsonValue, ...] = (
+                None,
+                "a string where an object goes",
+                [],
+                {"no": "such field"},
+            )
+            for nonsense in shapes:
+                observation = await port.invoke(registration, nonsense)
+                assert observation.kind in {"completed", "failed", "refused", "pending", "acted"}, (
+                    f"{nonsense!r} produced {observation!r}"
+                )
+                assert round_trip(observation, CONTRACTS["Observation"]) == observation
+
 
 class ModelPortContract:
     """Override `port` and `a_request`."""
