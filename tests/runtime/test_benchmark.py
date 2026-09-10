@@ -90,3 +90,38 @@ async def test_the_same_shape_is_not_re_planned() -> None:
     await _time(plan, 10)
     after = plan_cache_stats()
     assert after["misses"] == before["misses"], "the same shape was planned twice"
+
+
+NESTING = 10
+"""Ten nested sequences of ten steps — the same hundred steps, arranged so every one of them runs
+inside a subgraph."""
+
+
+async def test_a_hundred_steps_arranged_as_nested_subgraphs() -> None:
+    """What Phase 6's subgraphs cost, measured against the flat hundred above.
+
+    A nested composite is now a compiled graph added as a node rather than more edges in one graph.
+    That is a real cost — a graph per scope — and D11 says a cost is a number, not a shrug. Ten
+    scopes is a plausible depth for a plan-and-execute pattern; a hundred would not be.
+    """
+    plan = Composition(
+        (
+            Sequence(
+                "outer",
+                tuple(
+                    Sequence(
+                        f"inner{group}",
+                        tuple(Invoke(f"s{group}_{i}", REG.id) for i in range(NESTING)),
+                    )
+                    for group in range(NESTING)
+                ),
+            ),
+        )
+    )
+    elapsed, events = await _time(plan, STEPS)
+    print(
+        f"\n  {STEPS} steps in {NESTING} nested subgraphs: {elapsed:.1f} ms "
+        f"({elapsed / STEPS:.3f} ms/step, best of {ROUNDS}), {events} events"
+    )
+    assert elapsed < D11_SEQUENTIAL_MS * CI_SLACK
+    assert elapsed / STEPS < D11_PER_STEP_MS * CI_SLACK

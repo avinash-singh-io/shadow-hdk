@@ -80,7 +80,6 @@ async def _drive(
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
         executor = StepExecutor(session, emitter, ports, registry)
-        graph = compile_composition(composition, executor, checkpointer)
         config = {
             "configurable": {"thread_id": session.run_id},
             "recursion_limit": session.meter.lease.ceiling.max_steps * RECURSION_HEADROOM,
@@ -90,6 +89,10 @@ async def _drive(
         detail: str | None = None
         parked = False
         try:
+            # Compiling is inside the guard: a composition an agent authored badly — a repeated
+            # step id, say — is *its* mistake, and D7 says no exception from here escapes `run()`.
+            # It ends the run with a reason on the record instead of a traceback at the caller.
+            graph = compile_composition(composition, executor, checkpointer)
             result = await graph.ainvoke(payload, config=config)
             parked = isinstance(result, dict) and "__interrupt__" in result
         except BaseException as error:  # noqa: BLE001 — every stop is a reason, never a traceback

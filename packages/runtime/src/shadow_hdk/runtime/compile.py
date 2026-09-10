@@ -72,26 +72,79 @@ class Plan:
     edges: tuple[tuple[str, str], ...] = ()
     fanouts: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     untils: tuple[UntilPlan, ...] = ()
+    subgraphs: Mapping[str, Plan] = field(default_factory=dict)
+    """A nested composite, planned in its own right and added to this graph as one node. The node
+    is named for the composite, which is what gives the scope a checkpoint namespace."""
+
+
+class DuplicateStepId(ValueError):
+    """Two steps in one composition share an id.
+
+    Not a style rule. `RunState.handles` is one flat dict keyed by step id, and that flatness is
+    what lets a `Binding` reach an earlier sibling in an outer scope — so ids cannot be scoped
+    apart, and a repeat is an error. Before this was caught, two steps sharing an id collapsed into
+    **one node with a self-edge**, and the run looped until its lease was gone.
+    """
+
+    def __init__(self, step_id: StepId) -> None:
+        super().__init__(f"two steps share the id {step_id!r}; step ids are unique per composition")
+        self.step_id = step_id
 
 
 class _Builder:
-    def __init__(self) -> None:
+    def __init__(self, seen: set[StepId] | None = None) -> None:
         self.steps: dict[str, Step] = {}
         self.passthroughs: list[str] = []
         self.ticks: dict[str, StepId] = {}
         self.edges: list[tuple[str, str]] = []
         self.fanouts: dict[str, tuple[str, ...]] = {}
         self.untils: list[UntilPlan] = []
+        self.subgraphs: dict[str, Plan] = {}
+        # Shared with every nested builder: an id repeated in another *scope* is still a repeat.
+        self.seen: set[StepId] = seen if seen is not None else set()
+
+    def claim(self, step_id: StepId) -> StepId:
+        if step_id in self.seen:
+            raise DuplicateStepId(step_id)
+        self.seen.add(step_id)
+        return step_id
+
+    def nest(self, composite: Step) -> tuple[str, str]:
+        """A composite inside another becomes its own plan, added to this graph as one node."""
+        name = self.claim(composite.id)
+        inner = _Builder(self.seen)
+        entry, exit_node = inner.add(composite, top=True)
+        self.subgraphs[name] = inner.finish(entry, exit_node)
+        return name, name
+
+    def finish(self, entry: str, exit_node: str) -> Plan:
+        return Plan(
+            entry=entry,
+            exit=exit_node,
+            steps=dict(self.steps),
+            passthroughs=tuple(self.passthroughs),
+            ticks=dict(self.ticks),
+            edges=tuple(self.edges),
+            fanouts=dict(self.fanouts),
+            untils=tuple(self.untils),
+            subgraphs=dict(self.subgraphs),
+        )
 
     def passthrough(self, name: str) -> str:
         self.passthroughs.append(name)
         return name
 
-    def add(self, step: Step) -> tuple[str, str]:
-        """Returns this step's (entry node, exit node). They differ only for composites."""
+    def add(self, step: Step, *, top: bool = False) -> tuple[str, str]:
+        """Returns this step's (entry node, exit node). They differ only for composites.
+
+        `top` marks the one composite this builder is *for* — the root sequence, or the composite a
+        nested builder was made to plan. Any other composite is nested, and becomes a subgraph.
+        """
+        if not top and isinstance(step, Sequence | FanOut | Until):
+            return self.nest(step)
         match step:
             case Invoke() | Await():
-                self.steps[step.id] = step
+                self.steps[self.claim(step.id)] = step
                 return step.id, step.id
             case Sequence(id=seq_id, steps=children):
                 if not children:
@@ -151,17 +204,8 @@ def _last_step_id(step: Step) -> StepId:
 def _build_plan(composition: Composition) -> Plan:
     builder = _Builder()
     root = Sequence("<root>", tuple(composition.steps))
-    entry, exit_node = builder.add(root)
-    return Plan(
-        entry=entry,
-        exit=exit_node,
-        steps=dict(builder.steps),
-        passthroughs=tuple(builder.passthroughs),
-        ticks=dict(builder.ticks),
-        edges=tuple(builder.edges),
-        fanouts=dict(builder.fanouts),
-        untils=tuple(builder.untils),
-    )
+    entry, exit_node = builder.add(root, top=True)
+    return builder.finish(entry, exit_node)
 
 
 _PLAN_CACHE: dict[bytes, Plan] = {}
@@ -243,11 +287,7 @@ def _until_route(plan: UntilPlan) -> Callable[[RunState], str]:
     return route
 
 
-def compile_composition(
-    composition: Composition, executor: StepExecutor, checkpointer: Any = None
-) -> Any:
-    """Build the graph. The plan is cached; binding the executor to it is cheap."""
-    plan = plan_for(composition)
+def _graph_from(plan: Plan, executor: StepExecutor, checkpointer: Any = None) -> Any:
     graph: StateGraph = StateGraph(RunState)
 
     for name, step in plan.steps.items():
@@ -256,6 +296,10 @@ def compile_composition(
         graph.add_node(name, _passthrough)
     for name, step_id in plan.ticks.items():
         graph.add_node(name, _tick_node(step_id))
+    for name, nested in plan.subgraphs.items():
+        # No checkpointer of its own: LangGraph gives a subgraph the parent's, under a namespace
+        # named for this node. Handing it a second one would give the scope two records.
+        graph.add_node(name, _graph_from(nested, executor))
 
     for source, target in plan.edges:
         graph.add_edge(source, target)
@@ -271,4 +315,11 @@ def compile_composition(
     return graph.compile(checkpointer=checkpointer)
 
 
-__all__ = ["Plan", "compile_composition", "plan_cache_stats", "plan_for"]
+def compile_composition(
+    composition: Composition, executor: StepExecutor, checkpointer: Any = None
+) -> Any:
+    """Build the graph. The plan is cached; binding the executor to it is cheap."""
+    return _graph_from(plan_for(composition), executor, checkpointer)
+
+
+__all__ = ["DuplicateStepId", "Plan", "compile_composition", "plan_cache_stats", "plan_for"]
