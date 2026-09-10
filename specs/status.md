@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-10 (Phase 16)
+> **Last Updated**: 2026-09-11 (after the release)
 > **Current Phase**: **Phase 19 COMPLETE — every P0, P1 and P2 the audit filed is closed.** The
 > exception is ENH-003, deliberately deferred to the first OPC-UA or ROS adapter, which needs a
 > server or a ROS distribution that is not on this machine.
@@ -24,7 +24,7 @@ type: Status
 > **CI is green** and runs on every push. It had never run on any of 141 commits until this phase
 > widened a trigger that only fired on branches nothing has ever landed on.
 >
-> 946 tests; mypy strict over 133 files; seventeen distributions at **0.13.0**, all MIT.
+> 949 tests; mypy strict over 147 files; seventeen distributions at **0.13.0**, all MIT.
 >
 > **LANDED AND RELEASED, 2026-09-10.** The owner approved the merge end to end. The linear stack
 > fast-forwarded onto `staging` and then onto `main` — no merge commit, because `main` was a strict
@@ -49,30 +49,38 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. The kernel exists and is green (`0ca2d2b`); Phase 0 builds the
-runtime that turns the bare-harness test green.
+that adopter, and it lives in the shared roadmap rather than here. **All twenty phases are built,
+merged and released**: 949 tests, mypy strict over 147 files, seventeen distributions at 0.13.0.
 
 ## Completed Phases
 
+> Every phase is merged and released. `main`, `staging` and the phase branches met at
+> `81d4b6a` on 2026-09-10; each phase carries a `phase/NN-*` tag, and the release column is
+> the version that first shipped it. Several phases share a version because a version is a
+> **contract** change (D9), not a phase boundary.
+
 | Phase | Name | Status | Released |
 |-------|------|--------|---------|
-| 0 | The runtime, and the bare test goes green | Complete, unmerged (2026-09-10) | — |
-| 1 | Real adapters, streaming, modes | Complete, unmerged (2026-09-10) | — |
-| 2 | The spike — J1 | Complete, unmerged (2026-09-10) | — |
-| 3 | The workspace, and code | Complete, unmerged (2026-09-10) | — |
-| 4 | The ACP bridge | Complete, unmerged (2026-09-10) | — |
-| 5 | Checkpoints, and a parked run survives | Complete, unmerged (2026-09-10) | — |
-| 6 | The compiler completed | Complete, unmerged (2026-09-10) | — |
-| 7 | Sub-agents | Complete, unmerged (2026-09-10) | — |
-| 8 | Patterns, skills, replay, compaction | Complete, unmerged (2026-09-10) | — |
-| 9 | The wire | Complete, unmerged (2026-09-10) | — |
-| 10 | Effect rules | Complete, unmerged (2026-09-10) | — |
-| 11 | Contained sandboxes | Complete, unmerged (2026-09-10) | — |
-| 12 | Derivation | Complete, unmerged (2026-09-10) | — |
-| 13 | Leases on effects, driver supply chain | Complete, unmerged (2026-09-10) | — |
-| 14 | Telemetry | Complete, unmerged (2026-09-10) | — |
-| 15 | The environment contract | Complete, unmerged (2026-09-10) | — |
-| 16 | MQTT | Complete, unmerged (2026-09-10) | — |
+| 0 | The runtime, and the bare test goes green | Complete, merged | **v0.1.0** |
+| 1 | Real adapters, streaming, modes | Complete, merged | **v0.2.0** |
+| 2 | The spike — J1 | Complete, merged | **v0.2.0** |
+| 3 | The workspace, and code | Complete, merged | **v0.2.0** |
+| 4 | The ACP bridge | Complete, merged | **v0.2.0** |
+| 5 | Checkpoints, and a parked run survives | Complete, merged | **v0.3.0** |
+| 6 | The compiler completed | Complete, merged | **v0.4.0** |
+| 7 | Sub-agents | Complete, merged | **v0.5.0** |
+| 8 | Patterns, skills, replay, compaction | Complete, merged | **v0.5.0** |
+| 9 | The wire | Complete, merged | **v0.6.0** |
+| 10 | Effect rules | Complete, merged | **v0.6.0** |
+| 11 | Contained sandboxes | Complete, merged | **v0.6.0** |
+| 12 | Derivation | Complete, merged | **v0.6.0** |
+| 13 | Leases on effects, driver supply chain | Complete, merged | **v0.7.0** |
+| 14 | Telemetry | Complete, merged | **v0.7.0** |
+| 15 | The environment contract | Complete, merged | **v0.8.0** |
+| 16 | MQTT | Complete, merged | **v0.8.0** |
+| 17 | The audit — every P0 | Complete, merged | **v0.10.0** |
+| 18 | The P1s | Complete, merged | **v0.12.0** |
+| 19 | The P2s, and the documents | Complete, merged | **v0.13.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -84,33 +92,24 @@ runtime that turns the bare-harness test green.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. Superseded as the active row by Phase 1, which branches from it. |
-| 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. Superseded as the active row by Phase 2, which branches from it. |
-| 2 — the spike | `phase-2-the-spike` | **complete, unmerged** | J1 answered. Superseded as the active row by Phase 3. |
-| 3 — the workspace and code | `phase-3-workspace-and-code` | **complete, unmerged** | Superseded as the active row by Phase 4. |
-| 4 — the ACP bridge | `phase-4-the-acp-bridge` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 5. Another agent as a governed component: fourteen client doors judged, refusals in the agent's own vocabulary, our clock over their runaway, money accumulated before converting. 302 tests; mypy strict over 61 files. What Codex and Claude Code do is still unmeasured. |
-| 5 — the recording server | `phase-5-the-recording-server` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 6. Our registry offered to a child agent as an MCP server: what it does is on the parent's record because it was routed. Proven over a real `ClientSession` and over a real OS subprocess. 326 tests; mypy strict over 67 files. A child on another *machine* still needs a listening transport → Phase 9. |
-| 6 — the compiler, complete | `phase-6-the-compiler-complete` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 7. A nested composite is a subgraph with a name of its own; a host can stop a run and the record says who asked (D15); a parked run survives the process that parked it, proven on a file. 343 tests; mypy strict over 70 files. Subgraphs cost 0.607 ms/step against D11's 1 ms. |
-| 7 — sub-agents | `phase-7-sub-agents` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 8. Spawn, send, release over parked runs (D16): a held child is a checkpoint, not a resident object. `Await` now actually parks — it never had. The tenth event kind, `Held`. 354 tests; mypy strict over 73 files. The model-facing verbs move to Phase 8, because a `spawn` a model can call has to say what the child *is*, and that is a pattern. |
-| 8 — patterns, skills, replay | `phase-8-patterns-skills-replay` | **complete, unmerged** | 5 / 5 groups. Superseded as the active row by Phase 9. Patterns and skills are TOML files a team can write (D17); a skill is checked against `visible()` before the first turn; D13's last mechanism is built (`describe`); a run replays for nothing; and compaction plus the `spawn` / `send` / `release` verbs land as meta-tools (D18). 401 tests; mypy strict over 79 files. |
-| 9 — the wire | `phase-9-the-wire` | **complete, unmerged** | 5 / 5 groups. The runtime is reachable from another process or another language: the ports invert over a loopback (D21), `--stdio` drives a child process, and **`serve` listens** — Phase 5's debt paid. Twelve schemas published and checked against the code. 460 tests; mypy strict over 87 files. **Releasable at v0.6.0** — tagging is the owner's. Superseded as the active row by Phase 10. |
-| 10 — effect rules | `phase-10-effect-rules` | **complete, unmerged** | 3 / 3 groups. Rules as rows that intersect and only narrow (D23); a team rule that widens is refused at load, naming rule and field (D24); rules load from a file with a shipped example. A mutation found fail-closed open at N=0 — fixed. 501 tests; mypy strict over 90 files. Superseded as the active row by Phase 11. |
-| 11 — contained sandboxes | `phase-11-contained-sandboxes` | **complete here, unmerged** | 3 / 3 groups. A sandbox proves containment at construction or refuses to exist (D25); gVisor and Firecracker as backends whose live proofs **skip** on this machine and are `[~]` for a Linux host. The leash moved into the runtime so no adapter imports another. 517 tests; mypy strict over 93 files. Superseded as the active row by Phase 12. |
-| 12 — derivation | `phase-12-derivation` | **complete, unmerged** | 3 / 3 groups. A ground is data and one engine is its interpreter (D26): fixed-point at scale 12, units and denominators on every value, a total evaluator that answers indeterminate, a canonical fingerprint, and the engine as a component whose observation and proposal are the same claim. 565 tests; mypy strict over 97 files. Superseded as the active row by Phase 13. |
-| 13 — leases on effects | `phase-13-effect-leases` | **complete, unmerged** | 3 / 3 groups. A driver signs what it declares and is checked at the registry on every refresh (D27): unsigned where required, unknown, revoked or forged is *absent* with the reason; a revoked key is refused as revoked however valid its signature. `Acted` is the sixth observation kind — the receipt of any world-effect; the lease is read at the moment of the act; `run/step` tells a resume re-run from a second act. The policy — which effects must be signed, who holds a key, what a warrant is — waits on ADR-1 as `[~]`. Contract 0.6.0 → 0.7.0. 608 tests; mypy strict over 101 files. Superseded as the active row by Phase 14. |
-| 14 — telemetry | `phase-14-telemetry` | **complete, unmerged** | 3 / 3 groups. The run's shape as a trace over the OpenTelemetry API alone (D28): one span per run and per step, refusals/asks/spawns/holds as events, usage on the step, an act's receipt and never a payload; spans open lazily so a resumed run traces; nothing kept with no provider; a raising tracer counted, not hidden. A file sink in `basic` that fsyncs before it returns and reads back past a torn tail. No contract change. 638 tests; mypy strict over 105 files. Superseded as the active row by Phase 15. |
-| 15 — the environment contract | `phase-15-environment-contract` | **complete, unmerged** | 3 / 3 groups (Epic 0007). Every observation carries the posture of what produced it, stamped by the runtime (D30, contract 0.7.0 → 0.8.0); governance is told posture and component at the step and at the catalogue, and `Controlled` makes *only controlled satisfies consent-before-effect* executable; one device contract with three roles and the fake first (D29, D31) — a sensor reads `world`, an actuator writes it with the lease read at the act and a receipt, a witness reports observed acts. 659 tests; mypy strict over 109 files. Superseded as the active row by Phase 16. |
-| 16 — MQTT | `phase-16-mqtt` | **complete, unmerged** | 3 / 3 groups (Epic 0007). The first protocol adapter over the device contract: topics as sensors, actuators and witnesses over `paho-mqtt` on 3.1.1, the envelope in the payload (D32), proven against an `amqtt` broker on localhost the suite starts and stops — a broker that is not there, one that refuses us, one that leaves and comes back. The device contract moved into the runtime so no adapter imports another. A system-design review received mid-phase found two P1 races in the link; fixed as Group 3 with the claims tested directly. No kernel contract change. 691 tests; mypy strict over 114 files. |
+| _(none)_ | — | — | Phases 0–19 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
 
 ## Upcoming Phases
 
-| Phase | Name | Status | Key Deliverables |
-|-------|------|--------|-----------------|
-| 1 | Real adapters, streaming, modes | Complete, unmerged | `adapters/langchain`, `adapters/mcp`, `adapters/modes`; the demo on real components |
-| 2 | The spike | Complete, unmerged | J1 answered over `agent-client-protocol` |
-| 3 | The workspace and code | Complete, unmerged | files and a subprocess sandbox as components |
-| 4–5 | The ACP bridge, the RecordingServer | Not Started | your subscription answers the turn |
-| 6–9 | The compiler complete, sub-agents, patterns, the wire | Not Started | R3's join; `v0.1.0` |
+> **Nothing is scheduled.** The roadmap's phases are done and the backlog holds no P0, P1 or
+> P2. What is left needs something this machine or this session does not have, and each row
+> names it rather than sitting as an undated intention.
+
+| What | Waits on | Why it is not buildable here |
+|------|----------|------------------------------|
+| TD-007's other half — whether an irreversible step must produce an `Acted` whichever port it came through | **ADR-1** | A governance question, not a defect. The plumbing landed in Phase 19; the policy is the owner's to decide. |
+| Which effects must be signed, who holds a key, what a warrant is | **ADR-1** | Same decision. Phase 13 built the mechanism and left the policy `[~]`. |
+| Setting ownership on the six-rung ladder | **ADR-2** | Owner's. |
+| Phase 11's gVisor and Firecracker containment proofs | a Linux host | The backends are built and refuse to exist unless containment is proven; the live proofs **skip** here. |
+| ENH-003 — a protocol-adapter contract suite | a second protocol adapter | With one implementation, parametrising the MQTT tests is a rename rather than a contract. Needs an OPC-UA server or a ROS 2 distribution. |
+| ENH-002 — TLS on `MqttLink` | a TLS broker | The dev broker has no TLS listener, so it cannot be proven here. |
+| Unit cancellation in the derivation engine | a design decision | Recorded deferral, Phase 12. |
+| A twelfth event kind for an unreachable port | a design decision | Filed in Phase 19; `unreachable` is readable today. |
 
 ## Blockers
 

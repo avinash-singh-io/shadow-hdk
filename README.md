@@ -1,87 +1,349 @@
 # shadow-hdk
 
-A generic agentic system: a runtime that runs an agent over an open set of components under a
-governance policy, and hands what the agent produces to whoever is listening. It has no database, no
-schema, no product concepts, no UI. Intent Studio uses it; it never knows Intent Studio exists.
+A runtime that runs an agent over an open set of components under a governance policy, and hands
+what the agent produces to whoever is listening.
 
-**The design is `intent-ecosystem/vision/09-the-agentic-system.md`.** This repository is that
-document made executable, and where the two disagree the code is wrong until an ADR says otherwise.
-The low-level design lives in [`specs/architecture/`](specs/architecture/overview.md).
+It has no database, no schema, no product concepts and no UI. It does not know what your
+application is for. What it knows is how to take a plan, judge every step of it against a policy
+before that step runs, act through components, and report what happened as a stream of events —
+so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-## The four public names
+**Seventeen distributions at `0.13.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
+0.594 ms of runtime overhead per step.
 
-```python
-from shadow_hdk.runtime import run, resume, current_run, Ports, RunOptions
-
-async for event in run(composition, ports, options=RunOptions(lease=lease)):
-    render(event)
-```
-
-`run` compiles a composition to a LangGraph graph, judges **every** step through the governance
-port, emits nine kinds of event, hands proposals to the sink, and carves children from the parent's
-lease. `current_run()` is how a component proposes, reads what is left of its lease, and spawns.
+---
 
 ## The two rules
 
-**Govern effects, not names.** A component declares six fields — `reads · writes · reaches ·
-reversible · contained · costs` — and everything downstream is a rule over them, so the registry can
-be open while the proof that a mode only narrows stays finite.
+Everything else in this repository follows from these.
 
-**Act through components; record through the sink.** The agent acts on the world through components
-whose effects are judged. The runtime has no write path into any host's durable store: what it wants
-kept leaves as a proposal, and the host decides.
+### 1. Govern effects, not names
 
-## What kind of agent
+A component declares six fields, and every rule downstream is a rule over those six:
 
-A `Pattern` — data, not a code path:
+```python
+EffectProfile(
+    reads=frozenset({"filesystem"}),  # what it can see
+    writes=frozenset({"filesystem"}),  # what it can change
+    reaches=frozenset({"local"}),  # how far it goes
+    reversible=False,  # can it be undone
+    contained=True,  # is it inside a proven boundary
+    costs=Cost(cents=0, seconds=2),  # what it spends
+)
+```
+
+A policy never sees a tool's *name*. It sees what that tool would do. This is what lets the
+registry stay open — an MCP server can add a tool tomorrow and the policy still holds — while the
+proof that a mode only ever *narrows* stays finite, because it is a partial order over six fields
+rather than over an unbounded set of names.
+
+### 2. Act through components; record through the sink
+
+The runtime has **no write path** into anyone's durable store. When the agent has something worth
+keeping, it leaves as a `Proposal` on the sink port and the host decides what to do with it.
+Effects on the world go through components, and every component invocation is judged first.
+
+The consequence is that this library can be dropped into a system without owning that system's
+data, and a run's whole outward surface is: *events out, proposals out, ports in*.
+
+---
+
+## The shape of a run
+
+```mermaid
+flowchart LR
+    subgraph host["Your application"]
+        policy["GovernancePort<br/><i>your rules</i>"]
+        sink["SinkPort<br/><i>your store</i>"]
+        obs["ObserverPort<br/><i>your telemetry</i>"]
+    end
+
+    subgraph rt["shadow-hdk runtime"]
+        compile["compile<br/><i>plan → LangGraph</i>"]
+        step["step<br/><i>the enforcement point</i>"]
+        emit["emit<br/><i>events</i>"]
+    end
+
+    subgraph outside["The open set"]
+        model["ModelPort<br/><i>any provider</i>"]
+        comps["ComponentPort<br/><i>MCP · CLI · callables ·<br/>another agent · devices</i>"]
+        clock["ClockPort"]
+    end
+
+    compile --> step --> emit
+    step -.->|"judge(effects, context)"| policy
+    step -.->|"invoke(id, inputs)"| comps
+    step -.->|"complete / stream"| model
+    step -.->|"now / new_id"| clock
+    emit -->|"proposals"| sink
+    emit -->|"every event"| obs
+    emit ==>|"async for event in run(...)"| host
+```
+
+The runtime is in the middle and owns nothing on either side. Everything in *Your application* and
+everything in *The open set* is a port you implement or an adapter you pick up.
+
+## What one step does
+
+Every step of every composition does the same nine moves in the same order. This is the entire
+enforcement story:
+
+```mermaid
+flowchart TD
+    A["1 · cancel check"] --> B["2 · lease check"]
+    B --> C["3 · refresh the registry"]
+    C --> D["4 · resolve the binding"]
+    D --> E["5 · gather inputs"]
+    E --> F{"6 · resuming?"}
+    F -->|"yes, an answer arrived"| G["7 · judge"]
+    F -->|"no"| G
+    G -->|"Allow"| H["8 · charge the lease, invoke"]
+    G -->|"Ask"| I["park the run<br/>(interrupt)"]
+    G -->|"Refuse"| J["Refused, with the reason"]
+    H --> K["9 · observe"]
+    K --> L["Completed · Failed · Acted · Pending"]
+
+    style G fill:#4a5568,color:#fff
+    style I fill:#744210,color:#fff
+    style J fill:#742a2a,color:#fff
+```
+
+Two error classes are load-bearing. A **component** raising, a component that is not registered,
+and a binding that refers to nothing are all *data* — a `Failed` observation the agent gets to see
+and react to. A **port** raising is a *failure*: the host is broken, and the run ends rather than
+reasoning past it.
+
+The charge happens inside the invoke, not at the top, because the lease measures **work** — a step
+that was refused before it ran did none.
+
+## The six ports
+
+The port set is open (D22); these are the six the runtime itself calls.
+
+| Port | You supply | Shipped adapters |
+|---|---|---|
+| `GovernancePort` | one function: `judge(effects, context) -> Allow \| Ask \| Refuse` | `basic` (allow-all), `modes` (modes and effect rules as data) |
+| `ComponentPort` | `registrations()` and `invoke(id, inputs)` | `basic`, `mcp`, `workspace`, `sandbox_subprocess`, `contained`, `acp`, `agent`, `derivation`, `devices`, `mqtt` |
+| `ModelPort` | `complete(request)`, optionally `stream` | `langchain` — every provider LangChain integrates |
+| `SinkPort` | `propose(proposal)` | `basic` — stdout, a file that survives a crash, a callback |
+| `ObserverPort` | `on(event)` | `basic`, `otel` |
+| `ClockPort` | `now()`, `new_id()` | `basic`, and a fixed clock for tests |
+
+A registry is the **union of every component port, recomputed every step** — so a tool that appears
+mid-run is seen, and one that vanishes is gone.
+
+## What comes out
+
+Eleven event kinds, in one ordered stream per run:
+
+`started` · `composed` · `invoked` · `observed` · `proposed` · `refused` · `asked` · `spawned` ·
+`spent` · `held` · `ended`
+
+Six observation kinds, which is what a step's outcome can be:
+
+`Completed` · `Refused` · `Asked` · `Failed` · `Pending` · `Acted`
+
+`Acted` is the receipt of a world-effect: it says the thing happened, and never carries the payload.
+
+---
+
+## Using it
+
+### The smallest real thing
+
+```python
+from shadow_hdk.adapters.basic import AllowAll, CallableComponents, StdoutSink, SystemClock
+
+from shadow_hdk.kernel import Binding, Ceiling, Composition, EffectProfile, Floor, Invoke, Lease
+from shadow_hdk.runtime import Ports, RunOptions, run
+
+
+def greet(name: str) -> str:
+    """Say hello to somebody."""
+    return f"hello, {name}"
+
+
+async def main() -> None:
+    tools = CallableComponents()
+    tools.add(greet, effects=EffectProfile())  # reads nothing, writes nothing, costs nothing
+
+    ports = Ports(
+        model=None,  # no model at all
+        components=(tools,),
+        governance=AllowAll(),  # your policy goes here
+        sink=StdoutSink(),  # your store goes here
+        clock=SystemClock(),
+    )
+    plan = Composition((Invoke("say-hello", "greet", (Binding("name", value="world"),)),))
+    options = RunOptions(lease=Lease(Ceiling(max_steps=100, max_wall_seconds=60), Floor(0)))
+
+    async for event in run(plan, ports, options=options):
+        print(event.kind, getattr(event, "step", ""))
+```
+
+```
+started
+composed
+invoked say-hello
+observed say-hello
+ended
+```
+
+No model is involved. The runtime is a governed workflow engine before it is anything else, and
+`run` behaves identically whether the plan came from a person or from a model — the same nine moves,
+the same judgement before every step.
+
+> `model=None` runs, but `Ports.model` is typed as required, so a type checker will object. That
+> gap is filed as **ENH-004**; making it optional is a contract change, which under D9 moves every
+> package together.
+
+### The four public names
+
+```python
+from shadow_hdk.runtime import run, resume, current_run, Ports, RunOptions
+```
+
+- `run(composition, ports, options=...)` — an async iterator of events.
+- `resume(composition, answer, ports, options=...)` — picks a parked run up at the step that asked.
+- `current_run()` — how a component proposes, reads what is left of its lease, and spawns children.
+- `Ports` / `RunOptions` — what you hand in.
+
+### Choosing what kind of agent
+
+An agent architecture is **data**, not a code path. Six patterns ship as TOML in the `agent`
+adapter's `library/` directory:
+
+`single` · `plan-and-execute` · `orchestrator-workers` · `critic-pair` · `reflect-until` ·
+`keeps-helpers`
 
 ```python
 single = Pattern("single", ROLE, meta_tools=frozenset({"propose", "done"}))
 ```
 
-`single` offers the model no `compose`, so it cannot change its own shape: a deterministic one-agent
-product on the same runtime a dynamic one uses.
+`single` offers the model no `compose` meta-tool, so it cannot change its own shape — a
+deterministic one-agent product running on the same runtime a fully dynamic one uses. A team writes
+a new pattern by writing a TOML file, not by writing Python.
 
-## The test that defines done
+### Consuming it from a product
 
-```bash
-uv run pytest tests/test_bare_harness.py
+You implement the ports; the runtime enforces. The division is deliberate and it is the whole
+integration story:
+
+| The runtime owns | Your product owns |
+|---|---|
+| Compiling a plan and running it | What the plan is *about* |
+| Calling `judge` before every step | What `judge` decides |
+| Emitting the event stream | Rendering it, storing it, streaming it to a browser |
+| Handing you proposals | Your database, your schema, your migrations |
+| Carving a child's lease from its parent's | What a lease costs and who pays |
+| Parking a run that must ask | Who gets asked, and how |
+
+Two ways in:
+
+- **In-process** — import `shadow_hdk.runtime` and hold the ports yourself. This is the normal
+  case.
+- **Over a wire** — `shadow_hdk.wire` puts the runtime behind a JSON-RPC listener and *inverts*
+  the ports: the runtime runs in one process, your `judge`, your components and your sink stay in
+  yours, and it calls back across the connection (D21). This is how a host in another language, or
+  on another machine, drives it. `--stdio` drives a child process instead of a socket.
+
+```mermaid
+flowchart LR
+    subgraph a["Your process (any language)"]
+        app["your app"]
+        p2["judge · components · sink"]
+    end
+    subgraph b["Runtime process"]
+        r["run / resume"]
+    end
+    app -->|"JSON-RPC: start, resume, stop"| r
+    r -.->|"callback: judge?"| p2
+    r -.->|"callback: invoke?"| p2
+    r ==>|"events"| app
 ```
 
-A composition runs against a component that arrived from outside, a model and a sub-agent, governed
-by allow-all, everything written to stdout — with **zero lines of any product's code**. See
-[`examples/bare.py`](examples/bare.py); run it with `uv run python examples/bare.py`.
+### Running the examples
 
-Four invariants fail the build rather than a review: nothing under `packages/` or `examples/`
-imports a product; the kernel imports no I/O, clock, logging or framework; the runtime imports no
-adapter; no adapter imports another.
+```bash
+uv run python examples/bare.py
+```
+
+`examples/bare.py` is the test that defines done: a composition running against a component that
+arrived from outside, a model and a sub-agent, governed by allow-all, everything written to stdout —
+with **zero lines of any application's code**. `examples/real.py` does the same over real adapters.
+
+---
 
 ## Layout
 
+Seventeen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
+takes only what it uses.
+
 ```
-packages/kernel            shadow-hdk-kernel            pure types, one partial order, six ports
-packages/runtime           shadow-hdk                   the loop, on LangGraph
-packages/adapters/basic    …-adapters-basic                 allow-all · stdout · clock · callables
-packages/adapters/agent    …-adapters-agent                 the model loop as a component; patterns
+packages/kernel                     pure types, one partial order, six ports — no I/O at all
+packages/runtime                    the loop, on LangGraph
+packages/wire                       the runtime behind JSON-RPC, ports inverted
+packages/adapters/basic             allow-all · stdout · file · clock · callables
+packages/adapters/modes             governance as data: a mode is a ceiling and an ask line
+packages/adapters/agent             the model loop as a component; patterns and skills as TOML
+packages/adapters/langchain         one ModelPort over every provider LangChain integrates
+packages/adapters/mcp               an MCP server's tools as components, effects derived not trusted
+packages/adapters/acp               another agent (Codex, Claude Code) as a governed component
+packages/adapters/recording         this run's registry, offered to a child as an MCP server
+packages/adapters/workspace         a filesystem confined to a root it cannot leave
+packages/adapters/sandbox_subprocess  code with a leash, and an honest account of what it is not
+packages/adapters/contained         a sandbox that proves containment or refuses to exist
+packages/adapters/derivation        total expressions over typed tables, fixed-point arithmetic
+packages/adapters/devices           sensors, actuators, witnesses — one device contract
+packages/adapters/mqtt              MQTT topics over that device contract
+packages/adapters/otel              the shape of a run as a trace, over the OpenTelemetry API alone
 ```
 
-One import name, `shadow_hdk`, as a namespace package, so the four ship separately.
+### The invariants
 
-## Run it
+These fail the build rather than a review, because a convention nobody can run is a convention that
+has already drifted. They live in `tests/invariants/`:
+
+| Invariant | What it refuses |
+|---|---|
+| stands alone | the kernel importing I/O, a clock, logging or a framework; the runtime importing an adapter; **any adapter importing another** |
+| the gate covers every package | a package quietly outside lint, types or tests — this repository shipped nine type errors that way once |
+| a wheel carries what it needs | a distribution that installs but cannot import |
+| every port is held to its contract | a new port implementation with no contract suite and no recorded reason |
+| the decisions index is true | the map of D1–D38 drifting from the decisions |
+| the documents describe this tree | a document naming a path that does not exist, or a listing that no longer matches the directory it describes |
+
+The last one is why this file names only paths that are really here.
+
+---
+
+## Building it
 
 ```bash
 uv sync --all-packages
-uv run ruff check && uv run ruff format --check && uv run mypy && uv run pytest
+uv run ruff check
+uv run ruff format --check
+uv run mypy
+uv run pytest
 ```
+
+All four must exit zero. CI runs them on every push.
 
 ## Status
 
-**Phase 0 complete** (`specs/planning/roadmap.md`): the runtime, the agent, the basic adapters, the
-bare harness. 150 tests, 96 % line coverage on the runtime, 0.586 ms of overhead per step against a
-1 ms budget. Every package at 0.1.0.
+Phases 0–19 are complete, merged and released; `specs/status.md` is the live record and
+`specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
-Phase 1 next: one `ModelPort` over LangChain's providers (OpenAI-compatible, Anthropic, Ollama,
-HuggingFace), the MCP component adapter, and modes as data.
+**What is deliberately not proven here**, because each needs something a laptop does not have:
+the live gVisor and Firecracker containment proofs (a Linux host — the backends refuse to exist
+unless containment is proven, so they *skip* rather than pass), TLS on the MQTT link (a TLS broker),
+a second protocol adapter such as OPC-UA or ROS 2 (a server, a distribution), and unit cancellation
+in the derivation engine (a recorded design deferral). Two governance questions — whether an
+irreversible step must produce an `Acted` whichever port it came through, and which effects must be
+signed — are open decisions rather than missing code.
 
-Private and unlicensed. A permissive licence grants rights for that version irrevocably, so the
-choice is the owner's and publishing waits on it.
+The low-level design is in [`specs/architecture/overview.md`](specs/architecture/overview.md); the
+thirty-eight decisions behind it are mapped in
+[`specs/decisions/index.md`](specs/decisions/index.md).
+
+MIT.

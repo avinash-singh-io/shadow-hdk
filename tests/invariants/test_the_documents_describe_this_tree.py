@@ -36,15 +36,22 @@ BACKTICKED = re.compile(r"`([^`\s]+)`")
 
 
 def documents() -> list[Path]:
-    """Every spec document and `CLAUDE.md` — but not the changelog.
+    """Every spec document, `CLAUDE.md` and `README.md` — but not the changelog.
 
     A changelog is a record of what happened, and one of its entries names a file another agent
     later deleted. Rewriting history to keep a path alive would be worse than a dead link in a line
     that was true when it was written.
+
+    **The README is in this net for the same reason the specs are, and more urgently.** It is the
+    first file anybody opens and the last one anybody re-reads, so it rots faster than anything it
+    describes — the version this rule inherited still announced Phase 0, 150 tests and version
+    0.1.0, and called the project unlicensed a day after it was released under MIT. Nothing here
+    can check a stale *number*; naming a path that is not there is the part a rule can catch.
     """
     return [
         *(d for d in sorted(SPECS.rglob("*.md")) if "changelog" not in d.parts),
         ROOT / "CLAUDE.md",
+        ROOT / "README.md",
     ]
 
 
@@ -174,3 +181,4 @@ def test_the_walk_reads_the_documents() -> None:
     """A scan over nothing would make the first rule vacuous."""
     assert len(documents()) >= 20
     assert any(d.name == "file-structure.md" for d in documents())
+    assert any(d.name == "README.md" for d in documents()), "the front door is outside the net"

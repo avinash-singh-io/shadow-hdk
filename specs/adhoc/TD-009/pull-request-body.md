@@ -20,7 +20,7 @@ Seventeen distributions, all `0.13.0`, all MIT: kernel, runtime, wire, and 14 ad
 | | |
 |---|---|
 | Tests | 946 passed, 1 skipped, 10 deselected |
-| Types | mypy strict, 133 files |
+| Types | mypy strict, 147 files |
 | Lint | ruff check and format, clean |
 | Coverage | `shadow_hdk.runtime` above the 90% floor, measured locally |
 

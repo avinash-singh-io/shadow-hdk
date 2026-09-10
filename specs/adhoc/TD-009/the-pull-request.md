@@ -36,7 +36,7 @@ So the command is written out below, ready, and deliberately not run.
 | Phases | 0–19 |
 | Packages | kernel, runtime, wire, and 14 adapters, all `0.13.0`, all MIT |
 | Tests | 946 passed, 1 skipped, 10 deselected |
-| Types | mypy strict over 133 files |
+| Types | mypy strict over 147 files |
 
 **Two corrections to this record, made 2026-09-10 and worth stating rather than quietly editing.**
 
