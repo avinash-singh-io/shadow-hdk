@@ -127,3 +127,40 @@ code, and the environment is where credentials live: handing it `ANTHROPIC_API_K
 happened to be in the parent process is how a tool that reads a file also exfiltrates a token. Two
 tests now — one that a planted secret comes back `ABSENT`, and one that `PATH` still arrives, because
 a filter that dropped everything would pass the first and break every script.
+
+### [ARCH_CHANGE] 2026-09-10 — Group 2: what the deployment is decides what the model can see
+Topics: contained, visibility, governance, artifacts, g2
+
+The chain, proven through a **real run** rather than by reading a profile:
+
+```
+SubprocessSandbox(contained=False)      a deployment with no real isolation, saying so
+    → a mode whose ceiling requires containment
+    → narrows() is False → governance refuses
+    → RunContext.visible() does not list it → the model is never offered it
+```
+
+Six tests. Both halves — the same sandbox with `contained=True` is allowed *and* visible, because a
+check that refuses everything is not a check. And with **allow-all instead of a mode, nothing is
+hidden**: the uncontained sandbox is offered, which says plainly that hiding it is governance's
+doing and not the adapter's.
+
+`write_file` stays visible throughout: the careful mode permits writing and forbids only running
+code. That is the distinction being made — *make things* and *run things* are different
+permissions — and it is one field of one profile.
+
+**And what all of it is for**: an agent writes `notes.md` and `out/page.html` through the workspace
+components on a real run, and the files are on disk when it is done.
+
+A mutation that stops `visible()` filtering through governance fails the suite, so the last link in
+the chain is not decorative.
+
+### [ARCH_CHANGE] 2026-09-10 — Phase 3 complete; Phase 4 branches from here
+Topics: phase, chain, exit
+
+Three groups. **251 tests**, ruff and mypy strict clean over 56 files, benchmark 54.3 ms
+(0.543 ms/step, best of 3). Nothing merged. Every acceptance criterion in `overview.md` is met.
+
+Phase 4 — the ACP bridge — branches from this one, and starts knowing two things Phase 2 measured:
+it inherits a fourteen-method client surface, and it needs its own wall clock because nothing in ACP
+stops an agent looping on a denial.

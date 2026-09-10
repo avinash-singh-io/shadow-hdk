@@ -34,9 +34,9 @@ phase: 3-workspace-and-code
 
 ## Group 2 — containment decides visibility
 
-- [ ] RED: `contained=False` + a mode requiring containment → `Refuse`
-- [ ] RED: the same sandbox is **absent** from `RunContext.visible()` — end to end, through a run
-- [ ] RED: `contained=True` → allowed and visible
-- [ ] a real run in which the agent writes `notes.md` and `page.html`, and the files exist
-- [ ] tasks, history, status, board
-- [ ] Gate
+- [x] RED: `contained=False` + a mode requiring containment → `Refuse`
+- [x] RED: the same sandbox is **absent** from `RunContext.visible()` — end to end, through a run
+- [x] RED: `contained=True` → allowed and visible
+- [x] a real run in which the agent writes `notes.md` and `page.html`, and the files exist
+- [x] tasks, history, status, board
+- [x] Gate

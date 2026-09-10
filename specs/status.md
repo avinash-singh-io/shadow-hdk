@@ -27,6 +27,7 @@ runtime that turns the bare-harness test green.
 | 0 | The runtime, and the bare test goes green | Complete, unmerged (2026-09-10) | — |
 | 1 | Real adapters, streaming, modes | Complete, unmerged (2026-09-10) | — |
 | 2 | The spike — J1 | Complete, unmerged (2026-09-10) | — |
+| 3 | The workspace, and code | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -40,7 +41,8 @@ runtime that turns the bare-harness test green.
 |-------|--------|--------|----------|
 | 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. Superseded as the active row by Phase 1, which branches from it. |
 | 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. Superseded as the active row by Phase 2, which branches from it. |
-| 2 — the spike | `phase-2-the-spike` | **complete, unmerged** | **J1 answered** for the protocol and the transport; what Codex and Claude Code do is unmeasured, with the command that would settle it. 8 measurements over a real ACP pipe; 210 tests; mypy strict over 51 files. |
+| 2 — the spike | `phase-2-the-spike` | **complete, unmerged** | J1 answered. Superseded as the active row by Phase 3. |
+| 3 — the workspace and code | `phase-3-workspace-and-code` | **complete, unmerged** | 3 / 3 groups. A workspace confined to a root (symlinks resolved before checking), a subprocess sandbox whose `contained` is a deployment fact, and the chain from that fact to what the model can see. 251 tests; mypy strict over 56 files. |
 
 ## Upcoming Phases
 
@@ -66,8 +68,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 3 — the workspace and code, on `phase-3-workspace-and-code` branched from `phase-2-the-spike`: a filesystem component confined to a root, and a subprocess sandbox whose `contained` is a deployment fact rather than a hope
-2. Phase 4 — the ACP bridge, which now knows it inherits a fourteen-method client surface and needs its own wall clock
+1. Phase 4 — the ACP bridge, on `phase-4-the-acp-bridge` branched from `phase-3-workspace-and-code`: Codex or Claude Code as a component, resident for the session. It starts knowing what Phase 2 measured — a fourteen-method client surface, two distinct ways to refuse, and the need for its own wall clock
+2. Phase 5 — the RecordingServer: our registry offered to a child agent as an MCP server, every call an observation with `posture: observed`
 
 ## Key Decisions Made
 
@@ -76,6 +78,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 3 complete**: the agent can make things — a workspace it cannot write outside of, and a sandbox that says honestly what it is not. What the deployment is decides what the model can see
 - 2026-09-10 — **Phase 2 complete**: J1 answered. ACP reports usage and sometimes a price; a turn always ends with a stop reason; there are two distinct ways to refuse; and nothing stops an agent looping on a denial, so a driver needs its own clock — which the lease already is
 - 2026-09-10 — **Phase 1 complete**: one model adapter over every LangChain provider, proven live against HuggingFace; MCP components with effects derived from annotations; modes as data; the harness on real everything
 - 2026-09-10 — **Phase 0 complete**: the runtime, the agent as a component, the basic adapters, the bare harness green with zero product code
