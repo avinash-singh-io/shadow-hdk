@@ -5,7 +5,17 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: Phase 16 — MQTT — `complete, unmerged` (Epic 0007 closed where this machine can close it); BUG-001 fixed as a quick-task. Next: **nothing on the roadmap or the backlog is buildable here without the owner** — ENH-002 needs a TLS broker, ENH-003 waits for a second protocol adapter, and OPC-UA and ROS 2 need a server and a ROS distribution
+> **Current Phase**: Phase 17 — what the audit found — `not started`. Phases 0–16 are complete and
+> unmerged; BUG-001 and BUG-007 are fixed as quick-tasks.
+>
+> **A full-codebase audit landed in the backlog on 2026-09-10** — four P0s, six P1s, seven tech-debt
+> items — and it is the whole of what remains buildable here. **BUG-007 is confirmed and fixed:**
+> `mypy_path` omitted `wire`, `contained` and `derivation`, so every mypy-0 this lane reported from
+> Phase 9 to Phase 16 excluded the wire package, where nine errors sat. The gate now covers all 116
+> files and an invariant asserts it. The remaining P0s — a lease that resets on every resume
+> (BUG-004), an assistant's tool calls dropped from the transcript (BUG-005), a resume over the wire
+> that always raises (BUG-006) — are Phase 17's first group. The roadmap's own phases are done;
+> OPC-UA, ROS 2 and TLS still wait on a server, a ROS distribution and a TLS broker
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
