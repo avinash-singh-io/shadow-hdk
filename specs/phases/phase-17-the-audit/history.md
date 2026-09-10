@@ -32,3 +32,39 @@ host that forgets gets the bug back silently); counting a re-run node once (the 
 run again — BUG-010 — and hiding that would lie in the other direction).
 
 ---
+
+### [NOTE] 2026-09-10 — Group 1 measured; the record's numbering needed a second durable place
+Topics: leases, resume, seq, mutation
+Affects-phases: none
+Affects-specs: none
+
+The meter was the easy half: counters into `RunState.spent`, read back in `_stream`. The record's
+numbering was not. The state's mark is written when a node **returns**, and a parking step emits
+its `Asked` or `Observed(Pending)` *after* that — so restoring from the state alone handed the
+resumed leg a number the parked leg had already used (`[0,1,2,3,4,5,6,6,7,…]`). The fix uses what
+was already in the same checkpoint: the interrupt the step raised is ours, so it carries
+`resume_seq`. Two tests hold it — no seq is reused across an ask, none across an await — and they,
+not the arithmetic, are what guards it.
+
+Seventeen mutations, three survivors, none of them a wrong line: `run` starting fresh on a reused
+thread had no test; the reducer's commutativity was only ever exercised through a `FanOut`, whose
+branch order cannot be forced — the Phase 16 lesson, so it is asserted directly; and
+`Emitter.restore`'s floor had no caller that could break it, so it is tested at the method rather
+than deleted. One transient failure in `test_benchmark` while seventeen mutation runs were still
+settling; green twice immediately after, and it is the flake its own docstring records.
+
+---
+
+### [DISCOVERY] 2026-09-10 — BUG-015: a held child does not survive its parent's park
+Topics: children, resume, durability
+Affects-phases: none
+Affects-specs: none
+
+Deliberately not fixed in Group 1, because it is a design question rather than a field. A
+`HeldChild` carries a `Composition`, a checkpointer and a `Cancellation` — two of those are
+objects, not JSON, so D19 cannot carry them. **Reproduced:** a parent that spawns a child, parks
+on an Ask, and resumes comes back with `children.held == ()`, spawns a *second* child
+(`id-0002`), and leaves the first (`id-0001`) parked forever with no handle and no reachable
+checkpointer. Filed P1 with this evidence so somebody decides it rather than a phase mentioning it.
+
+---

@@ -5,16 +5,16 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: Phase 17 — what the audit found — `not started`. Phases 0–16 are complete and
+> **Current Phase**: Phase 17 — what the audit found — `group 1 of 3 complete`. **BUG-004 is fixed** (D33, contract 0.9.0): what a run has spent now survives a park. Phases 0–16 are complete and
 > unmerged; BUG-001 and BUG-007 are fixed as quick-tasks.
 >
 > **A full-codebase audit landed in the backlog on 2026-09-10** — four P0s, six P1s, seven tech-debt
 > items — and it is the whole of what remains buildable here. **BUG-007 is confirmed and fixed:**
 > `mypy_path` omitted `wire`, `contained` and `derivation`, so every mypy-0 this lane reported from
 > Phase 9 to Phase 16 excluded the wire package, where nine errors sat. The gate now covers all 116
-> files and an invariant asserts it. The remaining P0s — a lease that resets on every resume
-> (BUG-004), an assistant's tool calls dropped from the transcript (BUG-005), a resume over the wire
-> that always raises (BUG-006) — are Phase 17's first group. The roadmap's own phases are done;
+> files and an invariant asserts it. BUG-004 is closed; BUG-005 (an assistant's tool calls dropped from the
+> transcript) and BUG-006 (a resume over the wire that always raises) are Phase 17's next two
+> groups, and BUG-015 (a held child orphaned by its parent's park) was split out and filed. The roadmap's own phases are done;
 > OPC-UA, ROS 2 and TLS still wait on a server, a ROS distribution and a TLS broker
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
