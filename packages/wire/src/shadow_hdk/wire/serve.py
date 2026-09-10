@@ -63,7 +63,7 @@ class Session:
     events: MemoryObjectReceiveStream[str] | None = field(default=None)
 
 
-def build_app(clock: Any = None) -> Any:
+def build_app(clock: Any = None, *, token: str | None = None) -> Any:
     """A Starlette app serving one runtime per connected host.
 
     Imported lazily and kept in one place, so the wire package's core has no web dependency: a host
@@ -78,9 +78,22 @@ def build_app(clock: Any = None) -> Any:
 
     sessions: dict[str, Session] = {}
 
+    def unauthorised(request: Request) -> Response | None:
+        """A session was issued to whoever asked (BUG-006). `wire.md` listed a run token under
+        *rules already fixed* and it was never built; until it is, a deployment that binds
+        anything but loopback must set a token, and this is what checks it."""
+        if token is None:
+            return None
+        offered = request.headers.get("authorization", "")
+        if offered != f"Bearer {token}":
+            return JSONResponse({"error": "unauthorised"}, status_code=401)
+        return None
+
     async def open_session(request: Request) -> Response:
         """The SSE stream. Opening it *is* opening a session — the id comes back in a header, and
         every frame the runtime sends travels down this response."""
+        if refused := unauthorised(request):
+            return refused
         session_id = secrets.token_urlsafe(16)
         to_host_send, to_host_receive = anyio.create_memory_object_stream[str](float("inf"))
         from_host_send, from_host_receive = anyio.create_memory_object_stream[str](float("inf"))
@@ -109,6 +122,8 @@ def build_app(clock: Any = None) -> Any:
         )
 
     async def post_frame(request: Request) -> Response:
+        if refused := unauthorised(request):
+            return refused
         session_id = request.headers.get(SESSION_HEADER)
         if not session_id:
             # 400 rather than 404: the request is malformed, not aimed at something missing.
@@ -129,16 +144,33 @@ def build_app(clock: Any = None) -> Any:
     )
 
 
+LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
 @asynccontextmanager
-async def served_over_http(*, host: str = "127.0.0.1", clock: Any = None) -> AsyncIterator[str]:
+async def served_over_http(
+    *, host: str = "127.0.0.1", clock: Any = None, token: str | None = None
+) -> AsyncIterator[str]:
     """Listen on an ephemeral localhost port, and yield the address to connect to.
 
-    **Localhost and port 0.** A test that bound a routable interface would be a service; a test that
-    picked a fixed port would fight the next one.
+    **Localhost and port 0.** A test that bound a routable interface would be a service; a test
+    that picked a fixed port would fight the next one.
+
+    **Anything but loopback needs a token.** `wire.md` lists a run token under *rules already
+    fixed*; it is not built, so until it is, this refuses to become a service that anyone on the
+    network can open a session on (BUG-006). A token here is a stop-gap a deployment sets, not the
+    per-run credential the design asks for.
     """
     import uvicorn
 
-    config = uvicorn.Config(build_app(clock=clock), host=host, port=0, log_level="warning")
+    if host not in LOOPBACK and token is None:
+        raise ValueError(
+            f"{host!r} is not loopback and no token was given: the run token wire.md describes is "
+            "not built, so serving beyond localhost would issue a session to anyone who asked"
+        )
+    config = uvicorn.Config(
+        build_app(clock=clock, token=token), host=host, port=0, log_level="warning"
+    )
     server = uvicorn.Server(config)
     async with anyio.create_task_group() as group:
         group.start_soon(server.serve)

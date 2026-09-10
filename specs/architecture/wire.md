@@ -14,7 +14,7 @@ return already round-trips through JSON (`tests/kernel/test_contracts_round_trip
 
 | form | transport | for |
 |---|---|---|
-| `shadow-hdk serve` | JSON-RPC 2.0 over HTTP/2, events over SSE | a host in another process or another language |
+| `shadow-hdk serve` | JSON-RPC 2.0 over **HTTP/1.1** (uvicorn; HTTP/2 was the design's word and is not what is served), events over SSE | a host in another process or another language |
 | `shadow-hdk --stdio` | JSON-RPC 2.0 over stdio | a child process; the same shape MCP and ACP use |
 
 ## The direction of every call
@@ -35,7 +35,14 @@ host ──► runtime   resume(run_id, answer)
 
 ## Rules already fixed
 
-- **Negotiated at `initialize`**, refusing rather than degrading on a version mismatch.
+> **Corrected 2026-09-10 (BUG-006).** This section listed the run token as fixed; it is **not
+> built**. Until it is, `served_over_http` is **loopback-only by default** and refuses to bind
+> anything else without a `token=` — a deployment-wide stop-gap, not the per-run credential below.
+> Two more corrections: `initialize` is now **required** before `run` or `resume`, and an omitted
+> protocol version is a **mismatch**, not a match (it used to default to this build's own, so a
+> peer that said nothing counted as agreeing). Every runtime→host callback carries a **timeout**,
+> because the lease bounds a run and a run waiting on a peer is not running.
+
 - **Authentication is a run token**: short-lived, single-run, minted when a run opens, carrying the
   scope, principal and lease. The runtime never holds a host credential.
 - **Schemas are published** from `shadow_hdk.kernel.contracts.all_schemas()`; a TypeScript client

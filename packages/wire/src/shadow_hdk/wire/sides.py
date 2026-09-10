@@ -42,6 +42,7 @@ from shadow_hdk.wire.protocol import (
     RUN,
     Agreed,
     VersionMismatch,
+    WireError,
 )
 from shadow_hdk.wire.remote import (
     RemoteComponents,
@@ -54,10 +55,24 @@ from shadow_hdk.wire.remote import (
 class RuntimeSide:
     """The served runtime. Answers `run`, and asks the host for what a port would have given."""
 
-    def __init__(self, channel: Channel, *, clock: Any = None) -> None:
-        self.peer = Peer(channel, name="runtime")
+    def __init__(
+        self,
+        channel: Channel,
+        *,
+        clock: Any = None,
+        checkpointer: Any = None,
+        timeout: float | None = 300.0,
+    ) -> None:
+        self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
         self._clock = clock
+        from langgraph.checkpoint.memory import InMemorySaver
+
+        self._checkpointer = checkpointer if checkpointer is not None else InMemorySaver()
+        """**A session owns a checkpointer** (BUG-006). Without one every `resume` over the wire
+        raised, so an Ask that crossed the wire could never be answered. The default lives as long
+        as this session; a host that wants a parked run to outlive the process passes its own —
+        the same checkpointer it would hand `run()`, and the same one Phase 6 proved on a file."""
         self.live: Any = None
         """The run currently in flight, so a component the host is executing can reach back to
         the meter and the event stream that actually belong to it."""
@@ -92,7 +107,9 @@ class RuntimeSide:
         return json.loads(dump(self.live.remaining(), _Lease))
 
     async def _initialize(self, params: dict[str, Any]) -> dict[str, Any]:
-        offered = str(params.get("protocol_version", PROTOCOL_VERSION))
+        # An **omitted** version used to default to this build's own, so a peer that said nothing
+        # counted as agreeing. Silence is not agreement: refuse, never degrade (wire.md).
+        offered = str(params.get("protocol_version", "<none offered>"))
         if offered != PROTOCOL_VERSION:
             # Refuse, never degrade (wire.md). Both numbers are in the message because a mismatch
             # is somebody's deployment problem and they need to know which end to move.
@@ -103,10 +120,18 @@ class RuntimeSide:
         return {"protocol_version": PROTOCOL_VERSION}
 
     async def _run(self, params: dict[str, Any]) -> dict[str, Any]:
+        self._agreed()
         return await self._drive(params, resuming=False)
 
     async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
+        self._agreed()
         return await self._drive(params, resuming=True)
+
+    def _agreed(self) -> None:
+        """`initialized` was set and never read. Two peers that have not agreed a version are two
+        peers that do not yet know what a message means, so nothing runs before they have."""
+        if not self.initialized:
+            raise WireError("initialize first: this runtime and its host have agreed no version")
 
     async def _drive(self, params: dict[str, Any], *, resuming: bool) -> dict[str, Any]:
         from shadow_hdk.kernel.composition import Composition
@@ -120,6 +145,7 @@ class RuntimeSide:
             context=params.get("context") or {},
             principal=params.get("principal"),
             run_id=params.get("run_id"),
+            checkpointer=self._checkpointer,
         )
         ports = self.ports()
         stream = (
@@ -177,6 +203,24 @@ class HostSide:
                 "context": dict(options.context),
                 "principal": options.principal,
                 "run_id": options.run_id,
+            },
+        )
+
+    async def resume(self, composition: Any, answer: Any, options: RunOptions) -> None:
+        """Answer a run that parked. The composition comes back with it, as `resume()` requires:
+        the runtime owns nothing durable, so it cannot remember the shape of a run it parked."""
+        from shadow_hdk.kernel.composition import Composition
+        from shadow_hdk.kernel.leases import Lease
+
+        await self.peer.call(
+            RESUME,
+            {
+                "composition": json.loads(dump(composition, Composition)),
+                "lease": json.loads(dump(options.lease, Lease)),
+                "context": dict(options.context),
+                "principal": options.principal,
+                "run_id": options.run_id,
+                "answer": answer,
             },
         )
 
@@ -238,7 +282,10 @@ class HostSide:
 
 @asynccontextmanager
 async def loopback(
-    ports: Ports | None = None, *, watching: Callable[[str], None] | None = None
+    ports: Ports | None = None,
+    *,
+    watching: Callable[[str], None] | None = None,
+    timeout: float | None = 300.0,
 ) -> AsyncIterator[tuple[HostSide, RuntimeSide]]:
     """Both halves in one process, joined by a channel that carries JSON text."""
     from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
@@ -252,7 +299,7 @@ async def loopback(
     )
     async with channel_pair(watching=watching) as (host_end, runtime_end):
         host = HostSide(host_end, real)
-        runtime = RuntimeSide(runtime_end, clock=real.clock)
+        runtime = RuntimeSide(runtime_end, clock=real.clock, timeout=timeout)
         async with anyio.create_task_group() as group:
             group.start_soon(host.peer.serve_forever, group)
             group.start_soon(runtime.peer.serve_forever, group)

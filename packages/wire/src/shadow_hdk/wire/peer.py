@@ -44,7 +44,13 @@ GONE = -32003
 class Peer:
     """A JSON-RPC 2.0 peer over a text channel."""
 
-    def __init__(self, channel: Channel, *, name: str = "peer") -> None:
+    def __init__(
+        self, channel: Channel, *, name: str = "peer", timeout: float | None = None
+    ) -> None:
+        self.timeout = timeout
+        """How long to wait for an answer, or `None` for as long as it takes. The runtime sets it
+        for its callbacks; the host does not, because a host waiting for a run to finish is
+        waiting for exactly as long as the run's own lease allows."""
         self.channel = channel
         self.name = name
         self.handlers: dict[str, Handler] = {}
@@ -66,6 +72,13 @@ class Peer:
     # ---------------------------------------------------------------- asking
 
     async def call(self, method: str, params: dict[str, Any] | None = None) -> Any:
+        """Ask, and give up if the answer never comes.
+
+        The lease bounds a **run**, and a run waiting on a peer is not running — so a host that
+        hangs in `judge` would otherwise hold a step open past its own wall ceiling forever. The
+        bound belongs to the wire, and the message names the method so the record says which end
+        stopped answering (BUG-006).
+        """
         self._next_id += 1
         message_id = f"{self.name}-{self._next_id}"
         waiting = anyio.Event()
@@ -73,7 +86,18 @@ class Peer:
         await self._write(
             {"jsonrpc": "2.0", "id": message_id, "method": method, "params": params or {}}
         )
-        await waiting.wait()
+        try:
+            if self.timeout is None:
+                await waiting.wait()
+            else:
+                with anyio.fail_after(self.timeout):
+                    await waiting.wait()
+        except TimeoutError:
+            self._waiting.pop(message_id, None)
+            self._replies.pop(message_id, None)
+            raise TimeoutError(
+                f"the other side did not answer {method!r} within {self.timeout}s"
+            ) from None
         reply = self._replies.pop(message_id)
         if "error" in reply:
             error = reply["error"]
