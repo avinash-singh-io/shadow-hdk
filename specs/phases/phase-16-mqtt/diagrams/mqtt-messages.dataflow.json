@@ -5,7 +5,7 @@
     "title": "MQTT Envelope \u2014 Where Each Payload Goes",
     "quality_profile": "showcase",
     "viewBox": [
-      1800,
+      1080,
       720
     ],
     "views": [
@@ -69,7 +69,7 @@
       "id": "device",
       "type": "external",
       "label": "Device",
-      "sublabel": "readings \u00b7 events \u00b7 acks",
+      "sublabel": "publishes \u00b7 answers",
       "stage": 0,
       "row": 0,
       "width": 150,
@@ -98,7 +98,7 @@
       "id": "router",
       "type": "backend",
       "label": "_on_message",
-      "sublabel": "match every filter",
+      "sublabel": "matches filters",
       "stage": 2,
       "row": 1,
       "width": 150,
@@ -108,7 +108,7 @@
       "id": "latest",
       "type": "database",
       "label": "latest[filter]",
-      "sublabel": "one per sensor filter",
+      "sublabel": "one per sensor",
       "stage": 3,
       "row": 0,
       "width": 150
@@ -117,7 +117,7 @@
       "id": "queue",
       "type": "database",
       "label": "queues[filter]",
-      "sublabel": "deque per witness filter",
+      "sublabel": "deque per witness",
       "stage": 3,
       "row": 1,
       "width": 150,
@@ -127,7 +127,7 @@
       "id": "waiter",
       "type": "database",
       "label": "waiters[ack_topic, key]",
-      "sublabel": "one per act in flight",
+      "sublabel": "one per act",
       "stage": 3,
       "row": 2,
       "width": 170
@@ -136,7 +136,7 @@
       "id": "reading",
       "type": "backend",
       "label": "Completed reading",
-      "sublabel": "value \u00b7 unit \u00b7 at \u00b7 stamped_by",
+      "sublabel": "value \u00b7 unit \u00b7 at \u00b7 age",
       "stage": 4,
       "row": 0,
       "width": 170,
@@ -146,7 +146,7 @@
       "id": "overheard",
       "type": "backend",
       "label": "Acted (observed)",
-      "sublabel": "id \u00b7 what \u00b7 at \u00b7 exit \u00b7 key",
+      "sublabel": "id \u00b7 what \u00b7 at \u00b7 exit",
       "stage": 4,
       "row": 1,
       "width": 170,
@@ -156,7 +156,7 @@
       "id": "ack",
       "type": "backend",
       "label": "Acted (controlled)",
-      "sublabel": "id \u00b7 exit \u00b7 key \u00b7 grounds",
+      "sublabel": "id \u00b7 exit \u00b7 grounds",
       "stage": 4,
       "row": 2,
       "width": 170,
@@ -172,7 +172,13 @@
       "classification": "reading \u00b7 event \u00b7 ack",
       "variant": "emphasis",
       "fromSide": "right",
-      "toSide": "top"
+      "toSide": "top",
+      "via": [
+        [
+          315,
+          157
+        ]
+      ]
     },
     {
       "id": "outbound",
@@ -182,16 +188,22 @@
       "classification": "PUBACK expected",
       "variant": "emphasis",
       "fromSide": "right",
-      "toSide": "bottom"
+      "toSide": "bottom",
+      "via": [
+        [
+          315,
+          385
+        ]
+      ]
     },
     {
       "id": "deliver",
       "from": "broker",
       "to": "router",
       "label": "deliver",
-      "classification": "subscribed filters",
       "variant": "emphasis",
-      "route": "straight"
+      "route": "straight",
+      "labelDy": -32
     },
     {
       "id": "to-latest",
@@ -200,15 +212,21 @@
       "label": "sensor filter",
       "classification": "overwrite",
       "fromSide": "top",
-      "toSide": "left"
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          157
+        ]
+      ]
     },
     {
       "id": "to-queue",
       "from": "router",
       "to": "queue",
       "label": "witness filter",
-      "classification": "append",
-      "route": "straight"
+      "route": "straight",
+      "labelDy": -32
     },
     {
       "id": "to-waiter",
@@ -218,32 +236,38 @@
       "classification": "wake the waiter",
       "variant": "security",
       "fromSide": "bottom",
-      "toSide": "left"
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          385
+        ]
+      ]
     },
     {
       "id": "read",
       "from": "latest",
       "to": "reading",
       "label": "read()",
-      "classification": "Reading",
-      "route": "straight"
+      "route": "straight",
+      "labelDy": -32
     },
     {
       "id": "report",
       "from": "queue",
       "to": "overheard",
       "label": "overheard()",
-      "classification": "one per invoke",
-      "route": "straight"
+      "route": "straight",
+      "labelDy": -32
     },
     {
       "id": "answer",
       "from": "waiter",
       "to": "ack",
-      "label": "command() returns",
-      "classification": "Ack",
+      "label": "Ack",
       "variant": "security",
-      "route": "straight"
+      "route": "straight",
+      "labelDy": -32
     }
   ],
   "cards": [

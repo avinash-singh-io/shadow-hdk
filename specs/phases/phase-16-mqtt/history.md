@@ -128,3 +128,17 @@ Rule 6 landing order is for concurrent lanes and this stack never diverged. Publ
 *shadow-hdk Architecture Review*; nothing in the repository was changed by the review itself.
 
 ---
+
+### [NOTE] 2026-09-10 — five diagrams of the adapter, one question each
+Topics: mqtt, link, envelope, diagrams, design
+Affects-phases: none
+Affects-specs: none
+Detail: `diagrams/` beside `design.md`: an architecture map (who talks to whom, and the package
+boundary), the act as a sequence (what happens in time, the two words for *done*), the link's
+lifecycle (which states it can be in, and that lost reopens while closed does not), the envelope as
+a dataflow (where each payload lands: latest per sensor filter, deque per witness filter, waiter per
+key), and the act's outcomes as a workflow (every observation an actuator step can produce). Sources
+are the `.json` files; every HTML passed the showcase gate with zero errors and warnings. Automated
+browser evidence is `skipped` — no Chrome on this machine.
+
+---

@@ -4,39 +4,245 @@
   "meta": {
     "title": "MqttLink Lifecycle",
     "quality_profile": "showcase",
-    "viewBox": [1080, 620],
+    "viewBox": [
+      1080,
+      620
+    ],
     "views": [
-      { "id": "steady-state", "label": "Open and acting", "focus": ["unopened", "opening", "open", "acting"], "note": "The link opens on first use, routes messages while open, and returns to open after each act." },
-      { "id": "recoverable", "label": "Session lost, then reopened", "focus": ["open", "acting", "lost", "opening"], "note": "Whether the broker left or we dropped the session after no PUBACK, the next use opens a fresh clean session." },
-      { "id": "terminal", "label": "Closed is terminal", "focus": ["acting", "closed"], "note": "A closed link is never reopened behind the caller's back." }
+      {
+        "id": "steady-state",
+        "label": "Open and acting",
+        "focus": [
+          "unopened",
+          "opening",
+          "open",
+          "acting"
+        ],
+        "note": "The link opens on first use, routes messages while open, and returns to open after each act."
+      },
+      {
+        "id": "recoverable",
+        "label": "Session lost, then reopened",
+        "focus": [
+          "open",
+          "acting",
+          "lost",
+          "opening"
+        ],
+        "note": "Whether the broker left or we dropped the session after no PUBACK, the next use opens a fresh clean session."
+      },
+      {
+        "id": "terminal",
+        "label": "Closed is terminal",
+        "focus": [
+          "acting",
+          "closed"
+        ],
+        "note": "A closed link is never reopened behind the caller's back."
+      }
     ]
   },
   "lanes": [
-    { "id": "main", "label": "Link states" },
-    { "id": "recovery", "label": "Recoverable" }
+    {
+      "id": "main",
+      "label": "Link states"
+    },
+    {
+      "id": "recovery",
+      "label": "Recoverable"
+    }
   ],
   "states": [
-    { "id": "unopened", "type": "start", "label": "Unopened", "sublabel": "no client until first use", "lane": "main", "col": 0, "step": "01" },
-    { "id": "opening", "type": "active", "label": "Opening", "sublabel": "CONNECT · CONNACK · subscribe", "lane": "main", "col": 1, "step": "02", "tag": "to_thread" },
-    { "id": "open", "type": "active", "label": "Open", "sublabel": "routes by filter", "lane": "main", "col": 2, "step": "03", "tag": "reads served" },
-    { "id": "acting", "type": "waiting", "label": "In an act", "sublabel": "PUBACK, then ack — bounded", "lane": "main", "col": 3, "step": "04", "tag": "command()" },
-    { "id": "closed", "type": "neutral", "label": "Closed", "sublabel": "close(); never reopened", "lane": "main", "col": 4, "step": "05", "tag": "terminal" },
-    { "id": "lost", "type": "failure", "label": "Session lost", "sublabel": "broker left, or dropped by us", "lane": "recovery", "col": 0, "tag": "nothing re-sent" }
+    {
+      "id": "unopened",
+      "type": "start",
+      "label": "Unopened",
+      "sublabel": "until first use",
+      "lane": "main",
+      "col": 0,
+      "step": "01"
+    },
+    {
+      "id": "opening",
+      "type": "active",
+      "label": "Opening",
+      "sublabel": "CONNACK awaited",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "to_thread"
+    },
+    {
+      "id": "open",
+      "type": "active",
+      "label": "Open",
+      "sublabel": "routes by filter",
+      "lane": "main",
+      "col": 2,
+      "step": "03",
+      "tag": "reads served"
+    },
+    {
+      "id": "acting",
+      "type": "waiting",
+      "label": "In an act",
+      "sublabel": "PUBACK, then ack",
+      "lane": "main",
+      "col": 3,
+      "step": "04",
+      "tag": "command()"
+    },
+    {
+      "id": "closed",
+      "type": "neutral",
+      "label": "Closed",
+      "sublabel": "never reopened",
+      "lane": "main",
+      "col": 4,
+      "step": "05",
+      "tag": "terminal"
+    },
+    {
+      "id": "lost",
+      "type": "failure",
+      "label": "Session lost",
+      "sublabel": "left, or dropped",
+      "lane": "recovery",
+      "col": 0,
+      "tag": "nothing re-sent"
+    }
   ],
   "transitions": [
-    { "id": "first-use", "from": "unopened", "to": "opening", "route": "straight" },
-    { "id": "connected", "from": "opening", "to": "open", "route": "straight" },
-    { "id": "act", "from": "open", "to": "acting", "route": "straight" },
-    { "id": "ack-returned", "from": "acting", "to": "open", "label": "Ack returned", "variant": "emphasis", "fromSide": "top", "toSide": "top", "via": [[556, 80], [402, 80]] },
-    { "id": "close", "from": "acting", "to": "closed", "route": "straight" },
-    { "id": "connect-failed", "from": "opening", "to": "unopened", "label": "refused / no CONNACK", "variant": "security", "fromSide": "top", "toSide": "top", "via": [[248, 80], [94, 80]] },
-    { "id": "broker-left", "from": "open", "to": "lost", "label": "broker leaves", "variant": "security", "route": "straight" },
-    { "id": "no-puback", "from": "acting", "to": "lost", "label": "no PUBACK: dropped", "variant": "security", "fromSide": "bottom", "toSide": "right", "via": [[556, 307]] },
-    { "id": "reopen", "from": "lost", "to": "opening", "label": "next use: clean session", "variant": "emphasis", "fromSide": "left", "toSide": "bottom", "via": [[248, 307]] }
+    {
+      "id": "first-use",
+      "from": "unopened",
+      "to": "opening",
+      "route": "straight"
+    },
+    {
+      "id": "connected",
+      "from": "opening",
+      "to": "open",
+      "route": "straight"
+    },
+    {
+      "id": "act",
+      "from": "open",
+      "to": "acting",
+      "route": "straight"
+    },
+    {
+      "id": "ack-returned",
+      "from": "acting",
+      "to": "open",
+      "label": "Ack returned",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [
+        [
+          556,
+          80
+        ],
+        [
+          402,
+          80
+        ]
+      ]
+    },
+    {
+      "id": "close",
+      "from": "acting",
+      "to": "closed",
+      "route": "straight"
+    },
+    {
+      "id": "connect-failed",
+      "from": "opening",
+      "to": "unopened",
+      "label": "refused / no CONNACK",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [
+        [
+          248,
+          80
+        ],
+        [
+          94,
+          80
+        ]
+      ]
+    },
+    {
+      "id": "broker-left",
+      "from": "open",
+      "to": "lost",
+      "label": "broker leaves",
+      "variant": "security",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "no-puback",
+      "from": "acting",
+      "to": "lost",
+      "label": "no PUBACK: dropped",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          556,
+          307
+        ]
+      ],
+      "labelSegment": 0
+    },
+    {
+      "id": "reopen",
+      "from": "lost",
+      "to": "opening",
+      "label": "next use: clean session",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "bottom",
+      "via": [
+        [
+          248,
+          307
+        ]
+      ]
+    }
   ],
   "cards": [
-    { "dot": "emerald", "title": "Lost reopens; closed does not", "items": ["Reopening on the next use is what makes a retry possible — a new act under the same key", "close() may be called from any state; a closed link is never reopened behind the caller's back", "Every wait — CONNACK, PUBACK, ack, first-read grace — is bounded"] },
-    { "dot": "rose", "title": "Why we drop the session ourselves", "items": ["paho keeps an unacked QoS 1 message and re-sends it on reconnect with dup set", "A step that already returned Failed would then change the world later", "Dropping the client — DISCONNECT delivered, thread joined — is the only way the queue dies with it"] },
-    { "dot": "amber", "title": "What the step sees", "items": ["Refused or unreachable: Failed, nothing published, the link stays unopened", "No PUBACK: Failed, no receipt, and perhaps the command went out — that is what the key on the wire is for", "PUBACK but no ack: Failed, no receipt, and the link stays open — the command was certainly taken"] }
+    {
+      "dot": "emerald",
+      "title": "Lost reopens; closed does not",
+      "items": [
+        "Reopening on the next use is what makes a retry possible \u2014 a new act under the same key",
+        "close() may be called from any state; a closed link is never reopened behind the caller's back",
+        "Every wait \u2014 CONNACK, PUBACK, ack, first-read grace \u2014 is bounded"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Why we drop the session ourselves",
+      "items": [
+        "paho keeps an unacked QoS 1 message and re-sends it on reconnect with dup set",
+        "A step that already returned Failed would then change the world later",
+        "Dropping the client \u2014 DISCONNECT delivered, thread joined \u2014 is the only way the queue dies with it"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "What the step sees",
+      "items": [
+        "Refused or unreachable: Failed, nothing published, the link stays unopened",
+        "No PUBACK: Failed, no receipt, and perhaps the command went out \u2014 that is what the key on the wire is for",
+        "PUBACK but no ack: Failed, no receipt, and the link stays open \u2014 the command was certainly taken"
+      ]
+    }
   ]
 }

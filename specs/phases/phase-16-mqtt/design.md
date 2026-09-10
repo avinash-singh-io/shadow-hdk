@@ -16,6 +16,14 @@ topics: [mqtt, d32, link, envelope, concurrency, backpressure, wildcards, tls]
 > explicit, the trade-offs named, and the findings ranked — two of them reproduced against the local
 > broker rather than read from the code. The decisions themselves are not re-asked here.
 
+## 0. The five diagrams
+
+Prose says one thing at a time; so does a diagram. [`diagrams/`](diagrams/README.md) holds five,
+each answering one question this document also answers in words: the architecture (who talks to
+whom), the act as a sequence (what happens in order), the link's lifecycle (which states reopen),
+the envelope as a dataflow (where each payload lands), and the act's outcomes as a workflow (every
+observation a step can produce).
+
 ## 1. Requirements
 
 ### Functional
