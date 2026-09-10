@@ -78,6 +78,19 @@ def test_a_deployment_may_trust_a_backend_it_cannot_test_but_must_say_so(tmp_pat
     assert "trusted" in str(sandbox.proof).lower()
 
 
+def test_trusting_does_not_excuse_a_box_that_was_shown_not_to_be_one(tmp_path: Path) -> None:
+    """The distinction the whole decision turns on. Trust covers **inconclusive** — a check that
+    could not run — never a check that ran and showed the program reached the host. An operator
+    may sign for an unknown; they cannot sign for a fact."""
+    with pytest.raises(NotContained) as refused:
+        ContainedSandbox(
+            tmp_path,
+            backend=FakeIsolation(contains=False),
+            trusting_the_backend_without_proof=True,
+        )
+    assert "not a box" in str(refused.value)
+
+
 def test_trusting_a_backend_does_not_excuse_an_absent_one(tmp_path: Path) -> None:
     with pytest.raises(NotContained, match="not present"):
         ContainedSandbox(
@@ -93,6 +106,14 @@ def test_the_capability_test_runs_through_the_backend_not_around_it(tmp_path: Pa
     backend = FakeIsolation(contains=True)
     ContainedSandbox(tmp_path, backend=backend)
     assert backend.wrapped, "the probe did not go through wrap()"
+
+
+def test_the_proof_a_real_check_produces_carries_its_evidence(tmp_path: Path) -> None:
+    """Not just *that* something was denied — what came back, so an operator can re-read it."""
+    sandbox = ContainedSandbox(tmp_path, backend=FakeIsolation(contains=True))
+    assert sandbox.proof.checks[0].evidence, "a denial with no evidence is a flag again"
+    assert "DENIED" in sandbox.proof.checks[0].evidence
+    assert "DENIED" in str(sandbox.proof)
 
 
 def test_a_proof_says_what_was_attempted_and_what_came_back() -> None:

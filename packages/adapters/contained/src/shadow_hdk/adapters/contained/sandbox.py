@@ -222,7 +222,9 @@ class ContainedSandbox(ComponentPort):
         trusting_the_backend_without_proof: bool = False,
     ) -> None:
         """`trusting_the_backend_without_proof` is the sentence an operator signs when the
-        capability test cannot run here. It is not a silent pass and it is not a default (D36)."""
+        capability test **cannot run** here. It is not a silent pass and it is not a default, and
+        it does not cover a backend that ran the test and was shown not to contain anything: an
+        operator may sign for an unknown, never for a fact (D36)."""
         if not backend.present():
             raise NotContained(
                 f"{backend.name!r} cannot contain anything here: {backend.binary!r} is not present"
