@@ -225,3 +225,42 @@ process on the other end of a pipe and processes die; there is now a test where 
 mid-call and the agent gets an observation rather than a traceback.
 
 Seven mutations, all failing.
+
+---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 4: the harness on a real model, a real server and a real policy
+Topics: examples, live, exit-criteria, g4
+
+`examples/real.py` — the same harness with nothing stubbed. `bare.py` proves the *shape*; this
+proves the **seams**: an HTTP wire to a real model, a real MCP server in a subprocess, and a mode
+that actually refuses.
+
+**Measured, live:** 7 live tests pass in 34.6 s. 202 offline tests pass with the live ones
+deselected. ruff and mypy strict clean over 47 files.
+
+Two things the demo showed that no offline test could.
+
+**The agent fanned out.** Given four turns, a real model asked the server two questions at once —
+so `FanOut` and `Send` ran because a model chose them, not because a test built them.
+
+**The mode decided what the model could see.** The reference server publishes `wipe`, `append`,
+`mystery` and `explode` beside `look_up`. The `looking` ceiling permits reading only, so the other
+four were **absent from the catalogue** rather than refused at call time, and a real model — given
+every chance over six turns — never had one to reach for. That is the open registry and
+effect-governance meeting on a live wire, and it is asserted rather than admired.
+
+### [DISCOVERY] 2026-09-10 — the first live run failed, and it was the demo's data
+Topics: examples, reference-server
+
+The first run spent all six turns guessing spellings — `LATHE-3 mass`, `lathe line 3 weight`,
+`lathe 3 weight` — and ended `out_of_turns` having already had the answer in turn three. Nothing in
+the harness was wrong: the reference server answered only exact keys, and the record holding the
+mass did not hold the measurement date.
+
+That is a **demo-data** problem and it was fixed as one: the server matches forgivingly and each
+asset carries one complete record. A reference server that answers only an exact key is not a
+reference server, it is a dictionary. The second run answered in **one** lookup, proposed, and
+stopped — 51 events became 13.
+
+Worth stating plainly because the temptation was to change the harness: the agent behaved correctly
+throughout, and the honest fix was to the thing that was actually wrong.

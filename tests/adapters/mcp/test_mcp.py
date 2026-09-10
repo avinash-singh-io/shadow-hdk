@@ -111,9 +111,12 @@ async def test_a_mode_refuses_the_undeclared_tool_and_allows_the_declared_one() 
 async def test_a_call_comes_back_as_data() -> None:
     async with server() as components:
         await components.registrations()
-        assert await components.invoke("look_up", {"topic": "lathe"}) == Completed(
-            {"asset": "LATHE-3", "mass_kg": 12, "line": 3}
-        )
+        observation = await components.invoke("look_up", {"topic": "lathe"})
+    assert isinstance(observation, Completed)
+    assert isinstance(observation.output, dict)
+    assert observation.output["asset"] == "LATHE-3"
+    assert observation.output["mass_kg"] == 12
+    assert observation.output["measured"] == "2026-08-01"
 
 
 async def test_a_tool_that_raises_on_the_server_is_a_failed_observation_here() -> None:

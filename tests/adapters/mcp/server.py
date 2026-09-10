@@ -27,11 +27,24 @@ server = MCPServer(name="reference-server")
     description="Look a topic up in the reference server.",
 )
 def look_up(topic: str) -> dict[str, object]:
-    answers = {
-        "lathe": {"asset": "LATHE-3", "mass_kg": 12, "line": 3},
-        "lathe mass": {"mass_kg": 12, "measured": "2026-08-01"},
+    """Matching is forgiving on purpose. A reference server that answers only an exact key is not a
+    reference server, it is a dictionary — and the demo in `examples/real.py` spent six turns
+    guessing spellings of one asset because of it."""
+    records: dict[str, dict[str, object]] = {
+        "lathe": {
+            "asset": "LATHE-3",
+            "line": 3,
+            "mass_kg": 12,
+            "measured": "2026-08-01",
+            "measured_by": "R. Iyer",
+        },
+        "press": {"asset": "PRESS-1", "line": 1, "mass_kg": 340, "measured": "2026-07-14"},
     }
-    return answers.get(topic, {"unknown": topic})
+    asked = topic.casefold()
+    for key, record in records.items():
+        if key in asked or asked in key or str(record["asset"]).casefold() in asked:
+            return record
+    return {"unknown": topic, "known_assets": sorted(records)}
 
 
 @server.tool(

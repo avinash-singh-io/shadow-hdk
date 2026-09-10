@@ -55,9 +55,9 @@ phase: 1-real-adapters
 
 ## Group 4 — the demo on real components
 
-- [ ] `examples/real.py` — the bare harness on a real model and a real MCP server
-- [ ] `tests/test_real_harness.py`, marked `live_ollama`, skipped **with a reason** when nothing serves
-- [ ] markers registered in `pyproject.toml`; CI runs the fake path
-- [ ] exit criteria checked, with numbers, into `history.md`
-- [ ] board: lane H row + log line; `specs/status.md`
-- [ ] Gate
+- [x] `examples/real.py` — the bare harness on a real model and a real MCP server
+- [x] `tests/test_real_harness.py`, marked `live_ollama`, skipped **with a reason** when nothing serves
+- [x] markers registered in `pyproject.toml`; CI runs the fake path
+- [x] exit criteria checked, with numbers, into `history.md`
+- [x] board: lane H row + log line; `specs/status.md`
+- [x] Gate
