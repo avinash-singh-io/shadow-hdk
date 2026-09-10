@@ -85,3 +85,25 @@ ENH-003 (a protocol-adapter contract suite for the `[~]` rows). The two bugs bel
 phase's gate.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 3: the review's P1s fixed; a stress test that proved nothing
+Topics: mqtt, concurrency, mutation, review
+Affects-phases: none
+Affects-specs: none
+
+The review arrived uncommitted in the working tree between two ticks and was committed unchanged
+before anything else (`2c1fd6f`). Its two P1s were reproduced first — three concurrent connects
+opened three sessions; a registration table set after its filter — then fixed: one `asyncio.Lock`
+across the open path and `close()`, registration under the thread lock with tables before filters,
+a re-check in `_open` for a device registered while it opened (the window is hit deterministically
+by injecting the registration on the opening thread), and a routing fault counted rather than fatal.
+Four mutations survived the first pass because the test meant to catch them — two threads racing
+registration against routing for three thousand iterations — passed with and without the lock:
+under the GIL the window is too small to hit on purpose. A stress test that cannot fail is not a
+test; it was replaced by the claims themselves (a recording lock; a filter set that refuses an add
+whose table does not exist yet) and by the one fault the try/except does not wrap, in
+`on_subscribe`, which is what keeps `suppress_exceptions` from being dead code. Fourteen mutations
+bite. TD-002 and ENH-001 were small enough to land beside them; ENH-002 is `[~]` for a TLS broker;
+ENH-003 stays open as the first step of OPC-UA or ROS 2.
+
+---

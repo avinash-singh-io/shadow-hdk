@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "MQTT Act — Command with an Ack Topic",
+    "quality_profile": "showcase",
+    "viewBox": [1040, 940],
+    "column_fit": "spread",
+    "views": [
+      { "id": "lazy-connect", "label": "Lazy connect", "focus": ["actuator", "link", "broker"], "note": "The link opens on first use and subscribes the ack topic before anything is published." },
+      { "id": "two-words", "label": "Two words for done", "focus": ["link", "broker", "device"], "note": "The PUBACK is the broker's word; the ack on the ack topic is the device's." },
+      { "id": "the-record", "label": "The record", "focus": ["runtime", "devices", "sink"], "note": "The receipt carries the key, the device's exit, the grounds, and the posture." }
+    ]
+  },
+  "participants": [
+    { "id": "runtime", "type": "backend", "label": "Runtime", "sublabel": "executor" },
+    { "id": "devices", "type": "backend", "label": "DeviceComponents", "sublabel": "the act" },
+    { "id": "actuator", "type": "backend", "label": "MqttActuator", "sublabel": "command topic" },
+    { "id": "link", "type": "backend", "label": "MqttLink", "sublabel": "paho client" },
+    { "id": "broker", "type": "messagebus", "label": "Broker", "sublabel": "MQTT 3.1.1" },
+    { "id": "device", "type": "external", "label": "Device", "sublabel": "the other side" },
+    { "id": "sink", "type": "database", "label": "Sink", "sublabel": "the record" }
+  ],
+  "segments": [
+    { "from": 160, "to": 250, "label": "The act begins" },
+    { "from": 262, "to": 372, "label": "Connect, lazily" },
+    { "from": 384, "to": 536, "label": "Publish + PUBACK" },
+    { "from": 548, "to": 660, "label": "The device's answer" },
+    { "from": 672, "to": 830, "label": "The record" }
+  ],
+  "messages": [
+    { "from": "runtime", "to": "devices", "y": 184, "label": "invoke(valve, argv)", "variant": "emphasis" },
+    { "from": "devices", "to": "actuator", "y": 226, "label": "command(argv, key=run/step)", "variant": "emphasis", "note": "lease read at the act; spent → Refused" },
+    { "from": "actuator", "to": "link", "y": 286, "label": "_ensure()" },
+    { "from": "link", "to": "broker", "y": 328, "label": "CONNECT · SUBSCRIBE ack topic" },
+    { "from": "broker", "to": "link", "y": 362, "label": "CONNACK · SUBACK", "variant": "return" },
+    { "from": "actuator", "to": "link", "y": 408, "label": "expect ack (ack_topic, key)", "variant": "dashed" },
+    { "from": "link", "to": "broker", "y": 450, "label": "PUBLISH QoS 1 {key, argv}", "variant": "emphasis" },
+    { "from": "broker", "to": "device", "y": 492, "label": "deliver command", "variant": "emphasis" },
+    { "from": "broker", "to": "link", "y": 526, "label": "PUBACK — the broker's word", "variant": "return", "note": "none in timeout → break link → Failed" },
+    { "from": "device", "to": "broker", "y": 572, "label": "PUBLISH ack {key, id, exit}" },
+    { "from": "broker", "to": "link", "y": 614, "label": "deliver ack", "variant": "return" },
+    { "from": "link", "to": "actuator", "y": 650, "label": "Ack(id, exit) — key matched", "variant": "return", "note": "none in timeout → Failed; link kept" },
+    { "from": "actuator", "to": "devices", "y": 696, "label": "Ack", "variant": "return" },
+    { "from": "devices", "to": "runtime", "y": 738, "label": "Acted(key, exit, grounds)", "variant": "return" },
+    { "from": "runtime", "to": "sink", "y": 800, "label": "Observed(Acted, posture=controlled)", "variant": "dashed" }
+  ],
+  "activations": [
+    { "participant": "devices", "from": 178, "to": 746, "type": "backend" },
+    { "participant": "actuator", "from": 220, "to": 704, "type": "backend" },
+    { "participant": "link", "from": 280, "to": 658, "type": "backend" },
+    { "participant": "broker", "from": 322, "to": 622, "type": "messagebus" },
+    { "participant": "device", "from": 486, "to": 580, "type": "external" },
+    { "participant": "sink", "from": 794, "to": 812, "type": "database" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Two words for done", "items": ["PUBACK is the broker's word that it took the command — with no ack topic the receipt says exit: published", "The ack on the ack topic is the device's own word: its id and its exit", "Only a message whose key is the run's key counts as ours"] },
+    { "dot": "rose", "title": "What a failure becomes", "items": ["No PUBACK in the timeout: TimeoutError → Failed, no receipt, and the link is broken so nothing is ever re-sent", "PUBACK but no ack: Failed, no receipt, link kept — the command was certainly taken", "Broker absent: ConnectionError → Failed, nothing published"] },
+    { "dot": "emerald", "title": "Order on the wire", "items": ["SUBSCRIBE for the ack topic precedes PUBLISH on one TCP session, so the subscription exists before the answer can arrive", "Every wait is bounded and runs on a worker thread; the event loop is never blocked", "A retry is a new act under the same key — the device can tell it from a second act"] }
+  ]
+}

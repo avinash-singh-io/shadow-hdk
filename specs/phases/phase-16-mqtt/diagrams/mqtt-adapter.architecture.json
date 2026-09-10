@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MQTT Adapter — High-Level Design",
+    "quality_profile": "showcase",
+    "viewBox": [1440, 640],
+    "views": [
+      { "id": "the-act", "label": "The act", "focus": ["runtime", "governance", "devices", "actuator", "link", "broker", "device"], "note": "A command is judged by governance, performed through the link, and delivered by the broker." },
+      { "id": "a-reading", "label": "A reading", "focus": ["device", "broker", "link", "sensor", "devices", "runtime"], "note": "The device publishes; the link keeps the latest; a read is a look at what arrived." },
+      { "id": "package-boundary", "label": "The package boundary", "focus": ["sensor", "actuator", "witness", "link"], "note": "adapters/mqtt implements the device contract and imports no other adapter." }
+    ]
+  },
+  "components": [
+    { "id": "governance", "type": "security", "label": "Governance", "sublabel": "Controlled · effect rules", "pos": [40, 120], "size": [150, 64], "tag": "judges first" },
+    { "id": "runtime", "type": "backend", "label": "Runtime", "sublabel": "run() · executor", "pos": [40, 290], "size": [150, 64], "tag": "stamps posture" },
+    { "id": "sink", "type": "database", "label": "Sink / Observer", "sublabel": "the record", "pos": [40, 460], "size": [150, 64] },
+    { "id": "devices", "type": "backend", "label": "DeviceComponents", "sublabel": "adapters/devices · the act", "pos": [270, 290], "size": [170, 64], "tag": "Phase 13 act" },
+    { "id": "sensor", "type": "backend", "label": "MqttSensor", "sublabel": "reads: {world}", "pos": [520, 150], "size": [150, 60] },
+    { "id": "actuator", "type": "backend", "label": "MqttActuator", "sublabel": "writes: {world} · irreversible", "pos": [520, 292], "size": [150, 60] },
+    { "id": "witness", "type": "backend", "label": "MqttWitness", "sublabel": "reads: {world} · observed", "pos": [520, 434], "size": [150, 60] },
+    { "id": "link", "type": "backend", "label": "MqttLink", "sublabel": "one paho client · 3.1.1 · QoS 1", "pos": [760, 290], "size": [170, 64], "tag": "one lock" },
+    { "id": "broker", "type": "messagebus", "label": "MQTT Broker", "sublabel": "amqtt in tests", "pos": [1010, 290], "size": [150, 64] },
+    { "id": "device", "type": "external", "label": "Device side", "sublabel": "readings · events · acks", "pos": [1240, 290], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "shadow-hdk process — kernel ← runtime ← adapters", "wraps": ["governance", "runtime", "sink", "devices", "sensor", "actuator", "witness", "link"] },
+    { "kind": "security-group", "label": "adapters/mqtt — imports runtime.devices only", "wraps": ["sensor", "actuator", "witness", "link"] }
+  ],
+  "connections": [
+    { "id": "judge", "from": "runtime", "to": "governance", "label": "judge(effects, posture)", "variant": "security" },
+    { "id": "invoke", "from": "runtime", "to": "devices", "label": "invoke(id, inputs)", "variant": "emphasis" },
+    { "id": "read", "from": "devices", "to": "sensor", "label": "read()" },
+    { "id": "command", "from": "devices", "to": "actuator", "label": "command(argv, key)", "variant": "emphasis" },
+    { "id": "overheard", "from": "devices", "to": "witness", "label": "overheard()" },
+    { "id": "sensor-link", "from": "sensor", "to": "link" },
+    { "id": "actuator-link", "from": "actuator", "to": "link", "label": "publish · wait", "variant": "emphasis" },
+    { "id": "witness-link", "from": "witness", "to": "link" },
+    { "id": "tcp", "from": "link", "to": "broker", "label": "TCP · MQTT 3.1.1", "variant": "emphasis" },
+    { "id": "commands", "from": "broker", "to": "device", "label": "commands" },
+    { "id": "inbound", "from": "device", "to": "broker", "label": "readings · events · acks" },
+    { "id": "record", "from": "runtime", "to": "sink", "label": "Observed events", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Layers point one way", "items": ["kernel ← runtime ← adapters; the runtime never imports an adapter", "adapters/mqtt imports the device contract from runtime/devices.py, not adapters/devices", "The act itself lives in DeviceComponents and is shared by every protocol"] },
+    { "dot": "emerald", "title": "Three roles, one contract", "items": ["Sensor.read → Reading; Actuator.command → Ack; Witness.overheard → Overheard", "A sensor and a witness read {world}; an actuator writes it irreversibly", "Posture is stamped by the runtime from the registration, never by the adapter"] },
+    { "dot": "rose", "title": "What the adapter never does", "items": ["Never re-sends a command whose PUBACK did not come — a failed act breaks the link", "Never reopens a closed link behind the caller's back", "Never blocks the event loop — paho's thread does the socket work, waits go to a worker"] }
+  ]
+}

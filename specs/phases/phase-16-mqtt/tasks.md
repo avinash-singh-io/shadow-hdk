@@ -21,3 +21,13 @@ phase: 16-mqtt
 - [x] RED: broker not there (act `Failed` naming the refusal, `connect()` raises); broker refuses us; broker gone after a successful act (`Failed`, nothing sent when it is back, the next act's key is the only one seen); retained versus none is Group 1's first and third tests — 3 tests
 - [x] Epic 0007: OPC-UA and ROS 2 `[~]` naming what settles them; criteria ticked where met; records, board, status, roadmap; roadmap re-checked — every numbered phase and every buildable row of the environment epic is built
 - [x] Gate — ruff 0 / format 0 / mypy 0 (112 files) / pytest 680 passed, 9 deselected; 4 mutations bite
+
+## Group 3 — the review's findings (received 2026-09-10 18:09, `design.md` §6)
+- [x] BUG-002 (P1): the open path and `close()` under one `asyncio.Lock`; `opened` counts sessions — three concurrent first uses open one; four runs racing on one link, four acts received once; no session outlives `close()`
+- [x] BUG-003 (P1): registration under the thread lock with `_first`/`_queues` set before the filter; `_open` re-checks for a device registered while it opened (the window hit deterministically); a routing fault is counted (`faults`), the thread lives; `suppress_exceptions` for the callbacks the try/except does not wrap, proven by a fault in `on_subscribe`
+- [x] TD-002: `witness(keep=)` bounds the queue; the oldest is dropped and counted; `Overheard.dropped_before` rides on the next act and `DeviceComponents` puts it in the grounds
+- [x] ENH-001: a sensor names one topic (a witness may still overhear a subtree)
+- [x] F6, F8: docstrings say *last seen* survives a break, and `topic#mid` is not a stable id
+- [x] Gate — ruff 0 / format 0 / mypy 0 (114 files) / pytest 691 passed, 9 deselected; 14 mutations, all bite after a stress test proving nothing was replaced by the claims themselves
+- [~] ENH-002 (TLS): needs a TLS broker to prove against — not on this machine
+- [ ] ENH-003 (a protocol-adapter contract suite): open; the first step of any OPC-UA or ROS 2 work, which waits on a server and a ROS distribution

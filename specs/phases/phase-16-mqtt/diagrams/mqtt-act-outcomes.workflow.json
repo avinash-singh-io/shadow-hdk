@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MQTT Act — What Each Outcome Becomes",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "happy-path", "label": "The receipt", "focus": ["invoke", "lease", "ensure", "publish", "puback", "await_ack", "device_ack", "acted"], "note": "Lease, link, publish, the broker's word, the device's word, the receipt." },
+      { "id": "failures", "label": "Every failure, named", "focus": ["refused", "unreachable", "no_puback", "no_ack"], "note": "Each failure is a distinct observation with a distinct consequence for the link and the world." }
+    ]
+  },
+  "lanes": [
+    { "id": "runtime", "label": "Runtime — DeviceComponents" },
+    { "id": "adapter", "label": "Adapter — MqttActuator / MqttLink" },
+    { "id": "world", "label": "Broker + device" },
+    { "id": "failure", "label": "Failure — what the step observes", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "before", "label": "Before the act", "fromCol": 0, "toCol": 2 },
+    { "id": "during", "label": "The act", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "after", "label": "The record", "fromCol": 5, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["invoke", "lease", "ensure", "publish", "await_ack", "acted"],
+  "nodes": [
+    { "id": "invoke", "lane": "runtime", "col": 0, "type": "backend", "label": "Invoke actuator", "sublabel": "inside a run", "width": 136 },
+    { "id": "lease", "lane": "runtime", "col": 1, "type": "security", "label": "Lease read at the act", "sublabel": "time and money left?", "width": 136 },
+    { "id": "acted", "lane": "runtime", "col": 5, "type": "backend", "label": "Acted receipt", "sublabel": "key · exit · grounds", "tag": "posture controlled", "width": 136 },
+    { "id": "ensure", "lane": "adapter", "col": 2, "type": "backend", "label": "Ensure the link", "sublabel": "connect if needed", "width": 136 },
+    { "id": "publish", "lane": "adapter", "col": 3, "type": "messagebus", "label": "PUBLISH QoS 1", "sublabel": "{key, argv}", "width": 136 },
+    { "id": "await_ack", "lane": "adapter", "col": 4, "type": "backend", "label": "Await the ack", "sublabel": "only with ack_topic", "width": 136 },
+    { "id": "puback", "lane": "world", "col": 3, "type": "messagebus", "label": "PUBACK", "sublabel": "the broker's word", "width": 136 },
+    { "id": "device_ack", "lane": "world", "col": 4, "type": "external", "label": "Device answers", "sublabel": "{key, id, exit}", "width": 136 },
+    { "id": "refused", "lane": "failure", "col": 1, "type": "security", "label": "Refused", "sublabel": "lease spent; world untouched", "width": 136 },
+    { "id": "unreachable", "lane": "failure", "col": 2, "type": "security", "label": "Failed — ConnectionError", "sublabel": "nothing published", "width": 136 },
+    { "id": "no_puback", "lane": "failure", "col": 3, "type": "security", "label": "Failed — no PUBACK", "sublabel": "link broken; never re-sent", "width": 136 },
+    { "id": "no_ack", "lane": "failure", "col": 4, "type": "security", "label": "Failed — no ack", "sublabel": "link kept; command was taken", "width": 136 }
+  ],
+  "edges": [
+    { "id": "to-lease", "from": "invoke", "to": "lease" },
+    { "id": "covered", "from": "lease", "to": "ensure", "label": "can cover it", "variant": "emphasis" },
+    { "id": "spent", "from": "lease", "to": "refused", "label": "spent", "variant": "security", "role": "error" },
+    { "id": "to-publish", "from": "ensure", "to": "publish", "variant": "emphasis" },
+    { "id": "not-there", "from": "ensure", "to": "unreachable", "label": "broker not there", "variant": "security", "role": "error" },
+    { "id": "taken", "from": "publish", "to": "puback", "label": "broker takes it" },
+    { "id": "with-ack-topic", "from": "puback", "to": "await_ack", "label": "ack_topic set", "variant": "emphasis" },
+    { "id": "published-only", "from": "puback", "to": "acted", "label": "no ack_topic: exit published", "variant": "dashed", "role": "branch" },
+    { "id": "puback-timeout", "from": "publish", "to": "no_puback", "label": "timeout", "variant": "security", "role": "error" },
+    { "id": "answered", "from": "device_ack", "to": "await_ack", "label": "key matches", "role": "return" },
+    { "id": "receipt", "from": "await_ack", "to": "acted", "label": "Ack(id, exit)", "variant": "emphasis" },
+    { "id": "ack-timeout", "from": "await_ack", "to": "no_ack", "label": "timeout", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Two exits for a receipt", "items": ["Without an ack topic the receipt says exit: published — the broker's word is all there is", "With one, the receipt carries the device's own id and exit, matched by the run's key"] },
+    { "dot": "rose", "title": "Four failures, four consequences", "items": ["Refused: the lease is spent; nothing reaches the adapter", "ConnectionError: nothing published; the link stays unopened", "No PUBACK: the link is broken so the queued command dies with the session", "No ack after PUBACK: the link is kept; the command certainly reached the broker"] }
+  ]
+}
