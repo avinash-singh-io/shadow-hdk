@@ -160,6 +160,10 @@ class LeaseMeter:
             self._cost_known = False
 
 
+RESERVED_ATTRIBUTES = frozenset({"posture", "component"})
+"""What `context_for` writes itself, and a host may not (TD-007, D30)."""
+
+
 class Session:
     """One run's identity, handles and meter."""
 
@@ -180,6 +184,12 @@ class Session:
         self.meter = LeaseMeter(lease, clock)
         self.cancellation = cancellation if cancellation is not None else Cancellation()
         self._context = dict(context or {})
+        clashing = sorted(RESERVED_ATTRIBUTES & set(self._context))
+        if clashing:
+            raise ValueError(
+                f"{clashing} in the run's context: the runtime writes these itself (D30), and "
+                "setting one here would be overwritten silently on every step — rename them"
+            )
 
     def context_for(self, step: StepId, registration: Registration | None = None) -> Context:
         """What governance is told. Opaque to the runtime; the adapter interprets it.
@@ -187,6 +197,11 @@ class Session:
         With a registration, the policy is also told **what** it is judging: the component's id
         and its posture (D30), so *only controlled satisfies consent-before-effect* is a rule a
         policy can enforce rather than a sentence in a document.
+
+        These two win over anything the host put in the context, which is correct — a value the
+        host could set is a value a driver could influence, and D30 exists to stop that. It used to
+        win **silently** (TD-007), so a host using either name lost it on every step in the one
+        message governance ever sees. The names are refused at the door now.
         """
         attributes: dict[str, JsonValue] = dict(self._context)
         if registration is not None:
