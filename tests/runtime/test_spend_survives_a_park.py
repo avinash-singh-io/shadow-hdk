@@ -296,3 +296,58 @@ async def test_a_step_charged_before_the_park_is_not_charged_again() -> None:
     ports = _ports(ran, AsksOnce())
     first, after = await _two_legs(FIVE, ports, _options(steps=10))
     assert _ended(after).steps_taken == ran.count, "the meter and the world disagree"
+
+
+async def test_a_new_run_on_a_used_thread_does_not_inherit_its_spend() -> None:
+    """`run` starts a run; `resume` continues one. A host that reuses a run id — a retry after a
+    crash, a fixed id in a test — must not be handed the last run's meter."""
+
+    class Allows:
+        async def judge(self, _e: EffectProfile, _c: Context) -> Judgement:
+            return Allow()
+
+    ran = Ran()
+    ports = _ports(ran, Allows())
+    saver = InMemorySaver()
+    options = RunOptions(
+        lease=Lease(Ceiling(6, 600, 100), Floor(0)), run_id="reused", checkpointer=saver
+    )
+    first = [e async for e in run(FIVE, ports, options=options)]
+    assert _ended(first).steps_taken == 5
+    again = [e async for e in run(FIVE, ports, options=options)]
+    assert _ended(again).reason == "completed", "the second run inherited the first run's spend"
+    assert _ended(again).steps_taken == 5
+
+
+def test_the_reducer_does_not_care_which_branch_arrives_first() -> None:
+    """A `FanOut` writes concurrently, so the total must be the same in any order — and a mark
+    must be the furthest any branch reached, not whichever landed last."""
+    from shadow_hdk.runtime.state import merge_spent, no_spend
+
+    early = {"steps": 1, "cost_cents": 5, "unpriced": 0, "elapsed_seconds": 9.0, "seq": 11}
+    late = {"steps": 1, "cost_cents": 7, "unpriced": 1, "elapsed_seconds": 2.0, "seq": 4}
+    assert merge_spent(early, late) == merge_spent(late, early)
+    assert merge_spent(early, late) == {
+        "steps": 2,
+        "cost_cents": 12,
+        "unpriced": 1,
+        "elapsed_seconds": 9.0,
+        "seq": 11,
+    }
+    third = {"steps": 1, "cost_cents": 1, "unpriced": 0, "elapsed_seconds": 20.0, "seq": 2}
+    assert merge_spent(merge_spent(early, late), third) == merge_spent(
+        early, merge_spent(late, third)
+    )
+    assert merge_spent(no_spend(), early) == {**no_spend(), **early}
+
+
+def test_a_restore_never_moves_the_record_backwards() -> None:
+    """The numbering only goes forward. A checkpoint older than what this emitter has already
+    stamped would otherwise hand two events the same number."""
+    from shadow_hdk.runtime.emit import Emitter
+
+    emitter = Emitter("r", FixedClock(), None)
+    emitter.restore(9)
+    assert emitter.seq == 9
+    emitter.restore(4)
+    assert emitter.seq == 9, "a stale mark pulled the numbering back"
