@@ -90,7 +90,11 @@ runtime that turns the bare-harness test green.
 
 | ID | Type | Description |
 |----|------|-------------|
-| _(none)_ | | |
+| BUG-004 | Bug | The lease and `seq` reset on every resume — a parked run gets its whole ceiling back, and held children are orphaned. Reproduced. |
+| BUG-005 | Bug | The assistant's tool calls are dropped from the transcript, so a strict provider rejects turn two. The agent loop is proven against `ScriptedModel` only. |
+| BUG-006 | Bug | `resume` over the wire always raises (no checkpointer), and `serve` issues a session on a bare GET — the run token `wire.md` calls fixed is unbuilt. |
+| BUG-007 | Bug | mypy strict silently skips `wire`, `contained` and `derivation`; nine real errors in `wire` today. The type gate has never covered them. |
+| TD-009 | Tech Debt | CI has never run on a phase commit — zero PRs, two runs at founding. Every green gate so far is a local run reported by the session that wrote the code. |
 
 ## Next Actions
 

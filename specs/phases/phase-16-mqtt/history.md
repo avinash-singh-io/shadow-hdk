@@ -107,3 +107,24 @@ bite. TD-002 and ENH-001 were small enough to land beside them; ENH-002 is `[~]`
 ENH-003 stays open as the first step of OPC-UA or ROS 2.
 
 ---
+
+### [DISCOVERY] 2026-09-10 — a whole-harness architecture review: eleven bugs and seven debts filed
+Topics: runtime, resume, leases, wire, agent, transcript, sandbox, workspace, mypy, ci, derivation, sinks, posture, spec-drift, landing
+Affects-phases: phase-0-the-runtime, phase-1-real-adapters, phase-3-workspace-and-code, phase-4-the-acp-bridge, phase-6-the-compiler-complete, phase-7-sub-agents, phase-8-patterns-skills-replay, phase-9-the-wire, phase-11-contained-sandboxes, phase-12-derivation, phase-14-telemetry, phase-15-environment-contract
+Affects-specs: specs/architecture/runtime.md#the-drive, specs/architecture/runtime.md#the-governed-step, specs/architecture/wire.md#rules-already-fixed, specs/architecture/adapters.md#the-workspace-and-code-adapters, specs/architecture/file-structure.md, specs/architecture/testing.md#layers, specs/status.md, specs/planning/roadmap.md
+Detail: A design-lead read of the whole harness at `4331178` — specs in full, kernel and the governed
+step by hand, five reviewers over runtime, wire, core adapters, environment adapters and process —
+with the headline claims reproduced by execution. The architecture holds: the lattice is a GLB with
+an order, one step judges everything, layering is a test, refusal is its own kind. Four things the
+design says are not true in the code and were filed P0: the lease and `seq` reset on every resume
+(BUG-004, reproduced: five steps under a three-step lease), the transcript drops the assistant's
+tool calls so a strict provider rejects turn two (BUG-005), `resume` over the wire always raises and
+`serve` has no trust boundary (BUG-006), and mypy strict silently skips three packages with nine
+live errors in `wire` (BUG-007, reproduced). CI has never run on a phase commit — zero PRs, two runs
+at founding — so every green gate so far is a local run reported by the session that wrote the code
+(TD-009). BUG-008–014 and TD-003–008 carry the rest. The review recommends fixing the gate first,
+one PR from this branch to `main` for a single CI run over the linear stack, and landing once: the
+Rule 6 landing order is for concurrent lanes and this stack never diverged. Published as
+*shadow-hdk Architecture Review*; nothing in the repository was changed by the review itself.
+
+---
