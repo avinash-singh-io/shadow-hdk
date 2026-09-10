@@ -61,9 +61,12 @@ and not opened**, in `specs/adhoc/TD-009/`; and the first release tag, which is 
 contract changes have each moved every package under D9, so the number the packages carry is the
 true one and this plan's founding `v0.1.0` was stale.
 
-**One thing this document should not be read as promising.** CI ran for the first time on 2026-09-10
-and found that the runtime costs **1.36 ms of overhead per step** against D11's budget of ≤ 1 ms —
-2.4× the figure the benchmark recorded. That is BUG-016, filed and not accommodated.
+**The latency budget holds, and for a while it did not.** CI ran for the first time on 2026-09-10
+and found the runtime costing **1.36 ms of overhead per step** against D11's ≤ 1 ms. The cause was
+`contracts.py` rebuilding a `TypeAdapter` on every call — 57% of the whole per-step cost — and
+caching it restored **0.594 ms/step**. The gate that missed it keeps its 3× slack deliberately: a
+runner is 2.1× this machine and the drift was 2.4×, so a stopwatch cannot separate them. A count of
+adapters can, and does.
 
 ## Timeline
 
@@ -87,7 +90,7 @@ and found that the runtime costs **1.36 ms of overhead per step** against D11's 
 | — | **The environment** (epic 0007) | **DONE** for phases 15 and 16; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
 | 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | 16 | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
-| 19 | The P2s | **NEXT** | 18 | BUG-013, BUG-014, **BUG-016** (the runtime is over D11's latency budget), TD-004…TD-008 |
+| 19 | The P2s | **IN PROGRESS**, group 1 of 4 · `phase-19-the-p2s` | 18 | **BUG-016 closed** — the adapter cache; 0.594 ms/step, back inside D11, and CI green for the first time. Next: BUG-013, BUG-014, TD-004…TD-008 |
 
 ## Epics
 

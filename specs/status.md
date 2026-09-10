@@ -5,40 +5,29 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: **Phase 18 COMPLETE — every P0 and every P1 the audit filed is closed.**
-> Group 5 closed **BUG-011** (the ACP purse charged every turn again — three 100-token prompts cost
-> 600; a sub-cent charge reported a known zero and was lost; `stop()` waited forever on a child that
-> ignores `SIGTERM`), **BUG-012** (five promises the code made and kept nowhere: a `compose` call
-> left unanswered, which is the dangling tool call every provider rejects, and four of six shipped
-> patterns are built on it; spend lost when a provider raised; `Pattern.ceiling` and
-> `skills.missing_for` appearing *zero* times in the code that was supposed to read them;
-> `widens()` blind to ask lines), **TD-003** (the wire imported an adapter, dependencies were
-> unpinned, eleven adapters shipped no `py.typed`) and **TD-009**. Earlier groups closed BUG-008,
-> BUG-009 (D35, D36), BUG-015 (D37) and BUG-010 (D38, contract 0.12.0).
+> **Current Phase**: **Phase 19 — the P2s**, group 1 of 4 done. **BUG-016 closed**: 57% of the
+> runtime's per-step overhead was Pydantic rebuilding the same schema — `contracts.py` built a
+> fresh `TypeAdapter` on every call at 0.743 ms each, one per step under D19, so a hundred-step run
+> built 101 of them. One dict keyed on the type. Measured after: **0.594 ms/step**, back inside
+> D11's ≤ 1 ms from the 1.36 it had drifted to. **D11's 3× slack was deliberately not tightened** —
+> the CI runner measures 2.1× this machine and the regression was 2.4×, so the ranges overlap and no
+> stopwatch threshold separates slower code from slower hardware; what guards it now is a count of
+> adapters, which is the same number on every machine.
 >
-> **CI has never run on any commit of this stack, and that is now said plainly.** The workflow
-> triggered only on pushes to `main` and `staging` and on pull requests; nothing has ever reached
-> either. Eighteen phases and 141 commits were checked by this laptop and nothing else. The trigger
-> is widened, so the next push is the first real check — and **the pull request that would land the
-> stack is prepared and deliberately not opened**, in `specs/adhoc/TD-009/`, because that is the
-> owner's.
+> **CI is green for the first time in this repository's history** (run 34504668539): 96.77%
+> coverage, 842 passed on Linux, and all three benchmarks inside their assertions where two runs
+> earlier they were red. The trigger had fired only on branches nothing has ever landed on, so
+> eighteen phases and 141 commits had been checked by one laptop.
 >
-> **The first CI run in this repository's history went red, and it was right to.** `ruff`, format
-> and `mypy` passed on Linux; the coverage floor came back at 96.77%; the test that skips here for
-> want of `prlimit` **ran on Linux and passed**. What failed was the benchmark — because the gating
-> step traces `shadow_hdk.runtime` with coverage and that is exactly what the benchmark
-> measures, so it was timing `coverage.py` (179.7 ms clean against 425.3 ms instrumented, on a 300
-> ms assertion). Fixed. **And with the numbers finally read: the runtime's per-step overhead is
-> 1.36 ms against D11's budget of ≤ 1 ms, and 2.4× the 0.570 recorded in the file.** Filed as
-> BUG-016 rather than accommodated; the gate never caught it because the assertion sits at three
-> times the target.
+> **Phases 0–18 are complete**, pushed, unmerged. Every P0 and P1 the audit filed is closed —
+> BUG-008, BUG-009 (D35, D36), BUG-015 (D37), BUG-010 (D38, contract 0.12.0), BUG-011, BUG-012,
+> TD-003, TD-009, and before them the four P0s of Phase 17. 845 tests; mypy strict over 133 files;
+> seventeen distributions at **0.12.0**, all MIT.
 >
-> Phases 0–18 are complete and unmerged. 837 tests; mypy strict over 132 files; seventeen
-> distributions all at **0.12.0**, all MIT. **What remains buildable is the P2s**: BUG-013 (the
-> derivation evaluator), BUG-014 (`FileSink`'s torn tail), TD-004 (the contract suites reach 7 of
-> 14 adapters), TD-005 (nothing bounds growth), TD-006 (governance leaking outside the governed
-> step), TD-007 (posture is self-declared), TD-008 (the constitutional specs each describe a
-> different day) and ENH-002/ENH-003, which wait on a TLS broker and a second protocol adapter.
+> **BUG-013 is reproduced and Group 2 starts from facts.** Three literals raise past `invoke`;
+> `"1"`, `"1.0"` and `"1.00"` fingerprint differently; and the audit's Unicode claim is right about
+> the bug and wrong about the place — normalisation bites in a **cell**, where it produces a wrong
+> *count* rather than a different hash. What remains after Group 2 is TD-004…TD-008.
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
