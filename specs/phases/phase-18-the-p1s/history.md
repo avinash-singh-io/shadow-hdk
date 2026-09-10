@@ -203,3 +203,109 @@ loading a judgement from JSON only bites when the wire suite is in the run, and 
 rather than *once* only bites with a resume inside an `Until` loop, which nothing had covered.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 5: a docstring that argued for the fix, and a docstring that was the bug
+Topics: acp, meter, money, testing
+Affects-phases: none
+Affects-specs: none
+
+`Spend`'s own docstring made the argument that the bug defeated. It says money accumulates as
+`Decimal` and is converted **once**, because *converting per call would round 0.004 USD to zero and
+a thousand such calls would still be zero. Two hundred of them are eighty cents, and that is what
+the meter is told.* The class was right. The one place it was read handed the meter the running
+total instead of the difference, so `step.py` charged the first turn again on the second and twice
+more on the third — and the sub-cent care was spent to produce a number nobody used correctly.
+
+Two hundred charges of $0.004 is a test now, and it is the docstring's own sentence.
+
+**The row's proposed fix was rejected, and this is why.** It said `None` below a cent. `None` is
+*unknown*, and a meter charges nothing for unknown — so the money would have been lost exactly as
+before, relabelled. The fix that keeps the docstring's promise is to charge the **difference of the
+rounded totals**: the fraction stays in `amount`, the cent is charged on the turn the total crosses
+it, and the meter is never more than half a cent behind the truth. `None` then means what it says,
+and `cents` asks `cost_seen` rather than `amount == 0`, because a provider that priced a turn at
+nothing has told us something and filing that under unknown throws it away.
+
+---
+
+### [NOTE] 2026-09-10 — Group 5: BUG-012 was five promises, and one of them was BUG-005 again
+Topics: agent, compose, transcript, patterns
+Affects-phases: none
+Affects-specs: none
+
+Four of the six shipped patterns are built on `compose`, and `compose` produced a transcript no
+provider would accept. Its results were matched to tool calls by `call.id`, which cannot work for a
+plan whose step ids are the model's own; and because `compose` is a meta-tool, the loop skipped it
+and left the call **unanswered**. That is the dangling tool call Anthropic, OpenAI and Google all
+reject — the same rule BUG-005 was about, in a second place, found by reading rather than by
+running, because every test used a scripted model that does not enforce the pairing rule.
+
+The audit's row said the step results were dropped. Measured, it was worse: one call made, zero
+results returned, and a request that would have 400'd.
+
+The other four were promises with no caller. `Pattern.ceiling` appeared **zero** times in
+`component.py`; so did `missing_for`. A field that is parsed, held and read by nothing is worse than
+a field that does not exist, because a team writing `[ceiling]` into a pattern file reads it as a
+guarantee. `skills.py` even said when its check runs — *before the first turn* — and there was no
+first turn for it to run before, because `AgentComponent` had nowhere to put a skill.
+
+**An existing test caught a regression I introduced.** Wrapping the provider call, I put
+`await self.catalogue()` inside the catch, so BUG-001's own refusal — a registered tool named like a
+meta-tool — came back as `provider_failed`. Three Phase 13 tests failed immediately. The catch is
+for the provider, not for our own refusals, and the request is built outside it now.
+
+---
+
+### [NOTE] 2026-09-10 — Group 5: the debts that only reach someone who installed a wheel
+Topics: packaging, invariants, types
+Affects-phases: none
+Affects-specs: none
+
+Every part of TD-003 is invisible from inside the workspace. `uv` resolves the whole thing here, so
+an undeclared dependency imports fine, an unpinned one gets the right version, and a missing
+`py.typed` types perfectly — right up until somebody installs one wheel.
+
+So the tests read the **shipped metadata** rather than the source, and the marker was verified by
+opening a built wheel: `shadow_hdk_adapters_mqtt-0.12.0-py3-none-any.whl` carries
+`shadow_hdk/adapters/mqtt/py.typed` and requires `shadow-hdk-kernel==0.12.0`. Reading the
+artifact rather than the tree is the same move J2's licence check made, for the same reason.
+
+The wire importing `adapters.basic` is *no adapter imports another* one layer up, and it took the
+remedy that rule already names — `SystemClock` moved below both — rather than a new dependency.
+Nothing about reading the wall clock is adapter-shaped, which is what made the move uncontroversial.
+
+**The invariant file asserts its own coverage.** BUG-007 was a package the gate skipped, and the
+package with the undeclared dependency was the one nothing walked. So the new file checks that the
+set it walks is every package on disk, not every package somebody remembered to add.
+
+One mutation survived: the pin check compared whole strings, so `>=0.12.0` passed — a floor, which
+is precisely what the rule forbids. It parses the distribution name now.
+
+---
+
+### [NOTE] 2026-09-10 — Phase 18 is done, and CI has still never run
+Topics: ci, honesty, td-009
+Affects-phases: none
+Affects-specs: none
+
+Every P0 and every P1 the audit filed is closed. Eighteen phases, 141 commits, 837 tests, mypy
+strict over 132 files — and **not one of those commits has ever been checked by anything but this
+laptop**, because the workflow triggered only on pushes to `main` and `staging` and on pull
+requests, and nothing has ever reached either.
+
+That is worth stating plainly next to every "four zeros" this lane has written. They were run, and
+they were run in one place, on one machine, on one operating system. The trigger is widened now, so
+the next push is the first real check.
+
+The pull request that would land the stack is **prepared and not opened**, in `specs/adhoc/TD-009/`,
+with the exact command. Opening one is an outward-facing act on the owner's repository: it names
+them as author, it can notify a team, and where rules are attached it can start a merge. That is
+the owner's, and the rule has been the same since Phase 0.
+
+The record also says what to expect from a red, because a first run is information rather than a
+regression: the 90% coverage floor has never been measured off this machine; the one test skipped
+here for want of `prlimit` will actually **run** on Linux, and is the one most likely to find
+something; and the ten `live` tests stay deselected because they need a broker, a server or a paid
+turn.
+
+---

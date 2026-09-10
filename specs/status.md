@@ -5,33 +5,30 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: Phase 18 — the audit's P1s — `groups 1–4 of 5`. **BUG-010** (D38, contract
-> 0.11.0 → 0.12.0): a parked step resumes **where it parked**, not from the top — so an `Await` no
-> longer calls its component twice, and a policy that changes its mind on the re-run can no longer
-> overturn the human it asked. An `Ask` is now answered with a `Judgement`, because the answer
-> decides. **The audit's row for it was wrong on one point and is corrected, not quietly closed**:
-> two Asks in one `FanOut` do not end the run `failed` — it parks again and re-runs the answered
-> branch. Five existing tests had to be rewritten because they encoded the old behaviour, one with a
-> docstring calling the double act a feature. **BUG-015** (D37, contract 0.11.0): a parent that parks
-> comes back holding its children, and one it cannot reach again is named rather than silently
-> replaced. **BUG-009 is closed whole**: D36 — a containment proof is now a capability test the
-> sandbox runs through the backend, so the five-line fake `runsc` that once produced *gvisor proved
-> containment* is refused. **BUG-008** (a hard link let `read_file` return outside content and
-> `write_file` overwrite it) and the leash half of **BUG-009** (D35: a step owns the process tree it
-> starts; `HOME` gone; `memory_mb` real where the platform enforces it) are closed. **BUG-004** (D33,
-> contract 0.9.0): what a run has spent survives a park. **BUG-005** (contract 0.10.0): an assistant
-> message carries the calls it made. **BUG-006** (D34): a parked run resumes over the wire,
-> `initialize` is required, callbacks time out, and `serve` is loopback-only until the run token is
-> built. Phases 0–17 are complete and unmerged; BUG-001 and BUG-007 are fixed as quick-tasks.
+> **Current Phase**: **Phase 18 COMPLETE — every P0 and every P1 the audit filed is closed.**
+> Group 5 closed **BUG-011** (the ACP purse charged every turn again — three 100-token prompts cost
+> 600; a sub-cent charge reported a known zero and was lost; `stop()` waited forever on a child that
+> ignores `SIGTERM`), **BUG-012** (five promises the code made and kept nowhere: a `compose` call
+> left unanswered, which is the dangling tool call every provider rejects, and four of six shipped
+> patterns are built on it; spend lost when a provider raised; `Pattern.ceiling` and
+> `skills.missing_for` appearing *zero* times in the code that was supposed to read them;
+> `widens()` blind to ask lines), **TD-003** (the wire imported an adapter, dependencies were
+> unpinned, eleven adapters shipped no `py.typed`) and **TD-009**. Earlier groups closed BUG-008,
+> BUG-009 (D35, D36), BUG-015 (D37) and BUG-010 (D38, contract 0.12.0).
 >
-> **A full-codebase audit landed in the backlog on 2026-09-10** — four P0s, six P1s, seven tech-debt
-> items — and it is the whole of what remains buildable here. **BUG-007 is confirmed and fixed:**
-> `mypy_path` omitted `wire`, `contained` and `derivation`, so every mypy-0 this lane reported from
-> Phase 9 to Phase 16 excluded the wire package, where nine errors sat. The gate now covers all 124
-> files and an invariant asserts it. All four P0s are closed, and four of six P1s. What remains is
-> **BUG-011 and BUG-012**, plus TD-003 and TD-009 (CI has never run on any phase commit), and then
-> the P2s. The roadmap's own phases are done; OPC-UA, ROS 2 and TLS still wait on a server, a ROS
-> distribution and a TLS broker.
+> **CI has never run on any commit of this stack, and that is now said plainly.** The workflow
+> triggered only on pushes to `main` and `staging` and on pull requests; nothing has ever reached
+> either. Eighteen phases and 141 commits were checked by this laptop and nothing else. The trigger
+> is widened, so the next push is the first real check — and **the pull request that would land the
+> stack is prepared and deliberately not opened**, in `specs/adhoc/TD-009/`, because that is the
+> owner's.
+>
+> Phases 0–18 are complete and unmerged. 837 tests; mypy strict over 132 files; seventeen
+> distributions all at **0.12.0**, all MIT. **What remains buildable is the P2s**: BUG-013 (the
+> derivation evaluator), BUG-014 (`FileSink`'s torn tail), TD-004 (the contract suites reach 7 of
+> 14 adapters), TD-005 (nothing bounds growth), TD-006 (governance leaking outside the governed
+> step), TD-007 (posture is self-declared), TD-008 (the constitutional specs each describe a
+> different day) and ENH-002/ENH-003, which wait on a TLS broker and a second protocol adapter.
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 

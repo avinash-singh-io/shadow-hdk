@@ -36,6 +36,31 @@ phase: 18-the-p1s
   - [x] five existing tests changed because they encoded the old behaviour, one with a docstring calling the double act a feature
   - [x] RED: 8 tests, including a resume inside an `Until` loop that must happen once, not every iteration
   - [x] Gate — ruff 0 / format 0 / mypy 0 (124 files) / pytest 779 passed, 1 skipped, 10 deselected; 12 mutations, all bite
-- [ ] BUG-011, BUG-012, TD-003
-- [ ] TD-009 — the workflow change, and the pull request prepared for the owner
-- [ ] records, board, status, roadmap
+- [x] BUG-011 — the ACP purse, and a child that will not stop
+  - [x] reproduce: three 100-token prompts charged 600; a single $0.004 charge reported `cost_cents: 0`; `stop()` still waiting after 5s on a child with `SIG_IGN` installed
+  - [x] `Spend.take()` answers *since you last asked*, and cents are the **difference of the rounded totals**, so a sub-cent charge is charged on the turn the total crosses a cent
+  - [x] **diverged from the row's fix** (`None` below a cent): `None` means unknown and charges nothing, so the money would have been lost as before; `cost_seen` replaces `amount == 0`
+  - [x] `stop()` asks, waits a grace period, then ends the **group** — one implementation in `runtime/processes.py` for the leash and the bridge, and `start_new_session=True` on the ACP child (D35)
+  - [x] RED: 21 tests, `spikes/acp/agent.py --deaf` added because a cooperative agent cannot demonstrate a deadline
+  - [x] 18 mutations, all bite; four survived first and every one was an arrangement that never created the condition
+- [x] BUG-012 — five promises the code made and nothing kept
+  - [x] reproduce, all five: a `compose` call left **unanswered** (worse than the row said — the dangling call every provider rejects); 2000 tokens and 14 cents recorded as zero; `pattern.ceiling` and `missing_for` appearing **0 times** in `component.py`; a rule set that never asks passing a check against one that always does
+  - [x] the plan's call answered with every step by name, including steps that did not run
+  - [x] a provider exception ends `Completed` with a reason and its spend; the catch is `Exception`, so a `CancelledError` still stops the run
+  - [x] `Pattern.ceiling` enforced at judgement and absent from the catalogue; only ever narrower, deployment asked first so its own words are what a person reads
+  - [x] `AgentComponent` takes a skill and checks it **before the model is called at all**
+  - [x] `widens()` compares ask lines; the asymmetry is deliberate — a house that never asks has drawn no line to cross
+  - [x] RED: 27 tests; 20 mutations, all bite. An existing test caught a regression I introduced: building the catalogue inside the provider's catch made BUG-001's own refusal read as a provider failure
+- [x] TD-003 — a wheel carries what it needs, and says so in types
+  - [x] `SystemClock` moved to `runtime/clock.py`, re-exported from `adapters.basic`; the wire imports no adapter
+  - [x] `tests/invariants/test_a_wheel_carries_what_it_needs.py`, which asserts it covers every package **on disk** rather than every package somebody remembered
+  - [x] all seventeen distributions pin `==0.12.0`; twelve `py.typed` markers added
+  - [x] measured from a built wheel, not the tree: the marker is inside `shadow_hdk/adapters/mqtt/` and the requires are pinned
+  - [x] 8 tests; 5 mutations, all bite — one survived because the pin check let `>=0.12.0` through
+- [x] TD-009 — the workflow change, and the pull request prepared for the owner
+  - [x] CI triggers on every push plus `workflow_dispatch`; it had never run on one commit of 141
+  - [x] `specs/adhoc/TD-009/` holds the body and the exact `gh pr create` command, **prepared and not run**
+  - [x] what to expect from the first red is written down, because it has never run
+- [x] the resume value across the checkpoint — **measured, not a debt**: `LANGGRAPH_STRICT_MSGPACK=true` over the runtime and wire suites reports no unregistered type
+- [x] Gate — ruff 0 / format 0 / mypy 0 (132 files) / pytest 837 passed, 1 skipped, 10 deselected; 43 mutations across the group
+- [x] records, board, status, roadmap
