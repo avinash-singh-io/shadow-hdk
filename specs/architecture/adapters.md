@@ -152,9 +152,10 @@ ports = Ports(model=…, components=(record_tools, mcp_tools), governance=ModeGo
               sink=MyStoreSink(store), observer=MyUiObserver(ws))
 ```
 
-Intent Studio's 25 record verbs are exactly this: `callable` components with
-`writes: {record}, reversible: true, reaches: false`, whose implementations propose, and a sink that
-is the product's gate. The runtime never learns what a claim is.
+A product with its own domain verbs — two dozen ways to write to its record, say — is exactly this:
+`callable` components with `writes: {record}, reversible: true, reaches: false`, whose
+implementations propose, and a sink that is the host's gate. **The runtime never learns what a claim
+is**, and that is the point of the example rather than the verbs themselves.
 
 ## The workspace and code adapters — the agent writes things
 

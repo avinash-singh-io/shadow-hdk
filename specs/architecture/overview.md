@@ -27,8 +27,8 @@ type: Architecture
     Observation · Proposal · Lease · Event · the ports
 ```
 
-A host — Intent Studio, or anything else — sits **above** all three as one more set of adapters plus
-its product. Nothing below the line knows it is there.
+A host sits **above** all three as one more set of adapters plus its product. Nothing below the line
+knows it is there, and nothing below the line is written for a particular one.
 
 ## What each layer owns
 

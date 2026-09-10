@@ -49,8 +49,9 @@ shadow-hdk is the generic agentic system designed in
 components under a governance policy and hands what it produces to whoever is listening. It governs
 effects, not names; the agent's plan is data compiled to a LangGraph graph; the runtime acts through
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
-name, six ports. Intent Studio is its first user (lane P, joining at R3); any system that implements
-the six ports is its intended user. The kernel exists and is green (`0ca2d2b`); Phase 0 builds the
+name, six ports. Any system that implements the six ports is its intended user, and this repository
+plans for none of them in particular — which adopter reaches which capability when is a fact about
+that adopter, and it lives in the shared roadmap rather than here. The kernel exists and is green (`0ca2d2b`); Phase 0 builds the
 runtime that turns the bare-harness test green.
 
 ## Completed Phases
