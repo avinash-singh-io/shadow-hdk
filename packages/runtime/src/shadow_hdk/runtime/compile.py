@@ -19,6 +19,7 @@ first thing that needs them.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -252,7 +253,9 @@ def _step_node(step: Step, executor: StepExecutor) -> Callable[[RunState], Any]:
         observation = await executor.invoke(step, state)
         return {
             "handles": {step.id: _output_of(observation)},
-            "observations": {step.id: observation},
+            # Plain JSON on the way into the state (D19) — a checkpointer is a boundary, and our
+            # class names are not something a host should have to name in its serializer.
+            "observations": {step.id: json.loads(dump(observation, Observation))},
         }
 
     return node

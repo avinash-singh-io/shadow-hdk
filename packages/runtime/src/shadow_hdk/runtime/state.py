@@ -11,7 +11,6 @@ from typing import Annotated, TypedDict
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import StepId
-from shadow_hdk.kernel.observations import Observation
 
 
 def merge_dicts[V](left: dict[StepId, V], right: dict[StepId, V]) -> dict[StepId, V]:
@@ -27,7 +26,10 @@ def merge_counts(left: dict[StepId, int], right: dict[StepId, int]) -> dict[Step
 
 class RunState(TypedDict):
     handles: Annotated[dict[StepId, JsonValue], merge_dicts]
-    observations: Annotated[dict[StepId, Observation], merge_dicts]
+    observations: Annotated[dict[StepId, JsonValue], merge_dicts]
+    """**JSON, not our classes** (D19). A checkpoint is a wire: it crosses a process, a version, and
+    into a store the host chose. The types stay ours; what crosses stays plain, and the runtime
+    loads observations back at its own edge."""
     iterations: Annotated[dict[StepId, int], merge_counts]
 
 

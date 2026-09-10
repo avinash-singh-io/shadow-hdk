@@ -36,6 +36,10 @@ from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.usage import Usage as Usage
+
+"""Re-exported: `Usage` lived here until `events.Spent` needed it too, and `ports` already imports
+`events`. It moved beneath both rather than breaking every `from ...ports import Usage`."""
 
 # ---------------------------------------------------------------- model
 
@@ -52,16 +56,6 @@ class ToolCall:
     id: str
     name: str
     arguments: JsonValue
-
-
-@dataclass(frozen=True)
-class Usage:
-    """What the call cost. A model adapter that cannot say reports ``None`` for the field it does
-    not know — *unknown*, never zero (10 §5 R2)."""
-
-    input_tokens: int | None = None
-    output_tokens: int | None = None
-    cost_cents: int | None = None
 
 
 @dataclass(frozen=True)

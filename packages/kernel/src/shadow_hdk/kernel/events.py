@@ -16,6 +16,7 @@ from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.composition import Composition, Handle, StepId
 from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.usage import Usage
 
 RunId = str
 
@@ -106,6 +107,27 @@ class Spawned:
 
 
 @dataclass(frozen=True)
+class Spent:
+    """What a step cost, said out loud (D20).
+
+    Phase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a
+    `Completed` observation's output dict, by convention, and anyone wanting to know what a run cost
+    had to know that convention and parse somebody else's payload. Reporting and recording are
+    different jobs, and this is the record.
+
+    Emitted only when there is something to say — a step that cost nothing emits none, because a
+    kind that appears when there is nothing to report is a kind readers learn to skip.
+    """
+
+    run_id: RunId
+    seq: int
+    at: str
+    step: StepId
+    usage: Usage
+    kind: Literal["spent"] = "spent"
+
+
+@dataclass(frozen=True)
 class Held:
     """A child parked instead of ending, and its parent is keeping it (D16).
 
@@ -140,6 +162,16 @@ class Ended:
 
 
 Event = Annotated[
-    Started | Composed | Invoked | Observed | Proposed | Refused | Asked | Spawned | Held | Ended,
+    Started
+    | Composed
+    | Invoked
+    | Observed
+    | Proposed
+    | Refused
+    | Asked
+    | Spawned
+    | Held
+    | Spent
+    | Ended,
     Field(discriminator="kind"),
 ]

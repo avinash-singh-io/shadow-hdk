@@ -11,8 +11,11 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.5.0"
-"""0.5.0 because the event stream grew a tenth kind, `Held` — a child parked instead of ending and
+EXPECTED = "0.6.0"
+"""0.6.0 because the stream grew an **eleventh** kind, `Spent` — what a step cost, said out loud
+instead of left in an output dict by convention (D20) — and `Usage` moved beneath both `ports` and
+`events`, which could not import each other. 0.5.0 was the tenth kind, `Held` — a child parked
+instead of ending and
 its parent is keeping it, which a host would otherwise have to infer from the *absence* of `Ended`,
 and a child that died silently looks the same. 0.4.0 was `Ended.detail`; 0.3.0 was
 `Provenance.posture`; 0.2.0 was `ModelPort.stream`. Each is a contract change, so every package

@@ -44,6 +44,7 @@ from shadow_hdk.kernel.events import (
     Proposed,
     RunId,
     Spawned,
+    Spent,
     Started,
 )
 from shadow_hdk.kernel.events import (
@@ -132,6 +133,7 @@ __all__ = [
     "SinkPort",
     "Held",
     "Spawned",
+    "Spent",
     "Started",
     "Step",
     "StepId",

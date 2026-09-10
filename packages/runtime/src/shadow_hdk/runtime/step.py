@@ -24,6 +24,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
 from shadow_hdk.kernel.events import Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
+from shadow_hdk.kernel.events import Spent as SpentEvent
 from shadow_hdk.kernel.observations import (
     Completed,
     Failed,
@@ -111,7 +112,12 @@ class StepExecutor:
             observation = await port.invoke(registration.id, inputs)
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
-        self.session.meter.charge_cost(_usage_of(observation))
+        usage = _usage_of(observation)
+        self.session.meter.charge_cost(usage)
+        if usage is not None:
+            # Where the meter is charged, and only there (D20). A step that cost nothing says
+            # nothing, because a kind that appears with nothing to report is one readers skip.
+            await self._emit(lambda **k: SpentEvent(step=step.id, usage=usage, **k))
         if isinstance(step, Await) and isinstance(observation, Pending):
             # The grammar's other half. `Invoke` is *do it now*; `Await` is *this may take a while*,
             # so a component that says `Pending` there is taken at its word and the run parks.

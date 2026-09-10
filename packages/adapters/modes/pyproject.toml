@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-modes"
-version = "0.5.0"
+version = "0.6.0"
 description = "Governance as data: a mode is a ceiling and an ask line."
 readme = "README.md"
 requires-python = ">=3.12"
