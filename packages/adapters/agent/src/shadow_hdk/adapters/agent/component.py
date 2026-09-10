@@ -40,7 +40,13 @@ from shadow_hdk.kernel.composition import Await, Binding, Composition, FanOut, I
 from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
-from shadow_hdk.kernel.observations import Completed, Failed, Observation, Proposal
+from shadow_hdk.kernel.observations import (
+    Completed,
+    Failed,
+    Observation,
+    Proposal,
+    Refused,
+)
 from shadow_hdk.kernel.ports import (
     ComponentPort,
     Message,
@@ -316,6 +322,14 @@ class _Turnwise:
         ):
             if event.kind == "observed":
                 observed[event.step] = event.observation
+            elif event.kind == "refused":
+                # **A refusal emits one event, not two** — the decision taken when the governed step
+                # was written, and the same trap the RecordingServer fell into in Phase 5. Watching
+                # only for `observed` left a refused call answered with "that step did not run": no
+                # reason, and indistinguishable from a step that never happened. A survey of other
+                # agent systems found this to be the single most commonly filed bug in approval
+                # implementations, so it is worth the four lines and the paragraph.
+                observed[event.step] = Refused(event.reason)
         for call in calls:
             if call.name in BY_NAME:
                 continue
