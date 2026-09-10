@@ -10,40 +10,60 @@
     ],
     "views": [
       {
-        "id": "the-spine",
-        "label": "The spine",
+        "id": "step-1",
+        "label": "1 \u00b7 You call run()",
         "focus": [
           "host",
+          "drive"
+        ],
+        "note": "Your product hands in a plan and a set of ports, then reads events as they arrive. It never waits for the end."
+      },
+      {
+        "id": "step-2",
+        "label": "2 \u00b7 The plan becomes a graph",
+        "focus": [
           "drive",
           "compiler",
-          "step",
-          "components"
+          "step"
         ],
-        "note": "A host hands in a plan; the compiler makes it a graph; every node of it is one governed step."
+        "note": "The compiler turns the plan into a graph. Every node of that graph is one governed step."
       },
       {
-        "id": "ports",
-        "label": "The six ports",
+        "id": "step-3",
+        "label": "3 \u00b7 Nothing runs unjudged",
         "focus": [
-          "model",
-          "components",
-          "governance",
-          "observer",
-          "sink"
+          "step",
+          "governance"
         ],
-        "note": "Every seam a host plugs into. A new vendor or protocol is a new adapter, never a runtime change."
+        "note": "Governance is asked with the effect profile before the component is called. Refuse means it is never called."
       },
       {
-        "id": "outward",
-        "label": "The only way out",
+        "id": "step-4",
+        "label": "4 \u00b7 The work happens",
+        "focus": [
+          "step",
+          "components",
+          "model"
+        ],
+        "note": "Components do the work. The model is reached through a component, never directly by the runtime."
+      },
+      {
+        "id": "step-5",
+        "label": "5 \u00b7 Two ways back to you",
         "focus": [
           "drive",
           "observer",
-          "sink"
+          "sink",
+          "kernel"
         ],
-        "note": "Events are the only channel out, and a proposal is the only way to reach the host's record."
+        "note": "Events inform you; a proposal asks you to remember. The kernel is the shared vocabulary beneath all of it."
       }
-    ]
+    ],
+    "subtitle": "An agent runs over components you register, under a policy that judges effects rather than names.",
+    "repository": {
+      "url": "https://github.com/avinash-singh-io/shadow-hdk",
+      "revision": "64e74e8ee85f2960b2a7df227caade00aed00c52"
+    }
   },
   "components": [
     {
@@ -58,7 +78,14 @@
       "size": [
         140,
         58
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/kernel/src/shadow_hdk/kernel/observations.py",
+          "label": "Proposal"
+        }
+      ],
+      "tag": "your gate decides"
     },
     {
       "id": "observer",
@@ -72,7 +99,14 @@
       "size": [
         140,
         58
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/kernel/src/shadow_hdk/kernel/events.py",
+          "label": "eleven Event kinds"
+        }
+      ],
+      "tag": "fire and forget"
     },
     {
       "id": "governance",
@@ -86,7 +120,14 @@
       "size": [
         150,
         58
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/kernel/src/shadow_hdk/kernel/ports.py",
+          "label": "GovernancePort"
+        }
+      ],
+      "tag": "asked first"
     },
     {
       "id": "model",
@@ -100,7 +141,14 @@
       "size": [
         140,
         58
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/adapters/langchain/src/shadow_hdk/adapters/langchain/__init__.py",
+          "label": "langchain adapter"
+        }
+      ],
+      "tag": "via a component"
     },
     {
       "id": "host",
@@ -114,7 +162,8 @@
       "size": [
         140,
         60
-      ]
+      ],
+      "tag": "you write this"
     },
     {
       "id": "drive",
@@ -128,7 +177,14 @@
       "size": [
         140,
         60
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/runtime/src/shadow_hdk/runtime/loop.py",
+          "label": "run() \u00b7 resume()"
+        }
+      ],
+      "tag": "async generator"
     },
     {
       "id": "compiler",
@@ -142,7 +198,14 @@
       "size": [
         140,
         60
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/runtime/src/shadow_hdk/runtime/compile.py",
+          "label": "composition to graph"
+        }
+      ],
+      "tag": "LangGraph"
     },
     {
       "id": "step",
@@ -156,7 +219,14 @@
       "size": [
         150,
         60
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/runtime/src/shadow_hdk/runtime/step.py",
+          "label": "the seven moves"
+        }
+      ],
+      "tag": "one function"
     },
     {
       "id": "components",
@@ -170,7 +240,14 @@
       "size": [
         140,
         60
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/kernel/src/shadow_hdk/kernel/ports.py",
+          "label": "ComponentPort"
+        }
+      ],
+      "tag": "registry refreshed"
     },
     {
       "id": "kernel",
@@ -184,7 +261,14 @@
       "size": [
         770,
         58
-      ]
+      ],
+      "sources": [
+        {
+          "path": "packages/kernel/src/shadow_hdk/kernel/effects.py",
+          "label": "EffectProfile"
+        }
+      ],
+      "tag": "depends on nothing"
     }
   ],
   "boundaries": [
@@ -272,29 +356,70 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "Arrows point one way",
+      "title": "What each box is",
       "items": [
-        "The kernel depends on nothing: frozen dataclasses and protocols, no I/O and no clock",
-        "The runtime depends only on the kernel and never imports an adapter",
-        "Adapters depend on the runtime and never on each other \u2014 each is its own package"
+        "Host / Product \u2014 you. You own the policy, the record and the UI, and you supply the adapters",
+        "run() \u2014 the entry point you call. An async generator, so events arrive while the run is going",
+        "Compiler \u2014 turns the plan into a LangGraph graph. It compiles; it never interprets",
+        "Governed step \u2014 the single enforcement point. Every graph node is one of these",
+        "Components \u2014 everything the agent can invoke: tools, files, sandboxes, other agents",
+        "Model \u2014 whatever thinks. Reached through the agent component, never by the runtime itself"
       ]
     },
     {
       "dot": "emerald",
-      "title": "Six ports, and what each is for",
+      "title": "And the ring around it",
       "items": [
-        "Model thinks; Components can be invoked; Governance judges; Sink receives proposals",
-        "Observer is the only channel out; a sixth port, Clock, holds the one non-determinism so a replay costs nothing",
-        "The registry is the union of every component port, recomputed every step"
+        "Governance \u2014 one function asked before every step, shown effects and context, never names",
+        "Observer \u2014 the only channel out. Eleven event kinds, fire and forget; a slow observer cannot slow a step",
+        "Sink \u2014 where a proposal lands. Your gate decides whether it becomes truth",
+        "Kernel \u2014 frozen types and protocols that everything shares and that import nothing themselves",
+        "The registry, inside the step, is the union of every component port and is refreshed every step"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "How to read this drawing",
+      "items": [
+        "Follow the spine left to right: you call run(), it compiles, each node is a governed step, the step invokes",
+        "Then read up: governance is consulted before any invocation happens",
+        "Then read left: events and proposals are the two ways anything comes back to you",
+        "Then read down: the kernel slab is what every layer above it depends on",
+        "Use the numbered chapters above to walk it one box at a time"
       ]
     },
     {
       "dot": "rose",
-      "title": "Where the boundary falls",
+      "title": "The rules this drawing encodes",
       "items": [
-        "Mechanism here, policy and content in the product",
-        "Model adapters here; which provider and whose key, there",
-        "The rules engine here; the rules themselves, there"
+        "Arrows point one way: kernel depends on nothing, runtime only on the kernel, adapters only on the runtime",
+        "No adapter imports another \u2014 each is its own installable package",
+        "Govern effects, not names: six declared fields decide policy, so a rule holds for components not yet written",
+        "Mechanism here, policy and content in your product"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "The fourteen adapters that exist today",
+      "items": [
+        "Thinking \u2014 langchain (every provider), acp (Codex or Claude Code driven as a component)",
+        "Doing \u2014 agent (the model loop), mcp, workspace, sandbox_subprocess, contained, derivation, devices, mqtt",
+        "Deciding \u2014 modes (a ceiling and an ask line, as data), and basic's AllowAll and Controlled",
+        "Recording \u2014 basic (stdout, file and callback sinks), otel (the run as a trace, never a payload)",
+        "Sharing \u2014 recording, which offers your live registry to a child agent as an MCP server",
+        "Adding one is a new package. None of them is a runtime change"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "The counted vocabulary",
+      "items": [
+        "6 ports \u2014 model, component, governance, sink, observer, clock",
+        "6 effect fields \u2014 reads, writes, reaches, reversible, contained, costs",
+        "5 step kinds \u2014 Invoke, Await, Sequence, FanOut, Until",
+        "6 observation kinds \u2014 Completed, Refused, Asked, Failed, Pending, Acted",
+        "11 event kinds \u2014 Started, Composed, Invoked, Observed, Proposed, Refused, Asked, Spawned, Held, Spent, Ended",
+        "3 judgements, 5 end reasons, 2 postures. Each set is closed and changes only by an ADR"
       ]
     }
   ]

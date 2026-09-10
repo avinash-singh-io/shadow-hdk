@@ -10,36 +10,52 @@
     ],
     "views": [
       {
-        "id": "plan-is-data",
-        "label": "The plan is data",
+        "id": "c1",
+        "label": "1 \u00b7 What was asked",
+        "focus": [
+          "brief"
+        ],
+        "note": "A brief is whatever your product wants done. It is content; the runtime never interprets it."
+      },
+      {
+        "id": "c2",
+        "label": "2 \u00b7 What it may see",
+        "focus": [
+          "catalogue",
+          "model"
+        ],
+        "note": "The catalogue is the registry narrowed by the ceiling in force, so a forbidden tool is not refused \u2014 it is invisible."
+      },
+      {
+        "id": "c3",
+        "label": "3 \u00b7 The plan",
         "focus": [
           "model",
+          "plan"
+        ],
+        "note": "Tool calls become a Composition: Invoke, Await, Sequence, FanOut, Until. The plan is a value, not a script."
+      },
+      {
+        "id": "c4",
+        "label": "4 \u00b7 One governed step",
+        "focus": [
           "plan",
           "step"
         ],
-        "note": "The model's tool calls become a composition, and the composition is compiled rather than interpreted."
+        "note": "The composition is compiled to a graph and each node is judged then run. The runtime never interprets the plan."
       },
       {
-        "id": "two-writes",
-        "label": "Two kinds of write",
+        "id": "c5",
+        "label": "5 \u00b7 Three different exits",
         "focus": [
-          "step",
-          "world",
-          "proposal"
-        ],
-        "note": "A component changes the world; a proposal only asks the host to remember. They are not the same power."
-      },
-      {
-        "id": "what-comes-back",
-        "label": "What comes back",
-        "focus": [
-          "step",
           "events",
-          "plan"
+          "proposal",
+          "world"
         ],
-        "note": "Events are the only channel out of the runtime; anyone may observe, and nobody may reach back in."
+        "note": "Information, a request to remember, and something that already happened. They are not the same kind of thing."
       }
-    ]
+    ],
+    "subtitle": "What becomes what, and the two very different ways anything leaves the runtime."
   },
   "stages": [
     {
@@ -199,11 +215,14 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "The plan is a value, not a script",
+      "title": "What each box holds",
       "items": [
-        "The model's tool calls become a Composition \u2014 Invoke, Await, Sequence, FanOut, Until",
-        "A composition is compiled to a graph and executed by the engine; the runtime never interprets it",
-        "It is emitted as an event every time it changes, so plan-versus-actual costs nothing"
+        "Brief \u2014 what was asked, in your product's own words",
+        "Catalogue \u2014 the registry narrowed to what this run may see at all",
+        "Model \u2014 whatever thinks; it answers with text and tool calls",
+        "Composition \u2014 the plan as data: five step kinds, compiled to a graph",
+        "Governed step \u2014 the judged execution of one node of that graph",
+        "Then three exits, and the difference between them is the point of this drawing"
       ]
     },
     {
@@ -211,15 +230,25 @@
       "title": "Two kinds of write, and only one is forbidden",
       "items": [
         "Changing the world happens through a component whose effects are declared and judged",
-        "Changing the host's record happens only by proposing; the host's own gate decides",
-        "The runtime has no write path into any durable store \u2014 that is the whole of propose, never commit"
+        "Changing your record happens only by proposing; your own gate decides",
+        "The runtime has no write path into any durable store \u2014 that is the whole of propose, never commit",
+        "The event stream is neither: it is information, and nothing an observer does can reach back in"
       ]
     },
     {
       "dot": "emerald",
+      "title": "Why the plan is data and not code",
+      "items": [
+        "A Composition is a value: it can be inspected, stored, compared and re-emitted",
+        "It is compiled to a graph and executed by the engine; the runtime does not interpret it",
+        "It is emitted as an event whenever it changes, so plan-versus-actual costs nothing"
+      ]
+    },
+    {
+      "dot": "amber",
       "title": "What the model is allowed to see",
       "items": [
-        "The catalogue is the registry narrowed by the ceiling in force, so a forbidden tool is not merely refused \u2014 it is invisible",
+        "The catalogue is filtered by the ceiling, so a forbidden tool is invisible rather than merely refused",
         "Handles carry real values between steps, so a large result is never flattened into tokens",
         "An act on the world leaves a receipt with its key, its exit and the authority it ran under"
       ]

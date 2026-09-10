@@ -6,42 +6,55 @@
     "quality_profile": "showcase",
     "views": [
       {
-        "id": "the-order",
-        "label": "The seven moves",
+        "id": "c1",
+        "label": "1 \u00b7 Can it afford this?",
         "focus": [
           "lease",
-          "resolve",
-          "inputs",
-          "judge",
-          "invoke",
-          "observe"
+          "exhausted"
         ],
-        "note": "Every step of every composition takes these moves, in this order, in one function."
+        "note": "The lease is checked before anything else. Out of steps, time or money ends the run rather than starting work it cannot finish."
       },
       {
-        "id": "three-answers",
-        "label": "Governance has three answers",
+        "id": "c2",
+        "label": "2 \u00b7 What is it, and with what?",
+        "focus": [
+          "resolve",
+          "inputs",
+          "unknown",
+          "dangling"
+        ],
+        "note": "The registry is refreshed and the id resolved; bindings become inputs. Both failures here are data the agent can read."
+      },
+      {
+        "id": "c3",
+        "label": "3 \u00b7 May it?",
         "focus": [
           "judge",
           "ask",
-          "refused",
-          "invoke"
+          "refused"
         ],
-        "note": "Allow proceeds, Ask parks the run for a human, Refuse means the component is never called."
+        "note": "Governance sees the effect profile. Allow proceeds, Ask parks the run for a human, Refuse means it is never invoked."
       },
       {
-        "id": "two-errors",
-        "label": "Two classes of error",
+        "id": "c4",
+        "label": "4 \u00b7 Do it",
         "focus": [
-          "unknown",
-          "dangling",
+          "invoke",
           "raised",
-          "exhausted",
           "portfail"
         ],
-        "note": "A component's failure is data the agent can see; a port's failure ends the run."
+        "note": "Now the component runs. If it raises, that is data. If a port raises, your host is broken and the run ends."
+      },
+      {
+        "id": "c5",
+        "label": "5 \u00b7 Record it",
+        "focus": [
+          "observe"
+        ],
+        "note": "The output is stored under the step's handle and the events go out. Only now is the step on the record."
       }
-    ]
+    ],
+    "subtitle": "Seven moves in one function, three possible answers, and two kinds of failure that mean different things."
   },
   "lanes": [
     {
@@ -308,29 +321,42 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "One function, seven moves",
+      "title": "What each box in the middle lane is",
       "items": [
-        "This is the whole enforcement story, and it lives in a single function of the runtime",
-        "The order is fixed: the lease is checked before anything, and the judgement precedes every call",
-        "The runtime never branches on a name, a label, or a product word \u2014 only on effects, leases and observations"
+        "Lease check \u2014 has this run any steps, seconds and money left?",
+        "Refresh \u00b7 resolve \u2014 recompute the registry, then find which port owns this id",
+        "Inputs \u2014 turn bindings into JSON, following references to earlier steps' handles",
+        "Judge \u2014 hand the effect profile to governance and wait for the answer",
+        "Invoke \u2014 the component actually runs",
+        "Observe \u2014 store the output under a handle and emit the events"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "How to read the other lanes",
+      "items": [
+        "Read the middle lane left to right \u2014 that is the step, in order",
+        "Then read down from each box: the bottom lane is what the agent sees and can work around",
+        "Then read up: the top lane is the run ending, not a value anyone receives",
+        "Governance's own lane holds Ask, the one answer that neither proceeds nor stops"
       ]
     },
     {
       "dot": "rose",
       "title": "Two error classes, on purpose",
       "items": [
-        "A component that raises, an unknown id, and a binding to nothing are all data \u2014 a Failed observation the agent can read and work around",
-        "A port that raises is a failure \u2014 the host itself is broken, and the run ends rather than reasoning past it",
-        "Refuse is not an error at all: it is a decision, recorded, with the component never called"
+        "A component that raises, an unknown id, and a binding to nothing are all data \u2014 a Failed observation the agent can read and route around",
+        "A port that raises is a failure \u2014 your host is broken, and the run ends rather than reasoning past it",
+        "Refuse is neither: it is a decision, recorded, with the component never called"
       ]
     },
     {
       "dot": "emerald",
       "title": "Ask is not a rejection",
       "items": [
-        "Ask parks the run on a checkpoint and yields an Asked event to the host",
-        "The answer may come back seconds later or from a different process entirely",
-        "That is the same mechanism a slow human, a long job, or a sub-agent uses"
+        "Ask parks the run on a checkpoint and yields an Asked event to you",
+        "The answer may come back seconds later, or from a different process entirely",
+        "A slow human, a long job and a sub-agent all use this same mechanism"
       ]
     }
   ]

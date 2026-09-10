@@ -1,0 +1,316 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Three Ways In",
+    "subtitle": "The same runtime, reached in-process, as a child process, or over a socket.",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      660
+    ],
+    "views": [
+      {
+        "id": "c1",
+        "label": "1 \u00b7 In the same process",
+        "focus": [
+          "pyproduct",
+          "embedded",
+          "harness"
+        ],
+        "note": "Import run() and await it. Lowest latency, real Python objects, simplest debugging. Everything else is built on this."
+      },
+      {
+        "id": "c2",
+        "label": "2 \u00b7 As a child process",
+        "focus": [
+          "anylang",
+          "childproc",
+          "harness"
+        ],
+        "note": "JSON-RPC over pipes, the shape MCP and ACP use. Choose it when your product is not Python."
+      },
+      {
+        "id": "c3",
+        "label": "3 \u00b7 Over a socket",
+        "focus": [
+          "remote",
+          "served",
+          "harness"
+        ],
+        "note": "JSON-RPC over HTTP with events on SSE. Loopback-only by default until the per-run token is built."
+      },
+      {
+        "id": "c4",
+        "label": "4 \u00b7 The ports invert",
+        "focus": [
+          "harness",
+          "yourmodel"
+        ],
+        "note": "Out of process, the host drives and the runtime calls back: judge, complete, invoke and propose are answered by you."
+      },
+      {
+        "id": "c5",
+        "label": "5 \u00b7 What it drives",
+        "focus": [
+          "harness",
+          "yourstuff",
+          "otheragent"
+        ],
+        "note": "Your components, and other agents made governable \u2014 either driven over ACP, or given your registry as an MCP server."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "pyproduct",
+      "type": "external",
+      "label": "Python product",
+      "sublabel": "same process",
+      "pos": [
+        40,
+        110
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "anylang",
+      "type": "external",
+      "label": "Any language",
+      "sublabel": "Node \u00b7 Go \u00b7 Rust",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "remote",
+      "type": "external",
+      "label": "Another machine",
+      "sublabel": "across a network",
+      "pos": [
+        40,
+        490
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "embedded",
+      "type": "backend",
+      "label": "Embedded",
+      "sublabel": "import run()",
+      "pos": [
+        280,
+        110
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "lowest latency"
+    },
+    {
+      "id": "childproc",
+      "type": "messagebus",
+      "label": "Child process",
+      "sublabel": "--stdio JSON-RPC",
+      "pos": [
+        280,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "own crash boundary"
+    },
+    {
+      "id": "served",
+      "type": "cloud",
+      "label": "serve",
+      "sublabel": "HTTP and SSE",
+      "pos": [
+        280,
+        490
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "loopback by default"
+    },
+    {
+      "id": "harness",
+      "type": "security",
+      "label": "shadow-hdk",
+      "sublabel": "run() and six ports",
+      "pos": [
+        540,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "identical either way"
+    },
+    {
+      "id": "yourstuff",
+      "type": "backend",
+      "label": "Your components",
+      "sublabel": "tools \u00b7 files \u00b7 code",
+      "pos": [
+        860,
+        110
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "otheragent",
+      "type": "external",
+      "label": "Another agent",
+      "sublabel": "governed, not trusted",
+      "pos": [
+        860,
+        300
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "yourmodel",
+      "type": "cloud",
+      "label": "Model and record",
+      "sublabel": "your providers",
+      "pos": [
+        860,
+        490
+      ],
+      "size": [
+        160,
+        60
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "in1",
+      "from": "pyproduct",
+      "to": "embedded",
+      "variant": "emphasis"
+    },
+    {
+      "id": "in2",
+      "from": "anylang",
+      "to": "childproc"
+    },
+    {
+      "id": "in3",
+      "from": "remote",
+      "to": "served"
+    },
+    {
+      "id": "e1",
+      "from": "embedded",
+      "to": "harness",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "childproc",
+      "to": "harness"
+    },
+    {
+      "id": "e3",
+      "from": "served",
+      "to": "harness"
+    },
+    {
+      "id": "d1",
+      "from": "harness",
+      "to": "yourstuff",
+      "label": "invoke",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "d2",
+      "from": "harness",
+      "to": "otheragent",
+      "label": "ACP or MCP"
+    },
+    {
+      "id": "d3",
+      "from": "harness",
+      "to": "yourmodel",
+      "label": "complete \u00b7 propose",
+      "fromSide": "bottom",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "1 \u2014 Embedded, in your process",
+      "items": [
+        "You write: ports = Ports(model=\u2026, components=(\u2026), governance=\u2026, sink=\u2026, clock=\u2026) then async for event in run(plan, ports, options=\u2026)",
+        "You get: the lowest latency, real Python objects, and the simplest debugging",
+        "Choose it when your product is Python and lives in the same process. Every other way is built on this one",
+        "run() is a plain async function, so a larger orchestration you already own can await it as one governed sub-part"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "2 \u2014 A child process over stdio",
+      "items": [
+        "You run: python -m shadow_hdk.wire --stdio",
+        "You get: JSON-RPC 2.0 on stdin and stdout \u2014 the same shape MCP and ACP use",
+        "Choose it when your product is not Python, or you want the runtime behind its own crash boundary",
+        "The direction inverts: you send run and resume; the runtime calls back for judge, complete, invoke and propose"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "3 \u2014 A server you connect to",
+      "items": [
+        "You get: JSON-RPC over HTTP, with the run's events and the runtime's callbacks arriving on SSE",
+        "Two directions, two paths, because an HTTP server cannot call its client. Each connection gets its own session",
+        "Choose it when the client is on another machine",
+        "Stated honestly: loopback-only by default, refusing another bind without a token, because the per-run token is designed but not built"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "What stays the same in all three",
+      "items": [
+        "The same package, the same seven-move step, the same eleven event kinds",
+        "Every port argument and return already round-trips through JSON, which is why the wire was a composition root and not a rewrite",
+        "The wire passes the in-process test suite through a loopback transport, or it is not considered done"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "And two ways to make other agents governable",
+      "items": [
+        "Drive one: the ACP adapter runs Codex or Claude Code as an ordinary governed component",
+        "Serve one: the recording adapter offers your live registry to a child agent as an MCP server, so what it does is routed and therefore on your record",
+        "The difference is posture \u2014 what routes through you is controlled; what an agent does natively and reports is only observed"
+      ]
+    }
+  ]
+}

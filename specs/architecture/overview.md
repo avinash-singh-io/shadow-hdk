@@ -103,5 +103,4 @@ there. The typed event stream here, the UI and the meter there.
 4. [`file-structure.md`](file-structure.md) — where everything lives, and when it arrives
 5. [`testing.md`](testing.md) — the layers and the cases
 6. [`wire.md`](wire.md) — the out-of-process form (Phase 9)
-7. [`diagrams/`](diagrams/README.md) — five views of the same system: shape, one run, the governed step, a run's life, and plan-to-record
-8. [`diagrams/reading-guide.md`](diagrams/reading-guide.md) — every component by name, how to walk each diagram, the six flow directions, and every way to consume the harness
+7. [`diagrams/`](diagrams/README.md) — six self-explaining views: the shape, how it is consumed, one run, the governed step, a run's life, and plan-to-record

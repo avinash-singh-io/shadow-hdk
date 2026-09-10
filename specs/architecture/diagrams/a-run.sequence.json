@@ -4,59 +4,327 @@
   "meta": {
     "title": "One Run, End to End",
     "quality_profile": "showcase",
-    "viewBox": [1040, 1000],
+    "viewBox": [
+      1040,
+      1000
+    ],
     "column_fit": "spread",
     "views": [
-      { "id": "start", "label": "Starting", "focus": ["host", "drive"], "note": "A host hands in a plan and immediately begins receiving events; it does not wait for the end." },
-      { "id": "judged", "label": "Every step is judged", "focus": ["step", "governance", "agent", "model"], "note": "Governance sees the effect profile before the component is ever called." },
-      { "id": "asking", "label": "When it must ask", "focus": ["governance", "drive", "host"], "note": "Ask parks the run on a checkpoint; the host answers whenever it likes, even in another process." }
-    ]
+      {
+        "id": "c1",
+        "label": "1 \u00b7 You start it",
+        "focus": [
+          "host",
+          "drive"
+        ],
+        "note": "You call run() with a plan and ports. Started and Composed come back at once \u2014 you read the run as it happens, not after."
+      },
+      {
+        "id": "c2",
+        "label": "2 \u00b7 The step asks first",
+        "focus": [
+          "step",
+          "governance"
+        ],
+        "note": "Every step is judged on its effect profile before the component is called. There is no path around this."
+      },
+      {
+        "id": "c3",
+        "label": "3 \u00b7 The agent thinks",
+        "focus": [
+          "agent",
+          "model"
+        ],
+        "note": "The agent is a component like any other. It calls the model; the runtime never talks to a model itself."
+      },
+      {
+        "id": "c4",
+        "label": "4 \u00b7 When it must ask you",
+        "focus": [
+          "governance",
+          "drive",
+          "host"
+        ],
+        "note": "Ask parks the run on a checkpoint. You answer whenever you like, even from a different process."
+      },
+      {
+        "id": "c5",
+        "label": "5 \u00b7 What is kept",
+        "focus": [
+          "sink",
+          "host"
+        ],
+        "note": "A proposal asks you to remember something. Ended closes the stream with one of five named reasons."
+      }
+    ],
+    "subtitle": "Who calls whom, in what order, from your first call to the last event."
   },
   "participants": [
-    { "id": "host", "type": "external", "label": "Host", "sublabel": "your product" },
-    { "id": "drive", "type": "backend", "label": "run()", "sublabel": "the loop" },
-    { "id": "step", "type": "security", "label": "Governed step", "sublabel": "seven moves" },
-    { "id": "governance", "type": "security", "label": "Governance", "sublabel": "the policy" },
-    { "id": "agent", "type": "backend", "label": "Agent", "sublabel": "a component" },
-    { "id": "model", "type": "cloud", "label": "Model", "sublabel": "any provider" },
-    { "id": "sink", "type": "database", "label": "Sink", "sublabel": "the record" }
+    {
+      "id": "host",
+      "type": "external",
+      "label": "Host",
+      "sublabel": "your product"
+    },
+    {
+      "id": "drive",
+      "type": "backend",
+      "label": "run()",
+      "sublabel": "the loop"
+    },
+    {
+      "id": "step",
+      "type": "security",
+      "label": "Governed step",
+      "sublabel": "seven moves"
+    },
+    {
+      "id": "governance",
+      "type": "security",
+      "label": "Governance",
+      "sublabel": "the policy"
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Agent",
+      "sublabel": "a component"
+    },
+    {
+      "id": "model",
+      "type": "cloud",
+      "label": "Model",
+      "sublabel": "any provider"
+    },
+    {
+      "id": "sink",
+      "type": "database",
+      "label": "Sink",
+      "sublabel": "the record"
+    }
   ],
   "segments": [
-    { "from": 160, "to": 290, "label": "Starting" },
-    { "from": 305, "to": 580, "label": "One step: judged, then done" },
-    { "from": 595, "to": 780, "label": "A step that must ask" },
-    { "from": 795, "to": 920, "label": "The record, and the end" }
+    {
+      "from": 160,
+      "to": 290,
+      "label": "Starting"
+    },
+    {
+      "from": 305,
+      "to": 580,
+      "label": "One step: judged, then done"
+    },
+    {
+      "from": 595,
+      "to": 780,
+      "label": "A step that must ask"
+    },
+    {
+      "from": 795,
+      "to": 920,
+      "label": "The record, and the end"
+    }
   ],
   "messages": [
-    { "from": "host", "to": "drive", "y": 190, "label": "run(plan, ports)", "variant": "emphasis" },
-    { "from": "drive", "to": "host", "y": 232, "label": "Started · Composed", "variant": "return", "note": "events stream while it runs" },
-    { "from": "drive", "to": "step", "y": 274, "label": "one graph node", "variant": "emphasis" },
-    { "from": "step", "to": "governance", "y": 326, "label": "judge(effects, context)", "variant": "security" },
-    { "from": "governance", "to": "step", "y": 368, "label": "Allow", "variant": "return" },
-    { "from": "step", "to": "agent", "y": 410, "label": "invoke", "variant": "emphasis" },
-    { "from": "agent", "to": "model", "y": 452, "label": "complete(messages, visible tools)" },
-    { "from": "model", "to": "agent", "y": 494, "label": "text + tool calls", "variant": "return" },
-    { "from": "agent", "to": "step", "y": 536, "label": "Completed", "variant": "return" },
-    { "from": "drive", "to": "host", "y": 568, "label": "Invoked · Observed · Spent", "variant": "dashed" },
-    { "from": "step", "to": "governance", "y": 616, "label": "judge(writes: workspace)", "variant": "security" },
-    { "from": "governance", "to": "step", "y": 658, "label": "Ask: may I write?", "variant": "return" },
-    { "from": "drive", "to": "host", "y": 700, "label": "Asked — the run parks on a checkpoint", "variant": "dashed" },
-    { "from": "host", "to": "drive", "y": 742, "label": "resume(Allow)", "variant": "emphasis" },
-    { "from": "step", "to": "sink", "y": 820, "label": "propose(what to remember)", "variant": "dashed" },
-    { "from": "drive", "to": "host", "y": 880, "label": "Ended(completed)", "variant": "return" }
+    {
+      "from": "host",
+      "to": "drive",
+      "y": 190,
+      "label": "run(plan, ports)",
+      "variant": "emphasis"
+    },
+    {
+      "from": "drive",
+      "to": "host",
+      "y": 232,
+      "label": "Started \u00b7 Composed",
+      "variant": "return",
+      "note": "events stream while it runs"
+    },
+    {
+      "from": "drive",
+      "to": "step",
+      "y": 274,
+      "label": "one graph node",
+      "variant": "emphasis"
+    },
+    {
+      "from": "step",
+      "to": "governance",
+      "y": 326,
+      "label": "judge(effects, context)",
+      "variant": "security"
+    },
+    {
+      "from": "governance",
+      "to": "step",
+      "y": 368,
+      "label": "Allow",
+      "variant": "return"
+    },
+    {
+      "from": "step",
+      "to": "agent",
+      "y": 410,
+      "label": "invoke",
+      "variant": "emphasis"
+    },
+    {
+      "from": "agent",
+      "to": "model",
+      "y": 452,
+      "label": "complete(messages, visible tools)"
+    },
+    {
+      "from": "model",
+      "to": "agent",
+      "y": 494,
+      "label": "text + tool calls",
+      "variant": "return"
+    },
+    {
+      "from": "agent",
+      "to": "step",
+      "y": 536,
+      "label": "Completed",
+      "variant": "return"
+    },
+    {
+      "from": "drive",
+      "to": "host",
+      "y": 568,
+      "label": "Invoked \u00b7 Observed \u00b7 Spent",
+      "variant": "dashed"
+    },
+    {
+      "from": "step",
+      "to": "governance",
+      "y": 616,
+      "label": "judge(writes: workspace)",
+      "variant": "security"
+    },
+    {
+      "from": "governance",
+      "to": "step",
+      "y": 658,
+      "label": "Ask: may I write?",
+      "variant": "return"
+    },
+    {
+      "from": "drive",
+      "to": "host",
+      "y": 700,
+      "label": "Asked \u2014 the run parks on a checkpoint",
+      "variant": "dashed"
+    },
+    {
+      "from": "host",
+      "to": "drive",
+      "y": 742,
+      "label": "resume(Allow)",
+      "variant": "emphasis"
+    },
+    {
+      "from": "step",
+      "to": "sink",
+      "y": 820,
+      "label": "propose(what to remember)",
+      "variant": "dashed"
+    },
+    {
+      "from": "drive",
+      "to": "host",
+      "y": 880,
+      "label": "Ended(completed)",
+      "variant": "return"
+    }
   ],
   "activations": [
-    { "participant": "drive", "from": 184, "to": 890, "type": "backend" },
-    { "participant": "step", "from": 268, "to": 828, "type": "security" },
-    { "participant": "governance", "from": 320, "to": 374, "type": "security" },
-    { "participant": "agent", "from": 404, "to": 542, "type": "backend" },
-    { "participant": "model", "from": 446, "to": 500, "type": "cloud" },
-    { "participant": "governance", "from": 610, "to": 664, "type": "security" },
-    { "participant": "sink", "from": 814, "to": 832, "type": "database" }
+    {
+      "participant": "drive",
+      "from": 184,
+      "to": 890,
+      "type": "backend"
+    },
+    {
+      "participant": "step",
+      "from": 268,
+      "to": 828,
+      "type": "security"
+    },
+    {
+      "participant": "governance",
+      "from": 320,
+      "to": 374,
+      "type": "security"
+    },
+    {
+      "participant": "agent",
+      "from": 404,
+      "to": 542,
+      "type": "backend"
+    },
+    {
+      "participant": "model",
+      "from": 446,
+      "to": 500,
+      "type": "cloud"
+    },
+    {
+      "participant": "governance",
+      "from": 610,
+      "to": 664,
+      "type": "security"
+    },
+    {
+      "participant": "sink",
+      "from": 814,
+      "to": 832,
+      "type": "database"
+    }
   ],
   "cards": [
-    { "dot": "cyan", "title": "The host watches it happen", "items": ["run() is an async generator: events arrive while the run is going, not after it", "Started, Composed, Invoked, Observed, Spent, Refused, Asked, Spawned, Held, Proposed, Ended — eleven kinds", "Composed is re-emitted whenever the plan changes, so plan-versus-actual comes for free"] },
-    { "dot": "rose", "title": "Nothing runs unjudged", "items": ["Governance is asked before the component is called, and a Refuse means it is never called at all", "It is shown the effect profile and the context, never the component's name or the product's meaning", "Ask parks the run; Allow and Refuse decide it on the spot"] },
-    { "dot": "emerald", "title": "Two different exits", "items": ["A component changes the world and returns an observation the agent can see", "A proposal goes to the sink, and the host alone decides whether it becomes truth", "The runtime has no write path into any host's durable store"] }
+    {
+      "dot": "cyan",
+      "title": "Who each lifeline is",
+      "items": [
+        "Host \u2014 your product. It starts the run and reads the events",
+        "run() \u2014 the loop. It drives the graph and owns the event stream",
+        "Governed step \u2014 the seven moves; every node of the compiled graph is one of these",
+        "Governance \u2014 your policy. Shown effects and context, it answers Allow, Ask or Refuse",
+        "Agent \u2014 an ordinary component that happens to be the one which calls a model",
+        "Model \u2014 whatever thinks. Any provider, behind one adapter",
+        "Sink \u2014 where a proposal lands. Your gate decides whether it becomes truth"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Reading the arrows",
+      "items": [
+        "A solid arrow is a call: someone is waiting for the answer",
+        "A thin return arrow is the answer coming back",
+        "A dashed arrow is information, not a request \u2014 nobody waits for it",
+        "A red arrow is a governance decision or a security-relevant answer",
+        "The bands down the left are the acts of the run; use the chapters above to step through them"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Nothing runs unjudged",
+      "items": [
+        "Governance is asked before the component is called, and a Refuse means it is never called at all",
+        "It is shown the effect profile and the context \u2014 never the component's name or your product's meaning",
+        "Ask parks the run; Allow and Refuse settle it on the spot"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Two different exits",
+      "items": [
+        "A component changes the world and returns an observation the agent can see",
+        "A proposal goes to the sink, and you alone decide whether it becomes truth",
+        "The runtime has no write path into any durable store"
+      ]
+    }
   ]
 }

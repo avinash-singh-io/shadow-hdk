@@ -10,37 +10,50 @@
     ],
     "views": [
       {
-        "id": "straight-through",
-        "label": "Straight through",
+        "id": "c1",
+        "label": "1 \u00b7 Started",
         "focus": [
-          "started",
-          "running",
-          "ended"
+          "started"
         ],
-        "note": "A run that never has to wait goes from its first step to its last without parking."
+        "note": "A lease is carved: a ceiling on steps, wall time and money, and a floor on effort before the agent may give up."
       },
       {
-        "id": "parking",
-        "label": "Parking and resuming",
+        "id": "c2",
+        "label": "2 \u00b7 Running",
         "focus": [
-          "running",
-          "parked",
+          "running"
+        ],
+        "note": "One governed step at a time. Every step is judged, charged against the lease, and put on the record."
+      },
+      {
+        "id": "c3",
+        "label": "3 \u00b7 Parked",
+        "focus": [
+          "parked"
+        ],
+        "note": "A checkpoint on disk, not a process held open. A governance Ask, a slow job and a held child all park the same way."
+      },
+      {
+        "id": "c4",
+        "label": "4 \u00b7 Resumed",
+        "focus": [
           "resumed"
         ],
-        "note": "Ask, Await and a held child all park the same way: on a checkpoint that outlives the process."
+        "note": "You pass the plan back in with your answer. It may be a different process, on a different machine, days later."
       },
       {
-        "id": "exits",
-        "label": "The five ways it ends",
+        "id": "c5",
+        "label": "5 \u00b7 Ended",
         "focus": [
           "ended",
           "exhausted",
           "cancelled",
           "failed"
         ],
-        "note": "Every ending is named on the record, in the words of whoever stopped it."
+        "note": "Five named endings, each carrying the words of whoever stopped it, so a closed tab reads differently from a spent budget."
       }
-    ]
+    ],
+    "subtitle": "Where a run can be at any moment, how it survives waiting, and every way it can finish."
   },
   "lanes": [
     {
@@ -202,6 +215,17 @@
   ],
   "cards": [
     {
+      "dot": "cyan",
+      "title": "What each state means",
+      "items": [
+        "Started \u2014 the run exists and its lease has been carved from whatever the caller had",
+        "Running \u2014 executing governed steps, one at a time",
+        "Parked \u2014 waiting, as a checkpoint. Nothing is held in memory and no process is blocked",
+        "Resumed \u2014 continuing from that checkpoint, with your answer and the plan handed back in",
+        "Completed \u2014 the plan is finished; the three states below are the other four ways to stop"
+      ]
+    },
+    {
       "dot": "emerald",
       "title": "Parking is not pausing a process",
       "items": [
@@ -211,7 +235,7 @@
       ]
     },
     {
-      "dot": "cyan",
+      "dot": "amber",
       "title": "The lease is the clock and the wallet",
       "items": [
         "A ceiling on steps, wall time and money; a floor on effort before the agent may give up",
@@ -223,9 +247,11 @@
       "dot": "rose",
       "title": "Five endings, each named",
       "items": [
-        "completed, lease_exhausted, gave_up, cancelled, failed",
-        "The record carries the words of whoever stopped it, so a closed tab reads differently from a spent budget",
-        "gave_up is the agent's own answer, and the floor is what stops it being given too early"
+        "completed \u2014 the plan finished",
+        "lease_exhausted \u2014 the budget ran out",
+        "gave_up \u2014 the agent's own answer, which the floor stops it giving too early",
+        "cancelled \u2014 you stopped it, and your words are on the record",
+        "failed \u2014 a port broke, so the run ends rather than reasoning past a broken host"
       ]
     }
   ]
