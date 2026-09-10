@@ -191,9 +191,17 @@ def test_exhausted_names_what_ran_out() -> None:
 # ---------------------------------------------------------------- the key
 
 
-async def test_a_retry_carries_the_same_key_and_a_second_act_a_new_one() -> None:
-    """LangGraph re-runs a node on resume, so a driver under `Await` acts **twice** for one step.
-    The key is what lets the world tell that retry from the second, distinct act at `s2`."""
+async def test_a_key_names_the_act_and_a_second_act_gets_its_own() -> None:
+    """The key is what lets a world tell a retry from a second, distinct act.
+
+    **This test used to assert the opposite of the runtime's job.** It said *LangGraph re-runs a
+    node on resume, so a driver under `Await` acts twice for one step* — and asserted
+    `["r-1/s1", "r-1/s1", "r-1/s2"]`, encoding BUG-010 as though it were a feature the key
+    excused. D38 stopped the runtime from causing that retry: a parked step resumes where it
+    parked, so one step is one act. The key still matters — a **device** or a network may retry on
+    its own, and `r-1/s1` is how the world recognises it — but the harness no longer manufactures
+    the case.
+    """
     from langgraph.checkpoint.memory import InMemorySaver
 
     world, clock = World(), FixedClock()
@@ -212,7 +220,7 @@ async def test_a_retry_carries_the_same_key_and_a_second_act_a_new_one() -> None
     async for _ in resume(twice, {"delivered": True}, ports, options=options):
         pass
     keys = [key for key, _ in world.sent]
-    assert keys == ["r-1/s1", "r-1/s1", "r-1/s2"], keys
+    assert keys == ["r-1/s1", "r-1/s2"], f"one act per step, not {keys}"
 
 
 async def test_the_step_is_known_only_inside_the_act() -> None:

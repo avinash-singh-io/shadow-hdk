@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-mqtt"
-version = "0.11.0"
+version = "0.12.0"
 description = "MQTT topics as sensors, actuators and witnesses, over the device contract."
 readme = "README.md"
 requires-python = ">=3.12"

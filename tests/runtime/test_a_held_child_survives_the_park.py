@@ -103,7 +103,7 @@ async def _two_legs(parent: Parent, asks_at: str = "p2") -> tuple[list[Event], l
     saver = InMemorySaver()
     ports = _ports(parent, asks_at)
     first = [e async for e in run(THREE, ports, options=_options(saver))]
-    after = [e async for e in resume(THREE, "yes", ports, options=_options(saver))]
+    after = [e async for e in resume(THREE, Allow(), ports, options=_options(saver))]
     return first, after
 
 
@@ -147,8 +147,12 @@ async def test_a_restored_child_can_still_be_sent_to_and_answers_where_it_slept(
     await _two_legs(parent)
     assert answered, "the parent never got to send to the child it was holding"
     ran = [e.step for e in answered[0] if e.kind == "invoked"]
-    assert "brief" not in ran, "the child re-read its brief instead of waking where it slept"
-    assert "inbox" in ran
+    assert ran == [], "waking a child re-ran steps it had already taken"
+    # Nothing is *invoked* on the way back: the child's mailbox already answered `Pending`, and
+    # since D38 a parked step resumes at its interrupt rather than calling its component again.
+    # What the send produces is the observation — the message, delivered where the child slept.
+    delivered = [e.observation for e in answered[0] if e.kind == "observed" and e.step == "inbox"]
+    assert delivered == [Completed({"say": "hi"})], delivered
 
 
 async def test_a_child_the_parent_cannot_reach_again_is_reported_not_forgotten() -> None:
@@ -279,7 +283,7 @@ async def test_a_child_that_ended_on_a_send_does_not_come_back_either() -> None:
         clock=FixedClock(),
     )
     [e async for e in run(THREE, ports, options=_options(saver))]
-    [e async for e in resume(THREE, "yes", ports, options=_options(saver))]
+    [e async for e in resume(THREE, Allow(), ports, options=_options(saver))]
     assert parent.held_on_entry[1], "p2 should have found the child it spawned"
     assert parent.held_each_step[1] == (), "the child ended on the send, so it is no longer held"
     assert parent.held_on_entry[-1] == (), "a child that had ended came back after the park"

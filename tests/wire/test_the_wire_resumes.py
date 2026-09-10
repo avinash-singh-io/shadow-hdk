@@ -91,7 +91,7 @@ async def test_a_run_parked_over_the_wire_can_be_resumed() -> None:
         assert not [e for e in host.events if isinstance(e, Ended)], "the run parked"
         host.events.clear()
         with anyio.fail_after(30):
-            await host.resume(THREE, "yes", _options())
+            await host.resume(THREE, {"kind": "allow"}, _options())  # a judgement, as JSON
     ended = [e for e in host.events if isinstance(e, Ended)]
     assert ended and ended[-1].reason == "completed", host.events
     assert ran.count == 3
@@ -106,7 +106,7 @@ async def test_the_resumed_run_keeps_the_lease_it_was_parked_with() -> None:
         with anyio.fail_after(30):
             await host.run(THREE, _options())
         with anyio.fail_after(30):
-            await host.resume(THREE, "yes", _options())
+            await host.resume(THREE, {"kind": "allow"}, _options())  # a judgement, as JSON
     ended = [e for e in host.events if isinstance(e, Ended)]
     assert ended[-1].steps_taken == 3, "the wire's resume started the meter again"
 
@@ -142,7 +142,7 @@ async def test_a_resume_before_initialize_is_refused_too() -> None:
                 {
                     "composition": json.loads(dump(THREE, Composition)),
                     "lease": json.loads(dump(_options().lease, Lease)),
-                    "answer": "yes",
+                    "answer": {"kind": "allow"},
                 },
             )
     assert "initialize" in str(refused.value)

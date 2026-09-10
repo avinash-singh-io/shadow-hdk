@@ -11,8 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.11.0"
-"""0.11.0 because `RunState` grew `children` — what a run is holding rides in the checkpoint, so a
+EXPECTED = "0.12.0"
+"""0.12.0 because an `Ask` is answered with a `Judgement` and the answer now decides (D38,
+BUG-010). A host that answers with a bare value gets a refusal where it used to get silent
+success, because the re-run judgement — not the human — was deciding.
+
+0.11.0 because `RunState` grew `children` — what a run is holding rides in the checkpoint, so a
 parent that parks comes back holding it still (D37, BUG-015). Before it, the parent found an empty
 hand and quietly spawned a second child while the first stayed parked forever.
 

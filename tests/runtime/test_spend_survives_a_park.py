@@ -94,7 +94,7 @@ async def _two_legs(
     composition: Composition, ports: Ports, options: RunOptions
 ) -> tuple[list[Event], list[Event]]:
     first = [e async for e in run(composition, ports, options=options)]
-    after = [e async for e in resume(composition, "yes", ports, options=options)]
+    after = [e async for e in resume(composition, Allow(), ports, options=options)]
     return first, after
 
 
@@ -185,7 +185,7 @@ async def test_a_price_nobody_could_report_is_still_unknown_after_the_park() -> 
     first = [e async for e in run(FIVE, ports, options=options)]
     assert not [e for e in first if isinstance(e, Ended)]
     seen.append(True)  # the first leg is over; from here the component reports
-    after = [e async for e in resume(FIVE, "yes", ports, options=options)]
+    after = [e async for e in resume(FIVE, Allow(), ports, options=options)]
     assert _ended(after).reason == "completed"
     assert seen[1:] and all(seen[1:]), "the meter forgot that a call it charged for was unpriced"
 
@@ -200,7 +200,7 @@ async def test_time_spent_waiting_for_a_person_is_not_spent() -> None:
     first = [e async for e in run(FIVE, ports, options=options)]
     assert not [e for e in first if isinstance(e, Ended)]
     clock.advance(86_400)  # a day at the human's end of the Ask
-    after = [e async for e in resume(FIVE, "yes", ports, options=options)]
+    after = [e async for e in resume(FIVE, Allow(), ports, options=options)]
     assert _ended(after).reason == "completed", "the wait was charged to the run"
     assert ran.count == 5
 
@@ -218,7 +218,7 @@ async def test_seconds_the_run_itself_used_survive_the_park() -> None:
     options = _options(steps=10, seconds=50)
     first = [e async for e in run(FIVE, ports, options=options)]
     assert not [e for e in first if isinstance(e, Ended)]
-    after = [e async for e in resume(FIVE, "yes", ports, options=options)]
+    after = [e async for e in resume(FIVE, Allow(), ports, options=options)]
     assert _ended(after).reason == "lease_exhausted", "40s spent before the park was forgotten"
 
 
@@ -235,7 +235,7 @@ async def test_a_fan_out_merges_in_any_order() -> None:
     options = _options(steps=10)
     first = [e async for e in run(branches, ports, options=options)]
     assert not [e for e in first if isinstance(e, Ended)]
-    after = [e async for e in resume(branches, "yes", ports, options=options)]
+    after = [e async for e in resume(branches, Allow(), ports, options=options)]
     assert _ended(after).steps_taken == 5, "four branches and the step after them"
     assert ran.count == 5
 

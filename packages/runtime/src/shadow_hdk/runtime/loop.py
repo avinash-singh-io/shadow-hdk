@@ -13,7 +13,8 @@ every event says which run it belongs to.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from langgraph.checkpoint.memory import InMemorySaver
@@ -66,6 +67,7 @@ async def _drive(
     parent: RunContext | None,
     payload: Any,
     checkpointer: Any,
+    resuming: dict[str, str],
 ) -> None:
     token = _CURRENT.set(context)
     try:
@@ -79,7 +81,7 @@ async def _drive(
                 await parent.announce_child(session.run_id, session.meter.lease)
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
-        executor = StepExecutor(session, emitter, ports, registry, context)
+        executor = StepExecutor(session, emitter, ports, registry, context, resuming)
         config = {
             "configurable": {"thread_id": session.run_id},
             "recursion_limit": session.meter.lease.ceiling.max_steps * RECURSION_HEADROOM,
@@ -123,7 +125,10 @@ async def _drive(
 
 
 async def _carried(
-    options: RunOptions, run_id: str, carried_children: dict[str, Any]
+    options: RunOptions,
+    run_id: str,
+    carried_children: dict[str, Any],
+    parked: list[tuple[str, dict[str, Any]]],
 ) -> dict[str, float]:
     """What earlier legs of this run already spent, read from the checkpoint (D33).
 
@@ -151,20 +156,55 @@ async def _carried(
     # The state's mark was written when the last node returned; a step that parked emitted its
     # `Asked` or `Observed(Pending)` *after* that, and said where to continue in the interrupt it
     # raised. A fan-out can park more than once, so the furthest one wins.
-    carried["seq"] = max(carried["seq"], _resume_seq(found))
+    parked.extend(_pending(found))
+    carried["seq"] = max(carried["seq"], _resume_seq(parked))
     return carried
 
 
-def _resume_seq(found: Any) -> int:
-    furthest = 0
+def _pending(found: Any) -> list[tuple[str, dict[str, Any]]]:
+    """Every interrupt this run is parked on: its id, and the payload the step raised.
+
+    The payload is ours — `_ask` and `_wait` build it — so it names the step and says whether the
+    step was asking a question or waiting on a handle (D38).
+    """
+    parked: list[tuple[str, dict[str, Any]]] = []
     for write in getattr(found, "pending_writes", None) or ():
         if len(write) < 3 or write[1] != "__interrupt__":
             continue
         for interrupt in write[2] if isinstance(write[2], list | tuple) else (write[2],):
             value = getattr(interrupt, "value", None)
-            if isinstance(value, dict) and isinstance(value.get("resume_seq"), int):
-                furthest = max(furthest, value["resume_seq"])
+            identity = getattr(interrupt, "id", None)
+            if isinstance(value, dict) and isinstance(identity, str):
+                parked.append((identity, value))
+    return parked
+
+
+def _resume_seq(parked: list[tuple[str, dict[str, Any]]]) -> int:
+    furthest = 0
+    for _identity, value in parked:
+        if isinstance(value.get("resume_seq"), int):
+            furthest = max(furthest, int(value["resume_seq"]))
     return furthest
+
+
+def _answers(parked: list[tuple[str, dict[str, Any]]], answer: Any) -> Any:
+    """What to hand LangGraph, given what the caller said (D38).
+
+    A mapping keyed by **step id** answers each parked step by name; anything else is one answer
+    for every step that asked, which is what a `FanOut` that asked twice needs — before this, each
+    interrupt took a resume of its own and the branch already answered ran a second time.
+    """
+    if not parked:
+        return answer
+    if isinstance(answer, Mapping) and any(
+        value.get("step") in answer for _identity, value in parked
+    ):
+        return {
+            identity: answer[value["step"]]
+            for identity, value in parked
+            if value.get("step") in answer
+        }
+    return {identity: answer for identity, _value in parked}
 
 
 async def _stream(
@@ -190,16 +230,27 @@ async def _stream(
     registry = Registry(ports.components, trust=ports.trust)
     checkpointer = options.checkpointer or InMemorySaver()
     context = RunContext(session, emitter, ports, registry, checkpointer)
-    if isinstance(payload, Command):
+    parked: list[tuple[str, dict[str, Any]]] = []
+    if isinstance(payload, _Answer):
         # A resume continues a run; it does not start one (D33). The meter and the record's
         # numbering pick up where the parked leg left them, and so does what the run was holding
         # when it parked (D37) — a parent that came back to an empty hand made a second child.
         carried_children: dict[str, Any] = {}
-        carried = await _carried(options, run_id, carried_children)
+        carried = await _carried(options, run_id, carried_children, parked)
         session.meter.restore(carried)
         emitter.restore(int(carried["seq"]))
         if carried_children:
             context.children.restore(carried_children, checkpointer)
+        # Each parked step resumes **where it parked** (D38): it does not judge again, and an
+        # `Await` does not call its component a second time.
+        resuming = {
+            str(value["step"]): ("ask" if "question" in value else "await")
+            for _identity, value in parked
+            if isinstance(value.get("step"), str)
+        }
+        payload = Command(resume=_answers(parked, payload.answer))
+    else:
+        resuming = {}
     driving = asyncio.create_task(
         _drive(
             composition,
@@ -211,6 +262,7 @@ async def _stream(
             parent,
             payload,
             checkpointer,
+            resuming,
         )
     )
     try:
@@ -232,6 +284,18 @@ def run(composition: Composition, ports: Ports, *, options: RunOptions) -> Async
     return _stream(composition, ports, options, initial_state())
 
 
+@dataclass(frozen=True)
+class _Answer:
+    """What a caller said, before the runtime knows which interrupts it answers.
+
+    `resume()` cannot build the `Command` itself: the interrupt ids live in the checkpoint, and
+    reading it is `_stream`'s job. So the answer travels as itself and becomes a `Command` there
+    (D38) — which is also what lets one answer settle a whole fan-out.
+    """
+
+    answer: Any
+
+
 def resume(
     composition: Composition, answer: Any, ports: Ports, *, options: RunOptions
 ) -> AsyncIterator[Event]:
@@ -246,7 +310,7 @@ def resume(
         raise ValueError("resume needs options.run_id — the run to continue")
     if options.checkpointer is None:
         raise ValueError("resume needs options.checkpointer — the one the run was parked with")
-    return _stream(composition, ports, options, Command(resume=answer))
+    return _stream(composition, ports, options, _Answer(answer))
 
 
 __all__ = ["resume", "run"]

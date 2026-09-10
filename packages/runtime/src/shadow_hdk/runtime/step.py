@@ -12,13 +12,14 @@ sees. A **port** raising is a failure: `PortFailure`, which the drive turns into
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Any
 
 from langgraph.types import interrupt
 from pydantic import JsonValue
 
-from shadow_hdk.kernel.components import Posture
+from shadow_hdk.kernel.components import Posture, Registration
 from shadow_hdk.kernel.composition import Await, Invoke
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
@@ -32,7 +33,15 @@ from shadow_hdk.kernel.observations import (
     Pending,
     Refused,
 )
-from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse, Usage
+from shadow_hdk.kernel.ports import (
+    Allow,
+    Ask,
+    ComponentPort,
+    Context,
+    Judgement,
+    Refuse,
+    Usage,
+)
 from shadow_hdk.runtime.bindings import Ports, executing
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import DanglingRef, LeaseExhausted, PortFailure, RuntimeStop
@@ -50,12 +59,16 @@ class StepExecutor:
         ports: Ports,
         registry: Registry,
         context: Any = None,
+        resuming: dict[str, str] | None = None,
     ) -> None:
         self.session = session
         self.registry = registry
         self._emitter = emitter
         self._ports = ports
         self._context = context
+        self._resuming = dict(resuming or {})
+        """Steps this leg is resuming, and what each parked on (D38). Consumed on first use: a
+        step resumes once, and anything after that is an ordinary step."""
 
     def holding(self) -> dict[str, Any]:
         """What this run is holding, for the state to carry (D37). Empty when it holds nothing,
@@ -93,6 +106,10 @@ class StepExecutor:
         except DanglingRef as exc:
             return await self._observe(step, Failed(str(exc)))
 
+        parked_on = self._resuming.pop(step.id, None)
+        if parked_on is not None:
+            return await self._resume_where_it_parked(step, parked_on, port, registration, inputs)
+
         judgement = await self._judge(
             registration.component.effects, self.session.context_for(step.id, registration)
         )
@@ -107,6 +124,16 @@ class StepExecutor:
                         step, Refused(getattr(answer, "reason", "not allowed"))
                     )
 
+        return await self._carry_out(step, port, registration, inputs)
+
+    async def _carry_out(
+        self,
+        step: Invoke | Await,
+        port: ComponentPort,
+        registration: Registration,
+        inputs: JsonValue,
+    ) -> Observation:
+        """Announce the step, run it, price it, and record what came back."""
         await self._emit(
             lambda **k: Invoked(step=step.id, component=registration.id, inputs=inputs, **k)
         )
@@ -126,6 +153,36 @@ class StepExecutor:
             # so a component that says `Pending` there is taken at its word and the run parks.
             observation = Completed(await self._wait(step, observation))
         return await self._observe(step, observation, registration.component.provenance.posture)
+
+    async def _resume_where_it_parked(
+        self,
+        step: Invoke | Await,
+        parked_on: str,
+        port: ComponentPort,
+        registration: Registration,
+        inputs: JsonValue,
+    ) -> Observation:
+        """Pick the step up at the `interrupt()` it raised, and nowhere earlier (D38).
+
+        LangGraph re-runs a node from the top, and `interrupt()` hands back the answer only where
+        it was raised — so everything above it used to happen twice. **It is not judged again:** a
+        policy that changed its mind while a human was thinking overruled the human it had asked,
+        and one that stopped asking discarded a refusal and ran the work. And an `Await` is not
+        invoked again: it already said `Pending`, and what it is waiting for is the answer.
+        """
+        if parked_on == "await":
+            delivered = await self._wait(step, None)
+            return await self._observe(
+                step, Completed(delivered), registration.component.provenance.posture
+            )
+        answered = _as_judgement(await self._ask(step, "resumed"))
+        if not isinstance(answered, Allow):
+            return await self._observe(
+                step,
+                Refused(getattr(answered, "reason", "the answer to an ask was not a judgement")),
+                registration.component.provenance.posture,
+            )
+        return await self._carry_out(step, port, registration, inputs)
 
     # ------------------------------------------------------------------ the seams
 
@@ -157,7 +214,7 @@ class StepExecutor:
             )
             raise
 
-    async def _wait(self, step: Await, pending: Pending) -> JsonValue:
+    async def _wait(self, step: Await, pending: Pending | None) -> JsonValue:
         """Park on a handle the component named, and come back with whatever answered it.
 
         Same contract as `_ask`: **raise to park, return to proceed**, and the record is written on
@@ -169,7 +226,9 @@ class StepExecutor:
         payload = {
             "run_id": self.session.run_id,
             "step": step.id,
-            "handle": pending.handle,
+            # `None` on the resume path, where `interrupt()` returns rather than raising and the
+            # handle is only wanted for the payload it would have parked with (D38).
+            "handle": pending.handle if pending is not None else "",
             "resume_seq": self._emitter.seq + 1,  # this path emits one `Observed` before it parks
         }
         try:
@@ -177,7 +236,8 @@ class StepExecutor:
             return answer
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
             # On the parking path only: the record says the step is waiting, and says it once.
-            await self._observe(step, pending)
+            if pending is not None:
+                await self._observe(step, pending)
             raise
 
     async def _judge(self, effects: EffectProfile, context: Context) -> Judgement:
@@ -208,6 +268,27 @@ class StepExecutor:
             lambda **k: Observed(step=step.id, observation=observation, posture=posture, **k)
         )
         return observation
+
+
+def _as_judgement(answer: Any) -> Judgement | None:
+    """What a host said, as a judgement — or `None` if it did not answer the question.
+
+    An `Ask` asks a governance question, and the answer is a `Judgement`. Over the wire it arrives
+    as **JSON**, because that is what crosses a checkpoint and a socket (D19), so its written form
+    is loaded here at the runtime's own edge. Anything else — a bare string, a `True` — is not an
+    answer, and a step whose consent nobody actually gave does not run (D38).
+    """
+    if isinstance(answer, Allow | Ask | Refuse):
+        return answer
+    if isinstance(answer, dict) and isinstance(answer.get("kind"), str):
+        from shadow_hdk.kernel.contracts import load
+
+        try:
+            loaded: Judgement = load(json.dumps(answer), Judgement)
+        except Exception:  # noqa: BLE001 — a shape we do not recognise is not an answer
+            return None
+        return loaded
+    return None
 
 
 def _usage_of(observation: Observation) -> Usage | None:
