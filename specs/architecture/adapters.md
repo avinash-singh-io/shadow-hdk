@@ -160,10 +160,17 @@ is the product's gate. The runtime never learns what a claim is.
 
 ```python
 WorkspaceComponents(root: Path)      # read_file · write_file · list_dir · delete_file
-#   write_file: EffectProfile(writes=ScopeSet.of("workspace"), reversible=True, contained=True)
+#   write_file: EffectProfile(writes=ScopeSet.of("workspace"), reversible=True)
+#     (corrected 2026-09-10, BUG-008: the code does not set `contained`, and a spec that says it
+#      does invites a rule to be written against a field nobody sets)
 #   every path resolved and refused outside root — the adapter's own invariant, not governance's
 
 SubprocessSandbox(root, *, timeout_s, memory_mb, network=False, contained: bool)
+#   memory_mb caps the child's address space with `prlimit` **on Linux**; macOS has no `prlimit`
+#   and refuses `RLIMIT_AS`, so there it is not a limit. `runtime.leash.MEMORY_LIMIT_ENFORCED`
+#   says which. (Corrected 2026-09-10, BUG-009: it was documented and did not exist at all.)
+#   A leashed program runs in its own process group and the group is killed when the leash
+#   returns, so nothing it started outlives the step (D35). `HOME` is not in its environment.
 #   run_python · run_shell — EffectProfile(writes={workspace}, reaches=network,
 #                                          reversible=False, contained=contained, costs=False)
 ```

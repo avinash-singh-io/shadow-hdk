@@ -13,6 +13,7 @@ It is not a sandbox. It bounds *where* the agent writes, not what the written th
 
 from __future__ import annotations
 
+import stat
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -66,13 +67,43 @@ class WorkspaceComponents(ComponentPort):
         `Path.resolve()` follows symlinks and normalises `..`, so what is compared is the *real*
         destination rather than the spelling. Comparing the spelling is the bug this exists to
         avoid: `innocent.txt` looks confined right up until it is a link to `/etc/passwd`.
+
+        **A hard link has nothing to resolve** (BUG-008). It is not a pointer to the outside file;
+        it *is* that file, under a second name inside the root — so `resolve()` returns a path that
+        is plainly relative to the root while the inode belongs to somebody else. Reading returned
+        the outside content and writing overwrote it. So the filesystem is asked what the file is,
+        not what it is called: a regular file reachable by more than one name is refused, because
+        the harness cannot tell which of those names is outside the workspace and it only takes one.
         """
         if not isinstance(path, str):
             raise OutsideTheRoot(f"a path must be a string, not {type(path).__name__}")
-        candidate = (self._root / path).resolve()
+        try:
+            candidate = (self._root / path).resolve()
+        except ValueError as malformed:
+            # A NUL byte reaches `os.stat` as a `ValueError`, not an `OSError`, and used to escape
+            # `invoke` as a traceback. A path the filesystem will not take is data (D7).
+            raise OutsideTheRoot(f"{path!r} is not a usable path: {malformed}") from malformed
         if candidate != self._root and not candidate.is_relative_to(self._root):
             raise OutsideTheRoot(f"{path!r} resolves outside the workspace")
+        self._one_name_only(candidate, path)
         return candidate
+
+    @staticmethod
+    def _one_name_only(candidate: Path, given: JsonValue) -> None:
+        """Refuse a regular file that more than one name reaches (BUG-008).
+
+        Directories are exempt: a directory's link count is its subdirectories plus two, so
+        refusing on `st_nlink > 1` there would refuse every directory that has one.
+        """
+        try:
+            found = candidate.lstat()
+        except (OSError, ValueError):
+            return  # it does not exist yet, or the filesystem refuses it; the caller finds out
+        if stat.S_ISREG(found.st_mode) and found.st_nlink > 1:
+            raise OutsideTheRoot(
+                f"{given!r} is a hard link: {found.st_nlink} names reach this file, and the "
+                "workspace cannot tell whether one of them is outside it"
+            )
 
     # ------------------------------------------------------------------ the port
 
