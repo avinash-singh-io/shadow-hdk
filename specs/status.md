@@ -5,7 +5,7 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: Phase 16 — MQTT — `complete, unmerged` (Epic 0007 closed where this machine can close it). Next: nothing on the roadmap is buildable here without the owner; BUG-001 is the one open backlog item
+> **Current Phase**: Phase 16 — MQTT — `complete, unmerged` (Epic 0007 closed where this machine can close it); BUG-001 fixed as a quick-task. Next: **nothing on the roadmap or the backlog is buildable here without the owner** — ENH-002 needs a TLS broker, ENH-003 waits for a second protocol adapter, and OPC-UA and ROS 2 need a server and a ROS distribution
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
