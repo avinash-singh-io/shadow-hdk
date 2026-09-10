@@ -85,3 +85,26 @@ def test_the_mapping_covers_every_kind_acp_defines() -> None:
 
     unmapped = declared - KNOWN_KINDS - {"other", "switch_mode"}
     assert not unmapped, f"ACP declares kinds this bridge does not map: {sorted(unmapped)}"
+
+
+def test_execute_admits_it_reaches_the_machine_unless_contained() -> None:
+    """BUG-018, on this side of the house.
+
+    `execute` claimed `{workspace}` for reads and writes whatever `contained` said, while getting
+    `reaches` right in the same expression. A command run on an ordinary host reaches the whole
+    machine — `cd ..` works, an absolute path works — so a mode permitting workspace writes was
+    permitting writes anywhere, and the record said the workspace.
+
+    The sandbox adapter had the identical mistake. Neither imports the other, and the rule was
+    written in a docstring rather than in a test, so it was applied to one field of three in two
+    places. It is a test in both now.
+    """
+    from shadow_hdk.kernel import ScopeSet
+
+    loose = effects_for("execute", contained=False)
+    assert loose.reads == ScopeSet(everything=True)
+    assert loose.writes == ScopeSet(everything=True)
+
+    proven = effects_for("execute", contained=True)
+    assert proven.reads == ScopeSet.of("workspace")
+    assert proven.writes == ScopeSet.of("workspace")

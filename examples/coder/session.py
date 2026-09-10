@@ -21,15 +21,17 @@ from typing import Any
 
 from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
 
-from examples.coder.workshop import a_lease, workshop
+from examples.coder.workshop import BUILDING, CONFINED, a_lease, workshop
 from shadow_hdk.kernel import (
     Binding,
     Completed,
     Composition,
     EffectProfile,
+    Ended,
     Event,
     Invoke,
     Observation,
+    Refused,
     ScopeSet,
     ToolSource,
 )
@@ -85,7 +87,11 @@ def relay_source(port: int) -> ToolSource:
 
 @asynccontextmanager
 async def a_conversation(
-    root: Path, *, want: str | None = None, on_event: Callable[[Event], None] | None = None
+    root: Path,
+    *,
+    want: str | None = None,
+    confined: bool = False,
+    on_event: Callable[[Event], None] | None = None,
 ) -> AsyncIterator[Any]:
     """A resident provider whose only tools are this run's, inside a live run.
 
@@ -122,7 +128,7 @@ async def a_conversation(
     held["ready"] = asyncio.get_running_loop().create_future()
     held["finished"] = asyncio.get_running_loop().create_future()
 
-    ports = workshop(root)
+    ports = workshop(root, mode=CONFINED if confined else BUILDING)
     # `replace`, not `__class__(**__dict__)`: the latter copies a frozen dataclass by side-stepping
     # its own constructor, so every argument arrives untyped and nothing can see that the component
     # tuple went to `components` rather than to `governance`. It type-checks by accident, which is
@@ -133,9 +139,28 @@ async def a_conversation(
     plan = Composition((Invoke("converse", "converse", (Binding("brief", value=""),)),))
 
     async def drive() -> None:
-        async for event in run(plan, ports, options=RunOptions(lease=a_lease())):
-            if on_event is not None:
-                on_event(event)
+        """Run the conversation, and **never leave the caller waiting on a signal that is not
+        coming.**
+
+        The step holding the conversation is judged like any other, and a mode that refuses it ends
+        the run before `converse` executes — so `ready` is never set and `a_conversation` waits for
+        ever. Measured: a confined mode that forbade `reaches` produced a ten-minute hang with no
+        output, which is a worse failure than the refusal it was hiding.
+
+        Whatever ends the run, the caller is told.
+        """
+        reason = "the run ended before the conversation started"
+        try:
+            async for event in run(plan, ports, options=RunOptions(lease=a_lease())):
+                if isinstance(event, Refused) and event.step == "converse":
+                    reason = f"the conversation was refused: {event.reason}"
+                if isinstance(event, Ended) and event.reason != "completed":
+                    reason = f"the run ended {event.reason}: {event.detail or ''}".strip()
+                if on_event is not None:
+                    on_event(event)
+        finally:
+            if not held["ready"].done():
+                held["ready"].set_exception(NoProvider(reason))
 
     driving = asyncio.create_task(drive())
     try:

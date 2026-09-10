@@ -32,16 +32,41 @@ That is D42 in one screen: **it reasons, we govern.**
 
 ## Try breaking it
 
-Open [`workshop.py`](workshop.py) and swap `BUILDING` for `LOOKING` in `workshop()`. Ask it to write
-a file again. You get:
-
-```
-  ✕ refused: mode 'looking' does not permit this
+```bash
+uv run python -m examples.coder ./my-workspace --confined
 ```
 
-The policy has never heard of `write_file`. It refused a **set of effects** — something that writes
-the workspace and is not reversible — which is why the same rule governs a tool nobody has written
-yet, and why the agent cannot get around it by picking a differently-named tool.
+Now ask it to write a script *and run it*. It writes the file and cannot run it — and the shell
+tools are not even in the list it was handed, because `RecordingServer` builds that list from
+`visible()`, which is governed. A well-behaved agent never tries. One that asks anyway gets:
+
+```
+  ✕ refused: mode 'confined' does not permit this
+```
+
+The policy has never heard of `run_shell`. It refused **a set of effects** — something that writes
+outside the workspace — which is why it would refuse a tool nobody has written yet, on exactly the
+same grounds.
+
+## What `building` actually grants, and why it says so
+
+Running code is permitted in the default mode, and the banner tells you every time that on an
+ordinary host **that reaches your whole machine, not just the workspace.**
+
+That is not pessimism, it is arithmetic. `write_file` is genuinely confined — `WorkspaceComponents`
+refuses a path that resolves outside its root, and refuses a hard link that reaches out of one. A
+subprocess is not: it honours `cwd` and nothing else, so `cd ..` works and an absolute path works.
+
+This was wrong until BUG-018, and the example is how it was found. Asked to build a landing page,
+the agent ran `ls` and `cat` and came back with this repository's `specs/status.md`, a listing of the
+parent directory, files from unrelated projects, and `/Applications`. Nothing refused it, because
+the sandbox had declared `reads: {workspace}` — a claim that was false, and that governance had no
+way to check.
+
+The profile is honest now, so a mode that permits running code has to say `everything`, and reading
+that in [`workshop.py`](workshop.py) is meant to be uncomfortable. Narrowing it back is exactly what
+a **contained** sandbox is for (D25, D36) — and why those proofs need a Linux host rather than a
+laptop.
 
 ## What it needs
 

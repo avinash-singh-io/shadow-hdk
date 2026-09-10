@@ -31,9 +31,14 @@ WORKSPACE = ScopeSet.of("workspace")
 
 RUNNING = Mode(
     "running",
+    # **Everything, and deliberately so** (BUG-018). This said `writes=WORKSPACE` and passed,
+    # because the profile for `execute` claimed the workspace while a plain subprocess can `cd ..`.
+    # Now that the profile is honest, permitting a terminal at all means permitting what a terminal
+    # on an ordinary host can really do — and a host has to write that down rather than be told a
+    # comfortable thing. Narrowing it back is what `contained=True` is for.
     EffectProfile(
         reads=EVERYTHING,
-        writes=WORKSPACE,
+        writes=EVERYTHING,
         reaches=True,
         reversible=False,
         contained=False,

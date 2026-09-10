@@ -17,6 +17,9 @@ from shadow_hdk.kernel.effects import ASSUME_WORST, NOTHING, EffectProfile, Scop
 WORKSPACE = ScopeSet.of("workspace")
 
 READS = EffectProfile(reads=WORKSPACE)
+EVERYTHING = ScopeSet(everything=True)
+"""What an uncontained command can really touch."""
+
 EDITS = EffectProfile(reads=WORKSPACE, writes=WORKSPACE, reversible=True)
 DESTROYS = EffectProfile(reads=WORKSPACE, writes=WORKSPACE, reversible=False)
 FETCHES = EffectProfile(reads=WORKSPACE, reaches=True, costs=True)
@@ -48,10 +51,18 @@ def effects_for(kind: str | None, *, contained: bool, network: bool = False) -> 
         case "fetch":
             return FETCHES
         case "execute":
+            # Everything, unless containment makes the narrower claim true (BUG-018). Running a
+            # command on an ordinary host reaches the whole machine: `cd ..` works, an absolute
+            # path works. This said `{workspace}` for both while getting `reaches` right, so a mode
+            # permitting workspace writes was in fact permitting writes anywhere — and the record
+            # said the workspace. The sandbox adapter carried the identical mistake; neither
+            # imports the other, which is why it had to be fixed twice and why the rule belongs in
+            # a test rather than in a habit.
+            loose = not contained
             return EffectProfile(
-                reads=WORKSPACE,
-                writes=WORKSPACE,
-                reaches=network or not contained,
+                reads=EVERYTHING if loose else WORKSPACE,
+                writes=EVERYTHING if loose else WORKSPACE,
+                reaches=network or loose,
                 reversible=False,
                 contained=contained,
                 costs=False,

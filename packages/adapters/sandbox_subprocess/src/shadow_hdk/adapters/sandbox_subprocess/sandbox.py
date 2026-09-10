@@ -32,6 +32,8 @@ from shadow_hdk.kernel.ports import ComponentPort
 from shadow_hdk.runtime.leash import run_leashed
 
 WORKSPACE = ScopeSet.of("workspace")
+EVERYTHING = ScopeSet(everything=True)
+"""What an uncontained subprocess can really touch."""
 
 #: What a child process is allowed to inherit. Everything else — tokens, keys, proxies — is dropped,
 #: because a script the model wrote should not be handed the operator's credentials by accident.
@@ -59,17 +61,28 @@ class SubprocessSandbox(ComponentPort):
 
     @property
     def effects(self) -> EffectProfile:
-        """What running code here really does.
+        """What running code here really does — **all** of it (BUG-018).
 
-        `reaches` is `network or not contained` rather than plain `network`. A plain subprocess on
-        an ordinary host can open a socket whatever we pass it, so only a deployment asserting real
-        isolation gets to claim a run does not reach outside. A governance system fed a lie is worse
-        than one fed nothing.
+        A plain subprocess honours `cwd` and nothing else. `cd ..` works, an absolute path works,
+        and the whole filesystem is one command away; it can open a socket whatever we pass it.
+        Only a deployment that *proves* isolation (D25, D36) may claim otherwise, and then it is
+        containment making the claim true rather than the adapter asserting it.
+
+        This got `reaches` right from the start and its own docstring said why — *a governance
+        system fed a lie is worse than one fed nothing* — while `reads` and `writes` stayed pinned
+        to the workspace whatever `contained` said. So a mode permitting workspace writes was in
+        fact permitting writes anywhere, and the record said the workspace. The rule was written
+        down and applied to one field of three.
+
+        The consequence is deliberate and should be felt: on an ordinary host, letting an agent run
+        code **is** letting it reach the machine, and a policy now has to say so out loud instead of
+        being told a comfortable thing.
         """
+        loose = not self._contained
         return EffectProfile(
-            reads=WORKSPACE,
-            writes=WORKSPACE,
-            reaches=self._network or not self._contained,
+            reads=EVERYTHING if loose else WORKSPACE,
+            writes=EVERYTHING if loose else WORKSPACE,
+            reaches=self._network or loose,
             reversible=False,
             contained=self._contained,
             costs=False,

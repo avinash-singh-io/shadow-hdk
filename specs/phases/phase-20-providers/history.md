@@ -265,3 +265,40 @@ into a real obstacle rather than a documented wart.
 
 ---
 
+### [DISCOVERY] 2026-09-11 — BUG-018: the sandbox declared the workspace and reached the machine
+
+Topics: sandbox, effects, governance, acp
+Affects-phases: phase-20-providers
+Affects-specs: architecture/adapters.md
+
+**Found by the owner running the example**, not by the suite. Asked to build a landing page, the
+agent called `run_shell` and the output carried this repository's `specs/status.md`, a listing of
+its parent directory, files from unrelated projects, and `/Applications`. Nothing refused any of it.
+
+`SubprocessSandbox.effects` declared `reads: {workspace}` and `writes: {workspace}` **whatever
+`contained` said**. A plain subprocess honours `cwd` and nothing else: `cd ..` works, an absolute
+path works. So the profile a policy judged was false in its two most important fields, and a mode
+permitting workspace writes was in fact permitting writes anywhere while the record said otherwise.
+
+**The same function got `reaches` right, and its docstring said why** — *a governance system fed a
+lie is worse than one fed nothing*. The rule was written down and then applied to one field of
+three. The identical mistake sat in the ACP adapter's `execute` kind; neither package imports the
+other, so it had to be fixed twice, and it is a test in both places now rather than a habit.
+
+Proven rather than argued: two tests read and write outside the workspace and assert that they
+could, so the claim rests on behaviour instead of on reading the code.
+
+**The consequence is meant to be felt.** A host permitting an agent to run code on an ordinary
+machine now has to write `everything`, because that is what it is granting. The example's default
+mode says so in a banner on every start, and `--confined` shows the other side: the shell tools are
+not even offered, because `RecordingServer` builds its list from `visible()`, which is governed.
+
+Two smaller things fell out of the same session. A mode forbidding `reaches` refused the
+**conversation itself** — correct, since talking to a provider reaches out — and the example then
+waited ten minutes on a signal that was never coming. A driver that cannot start must raise with
+the reason, not deadlock; it does now. And the test written for this was live at first, spending
+minutes of a subscription to observe a fact settled by governance before any model speaks. It needs
+no model and does not use one.
+
+---
+

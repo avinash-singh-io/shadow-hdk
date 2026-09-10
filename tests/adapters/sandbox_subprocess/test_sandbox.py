@@ -163,10 +163,23 @@ async def test_an_uncontained_host_admits_it_cannot_stop_the_network(tmp_path: P
     assert contained_but_online["run_shell"].reaches is True
 
 
-async def test_it_writes_where_the_workspace_is(tmp_path: Path) -> None:
-    profile = (await profiles(tmp_path))["run_shell"]
-    assert profile.writes == ScopeSet.of("workspace")
-    assert profile.reads == ScopeSet.of("workspace")
+async def test_it_says_it_touches_everything_unless_it_is_contained(tmp_path: Path) -> None:
+    """This test used to assert `{workspace}` for both, and was wrong (BUG-018).
+
+    It encoded the adapter's claim rather than the adapter's behaviour, and the claim was false: a
+    plain subprocess honours `cwd` and nothing else, so `cd ..` and absolute paths reach the whole
+    machine. Rewritten from the corrected premise — **containment is what makes the narrow claim
+    true**, and without it the honest answer is *everything*.
+
+    `test_it_declares_what_it_can_really_do.py` next door proves the behaviour by doing it.
+    """
+    loose = (await profiles(tmp_path))["run_shell"]
+    assert loose.writes == ScopeSet(everything=True)
+    assert loose.reads == ScopeSet(everything=True)
+
+    proven = (await profiles(tmp_path, contained=True))["run_shell"]
+    assert proven.writes == ScopeSet.of("workspace")
+    assert proven.reads == ScopeSet.of("workspace")
 
 
 async def test_a_script_the_model_wrote_does_not_inherit_the_operators_secrets(

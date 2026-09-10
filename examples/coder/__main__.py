@@ -44,11 +44,26 @@ def show(event: Event) -> None:
 
 
 async def main() -> int:
-    root = Path(sys.argv[1] if len(sys.argv) > 1 else "./coder-workspace").resolve()
+    argv = [a for a in sys.argv[1:] if not a.startswith("-")]
+    confined = "--confined" in sys.argv
+    root = Path(argv[0] if argv else "./coder-workspace").resolve()
     try:
-        async with a_conversation(root, on_event=show) as talk:
+        async with a_conversation(root, confined=confined, on_event=show) as talk:
             print(f"{BOLD}Workspace:{OFF} {root}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
+            if confined:
+                print(
+                    f"{DIM}Mode {BOLD}confined{OFF}{DIM}: files only. Ask it to run something and "
+                    f"watch the policy refuse.{OFF}"
+                )
+            else:
+                # Said plainly, every time. A demonstration that quietly granted the machine and
+                # called it a workspace would be the exact failure BUG-018 was.
+                print(
+                    f"\033[33mMode {BOLD}building{OFF}\033[33m: running code is permitted, and on "
+                    f"an ordinary host that reaches this whole machine — not just the workspace. "
+                    f"Pass --confined to refuse it.{OFF}"
+                )
             print(f"{DIM}Ctrl-D or 'exit' to finish.{OFF}\n")
             while True:
                 try:

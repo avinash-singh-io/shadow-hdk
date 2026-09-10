@@ -21,27 +21,58 @@ WORKSPACE = ScopeSet.of("workspace")
 
 BUILDING = Mode(
     "building",
-    # What the agent may do at all: read anything it is shown, write inside the workspace, run code
-    # there. `reaches` is true because a plain subprocess on an ordinary host can open a socket
-    # whatever we pass it — the sandbox says so itself, and a governance system fed a comfortable
-    # lie is worse than one fed nothing.
+    # **What running code on an ordinary host really costs** (BUG-018).
+    #
+    # `write_file` is genuinely confined: `WorkspaceComponents` refuses a path that resolves outside
+    # its root, and refuses a hard link that reaches out of it. Its `writes: {workspace}` is true.
+    #
+    # `run_shell` and `run_python` are not, and until BUG-018 they said they were. A plain
+    # subprocess honours `cwd` and nothing else: `cd ..` works, an absolute path works. So a mode
+    # that permits running code at all is permitting **the machine**, and the honest way to write
+    # that is `everything` — not `{workspace}` and a hope.
+    #
+    # This is uncomfortable to read, which is the point. Narrowing it back is exactly what a
+    # contained sandbox is for (D25, D36), and why Phase 11's live proofs need a Linux host.
     ceiling=EffectProfile(
         reads=EVERYTHING,
-        writes=WORKSPACE,
+        writes=EVERYTHING,
         reaches=True,
         reversible=False,
         contained=False,
         costs=True,
     ),
 )
-"""The one mode this example runs in. Narrow it and watch the refusals appear in the stream — that
-is the demonstration: the policy is about **effects**, and it has never heard of `write_file`."""
+"""Everything the agent can do here, said out loud."""
+
+CONFINED = Mode(
+    "confined",
+    # The workspace tools and nothing else. `write_file` and `read_file` fit inside this; running
+    # code does not, and is **refused** — which is the demonstration:
+    #
+    #     ✕ refused: mode 'confined' does not permit this
+    #
+    # from a policy that has never heard of `run_shell`. It refused a set of effects, so it would
+    # refuse a tool nobody has written yet on exactly the same grounds.
+    ceiling=EffectProfile(
+        reads=EVERYTHING,
+        writes=WORKSPACE,
+        # **True, and it has to be.** Holding the conversation open is itself a step, and talking to
+        # a provider reaches out — that is what a subscription *is*. Setting this `False` refused
+        # the conversation before it began, which is correct enforcement of a mode that had said
+        # something it did not mean. What `confined` narrows is what the agent's **tools** may do.
+        reaches=True,
+        reversible=False,
+        contained=False,
+        costs=True,
+    ),
+)
+"""Files, but no shell. The agent writes code and cannot run it."""
 
 LOOKING = Mode("looking", EffectProfile(reads=EVERYTHING, contained=False, costs=True))
-"""A second mode, for showing what a refusal looks like. Nothing may be written or run."""
+"""Nothing may be written or run at all."""
 
 
-def workshop(root: Path, *, mode: Mode = BUILDING, out: object = None) -> Ports:
+def workshop(root: Path, *, mode: Mode = BUILDING) -> Ports:
     """Everything the agent can reach, and the policy that judges it."""
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
@@ -67,4 +98,4 @@ def a_lease() -> Lease:
     return Lease(Ceiling(max_steps=400, max_wall_seconds=3600, max_cost_cents=500), Floor(0))
 
 
-__all__ = ["BUILDING", "LOOKING", "a_lease", "workshop"]
+__all__ = ["BUILDING", "CONFINED", "LOOKING", "a_lease", "workshop"]

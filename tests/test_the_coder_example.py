@@ -22,7 +22,14 @@ from examples.coder.session import NoProvider, a_conversation
 
 from shadow_hdk.kernel import Event, Invoked, Observed
 
-pytestmark = pytest.mark.live
+pytestmark = [
+    pytest.mark.live,
+    # The suite's default deadline is 60s and exists so a hung subprocess cannot wedge CI. A live
+    # turn is a conversation with a model: it thinks, calls a tool, reads the answer, and after a
+    # refusal it tries something else before giving up. Minutes, not seconds, and the deadline is
+    # still a deadline.
+    pytest.mark.timeout(600),
+]
 
 
 async def test_it_writes_a_file_and_runs_it_through_our_tools(tmp_path: Path) -> None:
