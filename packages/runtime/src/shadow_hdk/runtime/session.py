@@ -10,6 +10,7 @@ from datetime import datetime
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import EndReason, RunId
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
@@ -157,11 +158,20 @@ class Session:
         self.cancellation = cancellation if cancellation is not None else Cancellation()
         self._context = dict(context or {})
 
-    def context_for(self, step: StepId) -> Context:
-        """What governance is told. Opaque to the runtime; the adapter interprets it."""
+    def context_for(self, step: StepId, registration: Registration | None = None) -> Context:
+        """What governance is told. Opaque to the runtime; the adapter interprets it.
+
+        With a registration, the policy is also told **what** it is judging: the component's id
+        and its posture (D30), so *only controlled satisfies consent-before-effect* is a rule a
+        policy can enforce rather than a sentence in a document.
+        """
+        attributes: dict[str, JsonValue] = dict(self._context)
+        if registration is not None:
+            attributes["posture"] = registration.component.provenance.posture
+            attributes["component"] = registration.id
         return Context(
             run_id=self.run_id,
             step=step,
             principal=self.principal,
-            attributes=dict(self._context),
+            attributes=attributes,
         )

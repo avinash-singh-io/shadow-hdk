@@ -2,12 +2,13 @@
 
 from shadow_hdk.adapters.basic.callables import CallableComponents, callable_component
 from shadow_hdk.adapters.basic.clock import SystemClock
-from shadow_hdk.adapters.basic.governance import AllowAll
+from shadow_hdk.adapters.basic.governance import AllowAll, Controlled
 from shadow_hdk.adapters.basic.mailbox import Mailbox
 from shadow_hdk.adapters.basic.observers import CallbackObserver, StdoutObserver
 from shadow_hdk.adapters.basic.sinks import CallbackSink, FileSink, StdoutSink, proposals_in
 
 __all__ = [
+    "Controlled",
     "FileSink",
     "proposals_in",
     "AllowAll",

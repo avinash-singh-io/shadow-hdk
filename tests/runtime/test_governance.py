@@ -64,17 +64,37 @@ async def test_the_policy_is_judged_on_effects_and_told_who_is_asking() -> None:
     effects, context = judge.calls[0]
     assert effects == reg.component.effects
     assert (context.step, context.principal) == ("s1", "person:7")
-    assert context.attributes == {"mode": "build"}
+    # The run's own context, and — since D30 — what is being judged: its id and its posture.
+    assert context.attributes == {"mode": "build", "posture": "controlled", "component": "write"}
     assert context.run_id == "run-under-test"
 
 
 async def test_a_component_the_policy_would_always_refuse_is_not_visible() -> None:
+    """Absent, not greyed out — and through a run, because `RunContext.visible()` is the one
+    computation the model's catalogue comes from; the executor has no second one."""
+    from pydantic import JsonValue
+
+    from shadow_hdk.kernel import Ceiling, Completed, Composition, Floor, Lease, Observation
+    from shadow_hdk.runtime import RunOptions, current_run, run
+    from tests.runtime.conftest import ports_over
+
     shown = make_registration("read", effects=EffectProfile(reads=ScopeSet.of("workspace")))
     hidden = make_registration("send_email", effects=REACHES)
-    ex, _, _ = executor_over(
-        [(shown, "ok"), (hidden, "ok")],
-        judge=Judge(lambda e, c: Refuse("no reaching") if e.reaches else Allow()),
-    )
-    await ex.registry.refresh()
-    visible = await ex.visible()
-    assert [r.component.interface.name for r in visible] == ["read"]
+    asks = make_registration("asks")
+    seen: list[set[str]] = []
+
+    async def looks(_inputs: JsonValue) -> Observation:
+        context = current_run()
+        assert context is not None
+        seen.append({r.id for r in await context.visible()})
+        return Completed(None)
+
+    judge = Judge(lambda e, c: Refuse("no reaching") if e.reaches else Allow())
+    ports, _ = ports_over([(shown, "ok"), (hidden, "ok"), (asks, looks)], judge=judge)
+    async for _ in run(
+        Composition((Invoke("s1", asks.id),)),
+        ports,
+        options=RunOptions(lease=Lease(Ceiling(5, 600, 10), Floor(0))),
+    ):
+        pass
+    assert seen == [{"read", "asks"}], seen

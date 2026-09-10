@@ -104,18 +104,20 @@ class RunContext:
         every input is absent rather than greyed out (`09` §4).
         """
         await self._registry.refresh()
-        context = self.context("<catalogue>")
         shown = []
         for registration in self._registry.all():
+            context = self.context("<catalogue>", registration)
             judgement = await self._ports.governance.judge(registration.component.effects, context)
             if not isinstance(judgement, Refuse):
                 shown.append(registration)
         return shown
 
-    def context(self, step: str = "<catalogue>") -> Context:
+    def context(
+        self, step: str = "<catalogue>", registration: Registration | None = None
+    ) -> Context:
         """What this run tells a policy about itself. An adapter that wants to know what the model
         may see asks the governance port with this."""
-        return self._session.context_for(step)
+        return self._session.context_for(step, registration)
 
     def remaining(self) -> Lease:
         return self._session.meter.remaining()

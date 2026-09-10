@@ -18,7 +18,7 @@ from typing import Any
 from langgraph.types import interrupt
 from pydantic import JsonValue
 
-from shadow_hdk.kernel.components import Posture, Registration
+from shadow_hdk.kernel.components import Posture
 from shadow_hdk.kernel.composition import Await, Invoke
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Asked as AskedEvent
@@ -41,9 +41,6 @@ from shadow_hdk.runtime.registry import Registry
 from shadow_hdk.runtime.session import Session
 from shadow_hdk.runtime.state import RunState
 
-CATALOGUE = ""
-"""The step id used when governance is asked about the catalogue rather than about a step."""
-
 
 class StepExecutor:
     def __init__(
@@ -53,19 +50,6 @@ class StepExecutor:
         self.registry = registry
         self._emitter = emitter
         self._ports = ports
-
-    # ------------------------------------------------------------------ what the agent may see
-
-    async def visible(self) -> list[Registration]:
-        """The catalogue, filtered by governance. A component the policy would refuse for every
-        input is **absent**, not greyed out, so a narrowed agent never sees what it may not touch.
-        """
-        context = self.session.context_for(CATALOGUE)
-        shown: list[Registration] = []
-        for registration in self.registry.all():
-            if not isinstance(await self._judge(registration.component.effects, context), Refuse):
-                shown.append(registration)
-        return shown
 
     # ------------------------------------------------------------------ the seven moves
 
@@ -92,7 +76,7 @@ class StepExecutor:
             return await self._observe(step, Failed(str(exc)))
 
         judgement = await self._judge(
-            registration.component.effects, self.session.context_for(step.id)
+            registration.component.effects, self.session.context_for(step.id, registration)
         )
         match judgement:
             case Refuse(reason=reason):
