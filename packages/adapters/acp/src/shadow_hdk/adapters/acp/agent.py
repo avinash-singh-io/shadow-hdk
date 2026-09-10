@@ -37,6 +37,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort
 from shadow_hdk.runtime import current_run
+from shadow_hdk.runtime.processes import stop_or_kill
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -59,6 +60,7 @@ class AcpAgent(ComponentPort):
         network: bool = False,
         currency: str = "USD",
         timeout_s: float = 300.0,
+        grace_s: float = 5.0,
         cwd: Path | None = None,
         at: str = "",
         source: str = "acp",
@@ -71,6 +73,10 @@ class AcpAgent(ComponentPort):
         self.client = BridgeClient(
             workspace=workspace, contained=contained, network=network, currency=currency
         )
+        self._grace_s = grace_s
+        self.had_to_be_killed = False
+        """Whether the last `stop()` had to go past `SIGTERM`. A child that never goes quietly
+        is worth a host's attention, and reading that off a log line is not recording it."""
         self._process: asyncio.subprocess.Process | None = None
         self._agent: Any = None
         self._session: str | None = None
@@ -99,6 +105,10 @@ class AcpAgent(ComponentPort):
             cwd=self._cwd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
+            # Its own session, so `stop()` can end the whole tree (D35). A coding agent spawns
+            # compilers, test runners and language servers; without this they are in *our* group
+            # and survive the child that started them.
+            start_new_session=True,
         )
         # Named from the agent's side: `input_stream` is what goes *into* it — the writer.
         self._agent = acp.connect_to_agent(self.client, self._process.stdin, self._process.stdout)
@@ -110,9 +120,16 @@ class AcpAgent(ComponentPort):
         self.sessions_opened += 1
 
     async def stop(self) -> None:
-        if self._process is not None and self._process.returncode is None:
-            self._process.terminate()
-            await self._process.wait()
+        """Ask the child to go, and make it go if it will not (BUG-011, D35).
+
+        It used to `terminate()` and then `wait()` with no deadline, so a child that ignores
+        `SIGTERM` — which a busy agent mid-tool-call may well do — wedged the caller forever. The
+        grace period is real: an agent asked politely gets to flush its transcript and close what
+        it had open. After it, the **group** goes, because by then the child has proven it is not
+        cooperating and everything it started is still ours to account for.
+        """
+        if self._process is not None:
+            self.had_to_be_killed = await stop_or_kill(self._process, grace_s=self._grace_s)
         self._process, self._agent, self._session = None, None, None
 
     async def __aenter__(self) -> AcpAgent:
@@ -182,18 +199,23 @@ class AcpAgent(ComponentPort):
         return min(self._timeout_s, float(context.remaining().ceiling.max_wall_seconds))
 
     def _usage(self, reported: Any) -> dict[str, JsonValue]:
-        """In the shape `_usage_of` reads, so the parent's meter charges without knowing ACP."""
+        """In the shape `_usage_of` reads, so the parent's meter charges without knowing ACP.
+
+        **What this turn spent, never what the session holds** (BUG-011). The purse is cumulative
+        because a session is, and `step.py` adds what it is handed once per step — so reporting the
+        running total charged the first turn again on the second and twice more on the third.
+        """
         self.client.spend.add_tokens(reported)
-        spend = self.client.spend
+        charge = self.client.spend.take()
         usage: dict[str, JsonValue] = {
-            "input_tokens": spend.input_tokens if spend.tokens_seen else None,
-            "output_tokens": spend.output_tokens if spend.tokens_seen else None,
-            "cost_cents": spend.cents,
+            "input_tokens": charge.input_tokens,
+            "output_tokens": charge.output_tokens,
+            "cost_cents": charge.cents,
         }
-        if spend.foreign:
+        if charge.foreign:
             # Not converted, and not hidden: a host with a rate can do the sum itself.
             usage["uncounted_currencies"] = {
-                currency: str(amount) for currency, amount in spend.foreign.items()
+                currency: str(amount) for currency, amount in charge.foreign.items()
             }
         return usage
 

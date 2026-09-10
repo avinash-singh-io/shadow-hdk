@@ -17,11 +17,15 @@ Behaviour is chosen by the prompt text, so one agent covers every shape:
 * `write`    — call the client back to write a file, so the bridge's own governance is exercised
 * `read`     — call the client back to read one
 * `terminal` — ask the client for a terminal
+
+Run with `--deaf` and it ignores `SIGTERM`, which is how the bridge's kill deadline is proven.
 """
 
 from __future__ import annotations
 
 import asyncio
+import signal
+import sys
 from typing import Any
 
 import acp
@@ -177,4 +181,9 @@ def _text_of(prompt: list[Any]) -> str:
 
 
 if __name__ == "__main__":
+    if "--deaf" in sys.argv:
+        # An agent that will not be told to stop. Not a conformance shape — it exists so the
+        # bridge's `stop()` can be proven to have a deadline and a second signal (BUG-011), which
+        # a cooperative agent can never demonstrate.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
     asyncio.run(acp.run_agent(SpikeAgent))  # type: ignore[arg-type]

@@ -17,12 +17,12 @@ import contextlib
 import functools
 import os
 import resource
-import signal
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
+from shadow_hdk.runtime.processes import end_the_group
 
 KEPT_ENV = ("PATH", "LANG", "LC_ALL")
 """The environment a leashed program sees. Everything else — every secret the host process holds —
@@ -96,23 +96,6 @@ def _limit_memory(pid: int, megabytes: int) -> None:
         resource.prlimit(pid, resource.RLIMIT_AS, (limit, limit))  # type: ignore[attr-defined]
 
 
-def _end_the_group(process: asyncio.subprocess.Process) -> None:
-    """Kill the process group, whatever is left of it (D35).
-
-    A step owns the tree it starts. `kill()` reached the direct child only, so a program that
-    backgrounded something and exited cleanly left it running after the step returned — an effect
-    with no step to attribute it to, outliving the lease that permitted it.
-
-    The group id is the child's own pid, because `start_new_session` made it a session leader.
-    Asking `getpgid` instead fails once the child has been reaped — which is exactly the moment
-    its children are still alive and this matters most.
-    """
-    if process.pid is None:  # pragma: no cover — a process that never started
-        return
-    with contextlib.suppress(ProcessLookupError, PermissionError, OSError):
-        os.killpg(process.pid, signal.SIGKILL)
-
-
 async def run_leashed(
     argv: list[str],
     *,
@@ -146,7 +129,7 @@ async def run_leashed(
                 # is a deadlock the child cannot escape: it blocks writing to stderr while nothing
                 # drains it. And the tree ends the moment either cap is reached, rather than after
                 # the program has finished saying what this step will not keep.
-                full = functools.partial(_end_the_group, process)
+                full = functools.partial(end_the_group, process)
                 (stdout, cut_out), (stderr, cut_err) = await asyncio.gather(
                     _read_capped(process.stdout, output_limit, full),
                     _read_capped(process.stderr, output_limit, full),
@@ -157,7 +140,7 @@ async def run_leashed(
     finally:
         # Whatever happened — finished, timed out, or capped — nothing this step started is left
         # running (D35).
-        _end_the_group(process)
+        end_the_group(process)
         with contextlib.suppress(ProcessLookupError):
             await process.wait()
     return Completed(

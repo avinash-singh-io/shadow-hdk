@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,20 @@ REFUSED = 403
 methods — a client either answers or errors — so a governed no is an error the child can read."""
 
 
+@dataclass(frozen=True)
+class Charge:
+    """What **one turn** spent — the delta a meter can add without re-charging the last one.
+
+    `None` is *nobody told us*, and it is not the same as `0`, which is *told, and it was nothing*.
+    A meter that reads the two the same way reports a total it cannot support.
+    """
+
+    input_tokens: int | None
+    output_tokens: int | None
+    cents: int | None
+    foreign: dict[str, Decimal]
+
+
 class Spend:
     """What a child cost, accumulated across a whole session.
 
@@ -50,6 +65,14 @@ class Spend:
     A currency the bridge was not configured for is **not converted** — an exchange rate is policy
     about a tenant's contract, and guessing one would be inventing money. It comes back `None`,
     which the meter reads as *unknown*, with the currency reported so a host can do the sum itself.
+
+    **The totals are the session's; the meter is told the difference.** `step.py` charges what an
+    observation reports, once per step, so handing it the running total charges every earlier turn
+    again — two 100-token prompts cost 300 (BUG-011). `take()` is the only way the meter reads this
+    purse, and it answers *since you last asked*. Cents are the difference of the **rounded totals**
+    rather than each charge rounded on its own, which is what keeps the paragraph above true all the
+    way to the meter: a sub-cent charge stays in `amount` and is charged on the turn the total
+    crosses a cent, never more than half a cent adrift and never adrift for long.
     """
 
     def __init__(self, currency: str = "USD") -> None:
@@ -60,11 +83,18 @@ class Spend:
         self.total_tokens = 0
         self.foreign: dict[str, Decimal] = {}
         self.tokens_seen = False
+        self.cost_seen = False
+        self._taken_input = 0
+        self._taken_output = 0
+        self._taken_cents = 0
+        self._taken_foreign: dict[str, Decimal] = {}
+        self._tokens_since_take = False
+        self._cost_since_take = False
 
     def add_tokens(self, usage: Any) -> None:
         if usage is None:
             return
-        self.tokens_seen = True
+        self.tokens_seen = self._tokens_since_take = True
         self.input_tokens += int(getattr(usage, "input_tokens", 0) or 0)
         self.output_tokens += int(getattr(usage, "output_tokens", 0) or 0)
         self.total_tokens += int(getattr(usage, "total_tokens", 0) or 0)
@@ -72,6 +102,7 @@ class Spend:
     def add_cost(self, cost: Any) -> None:
         if cost is None:
             return
+        self.cost_seen = self._cost_since_take = True
         amount = Decimal(str(cost.amount))
         if cost.currency == self.currency:
             self.amount += amount
@@ -80,12 +111,49 @@ class Spend:
 
     @property
     def cents(self) -> int | None:
-        """`None` when nothing priceable arrived, or when it came in a currency we cannot read."""
+        """The session's money so far. `None` when nothing priceable arrived, or when it came in a
+        currency we cannot read.
+
+        `cost_seen` rather than `amount == 0`, because a charge that arrived and was genuinely zero
+        is *known* to be nothing, and reporting it as unknown makes a meter stop claiming a total it
+        could have supported.
+        """
         if self.foreign:
             return None
-        if self.amount == 0:
+        if not self.cost_seen:
             return None
         return int((self.amount * 100).to_integral_value())
+
+    def take(self) -> Charge:
+        """What has accrued **since the last take** — one turn's spend, for one charge of a meter.
+
+        Mutating on read is deliberate and is why this is a method rather than a property: the
+        delta only means anything if exactly one caller consumes it, and a second read of the same
+        turn must charge nothing rather than charge it twice.
+        """
+        charge = Charge(
+            input_tokens=self.input_tokens - self._taken_input if self._tokens_since_take else None,
+            output_tokens=(
+                self.output_tokens - self._taken_output if self._tokens_since_take else None
+            ),
+            cents=self._cents_since_take(),
+            foreign={
+                currency: amount - self._taken_foreign.get(currency, Decimal(0))
+                for currency, amount in self.foreign.items()
+                if amount != self._taken_foreign.get(currency, Decimal(0))
+            },
+        )
+        self._taken_input, self._taken_output = self.input_tokens, self.output_tokens
+        self._taken_cents = self.cents if self.cents is not None else self._taken_cents
+        self._taken_foreign = dict(self.foreign)
+        self._tokens_since_take = self._cost_since_take = False
+        return charge
+
+    def _cents_since_take(self) -> int | None:
+        """The difference of the *rounded totals*, so no fraction of a cent is rounded away."""
+        if not self._cost_since_take or self.cents is None:
+            return None
+        return self.cents - self._taken_cents
 
 
 class BridgeClient(acp.Client):
