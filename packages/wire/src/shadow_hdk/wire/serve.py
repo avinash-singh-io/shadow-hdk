@@ -172,8 +172,16 @@ async def served_over_http(
         build_app(clock=clock, token=token), host=host, port=0, log_level="warning"
     )
     server = uvicorn.Server(config)
+    finished = anyio.Event()
+
+    async def serve_until_it_is_done() -> None:
+        try:
+            await server.serve()
+        finally:
+            finished.set()
+
     async with anyio.create_task_group() as group:
-        group.start_soon(server.serve)
+        group.start_soon(serve_until_it_is_done)
         with anyio.fail_after(30):
             while not server.started:
                 await anyio.sleep(0.01)
@@ -181,7 +189,20 @@ async def served_over_http(
         try:
             yield f"http://{host}:{port}"
         finally:
+            # **Ask it to stop, then wait for it to have stopped, then insist.** Cancelling
+            # uvicorn mid-`serve` leaves its own tasks to be torn down by force, and one of them
+            # surfaces the cancellation as an unretrieved exception — harmless, and the first thing
+            # anyone driving the wire sees. `should_exit` lets it close its sockets and finish its
+            # own shutdown first.
+            #
+            # **Waited on `serve` returning, not on a flag.** The first version of this watched
+            # `server.started`, which uvicorn sets once and never clears, so the loop was a five
+            # second sleep that happened to outlast the shutdown. It passed for the wrong reason
+            # and charged every caller five seconds to leave. The cancel scope stays as the
+            # backstop for a shutdown that never finishes.
             server.should_exit = True
+            with anyio.move_on_after(5):
+                await finished.wait()
             group.cancel_scope.cancel()
 
 
