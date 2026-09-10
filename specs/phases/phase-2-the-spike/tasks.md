@@ -28,7 +28,7 @@ phase: 2-the-spike
 
 ## Group 2 — answer J1
 
-- [ ] `history.md` — the answer, the numbers, and what is still unmeasured
-- [ ] the board's J1 row — answered for protocol and transport, open for the CLIs, with the command
-- [ ] `specs/status.md`
-- [ ] Gate
+- [x] `history.md` — the answer, the numbers, and what is still unmeasured
+- [x] the board's J1 row — answered for protocol and transport, open for the CLIs, with the command
+- [x] `specs/status.md`
+- [x] Gate

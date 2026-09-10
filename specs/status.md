@@ -26,6 +26,7 @@ runtime that turns the bare-harness test green.
 |-------|------|--------|---------|
 | 0 | The runtime, and the bare test goes green | Complete, unmerged (2026-09-10) | — |
 | 1 | Real adapters, streaming, modes | Complete, unmerged (2026-09-10) | — |
+| 2 | The spike — J1 | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -38,7 +39,8 @@ runtime that turns the bare-harness test green.
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
 | 0 — the runtime | `phase-0-the-runtime` | **complete, unmerged** | 6 / 6 groups. Superseded as the active row by Phase 1, which branches from it. |
-| 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. One model adapter over every LangChain provider (live against HuggingFace), MCP components with derived effects, modes as data, the demo on real everything. 202 offline + 7 live; mypy strict over 48 files. |
+| 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. Superseded as the active row by Phase 2, which branches from it. |
+| 2 — the spike | `phase-2-the-spike` | **complete, unmerged** | **J1 answered** for the protocol and the transport; what Codex and Claude Code do is unmeasured, with the command that would settle it. 8 measurements over a real ACP pipe; 210 tests; mypy strict over 51 files. |
 
 ## Upcoming Phases
 
@@ -64,8 +66,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 2 — the spike that answers **J1** on the board: does a CLI whose tool call is refused end its turn cleanly, and does ACP report token usage. Branch `phase-2-the-spike` from `phase-1-real-adapters`
-2. Phase 3 — the workspace and code: files within a root, and a subprocess sandbox
+1. Phase 3 — the workspace and code, on `phase-3-workspace-and-code` branched from `phase-2-the-spike`: a filesystem component confined to a root, and a subprocess sandbox whose `contained` is a deployment fact rather than a hope
+2. Phase 4 — the ACP bridge, which now knows it inherits a fourteen-method client surface and needs its own wall clock
 
 ## Key Decisions Made
 
@@ -74,6 +76,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 2 complete**: J1 answered. ACP reports usage and sometimes a price; a turn always ends with a stop reason; there are two distinct ways to refuse; and nothing stops an agent looping on a denial, so a driver needs its own clock — which the lease already is
 - 2026-09-10 — **Phase 1 complete**: one model adapter over every LangChain provider, proven live against HuggingFace; MCP components with effects derived from annotations; modes as data; the harness on real everything
 - 2026-09-10 — **Phase 0 complete**: the runtime, the agent as a component, the basic adapters, the bare harness green with zero product code
 - 2026-09-10 — founded: charter, principles, success criteria, roadmap, architecture, Epic 0001, Phase 0
