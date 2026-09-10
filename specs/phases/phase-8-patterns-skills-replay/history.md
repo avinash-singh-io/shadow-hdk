@@ -87,3 +87,79 @@ which is the failure the docstring already warns about. Two consecutive full-sui
 afterwards, and the number is unchanged at 0.577 ms a step.
 
 ---
+
+### [DECISION] 2026-09-10 — D18: compaction is a meta-tool, which is what "not a runtime power" means
+Topics: compaction, d3, d18, patterns, sink
+Affects-phases: none
+Affects-specs: specs/architecture/adapters.md
+
+`09` §5 calls compaction *a component, not a runtime power*. The contrast is the load-bearing half,
+and a **meta-tool** honours it more exactly than a component would.
+
+A component would be registered for every run whether or not a deployment wants its agent rewriting
+its own history; a meta-tool is the pattern's, so a team that does not want it simply does not list
+the verb. And a component cannot reach the transcript — it could propose a summary and never
+actually shorten anything, which is a compaction in name only.
+
+So the summary reaches the **sink** as a `Proposal(kind="compaction")` and the adapter writes it
+nowhere, and the loop's own transcript is shortened. What may be dropped is the middle: the role the
+agent was given and the request it was asked to answer are not the model's to summarise away.
+
+### [ARCH_CHANGE] 2026-09-10 — Groups 3–4: replay, compaction, and the model's helper verbs
+Topics: replay, compaction, spawn, send, release, d16, d18
+Affects-phases: phase-9
+Affects-specs: specs/architecture/runtime.md, specs/architecture/adapters.md
+
+`RecordedModel` records a run's model calls and replays them for nothing. Two modes, not a fallback:
+recording always calls through; a replay-only port has no inner model, so a stale tape fails loudly
+instead of quietly costing money. There is deliberately no third mode that replays what it knows and
+records what it does not.
+
+Phase 7's deferral lands: `spawn` / `send` / `release` as meta-tools, with the child's shape decided
+here because that is what made them a Pattern concern — a helper is *the named agent given a brief,
+then a wait on the mailbox*, which is D16's held child written as a composition. A sixth pattern,
+`keeps-helpers`, ships with the verbs.
+
+### [DISCOVERY] 2026-09-10 — a bug only the end-to-end test could find
+Topics: replay, fingerprint, tests
+Affects-phases: none
+Affects-specs: none
+
+`fingerprint` sorted the offered tools as parsed dicts, which raises the moment a request carries
+more than one — and every unit test offered exactly one, so `sorted` never compared anything and all
+eight passed. It surfaced when a real agent run went through with a catalogue: the whole step came
+back `Failed` with a TypeError about dicts.
+
+Sorted as text now, and the unit tests offer two tools by default. The lesson is narrower than
+"write end-to-end tests": a test that exercises a collection with **one** element does not exercise
+the collection.
+
+### [DISCOVERY] 2026-09-10 — Phase 7 woke a held child on a ceiling its parent could no longer afford
+Topics: leases, held, children, phase-7
+Affects-phases: none
+Affects-specs: none
+
+`send` and `release` re-carved the ceiling the child was *spawned* with. A parent that had spent in
+between could no longer afford it, so the carve refused — and a coordinating agent that spawned a
+helper and took two more turns could neither message nor release it. Phase 7's own tests missed it
+because their parent spends nothing between spawning and sending.
+
+A held child is now woken within what the parent has left. The regression test lives in
+`tests/runtime/test_children.py`, where the bug does, rather than where it was noticed.
+
+### [DISCOVERY] 2026-09-10 — three survivors in tests that looked complete
+Topics: mutation-check, tests
+Affects-phases: none
+Affects-specs: none
+
+The helper verbs' first mutation run left three survivors, and none was a missing test — all three
+were assertions too loose to tell right from wrong:
+
+* the invented-handle test asserted only that `@9` appeared, which cannot distinguish *there is no
+  helper @9; spawn one first* from *that did not work: KeyError: @9*;
+* nothing covered a deployment with **no mailbox**, where a helper cannot park and must be reported
+  as finished rather than held — otherwise the model is handed a handle for something already gone;
+* the release test asserted the word "released" without checking anything stopped, so a verb that
+  leaked helpers would have passed.
+
+---

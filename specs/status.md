@@ -48,7 +48,7 @@ runtime that turns the bare-harness test green.
 | 5 — the recording server | `phase-5-the-recording-server` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 6. Our registry offered to a child agent as an MCP server: what it does is on the parent's record because it was routed. Proven over a real `ClientSession` and over a real OS subprocess. 326 tests; mypy strict over 67 files. A child on another *machine* still needs a listening transport → Phase 9. |
 | 6 — the compiler, complete | `phase-6-the-compiler-complete` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 7. A nested composite is a subgraph with a name of its own; a host can stop a run and the record says who asked (D15); a parked run survives the process that parked it, proven on a file. 343 tests; mypy strict over 70 files. Subgraphs cost 0.607 ms/step against D11's 1 ms. |
 | 7 — sub-agents | `phase-7-sub-agents` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 8. Spawn, send, release over parked runs (D16): a held child is a checkpoint, not a resident object. `Await` now actually parks — it never had. The tenth event kind, `Held`. 354 tests; mypy strict over 73 files. The model-facing verbs move to Phase 8, because a `spawn` a model can call has to say what the child *is*, and that is a pattern. |
-| 8 — patterns, skills, replay | `phase-8-patterns-skills-replay` | **in progress** | 3 / 5 groups. Patterns ship as TOML files a team can edit (D17); a skill declares what it needs and is checked against `visible()` before the first turn; D13's last mechanism is built — a big catalogue is names until the model calls `describe`. 379 tests; mypy strict over 76 files. Left: the recorded model port, then compaction and the model-facing spawn verbs. |
+| 8 — patterns, skills, replay | `phase-8-patterns-skills-replay` | **complete, unmerged** | 5 / 5 groups. Patterns and skills are TOML files a team can write (D17); a skill is checked against `visible()` before the first turn; D13's last mechanism is built (`describe`); a run replays for nothing; and compaction plus the `spawn` / `send` / `release` verbs land as meta-tools (D18). 401 tests; mypy strict over 79 files. |
 
 ## Upcoming Phases
 
@@ -74,9 +74,8 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 8, Group 3 — the recorded model port: a run's model calls replayed at no cost, and a changed prompt a miss rather than a silent re-record
-2. Phase 8, Group 4 — compaction as a component whose proposal reaches the sink, and the `spawn` / `send` / `release` meta-tools with the pattern that shapes the child
-3. Phase 9 onward in roadmap order; the environment epic after
+1. Phase 9 — the wire, on `phase-9-…` branched from `phase-8-patterns-skills-replay`: `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`, schemas published, **v0.1.0**. It must start from a **listening** transport (Phase 5), owes an event kind that carries tokens to the observer (Phase 1 — `Held` took the tenth slot, so this needs its own), and owes **TD-001**, moving observations out of graph state as plain JSON
+2. Phases 10–14 in roadmap order; the environment epic after
 3. Carried to Phase 9, each with what would settle it: tokens reaching the observer (the tenth event kind arrived in Phase 7 as `Held`, so this still needs its own); a **listening** transport (streamable HTTP) for a child on another machine, since the recording server can only be connected to, never launched; and **TD-001**, our observation classes riding in graph state where a future LangGraph will block them
 
 ## Key Decisions Made
@@ -86,7 +85,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
-- 2026-09-10 — **Phase 8, three of five groups**: a pattern is a file a team can write, a skill says what it needs and is told no before it starts, and a catalogue too big to read whole is names until the model asks. A mutation that survived changed the skill design rather than adding a test — matching a component by interface name as well as id would have let a skill declare a need it could not invoke
+- 2026-09-10 — **Phase 8 complete**: patterns and skills are files a team writes, a big catalogue is names until the model asks, a run replays for nothing, and a model can summarise itself and keep a helper. Building the helper verbs found a Phase 7 bug — a held child was woken on the ceiling it started with, which a parent that had spent since could no longer afford
 - 2026-09-10 — **Phase 7 complete**: a child can be kept between messages, and it is a checkpoint rather than an object left running. Building it found that `Await` had never parked — the architecture said `interrupt()` since Phase 0 and the compiler treated it like `Invoke`, so half the grammar's waiting was a type nothing exercised
 - 2026-09-10 — **Phase 6 complete**: the compiler says *where*. A nested composite is a subgraph with its own checkpoint namespace, a host can stop a run and the record carries the words of whoever asked, and a parked run resumes from a file after the saver that wrote it is gone. Two steps sharing an id used to loop until the lease was spent; now the run ends and names the id
 - 2026-09-10 — **Phase 5 complete**: a child agent uses the parent's registry through an MCP server, and what it did is on the parent's record because it was routed. The MCP topology is inverted — the parent spawns the child and serves over its pipes, because this server holds a live run and cannot be launched fresh

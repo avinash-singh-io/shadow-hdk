@@ -38,17 +38,25 @@ phase: 8-patterns-skills-replay
 
 ## Group 3 — the recorded model port
 
-- [ ] `RecordedModel(inner, tape)`, and the fingerprint
-- [ ] a replay makes no model call
-- [ ] a fingerprint not on the tape is a miss that says so
-- [ ] RED: each of the above
-- [ ] Gate
+- [x] `RecordedModel(inner, tape)`, and the fingerprint — messages, **the tools offered**, and the
+      model name
+- [x] a replay makes no model call — a replay-only port has no inner model to call
+- [x] a fingerprint not on the tape is a miss that says so, naming enough of the question to
+      recognise it
+- [x] answers consumed **in order**; asking more times than were recorded is a miss too
+- [x] a tape saves and loads
+- [x] RED: each of the above, plus a whole agent run replayed with **no model port at all**
+- [x] Gate
 
 ## Group 4 — compaction, and the model's verbs
 
-- [ ] compaction as a component whose proposal reaches the sink
-- [ ] `spawn` / `send` / `release` meta-tools
-- [ ] the `held-helper` pattern that shapes the child
-- [ ] RED: each of the above
-- [ ] records, board, status
-- [ ] Gate
+- [x] compaction as a **meta-tool** whose proposal reaches the sink and which the runtime writes
+      nowhere; the transcript afterwards is shorter, and the role and brief survive it
+- [x] `spawn` / `send` / `release` meta-tools, with `@1`-style handles
+- [x] `keeps-helpers.toml` — a sixth shipped pattern offering the verbs. The child's *shape* is
+      the composition the verb builds: the named agent given a brief, then a wait on the mailbox
+- [x] RED: each of the above, plus a deployment with **no mailbox** where a helper cannot park
+- [x] a Phase 7 bug found and fixed: a held child was woken on the ceiling it started with, which
+      a parent that had spent since could no longer afford
+- [x] records, board, status
+- [x] Gate
