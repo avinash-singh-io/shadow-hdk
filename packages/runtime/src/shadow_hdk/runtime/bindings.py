@@ -31,6 +31,7 @@ from shadow_hdk.kernel.ports import (
 
 if TYPE_CHECKING:
     from shadow_hdk.runtime.cancel import Cancellation
+    from shadow_hdk.runtime.children import Children
     from shadow_hdk.runtime.emit import Emitter
     from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
@@ -73,6 +74,7 @@ class RunContext:
         self._emitter = emitter
         self._ports = ports
         self._registry = registry
+        self._children: Children | None = None
 
     @property
     def run_id(self) -> RunId:
@@ -131,6 +133,24 @@ class RunContext:
         """Release that hold and charge what the child really spent."""
         self._session.meter.settle(
             reserved, steps=steps, cost_cents=cost_cents, cost_known=cost_known
+        )
+
+    @property
+    def children(self) -> Children:
+        """This run's children — spawn, send, release (D16). Built on first use, because most runs
+        never have one."""
+        from shadow_hdk.runtime.children import Children as _Children
+
+        if self._children is None:
+            self._children = _Children(self)
+        return self._children
+
+    async def announce_held(self, handle: str, steps_spent: int) -> None:
+        """Say on this run's stream that a child parked and is being kept."""
+        from shadow_hdk.kernel.events import Held
+
+        await self._emitter.emit(
+            lambda **k: Held(child_run_id=handle, handle=handle, steps_spent=steps_spent, **k)
         )
 
     async def announce_child(self, child_run_id: RunId, lease: Lease) -> None:

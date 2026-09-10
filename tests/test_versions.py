@@ -11,10 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.4.0"
-"""0.4.0 because `Ended` grew `detail` — the words of whoever stopped a run, so a host can tell a
-cancellation from a ceiling from a broken port. 0.3.0 was `Provenance.posture`; 0.2.0 was
-`ModelPort.stream`. Each is a contract change, so every package moves (D9)."""
+EXPECTED = "0.5.0"
+"""0.5.0 because the event stream grew a tenth kind, `Held` — a child parked instead of ending and
+its parent is keeping it, which a host would otherwise have to infer from the *absence* of `Ended`,
+and a child that died silently looks the same. 0.4.0 was `Ended.detail`; 0.3.0 was
+`Provenance.posture`; 0.2.0 was `ModelPort.stream`. Each is a contract change, so every package
+moves together (D9)."""
 
 
 def _packages() -> dict[str, str]:

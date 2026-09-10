@@ -105,6 +105,24 @@ class Spawned:
     kind: Literal["spawned"] = "spawned"
 
 
+@dataclass(frozen=True)
+class Held:
+    """A child parked instead of ending, and its parent is keeping it (D16).
+
+    Without this a host would have to infer holding from the *absence* of `Ended` — which a child
+    that died silently also looks like. `steps_spent` is what the child cost on the way in; it is
+    not a reservation, because a parked run settles what it did not use back to its parent.
+    """
+
+    run_id: RunId
+    seq: int
+    at: str
+    child_run_id: RunId
+    handle: str
+    steps_spent: int
+    kind: Literal["held"] = "held"
+
+
 EndReason = Literal["completed", "lease_exhausted", "gave_up", "cancelled", "failed"]
 
 
@@ -122,6 +140,6 @@ class Ended:
 
 
 Event = Annotated[
-    Started | Composed | Invoked | Observed | Proposed | Refused | Asked | Spawned | Ended,
+    Started | Composed | Invoked | Observed | Proposed | Refused | Asked | Spawned | Held | Ended,
     Field(discriminator="kind"),
 ]

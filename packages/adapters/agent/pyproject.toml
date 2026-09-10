@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-agent"
-version = "0.4.0"
+version = "0.5.0"
 description = "The model-driven loop as a component, and agent architectures as data."
 readme = "README.md"
 requires-python = ">=3.12"
