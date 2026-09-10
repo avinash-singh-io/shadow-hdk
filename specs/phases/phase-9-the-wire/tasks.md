@@ -51,10 +51,22 @@ phase: 9-the-wire
 
 ## Group 3 — `serve`, which listens
 
-- [ ] HTTP for calls, SSE for events; localhost only in tests
-- [ ] the run token: short-lived, single-run, carrying scope, principal and lease
-- [ ] RED: a client that did not launch it runs and watches; a token scopes one run
-- [ ] Gate
+- [x] HTTP for calls, SSE for **everything coming back** — an HTTP server cannot call its client,
+      so the runtime's callbacks and the run's events share one stream. 127.0.0.1 on port 0 in
+      every test; the web dependencies are an optional `[serve]` extra
+- [x] a **session per connection**, opened by the SSE stream: its own id, channel and runtime, so
+      a second client cannot answer the first's callbacks
+- [~] the **run token** proper — short-lived, single-run, carrying scope, principal and lease — is
+      not built. The session id is a connection identity, not a capability: it is unguessable and
+      scopes one connection, but it does not carry a lease or a principal and does not expire.
+      wire.md also says *the runtime never holds a host credential*, and it does not. Doing this
+      properly means deciding who mints the token, which is an authentication question the owner's
+      identity system answers — recorded rather than invented
+- [x] RED: a client that did not launch it runs a composition and watches; events arrive **while
+      the run is still going**; the host's policy refuses across the socket; a proposal from the
+      host's component lands on the run's record; two clients get their own sessions; a request
+      with no session header is a 400 and an invented one a 404
+- [x] Gate
 
 ## Group 4 — schemas, the version, and the record
 

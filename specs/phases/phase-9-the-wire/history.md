@@ -200,3 +200,53 @@ not the source under test.
 The gate means nothing unless it is the only thing touching the tree. Re-run clean, all four zero.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 3: `serve`, and Phase 5's debt paid
+Topics: wire, serve, http, sse, sessions, phase-5-debt
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md
+
+The last transport wire.md names. Phase 5 found that the RecordingServer can only be connected to,
+never launched — a server holding a live `RunContext` cannot be started fresh by somebody else — so
+a child on another machine had no way in.
+
+**The direction is the design.** The ports invert, but an HTTP server cannot call its client, so the
+host POSTs its calls and replies while the runtime's callbacks *and* the run's events come back down
+one SSE stream. `Channel` already hid both from the protocol, so `RuntimeSide` and `HostSide` are
+untouched. That is the payoff for building the loopback first: the wire grew a transport rather than
+a second implementation.
+
+A **session per connection**, opened by the SSE stream. Without it a second client would join the
+first's session and answer its callbacks.
+
+### [SCOPE_CHANGE] 2026-09-10 — the run token is recorded, not invented
+Topics: wire, authentication, run-token
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md
+
+wire.md specifies a run token: *short-lived, single-run, minted when a run opens, carrying the scope,
+principal and lease.* What is built is a **session id** — unguessable, scoping one connection, and
+proving a client is the one that opened the stream. That is connection identity, not a capability.
+
+The gap is deliberate. A real run token has to be *minted* by something, and who mints it is an
+authentication question that belongs to the host's identity system rather than to this package —
+wire.md's own next sentence is that *the runtime never holds a host credential*, which it does not.
+Inventing a token format here would be inventing the answer to somebody else's question.
+
+Recorded with what is and is not true today, so the next reader does not mistake a session id for a
+capability.
+
+### [DISCOVERY] 2026-09-10 — a test bound that could never fire, and what it cost
+Topics: tests, timeouts, mutation-check
+Affects-phases: none
+Affects-specs: none
+
+The socket tests bounded themselves with `anyio.fail_after(120)`. The global pytest timeout is 60,
+so that bound could never fire — it was decoration.
+
+It was not free. A mutation run pays every bound **in full** on each broken variant, so eight
+mutations against a transport took over ten minutes and had to be moved to the background, where it
+then collided with nothing only because the lesson from the previous run was already learned. Thirty
+seconds is generous for localhost and makes the same run finish in about one minute.
+
+---
