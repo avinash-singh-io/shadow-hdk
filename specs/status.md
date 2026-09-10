@@ -4,8 +4,8 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-10 (Phase 14)
-> **Current Phase**: Phase 14 — telemetry — `complete, unmerged`. Next: the environment epic (last on the roadmap)
+> **Last Updated**: 2026-09-10 (Phase 15)
+> **Current Phase**: Phase 15 — the environment contract — `complete, unmerged` (Epic 0007). Next: Phase 16 — MQTT
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
@@ -39,6 +39,7 @@ runtime that turns the bare-harness test green.
 | 12 | Derivation | Complete, unmerged (2026-09-10) | — |
 | 13 | Leases on effects, driver supply chain | Complete, unmerged (2026-09-10) | — |
 | 14 | Telemetry | Complete, unmerged (2026-09-10) | — |
+| 15 | The environment contract | Complete, unmerged (2026-09-10) | — |
 
 ## Ad-hoc / Patch Releases
 
@@ -64,7 +65,8 @@ runtime that turns the bare-harness test green.
 | 11 — contained sandboxes | `phase-11-contained-sandboxes` | **complete here, unmerged** | 3 / 3 groups. A sandbox proves containment at construction or refuses to exist (D25); gVisor and Firecracker as backends whose live proofs **skip** on this machine and are `[~]` for a Linux host. The leash moved into the runtime so no adapter imports another. 517 tests; mypy strict over 93 files. Superseded as the active row by Phase 12. |
 | 12 — derivation | `phase-12-derivation` | **complete, unmerged** | 3 / 3 groups. A ground is data and one engine is its interpreter (D26): fixed-point at scale 12, units and denominators on every value, a total evaluator that answers indeterminate, a canonical fingerprint, and the engine as a component whose observation and proposal are the same claim. 565 tests; mypy strict over 97 files. Superseded as the active row by Phase 13. |
 | 13 — leases on effects | `phase-13-effect-leases` | **complete, unmerged** | 3 / 3 groups. A driver signs what it declares and is checked at the registry on every refresh (D27): unsigned where required, unknown, revoked or forged is *absent* with the reason; a revoked key is refused as revoked however valid its signature. `Acted` is the sixth observation kind — the receipt of any world-effect; the lease is read at the moment of the act; `run/step` tells a resume re-run from a second act. The policy — which effects must be signed, who holds a key, what a warrant is — waits on ADR-1 as `[~]`. Contract 0.6.0 → 0.7.0. 608 tests; mypy strict over 101 files. Superseded as the active row by Phase 14. |
-| 14 — telemetry | `phase-14-telemetry` | **complete, unmerged** | 3 / 3 groups. The run's shape as a trace over the OpenTelemetry API alone (D28): one span per run and per step, refusals/asks/spawns/holds as events, usage on the step, an act's receipt and never a payload; spans open lazily so a resumed run traces; nothing kept with no provider; a raising tracer counted, not hidden. A file sink in `basic` that fsyncs before it returns and reads back past a torn tail. No contract change. 638 tests; mypy strict over 105 files. |
+| 14 — telemetry | `phase-14-telemetry` | **complete, unmerged** | 3 / 3 groups. The run's shape as a trace over the OpenTelemetry API alone (D28): one span per run and per step, refusals/asks/spawns/holds as events, usage on the step, an act's receipt and never a payload; spans open lazily so a resumed run traces; nothing kept with no provider; a raising tracer counted, not hidden. A file sink in `basic` that fsyncs before it returns and reads back past a torn tail. No contract change. 638 tests; mypy strict over 105 files. Superseded as the active row by Phase 15. |
+| 15 — the environment contract | `phase-15-environment-contract` | **complete, unmerged** | 3 / 3 groups (Epic 0007). Every observation carries the posture of what produced it, stamped by the runtime (D30, contract 0.7.0 → 0.8.0); governance is told posture and component at the step and at the catalogue, and `Controlled` makes *only controlled satisfies consent-before-effect* executable; one device contract with three roles and the fake first (D29, D31) — a sensor reads `world`, an actuator writes it with the lease read at the act and a receipt, a witness reports observed acts. 659 tests; mypy strict over 109 files. |
 
 ## Upcoming Phases
 

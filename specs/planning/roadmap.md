@@ -28,9 +28,9 @@ each branched from the one before, **all pushed and none merged** — landing is
 
 | | phases | state |
 |---|---|---|
-| done | 0 – 14 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
-| under way | — | nothing; the environment epic is next |
-| not started | the environment epic | last on the roadmap; read `09` before deciding its phases |
+| done | 0 – 15 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
+| under way | the environment epic (0007) | Phase 15 done; Phase 16 (MQTT) next |
+| not started | 16 — MQTT | the first protocol adapter over Phase 15's contract; OPC-UA and ROS 2 are `[~]` in the epic |
 
 Everything R0–R3 depends on is built **except the wire**, which is J2. Lane P can already embed the
 runtime in-process; what Phase 9 adds is reaching it from another process or language.
@@ -71,7 +71,7 @@ carry is the true one and the plan's was stale.
 | 12 | Derivation | **DONE** · `phase-12-derivation` | 0 | R8 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |
 | 13 | Leases on effects, driver supply chain | Complete, unmerged (mechanism; policy `[~]` ADR-1) | 7, 9 | R9 | `EffectPort` takes a lease; keys, signatures, receipts, revocation |
 | 14 | Telemetry | Complete, unmerged | 0 | — | OpenTelemetry observer; file sink |
-| — | **The environment** (epic) | Not started | 3, 7, 13 | — | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
+| — | **The environment** (epic 0007) | Phase 15 complete, unmerged; 16 next; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | — | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
 
 ## Epics
 
@@ -83,7 +83,7 @@ carry is the true one and the plan's was stale.
 | 0004 governance as rows | 10 | R5 |
 | 0005 the body | 11, 13 | R9 |
 | 0006 derivation | 12 | R8 |
-| 0007 the environment | later | — |
+| 0007 the environment | 15, 16 | — |
 
 Only 0001 is created at founding; each later epic is brainstormed once when reached, its decisions
 already settled by `09` where `09` speaks.
