@@ -40,3 +40,35 @@ running either real backend and observing its proof is not. The second half is `
 command that settles it, and a backend that has never run is not called done.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-10 — the leash moves below both sandboxes
+Topics: sandbox, leash, invariants, runtime
+Affects-phases: none
+Affects-specs: specs/architecture/runtime.md, specs/architecture/adapters.md
+
+`ContainedSandbox` first subclassed `SubprocessSandbox`, and `test_no_adapter_imports_another`
+refused it. That invariant is what lets a host install any subset of adapters, so the leash the
+two share — timeout, output cap, scrubbed environment — moved into `runtime/leash.py` and each
+sandbox wraps it its own way. Phase 3's sandbox delegates and is otherwise unchanged.
+
+### [DISCOVERY] 2026-09-10 — a timed-out child was never checked dead, again
+Topics: sandbox, timeout, mutation-check, vacuous-tests
+Affects-phases: none
+Affects-specs: none
+
+Deleting the kill on timeout left every test green. The existing timeout test asserts the error
+text and the elapsed time, and both are identical whether the child was killed or merely
+abandoned: `wait_for` returns on the deadline either way and the orphan carries on. Phase 4
+recorded exactly this gap. A new test asks the child to leave a marker if it survives; the
+mutation now bites.
+
+### [NOTE] 2026-09-10 — the two real backends exist as code and have never run
+Topics: gvisor, firecracker, live-tests, linux
+Affects-phases: none
+Affects-specs: none
+
+Shape tests pass; live tests skip naming what they need; the commands that settle them are in
+tasks.md. Firecracker has no single-command mode, so the deployment supplies a launcher and the
+backend prefixes it — recorded rather than faked.
+
+---
