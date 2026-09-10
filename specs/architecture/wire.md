@@ -30,8 +30,15 @@ host ◄── runtime   complete(request)            → response
 host ◄── runtime   invoke(registration, inputs) → observation
 host ◄── runtime   propose(proposal)            → ack
 host ◄── runtime   event…                       (SSE / notification)
-host ──► runtime   resume(run_id, answer)
+host ──► runtime   resume(run_id, answer)       answer: a judgement, or {step id: judgement}
 ```
+
+> **Corrected 2026-09-10 (BUG-010, D38).** `answer` is a **judgement**, sent as its JSON —
+> `{"kind": "allow"}` or `{"kind": "refuse", "reason": …}` — and loaded at the runtime's edge like
+> everything else that crosses (D19). It used to be anything at all, harmlessly, because the
+> runtime re-judged on resume and threw the answer away; now the answer decides, so a value that is
+> not a judgement is refused rather than read as consent nobody gave. One judgement settles every
+> step parked in that superstep; a map keyed by step id answers them one at a time.
 
 ## Rules already fixed
 

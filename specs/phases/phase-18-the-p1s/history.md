@@ -133,3 +133,73 @@ The fifth is **equivalent**: not re-recording a released handle at restore chang
 the checkpoint already carries the `None` and `merge_dicts` keeps it across every later leg.
 
 ---
+
+### [DECISION] 2026-09-10 — D38: a parked step resumes where it parked — in progress, not from the top
+Topics: resume, interrupt, governance, consent, d38
+Affects-phases: none
+Affects-specs: specs/architecture/runtime.md
+
+LangGraph re-runs a node from the top on resume, and `interrupt()` returns the answer only where it
+was raised. Everything above it therefore happened twice, and the runtime treated the second pass as
+if it were the first: it judged again, and it invoked again.
+
+Judging again is the serious half. A policy that changed its mind while a human was thinking
+**overruled the human it had asked** — and a policy that stopped asking discarded a refusal and ran
+the work. Consent before effect is the entire reason an Ask exists; a re-judge that can overturn the
+answer makes the pause theatre. So a step the checkpoint says parked is **not judged again**, and an
+`Await` is **not invoked again** — it already said `Pending`, and what it is waiting for is the
+answer, not another call.
+
+`_stream` already read the checkpoint's pending interrupts to rebuild D33's `resume_seq`; it now
+reads all of them and hands the resumed leg a map of step id to what that step parked on. That map
+is consumed on first use, so a step that parks a second time parks properly rather than resuming
+into a stale record.
+
+**The answer is a `Judgement`.** A bare string used to be ignored, because the re-judge was really
+deciding; now that the answer decides, it has to be one — `Allow()` or `Refuse(reason)` in process,
+its JSON over the wire, loaded at the runtime's edge like everything else that crosses (D19).
+Anything else is refused, because a value nobody can read as consent must not be treated as consent.
+
+One answer settles every step parked in the same superstep, which is what a `FanOut` of two Asks
+needs; an answer keyed by step id addresses them one at a time.
+
+Rejected: **replaying the node and suppressing the second effect** (a ledger of what already ran —
+more state to keep correct across a park than the interrupt record already is, and it still re-asks
+the policy); **re-judging but preferring the human's answer on conflict** (the policy is then asked
+a question whose answer is discarded, which is worse than not asking); and **an idempotency key on
+every irreversible invocation**, which the audit's row proposed. The key is real and stays where it
+is — a device or a network retries on its own — but it makes a double act survivable rather than
+absent, and here the harness was manufacturing the double itself. Fix the cause.
+
+*Overturned by:* a LangGraph that resumes a node in place, which would make the record redundant.
+
+---
+
+### [NOTE] 2026-09-10 — Group 4: five tests encoded the bug they were meant to catch
+Topics: testing, resume, mutation, honesty
+Affects-phases: none
+Affects-specs: none
+
+The audit found this bug by reading; the suite had 771 tests over the same code and was green. Worth
+naming why, because it is the same failure four times.
+
+`test_await.py` asserted **one `Observed`** where the claim was one *invocation* — and `Observed` is
+emitted once no matter how many times the component ran. `test_acting.py::test_a_retry_carries_the_
+same_key` asserted `["r-1/s1", "r-1/s1", "r-1/s2"]` and its docstring explained the repeated key as
+the feature that makes the double act safe: the test **documented the bug as a design**. Three more
+answered an Ask with the bare string `"yes"` and passed, which could only work because the answer
+was being ignored — the re-judge decided, and the string never had to mean anything.
+
+So the fix broke five tests, and every one of them broke because it was wrong. Each was rewritten
+from the corrected premise rather than adjusted until it passed.
+
+**The audit's own row was also wrong**, in the run's favour: it said two Asks in one `FanOut` end
+the run `failed` with LangGraph's message. Reproducing it showed the run parks again and a caller
+can answer both one at a time, re-running the answered branch each time. Worse than it sounds in one
+way — silent re-running rather than a loud failure — and the backlog row now says so.
+
+Twelve mutations, all twelve bite. Two needed the right command and the right test before they did:
+loading a judgement from JSON only bites when the wire suite is in the run, and *resumes every time*
+rather than *once* only bites with a resume inside an `Until` loop, which nothing had covered.
+
+---

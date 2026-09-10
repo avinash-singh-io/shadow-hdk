@@ -171,6 +171,10 @@ async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
     except DanglingRef as exc:
         return await self._observe(step, Failed(str(exc)))
 
+    # 3½ — did this step park? then resume it where it parked, and nowhere earlier (D38)
+    if (parked_on := self._resuming.pop(step.id, None)) is not None:
+        return await self._resume_where_it_parked(step, parked_on, port, registration, inputs)
+
     # 4 — judge, over effects, never over the name
     ctx = self.session.context_for(step.id)
     judgement = await self._port(self.ports.governance.judge, registration.component.effects, ctx)
@@ -181,7 +185,7 @@ async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
         case Ask(question):
             handle = f"{self.session.run_id}:{step.id}"
             await self.emit(lambda **k: AskedEvent(step=step.id, question=question, handle=handle, **k))
-            answer = interrupt({"run_id": self.session.run_id, "step": step.id, "question": question})
+            answer = _as_judgement(interrupt({"run_id": …, "step": step.id, "question": question}))
             if not isinstance(answer, Allow):
                 reason = getattr(answer, "reason", "not allowed")
                 return await self._observe(step, Refused(reason))
@@ -271,11 +275,19 @@ StepExecutor  ──────────► GovernancePort  judge(effects, c
 StepExecutor  ──────────► Emitter         Asked            ──► observer / iterator
 StepExecutor  ──────────► LangGraph       interrupt()      ──► checkpoint under thread_id = run_id
    ⟨ the process may end here ⟩
-host          ──resume(run_id, Allow)───► LangGraph        Command(resume=Allow)
+host          ──resume(run_id, Allow())─► LangGraph        Command(resume=Allow())
+   ⟨ LangGraph re-runs the node from the top; the checkpoint's pending interrupts say this
+     step parked and on what, so it is NOT judged again and lands back at its interrupt (D38) ⟩
 StepExecutor  ──────────► ComponentPort   invoke           → Completed
-StepExecutor  ──────────► Emitter         Invoked, Observed
+StepExecutor  ──────────► Emitter         Invoked, Observed        ⟨ once, not twice ⟩
 run           ──────────► Emitter         Ended(completed)
 ```
+
+**The answer decides, so it must be a judgement.** `resume` takes an `Allow` or a `Refuse` — the
+object in process, its JSON over the wire, loaded at the runtime's edge like everything else that
+crosses (D19). A bare value is refused rather than read as consent nobody gave. One answer settles
+every step parked in that superstep, which is what a `FanOut` of two Asks needs; an answer keyed by
+step id (`{"s2": Allow()}`) addresses them one at a time.
 
 ## Sequence — a sub-agent, carved and forwarded
 

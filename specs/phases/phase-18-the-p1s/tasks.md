@@ -26,7 +26,16 @@ phase: 18-the-p1s
   - [x] one spawned with a checkpointer of its own is named in `children.lost` with the reason, never silently replaced
   - [x] RED: the same handle either side of the park; a restored child answers a `send` where it slept; an unreachable one is reported; a released one and one that *ended on a send* both stay gone — 7 tests
   - [x] Gate — ruff 0 / format 0 / mypy 0 (123 files) / pytest 771 passed, 1 skipped, 10 deselected; 14 mutations, 13 bite, 1 named equivalent
-- [ ] BUG-010 — the double invoke, and a re-run judgement overriding a human
+- [x] BUG-010 — a parked step resumes where it parked (**D38**, contract 0.11.0 → 0.12.0)
+  - [x] reproduce, all four: an `Await` called its component twice and emitted `Invoked` twice; a re-run `Refuse` overrode the host's `Allow`; a re-run `Allow` discarded the host's `Refuse` **and ran the work**; two Asks in one `FanOut` took one resume each and re-ran the answered branch
+  - [x] **the audit's row was wrong on the fourth** — no `failed`, no LangGraph message; it parks again. Corrected in the backlog rather than quietly closed
+  - [x] `_stream` passes the checkpoint's pending interrupts down to `StepExecutor`; a step that parked is not judged again and an `Await` is not invoked again — it resumes at its interrupt
+  - [x] an `Ask` is answered with a `Judgement`: an object in process, its JSON over the wire loaded at the runtime's edge (D19); a bare value is refused, not read as consent
+  - [x] one answer settles every step that asked (what a fan-out needs); an answer keyed by step id addresses them one at a time
+  - [x] D33's `resume_seq` and D37's records both ride this path and still hold — each has a test either side of the park
+  - [x] five existing tests changed because they encoded the old behaviour, one with a docstring calling the double act a feature
+  - [x] RED: 8 tests, including a resume inside an `Until` loop that must happen once, not every iteration
+  - [x] Gate — ruff 0 / format 0 / mypy 0 (124 files) / pytest 779 passed, 1 skipped, 10 deselected; 12 mutations, all bite
 - [ ] BUG-011, BUG-012, TD-003
 - [ ] TD-009 — the workflow change, and the pull request prepared for the owner
 - [ ] records, board, status, roadmap
