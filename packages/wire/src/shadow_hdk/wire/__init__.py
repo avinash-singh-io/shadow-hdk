@@ -14,6 +14,12 @@ from shadow_hdk.wire.remote import (
     RemoteModel,
     RemoteSink,
 )
+from shadow_hdk.wire.serve import (
+    SESSION_HEADER,
+    build_app,
+    connect_to,
+    served_over_http,
+)
 from shadow_hdk.wire.sides import HostSide, RuntimeSide, drive, loopback
 from shadow_hdk.wire.stdio import StdioChannel, over_a_child_process, serve_stdio
 
@@ -29,13 +35,17 @@ __all__ = [
     "RemoteGovernance",
     "RemoteModel",
     "RemoteSink",
+    "SESSION_HEADER",
     "RuntimeSide",
     "StdioChannel",
     "VersionMismatch",
     "WireError",
+    "build_app",
     "channel_pair",
+    "connect_to",
     "drive",
     "loopback",
     "over_a_child_process",
     "serve_stdio",
+    "served_over_http",
 ]

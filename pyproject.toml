@@ -10,7 +10,7 @@ version = "0.0.0"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp", "shadow-hdk-adapters-workspace", "shadow-hdk-adapters-sandbox-subprocess", "shadow-hdk-adapters-acp", "shadow-hdk-adapters-recording", "shadow-hdk-wire"]
+dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp", "shadow-hdk-adapters-workspace", "shadow-hdk-adapters-sandbox-subprocess", "shadow-hdk-adapters-acp", "shadow-hdk-adapters-recording", "shadow-hdk-wire[serve]"]
 
 [tool.uv]
 package = false

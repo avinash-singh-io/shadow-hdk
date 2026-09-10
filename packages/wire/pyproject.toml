@@ -8,6 +8,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel", "shadow-hdk"]
 
+[project.optional-dependencies]
+serve = ["starlette>=0.37", "uvicorn>=0.30", "httpx>=0.27"]
+
 [build-system]
 requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"

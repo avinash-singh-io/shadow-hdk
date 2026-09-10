@@ -142,6 +142,10 @@ class HostSide:
         self.ports = ports
         self.events: list[Event] = []
         self.child_pid: int | None = None
+        self.session_id: str | None = None
+        """Set when the runtime is listening and this host connected to it."""
+        self.watching: Callable[[Event], None] | None = None
+        """Called as each event arrives, so a caller can see the stream rather than the total."""
         """Set when the runtime is a process rather than a task, so a test can prove it is one."""
         self.peer.serves(JUDGE, self._judge)
         self.peer.serves(COMPLETE, self._complete)
@@ -226,7 +230,10 @@ class HostSide:
         return None
 
     async def _event(self, params: dict[str, Any]) -> None:
-        self.events.append(load(json.dumps(params["event"]), Event))
+        event = load(json.dumps(params["event"]), Event)
+        self.events.append(event)
+        if self.watching is not None:
+            self.watching(event)
 
 
 @asynccontextmanager

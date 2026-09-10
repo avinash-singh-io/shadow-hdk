@@ -1411,11 +1411,22 @@ dependencies = [
     { name = "shadow-hdk-kernel" },
 ]
 
+[package.optional-dependencies]
+serve = [
+    { name = "httpx" },
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
+
 [package.metadata]
 requires-dist = [
+    { name = "httpx", marker = "extra == 'serve'", specifier = ">=0.27" },
     { name = "shadow-hdk", editable = "packages/runtime" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "starlette", marker = "extra == 'serve'", specifier = ">=0.37" },
+    { name = "uvicorn", marker = "extra == 'serve'", specifier = ">=0.30" },
 ]
+provides-extras = ["serve"]
 
 [[package]]
 name = "shadow-hdk-workspace"
@@ -1433,7 +1444,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-sandbox-subprocess" },
     { name = "shadow-hdk-adapters-workspace" },
     { name = "shadow-hdk-kernel" },
-    { name = "shadow-hdk-wire" },
+    { name = "shadow-hdk-wire", extra = ["serve"] },
 ]
 
 [package.dev-dependencies]
@@ -1462,7 +1473,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-sandbox-subprocess", editable = "packages/adapters/sandbox_subprocess" },
     { name = "shadow-hdk-adapters-workspace", editable = "packages/adapters/workspace" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "shadow-hdk-wire", editable = "packages/wire" },
+    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
 ]
 
 [package.metadata.requires-dev]
