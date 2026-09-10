@@ -89,3 +89,81 @@ worth the entry because the helper looked like it made the test clearer.
 
 Also caught: `from __future__ import annotations` makes an undefined name in a type annotation a
 **lint** error and not a runtime one, so a missing import passed 308 tests and only ruff objected.
+
+### [FEATURE] 2026-09-10 — Group 1: the registry, offered to a child as an MCP server
+Topics: recording, mcp, routing, g1
+Affects-phases: none
+Affects-specs: none
+
+`shadow_hdk.adapters.recording.RecordingServer`. `09` §8 taken literally: `call` does not judge,
+or emit, or meter. It runs a one-step composition as a child of the parent run, and governance, the
+parent's event stream and the carved lease all arrive because that is what a run already does. What
+the child is offered is `RunContext.visible()` — the same computation the model sees.
+
+Ten tests drive it directly; four more drive it over a real `ClientSession` through a stream pair,
+because `attach` hands two request handlers to somebody else's server naming their parameter models
+and a mistake there is invisible to a direct call and total over a wire. That wire test is what
+caught the SDK's model fields being snake_case (`input_schema`, `is_error`), which a direct call
+never touches.
+
+### [DISCOVERY] 2026-09-10 — two corrections a new adapter has to inherit
+Topics: langgraph, events, refusal, step-ids
+Affects-phases: none
+Affects-specs: none
+
+Both are in the code as comments, because both are the sort of thing the next adapter will get
+wrong the same way.
+
+**The step id joins with `__`, not `:`.** LangGraph reserves the colon for checkpoint namespaces, so
+a step id carrying one fails at graph construction. The compiler learned this in Phase 0; an adapter
+minting its own step ids has to know it too.
+
+**A refusal emits one event, not two.** `Refused` *is* the record of what happened to that step, and
+a second `Observed` saying the same thing is how two narrations come to disagree. So a reader
+watching only for `Observed` misses every refusal — which is what the first version of this did.
+
+### [ARCH_CHANGE] 2026-09-10 — the MCP topology is inverted, and that is why `pipes.py` exists
+Topics: recording, mcp, transport, subprocess, phase-9
+Affects-phases: phase-9
+Affects-specs: none
+
+Planned as `[~] serving a subprocess child needs a listening transport`. Chasing it found the real
+shape, which is not about listening: **in the SDK's stdio convenience the client spawns the server**,
+and that cannot be us. `RecordingServer` holds a live `RunContext`, the parent's lease and the
+parent's event stream, none of which survive being launched fresh in another process. So the parent
+spawns the *child* and serves MCP over the child's own stdin and stdout — we write to its stdin, we
+read from its stdout, and the child runs an ordinary `ClientSession` believing it was started by
+somebody.
+
+The framing is the same newline-delimited JSON-RPC the stdio transport already uses; the SDK does
+not expose it for streams other than this process's fd 0 and 1, so `serve_over_pipes` is twenty
+lines rather than an import.
+
+**Measured** (`tests/adapters/recording/test_over_a_process.py`, against `spikes/mcp/child.py`): a
+real OS subprocess lists exactly the run's visible registry, calls `look` and receives the
+component's output, and the parent's stream carries `invoked` and `observed` under the child's run
+id. Under a reading mode the same child cannot see `wipe` and is refused when it asks anyway.
+
+**Still unproven, now stated precisely:** a child on another *machine* needs a transport where the
+server is already listening (streamable HTTP), because this server can only be connected to, never
+launched. Phase 9's wire starts from that, not from stdio.
+
+### [DISCOVERY] 2026-09-10 — a test whose subject is a process owns a deadline
+Topics: tests, mutation-check, timeouts
+Affects-phases: none
+Affects-specs: none
+
+Mutating `serve_over_pipes` to write a message without its trailing newline is a real defect: the
+child never sees a complete frame and waits forever. The mutation was caught in 47s by the test's
+own `anyio.fail_after(45)` rather than by the global 60s pytest timeout killing the session — the
+same lesson the clock tests taught in Phase 3, now applying to processes.
+
+Nine mutations across Group 2, all bite: the catalogue unfiltered by governance, the child unlinked
+from its parent, the child reusing the parent run id, a refusal reported as success, a refusal
+indistinguishable from a failure, the component's output replaced, the child ceiling ignoring what
+the parent has left, and the framing without its newline.
+
+One bug found by a test going red first, as intended: `governance` was dropped on the way into the
+child helper, so the narrowing test saw an unnarrowed registry and said so.
+
+---

@@ -44,7 +44,8 @@ runtime that turns the bare-harness test green.
 | 1 — real adapters | `phase-1-real-adapters` | **complete, unmerged** | 4 / 4 groups. Superseded as the active row by Phase 2, which branches from it. |
 | 2 — the spike | `phase-2-the-spike` | **complete, unmerged** | J1 answered. Superseded as the active row by Phase 3. |
 | 3 — the workspace and code | `phase-3-workspace-and-code` | **complete, unmerged** | Superseded as the active row by Phase 4. |
-| 4 — the ACP bridge | `phase-4-the-acp-bridge` | **complete, unmerged** | 3 / 3 groups. Another agent as a governed component: fourteen client doors judged, refusals in the agent's own vocabulary, our clock over their runaway, money accumulated before converting. 302 tests; mypy strict over 61 files. What Codex and Claude Code do is still unmeasured. |
+| 4 — the ACP bridge | `phase-4-the-acp-bridge` | **complete, unmerged** | 3 / 3 groups. Superseded as the active row by Phase 5. Another agent as a governed component: fourteen client doors judged, refusals in the agent's own vocabulary, our clock over their runaway, money accumulated before converting. 302 tests; mypy strict over 61 files. What Codex and Claude Code do is still unmeasured. |
+| 5 — the recording server | `phase-5-the-recording-server` | **complete, unmerged** | 3 / 3 groups. Our registry offered to a child agent as an MCP server: what it does is on the parent's record because it was routed. Proven over a real `ClientSession` and over a real OS subprocess. 326 tests; mypy strict over 67 files. A child on another *machine* still needs a listening transport → Phase 9. |
 
 ## Upcoming Phases
 
@@ -70,8 +71,9 @@ runtime that turns the bare-harness test green.
 
 ## Next Actions
 
-1. Phase 5 — the RecordingServer, on `phase-5-the-recording-server` branched from `phase-4-the-acp-bridge`: our registry offered **to** a child agent as an MCP server, so every tool call it makes is an observation with `posture: observed` rather than something that happened out of sight
-2. Phase 6 — the compiler completed: nested composites as real subgraphs, checkpoint namespaces, `resume`, cancellation, host checkpointers
+1. Phase 6 — the compiler completed, on `phase-6-…` branched from `phase-5-the-recording-server`: nested composites as real subgraphs, checkpoint namespaces, `resume`, cancellation, host checkpointers
+2. Phase 7 onward in roadmap order; the environment epic after
+3. Carried to Phase 9, both stated with what would settle them: a tenth event kind so tokens reach the observer, and a **listening** transport (streamable HTTP) for a child on another machine — the recording server can only be connected to, never launched
 
 ## Key Decisions Made
 
@@ -80,6 +82,7 @@ runtime that turns the bare-harness test green.
 
 ## Recent Changes
 
+- 2026-09-10 — **Phase 5 complete**: a child agent uses the parent's registry through an MCP server, and what it did is on the parent's record because it was routed. The MCP topology is inverted — the parent spawns the child and serves over its pipes, because this server holds a live run and cannot be launched fresh
 - 2026-09-10 — **Phase 4 complete**: another agent driven as a governed component. A mode written for the harness governs somebody else's agent without knowing it exists
 - 2026-09-10 — **Phase 3 complete**: the agent can make things — a workspace it cannot write outside of, and a sandbox that says honestly what it is not. What the deployment is decides what the model can see
 - 2026-09-10 — **Phase 2 complete**: J1 answered. ACP reports usage and sometimes a price; a turn always ends with a stop reason; there are two distinct ways to refuse; and nothing stops an agent looping on a denial, so a driver needs its own clock — which the lease already is

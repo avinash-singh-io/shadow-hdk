@@ -15,22 +15,25 @@ phase: 5-the-recording-server
 
 ## Group 1 — the server
 
-- [ ] `packages/adapters/recording/pyproject.toml`, depending on the `mcp` SDK
-- [ ] `RecordingServer(context, *, name)` over `mcp.server.lowlevel.Server`
-- [ ] `list_tools` → `context.visible()`, name / description / input schema carried verbatim
-- [ ] `call_tool` → `run()` a one-step composition as a child of the parent run
-- [ ] a refused call → an MCP error naming the reason; the component never invoked
-- [ ] a `Failed` observation → an MCP error the child can read
-- [ ] `connected()` — an in-memory pair, so a real `ClientSession` drives it
-- [ ] RED: each of the above
-- [ ] Gate
+- [x] `packages/adapters/recording/pyproject.toml`, depending on the `mcp` SDK
+- [x] `RecordingServer(context, *, name)` over `mcp.server.lowlevel.Server`
+- [x] `list_tools` → `context.visible()`, name / description / input schema carried verbatim
+- [x] `call_tool` → `run()` a one-step composition as a child of the parent run
+- [x] a refused call → an MCP error naming the reason; the component never invoked
+- [x] a `Failed` observation → an MCP error the child can read
+- [x] `served()` + `attach()` — any stream pair, so a real `ClientSession` drives it
+- [x] RED: each of the above
+- [x] Gate
 
 ## Group 2 — proof
 
-- [ ] RED: a real `ClientSession` lists exactly what `visible()` returns
-- [ ] RED: a narrowing mode narrows the child, with no code in between
-- [ ] RED: `Invoked` and `Observed` reach the **parent's** stream, carrying the child's run id
-- [ ] RED: a child that calls forever is stopped by the parent's lease
-- [ ] `[~]` a subprocess child needs a listening transport — what it needs, recorded
-- [ ] records, board, status
-- [ ] Gate
+- [x] RED: a real `ClientSession` lists exactly what `visible()` returns
+- [x] RED: a narrowing mode narrows the child, with no code in between
+- [x] RED: `Invoked` and `Observed` reach the **parent's** stream, carrying the child's run id
+- [x] RED: a child that calls forever is stopped by the parent's lease
+- [x] a real subprocess child, served over its own pipes — `serve_over_pipes` +
+      `spikes/mcp/child.py`; the topology is inverted, not merely un-listening
+- [~] a child on **another machine** still needs a listening transport (streamable HTTP),
+      because this server can only be connected to, never launched → Phase 9
+- [x] records, board, status
+- [x] Gate
