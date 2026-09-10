@@ -12,3 +12,8 @@ entry carries matching `Topics:`.
 
 | Topic | File | Section |
 |-------|------|---------|
+| mqtt | specs/architecture/adapters.md | The map |
+| devices | specs/architecture/adapters.md | The map |
+| d32 | specs/epics/0007-the-environment.md | Decisions |
+| envelope | specs/phases/phase-16-mqtt/design.md | 3.1 The envelope |
+| link | specs/phases/phase-16-mqtt/design.md | 3.2 The link as a state machine |

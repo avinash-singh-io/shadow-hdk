@@ -60,3 +60,28 @@ broker alive but silent (`_break` and `reconnect_on_failure=False`, so nothing i
 re-sent) — `amqtt` always acks — and MQTT v5 properties, which no broker here can carry (D32).
 
 ---
+
+### [NOTE] 2026-09-10 — a system-design pass over the adapter as built
+Topics: mqtt, link, concurrency, backpressure, design
+Affects-phases: none
+Affects-specs: none
+Detail: `design.md` in this phase draws the adapter as built at `cd24bdc` — requirements, the
+three-actor concurrency model, the link's state machine, the failure table, the trade-offs behind D32
+and the one-link topology — and ranks what a review of it finds. Two findings were reproduced against
+the local broker rather than read from the code.
+
+---
+
+### [DISCOVERY] 2026-09-10 — two P1 races in `MqttLink`, and four smaller gaps
+Topics: mqtt, link, concurrency, backpressure, wildcards, tls
+Affects-phases: none
+Affects-specs: none
+Detail: BUG-002 — two concurrent first uses of one link open two sessions (measured: a witness
+queues one publish twice; `close()` leaves one client connected). BUG-003 — registration mutates the
+filter sets without the lock the network thread iterates under, and paho re-raises callback
+exceptions, which ends its thread with the link still reporting connected. TD-002 (unbounded witness
+queue), ENH-001 (a wildcard sensor cannot say which topic it read), ENH-002 (TLS option, `[~]`),
+ENH-003 (a protocol-adapter contract suite for the `[~]` rows). The two bugs belong before this
+phase's gate.
+
+---
