@@ -14,10 +14,17 @@ growing only by adapters and pattern files, never by runtime branches.
 
 ## Order
 
-**Intent Studio first.** Lane P (`intent-ecosystem/vision/10-the-roadmap.md` §3b) depends on this
-repository at R1–R3; those phases come first and carry the product release they serve. Everything
-after the R3 join is the harness's own growth, pulled forward the moment a product asks. Ordering is
-computed from each phase's `deps`, never from this list.
+**Ordering is computed from each phase's `deps`, never from this list.** A phase runs when what it
+needs exists; where two are free at once, the one that closes a gap in the runtime's own story comes
+first.
+
+**Adopters do not appear in this document.** The harness is a library: it is finished when its own
+contracts hold, not when somebody has used them. Which release of which product a phase happens to
+unblock is a fact about that product, and it lives in the shared roadmap
+(`intent-ecosystem/vision/10-the-roadmap.md`) with the joins on `intent-ecosystem/lanes/board.md`.
+Keeping it there is what stops this plan from being re-ordered by somebody else's schedule — and
+what stops a capability from being called done because one caller happens not to need the rest of
+it.
 
 ## Where this stands — 2026-09-10
 
@@ -32,24 +39,6 @@ distributions at **0.12.0**, all MIT.
 | done | 18 — the audit's P1s | **COMPLETE, groups 1–5 of 5.** BUG-008, BUG-009 (D35, D36), BUG-015 (D37), BUG-010 (D38, contract 0.12.0), BUG-011, BUG-012, TD-003, TD-009 |
 | open | the P2s | BUG-013, BUG-014, **BUG-016**, TD-004…TD-008 — what remains buildable without the owner |
 | `[~]` | OPC-UA, ROS 2 (epic 0007) | need `asyncua` and a server, and a ROS distribution — not on this machine; shaped by `adapters/mqtt` |
-
-### What the product's joins need, and whether it is built
-
-**All four joins are complete on the harness side.** What stands between them and the product is the
-owner's tag and the owner's merge, not more building here.
-
-| join | serves | what it asks for | state |
-|---|---|---|---|
-| J1 | R1 | what a refused tool call does to another agent's turn | **closed** — reframed by the owner and answered by research: `specs/architecture/refusal.md` |
-| J2 | R3 | the kernel's contracts at a **tagged version**, schemas published; `run`, `serve`, `--stdio` | **built, untagged.** `run` (Phase 0), `serve` and `--stdio` (Phase 9), twelve schemas published under `shadow-hdk/schemas/` with a test comparing a fresh publish against them. **The tag is the owner's** and is `v0.12.0`, not the `v0.1.0` this document named at founding |
-| J3 | R7 | `run.*` events, branch-level cancel, held sub-agents | **built.** Phase 6 (D15 cancellation), Phase 7 (spawn · send · release, `Held`), and hardened by D37 — a parent that parks comes back holding its children |
-| J4 | R5 | the effect-rules governance adapter and the narrowing check as a library function | **built.** Phase 10: rules as rows over profiles, intersection, `widens()` as a plain function — and since 2026-09-10 it compares **ask lines** as well as ceilings (BUG-012), without which a team could keep the house's ceiling and delete every approval in it |
-
-**So R3 is not waiting on harness code.** Everything it names in `10` §R3 — the composition
-compiler, `Sequence`/`FanOut`/`Until`/`Await`/`Ask`, spawn·send·release, leases with a ceiling and
-the grind floor, the observation union, LangGraph checkpoints — is built and green. What R3 waits on
-is J2's **tag**, and then product-side work: the governance adapter, the sink adapter, the 25 record
-tools as components, the switch, and the replay differ.
 
 **Decisions settled so far:** D1–D14 (`specs/epics/0001-the-bare-harness.md`), D15 cancellation
 (phase 6), D16 held children (phase 7), D17 patterns and skills as files, D18 compaction as a
@@ -78,46 +67,46 @@ and found that the runtime costs **1.36 ms of overhead per step** against D11's 
 
 ## Timeline
 
-| Phase | Name | Status | deps | Serves | Key Deliverables |
-|-------|------|--------|------|--------|------------------|
-| 0 | The runtime — the bare test goes green | **DONE** · `phase-0-the-runtime` | — | R0 | `run(composition, ports)`; compile to LangGraph; the governed step; leases, events, proposals, children; the agent as a component with the `single` pattern; `basic` adapters incl. `callable`; testing doubles; replay determinism; the benchmark |
-| 1 | Real adapters, streaming, modes | **DONE** · `phase-1-real-adapters` | 0 | R1 | `adapters/langchain` (one `ModelPort` over LangChain's providers — OpenAI-compatible, Anthropic, Ollama, HuggingFace, …) with `stream`; `adapters/mcp` (annotations → half a profile); `adapters/modes`; the demo on real components |
-| 2 | The spike | **DONE** · `phase-2-the-spike` | 0 | R1 → J1 | half a day over `agent-client-protocol`: does a refused tool call end a CLI's turn cleanly; does ACP report usage |
-| 3 | The workspace and code | **DONE** · `phase-3-workspace-and-code` | 1 | R1/R3 | `adapters/workspace` (files within a root, `writes: {workspace}`); `adapters/sandbox_subprocess` (run code with limits; `contained` per deployment) — the agent writes files, pages and code |
-| 4 | The ACP bridge | **DONE** · `phase-4-the-acp-bridge` | 1, 2 | R2 | Codex or Claude Code as a component, resident for the session |
-| 5 | The RecordingServer | **DONE** · `phase-5-the-recording-server` | 1, 4 | R2 | an MCP server exposing the registry to a child agent; every call an observation with `posture: observed` |
-| 6 | The compiler, complete | **DONE** · `phase-6-the-compiler-complete` | 0 | R3 | nested composites as subgraphs, checkpoint namespaces, `resume`, cancellation, host checkpointers |
-| 7 | Sub-agents | **DONE** · `phase-7-sub-agents` | 6 | R3 | spawn · send · release; held children; branch-level cancel; `run.*` events |
-| 8 | Patterns, skills, replay | **DONE** · `phase-8-patterns-skills-replay` | 7 | R3 | `plan-and-execute`, `orchestrator-workers`, `critic-pair`, `reflect-until`; skill file loader; compaction component; recorded model port; catalogue compaction (`describe`) |
-| 9 | The wire | **DONE** · `phase-9-the-wire` | 6, 7 | R3 → J2 | `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`; schemas published. The tag is the owner's and is now **`v0.12.0`** — twelve contract changes have moved every package under D9 since this row was written |
-| 10 | Effect rules | **DONE** · `phase-10-effect-rules` | 0 | R5 → J4 | rules as rows over profiles, intersection, the narrowing check as a library, mode files |
-| 11 | Contained sandboxes | **DONE here** · live proofs `[~]` Linux · `phase-11-contained-sandboxes` | 3 | R9 | gVisor, Firecracker as `contained: true` components |
-| 12 | Derivation | **DONE** · `phase-12-derivation` | 0 | R8 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |
-| 13 | Leases on effects, driver supply chain | **DONE** (mechanism; policy `[~]` ADR-1) | 7, 9 | R9 | `EffectPort` takes a lease; keys, signatures, receipts, revocation |
-| 14 | Telemetry | **DONE** | 0 | — | OpenTelemetry observer; file sink |
-| — | **The environment** (epic 0007) | **DONE** for phases 15 and 16; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | — | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
-| 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | — | — | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
-| 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | — | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
-| 19 | The P2s | **NEXT** | 18 | — | BUG-013, BUG-014, **BUG-016** (the runtime is over D11's latency budget), TD-004…TD-008 |
+| Phase | Name | Status | deps | Key Deliverables |
+|-------|------|--------|------|------------------|
+| 0 | The runtime — the bare test goes green | **DONE** · `phase-0-the-runtime` | — | `run(composition, ports)`; compile to LangGraph; the governed step; leases, events, proposals, children; the agent as a component with the `single` pattern; `basic` adapters incl. `callable`; testing doubles; replay determinism; the benchmark |
+| 1 | Real adapters, streaming, modes | **DONE** · `phase-1-real-adapters` | 0 | `adapters/langchain` (one `ModelPort` over LangChain's providers — OpenAI-compatible, Anthropic, Ollama, HuggingFace, …) with `stream`; `adapters/mcp` (annotations → half a profile); `adapters/modes`; the demo on real components |
+| 2 | The spike | **DONE** · `phase-2-the-spike` | 0 | half a day over `agent-client-protocol`: does a refused tool call end a CLI's turn cleanly; does ACP report usage |
+| 3 | The workspace and code | **DONE** · `phase-3-workspace-and-code` | 1 | `adapters/workspace` (files within a root, `writes: {workspace}`); `adapters/sandbox_subprocess` (run code with limits; `contained` per deployment) — the agent writes files, pages and code |
+| 4 | The ACP bridge | **DONE** · `phase-4-the-acp-bridge` | 1, 2 | Codex or Claude Code as a component, resident for the session |
+| 5 | The RecordingServer | **DONE** · `phase-5-the-recording-server` | 1, 4 | an MCP server exposing the registry to a child agent; every call an observation with `posture: observed` |
+| 6 | The compiler, complete | **DONE** · `phase-6-the-compiler-complete` | 0 | nested composites as subgraphs, checkpoint namespaces, `resume`, cancellation, host checkpointers |
+| 7 | Sub-agents | **DONE** · `phase-7-sub-agents` | 6 | spawn · send · release; held children; branch-level cancel; `run.*` events |
+| 8 | Patterns, skills, replay | **DONE** · `phase-8-patterns-skills-replay` | 7 | `plan-and-execute`, `orchestrator-workers`, `critic-pair`, `reflect-until`; skill file loader; compaction component; recorded model port; catalogue compaction (`describe`) |
+| 9 | The wire | **DONE** · `phase-9-the-wire` | 6, 7 | `serve` (JSON-RPC 2.0 over HTTP/2 + SSE), `--stdio`; schemas published. The tag is the owner's and is now **`v0.12.0`** — twelve contract changes have moved every package under D9 since this row was written |
+| 10 | Effect rules | **DONE** · `phase-10-effect-rules` | 0 | rules as rows over profiles, intersection, the narrowing check as a library, mode files |
+| 11 | Contained sandboxes | **DONE here** · live proofs `[~]` Linux · `phase-11-contained-sandboxes` | 3 | gVisor, Firecracker as `contained: true` components |
+| 12 | Derivation | **DONE** · `phase-12-derivation` | 0 | total expressions over typed tables, fixed-point arithmetic, re-executable grounds |
+| 13 | Leases on effects, driver supply chain | **DONE** (mechanism; policy `[~]` ADR-1) | 7, 9 | `EffectPort` takes a lease; keys, signatures, receipts, revocation |
+| 14 | Telemetry | **DONE** | 0 | OpenTelemetry observer; file sink |
+| — | **The environment** (epic 0007) | **DONE** for phases 15 and 16; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
+| 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | 16 | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
+| 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
+| 19 | The P2s | **NEXT** | 18 | BUG-013, BUG-014, **BUG-016** (the runtime is over D11's latency budget), TD-004…TD-008 |
 
 ## Epics
 
-| Epic | Phases | Serves |
-|---|---|---|
-| 0001 the bare harness | 0, 1, 2 | R0–R1 |
-| 0002 the workspace, and driving another agent | 3, 4, 5 | R1–R2 |
-| 0003 composition at scale | 6, 7, 8, 9 | R3 |
-| 0004 governance as rows | 10 | R5 |
-| 0005 the body | 11, 13 | R9 |
-| 0006 derivation | 12 | R8 |
-| 0007 the environment | 15, 16 | — |
-| — the audit | 17, 18, 19 | — · the harness's own correctness, filed 2026-09-10 |
+| Epic | Phases |
+|---|---|
+| 0001 the bare harness | 0, 1, 2 |
+| 0002 the workspace, and driving another agent | 3, 4, 5 |
+| 0003 composition at scale | 6, 7, 8, 9 |
+| 0004 governance as rows | 10 |
+| 0005 the body | 11, 13 |
+| 0006 derivation | 12 |
+| 0007 the environment | 15, 16 |
+| — the audit | 17, 18, 19 |
 
 Only 0001 is created at founding; each later epic is brainstormed once when reached, its decisions
 already settled by `09` where `09` speaks.
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable
-2. Intent Studio's need orders the phases until the R3 join; the harness's own growth after
+2. `deps` order the phases; nothing else does, and no adopter's schedule does
 3. Defer scope, not quality — red tests first, contracts round-trip, the benchmark runs
 4. A new capability is an adapter or a pattern file; a runtime branch on a name is a defect
