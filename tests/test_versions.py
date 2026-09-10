@@ -11,8 +11,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.12.0"
-"""0.12.0 because an `Ask` is answered with a `Judgement` and the answer now decides (D38,
+EXPECTED = "0.13.0"
+"""0.13.0 because a stop signal is no longer an ordinary exception, and a sink that cannot write
+ends the run rather than the step (TD-006). A host catching `Exception` around a component no
+longer swallows a lease that ran out, a cancellation, or a port that broke — which is what it was
+doing, because every component adapter catches `Exception` and D7 says it should.
+
+0.12.0 because an `Ask` is answered with a `Judgement` and the answer now decides (D38,
 BUG-010). A host that answers with a bare value gets a refusal where it used to get silent
 success, because the re-run judgement — not the human — was deciding.
 

@@ -100,7 +100,11 @@ async def _drive(
         except BaseException as error:  # noqa: BLE001 — every stop is a reason, never a traceback
             stop = _stop_reason(error)
             reason, detail = stop if stop is not None else ("failed", str(error) or None)
-            if reason == "failed" and not isinstance(error, Exception):
+            if stop is None and not isinstance(error, Exception):
+                # Not one of ours and not an ordinary error: `KeyboardInterrupt`, `SystemExit`,
+                # `CancelledError`. Those belong to whoever is driving, and swallowing one would
+                # make a run impossible to stop. Asked as *did we recognise it* rather than *is it
+                # an Exception*, because `RuntimeStop` is a `BaseException` now (TD-006).
                 raise
 
         # A parked run has not ended. `Ended` waits for whoever resumes it.

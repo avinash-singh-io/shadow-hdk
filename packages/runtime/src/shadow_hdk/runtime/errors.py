@@ -10,8 +10,23 @@ from __future__ import annotations
 from shadow_hdk.kernel.events import EndReason
 
 
-class RuntimeStop(Exception):
-    """Base for the three ways a run stops other than finishing its graph."""
+class RuntimeStop(BaseException):
+    """Base for the three ways a run stops other than finishing its graph.
+
+    **A `BaseException`, deliberately** (TD-006). These are stop signals, not errors a component may
+    handle — and every component adapter catches `Exception` around the callable it runs, because
+    D7 says a component raising is data. So a lease that ran out, a host that cancelled, or a port
+    that broke *inside* a component was caught by that component and returned as its own `Failed`.
+    The run then carried on past the very things that exist to stop it.
+
+    This is why `asyncio.CancelledError` moved out of `Exception` in Python 3.8, and it is the same
+    argument: a signal that must not be swallowed must not be catchable by code that is right to
+    swallow errors. It fixes the inversion in adapters nobody has written yet, which a fix inside
+    `step.py` could not.
+
+    `loop.py` catches `BaseException` and asks `_stop_reason`, so every one of these still ends the
+    run with a reason on the record rather than a traceback at the caller.
+    """
 
     reason: EndReason
 

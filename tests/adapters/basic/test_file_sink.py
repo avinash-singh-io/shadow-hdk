@@ -20,12 +20,10 @@ from shadow_hdk.kernel import (
     Ceiling,
     Completed,
     Composition,
-    Failed,
     Floor,
     Invoke,
     Lease,
     Observation,
-    Observed,
     Proposal,
 )
 from shadow_hdk.kernel.contracts import load
@@ -132,9 +130,16 @@ def test_a_whole_line_that_is_not_a_proposal_is_an_error_that_names_the_line(
         list(proposals_in(path))
 
 
-async def test_a_write_that_fails_raises_and_through_a_run_the_step_fails(tmp_path: Path) -> None:
+async def test_a_write_that_fails_raises_and_through_a_run_the_run_fails(tmp_path: Path) -> None:
     """The descriptor is closed under the sink, which from here is what a full disk is: an
-    `OSError` from `write`. A proposal that was not recorded must not be reported as recorded."""
+    `OSError` from `write`. A proposal that was not recorded must not be reported as recorded.
+
+    **This test used to assert the *step* failed, and cited D7 while doing the opposite of what D7
+    says** (TD-006). The sink is a **port**: *a component raising is data; a port raising is a
+    failure*. A step-level `Failed` is something an agent routes around — so a host whose sink could
+    not write watched the run carry on producing work nothing was keeping. Ending the run is the
+    harsher answer and the correct one, because a sink that cannot write is a gate that is shut.
+    """
     sink = FileSink(tmp_path / "proposals.jsonl")
     sink.close()
     with pytest.raises(OSError):
@@ -161,9 +166,13 @@ async def test_a_write_that_fails_raises_and_through_a_run_the_step_fails(tmp_pa
             options=RunOptions(lease=Lease(Ceiling(5, 600, 10), Floor(0))),
         )
     ]
-    observed = [e.observation for e in events if isinstance(e, Observed)]
-    assert len(observed) == 1 and isinstance(observed[0], Failed), observed
-    assert "OSError" in observed[0].error
+    ended = [e for e in events if e.kind == "ended"][-1]
+    assert ended.reason == "failed", "a sink that cannot write let the run carry on"
+    assert "sink" in str(ended.detail), f"the run ended without naming the port: {ended.detail}"
+    assert [e.kind for e in events].count("proposed") == 0, (
+        "a proposal the sink never took was announced anyway"
+    )
+    assert "OSError" in str(ended.detail)
     assert (tmp_path / "proposals.jsonl").read_bytes() == b""
 
 

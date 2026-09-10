@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-wire"
-version = "0.12.0"
+version = "0.13.0"
 description = "The runtime, reachable from another process or another language."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.12.0", "shadow-hdk==0.12.0"]
+dependencies = ["shadow-hdk-kernel==0.13.0", "shadow-hdk==0.13.0"]
 
 [project.optional-dependencies]
 serve = ["starlette>=0.37", "uvicorn>=0.30", "httpx>=0.27"]

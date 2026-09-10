@@ -1,8 +1,17 @@
 """One governed step — the whole enforcement story, in one function.
 
-Seven moves, in this order, for every step of every composition:
+**Nine moves**, in this order, for every step of every composition:
 
-    lease check → refresh → resolve → inputs → judge → invoke → observe
+    cancel check → lease check → refresh → resolve → inputs → resume? → judge
+      → charge + invoke → observe
+
+The count was wrong, and wrong twice over (TD-006): this docstring said seven and `runtime.md` said
+a different seven, while the function did nine. Two of them arrived without either being updated —
+the cancellation check (D15) and the resume branch (D38) — which is how a summary drifts from the
+thing it summarises. Nine is what the code does; if a tenth is added, this line changes with it.
+
+The charge is inside `_carry_out` rather than at the top, because the lease measures **work** and a
+step refused before it ran did none.
 
 Two error classes are load-bearing (D7). A **component** raising, a component that is not
 registered, and a binding that refers to nothing are all *data*: a `Failed` observation the agent
@@ -90,7 +99,6 @@ class StepExecutor:
         self.session.cancellation.check()
         if reason := self.session.meter.check():
             raise LeaseExhausted(reason)
-        self.session.meter.charge()
 
         await self._refresh()
 
@@ -133,13 +141,28 @@ class StepExecutor:
         registration: Registration,
         inputs: JsonValue,
     ) -> Observation:
-        """Announce the step, run it, price it, and record what came back."""
+        """Charge the step, announce it, run it, price it, and record what came back.
+
+        **The lease is charged here rather than at the top of `invoke`** (TD-006). A step charged
+        before it was judged meant a policy refusing everything drained the budget of a run that did
+        nothing — measured, five refusals under a ceiling of three ended `lease_exhausted`, which
+        reports a budget problem for a policy decision. The lease measures work, and a refusal is
+        the absence of work.
+
+        Every path that actually runs a component comes through here, including the resumed one, so
+        a step is charged exactly once whether it parked or not.
+        """
+        self.session.meter.charge()
         await self._emit(
             lambda **k: Invoked(step=step.id, component=registration.id, inputs=inputs, **k)
         )
         try:
             with executing(step.id):
                 observation = await port.invoke(registration.id, inputs)
+        # No `except PortFailure` here, and a mutation proved it would be dead code: `RuntimeStop`
+        # is a `BaseException` (TD-006), so `except Exception` cannot catch one. The fix had to be
+        # there rather than here anyway — `visible()` and `propose()` run *inside* a component, and
+        # every component adapter has its own `except Exception` that would have swallowed it first.
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
         usage = _usage_of(observation)

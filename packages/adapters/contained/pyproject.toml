@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-contained"
-version = "0.12.0"
+version = "0.13.0"
 description = "A sandbox that proves it is contained, or refuses to exist."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.12.0", "shadow-hdk==0.12.0"]
+dependencies = ["shadow-hdk-kernel==0.13.0", "shadow-hdk==0.13.0"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

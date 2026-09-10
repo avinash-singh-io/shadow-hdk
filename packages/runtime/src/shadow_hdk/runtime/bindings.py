@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import Registration
+from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import RunId
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
@@ -24,6 +25,7 @@ from shadow_hdk.kernel.ports import (
     ComponentPort,
     Context,
     GovernancePort,
+    Judgement,
     ModelPort,
     ObserverPort,
     Refuse,
@@ -119,10 +121,41 @@ class RunContext:
         shown = []
         for registration in self._registry.all():
             context = self.context("<catalogue>", registration)
-            judgement = await self._ports.governance.judge(registration.component.effects, context)
+            judgement = await self._judged(registration.component.effects, context)
             if not isinstance(judgement, Refuse):
                 shown.append(registration)
         return shown
+
+    async def _judged(self, effects: EffectProfile, context: Context) -> Judgement:
+        """Ask the policy, and let a **port** failure be one (TD-006, D7).
+
+        This ran unwrapped, inside whatever component asked for a catalogue — so a policy service
+        that was down surfaced as *that component failed*, which is an agent's cue to try something
+        else. The one thing that must stop a run became the one thing an agent routes around. The
+        step has always wrapped `judge` this way; there is no reason the catalogue should not.
+        """
+        from shadow_hdk.runtime.errors import PortFailure, RuntimeStop
+
+        try:
+            return await self._ports.governance.judge(effects, context)
+        except RuntimeStop:
+            raise
+        except Exception as exc:
+            raise PortFailure("governance", exc) from exc
+
+    @property
+    def unreachable(self) -> tuple[str, ...]:
+        """Component ports that would not list their components on the last refresh (TD-006).
+
+        `refresh()` tolerates one deliberately — a catalogue that will not answer is empty, and one
+        broken server should not end a run that never needed it. But it collected the failures into
+        a list **nothing read**, so a vanished server was a catalogue that quietly shrank, which is
+        indistinguishable from a policy that narrowed. A host can see it now.
+
+        It is not yet on the **event stream**, which is where it belongs, because that needs a
+        twelfth event kind and therefore a contract change. Filed rather than smuggled in.
+        """
+        return tuple(self._registry.unreachable)
 
     def context(
         self, step: str = "<catalogue>", registration: Registration | None = None
@@ -201,11 +234,24 @@ class RunContext:
         await self._emitter.forward(event)
 
     async def propose(self, proposal: Proposal) -> None:
-        """Hand something to the sink. The runtime never decides whether it is kept."""
-        from shadow_hdk.kernel.events import Proposed
+        """Hand something to the sink, then say so. The runtime never decides whether it is kept.
 
+        **The order is the point** (TD-006). `Proposed` used to go on the record first and the sink
+        was called after, unwrapped — so a sink that raised left a record of a proposal that never
+        arrived anywhere, and the exception surfaced as the proposing *component's* failure. That is
+        the rule `FileSink` holds inside itself (BUG-014), one layer up: what was not kept is not
+        reported as kept. A sink is a port, so its failure ends the run (D7).
+        """
+        from shadow_hdk.kernel.events import Proposed
+        from shadow_hdk.runtime.errors import PortFailure, RuntimeStop
+
+        try:
+            await self._ports.sink.propose(proposal)
+        except RuntimeStop:
+            raise
+        except Exception as exc:
+            raise PortFailure("sink", exc) from exc
         await self._emitter.emit(lambda **k: Proposed(proposal=proposal, **k))
-        await self._ports.sink.propose(proposal)
 
 
 _CURRENT: ContextVar[RunContext | None] = ContextVar("shadow_hdk_current_run", default=None)
