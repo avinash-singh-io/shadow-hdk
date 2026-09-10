@@ -1,8 +1,11 @@
 name: ci
 on:
+  # Every branch, not only the two nothing has landed on yet (TD-009). This lane has built
+  # eighteen phases on a linear stack of phase branches, and CI has never run on one of them —
+  # so the four zeros in every commit message are this machine's word and nothing else's.
   push:
-    branches: [main, staging]
   pull_request:
+  workflow_dispatch:
 jobs:
   check:
     runs-on: ubuntu-latest
