@@ -112,6 +112,24 @@ class Dialect:
     """Flags that stop it loading MCP servers from anywhere else. Without them a user's own global
     configuration joins the run ungoverned."""
 
+    allow_arg: str = ""
+    """The flag that pre-permits the tools we injected.
+
+    Not a loosening — the opposite. A CLI with its own permission prompt will block an injected tool
+    and answer *you have not granted it yet*, which in a non-interactive run is a refusal nobody
+    asked for and nobody can answer. Naming our own server here removes **its** gate so that the
+    run's governance is the only one left, which is the arrangement D42 wants: one authority, and
+    it is ours.
+    """
+
+    allow_tool_prefix: str = ""
+    """What the CLI prefixes an injected server's tools with, when naming them to `allow_arg`.
+
+    Measured: Claude Code lists them as `mcp__<server>__<tool>` and accepts `mcp__<server>` to mean
+    all of that server's. The prefix is that CLI's convention, so it is on the record rather than in
+    the transport — a second CLI with a different one costs a field, not a branch.
+    """
+
     disallow_arg: str = ""
     disallow: tuple[str, ...] = ()
     """The flag that refuses the CLI's own tools, and their names. A provider left holding its

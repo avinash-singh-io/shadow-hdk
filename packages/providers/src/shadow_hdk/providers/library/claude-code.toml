@@ -104,6 +104,13 @@ output_tokens_at = "usage.output_tokens"
 # its work outside the registry, where nothing here sees it.
 mcp_config_arg = "--mcp-config"
 mcp_strict_args = ["--strict-mcp-config"]
+# **Measured 2026-09-11.** Without this the child answers "Claude requested permissions to use
+# mcp__shadow-hdk__write_file, but you haven't granted it yet" and stops — its own permission
+# prompt, in a run where there is nobody to answer it. Naming our server removes *its* gate so the
+# run's governance is the only one left, which is the arrangement D42 wants.
+allow_arg = "--allowedTools"
+# Measured: it lists them as `mcp__<server>__<tool>` and accepts `mcp__<server>` for all of them.
+allow_tool_prefix = "mcp__"
 disallow_arg = "--disallowedTools"
 disallow = [
   "Bash", "BashOutput", "KillShell",

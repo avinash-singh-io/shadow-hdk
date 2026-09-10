@@ -52,6 +52,11 @@ def mcp_config_for(tools: tuple[ToolSource, ...]) -> str:
     return json.dumps({"mcpServers": servers})
 
 
+def server_names(tools: tuple[ToolSource, ...]) -> set[str]:
+    """What the injected servers are called — the names the CLI will prefix its tool ids with."""
+    return {f"shadow-hdk-{i}" if i else "shadow-hdk" for i in range(len(tools))}
+
+
 def argv_for(provider: Provider, tools: tuple[ToolSource, ...]) -> list[str]:
     """The launch arguments, with the registry wired in and the CLI's own tools refused."""
     dialect = provider.dialect or Dialect()
@@ -65,6 +70,9 @@ def argv_for(provider: Provider, tools: tuple[ToolSource, ...]) -> list[str]:
         )
     argv += [dialect.mcp_config_arg, mcp_config_for(tools)]
     argv += list(dialect.mcp_strict_args)
+    if dialect.allow_arg:
+        prefix = dialect.allow_tool_prefix
+        argv += [dialect.allow_arg, *sorted(prefix + n for n in server_names(tools))]
     if dialect.disallow_arg and dialect.disallow:
         argv += [dialect.disallow_arg, *dialect.disallow]
     return argv
@@ -103,4 +111,11 @@ async def open_agent(
     return JsonlProvider(provider, binary=binary, env=env, **extra)
 
 
-__all__ = ["JsonlProvider", "UngovernableProvider", "argv_for", "mcp_config_for", "open_agent"]
+__all__ = [
+    "JsonlProvider",
+    "UngovernableProvider",
+    "argv_for",
+    "mcp_config_for",
+    "open_agent",
+    "server_names",
+]

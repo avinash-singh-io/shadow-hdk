@@ -147,6 +147,9 @@ async def test_the_model_port_inverts() -> None:
 
         context = current_run()
         assert context is not None
+        # `Ports.model` is optional since ENH-004 — a run with no model is ordinary. This one has
+        # one, and says so rather than reaching through a `None` the type system now knows about.
+        assert context.ports.model is not None, "this run was given a model"
         answer = await context.ports.model.complete(ModelRequest((Message("user", "hello"),)))
         return Completed(answer.text)
 

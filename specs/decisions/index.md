@@ -61,6 +61,7 @@ rather than remembered.
 | D41 | the harness asks; it never reads a credential and never installs | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 | D42 | the socket — every effect routes through the run's registry | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 | D43 | the loop stays theirs, and that is the price on the label | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D44 | the registry is connected to, never launched | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 
 ## Also here
 

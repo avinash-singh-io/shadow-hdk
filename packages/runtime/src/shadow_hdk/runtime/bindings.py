@@ -54,7 +54,18 @@ class Ports:
     ADR-1 says otherwise.
     """
 
-    model: ModelPort
+    model: ModelPort | None = field(default=None, kw_only=True)
+    """`None` is legitimate and common: the runtime is a governed workflow engine before it is an
+    agent runner, and a composition of plain components needs no model at all (ENH-004).
+
+    It was required, so the simplest possible program — a plan, some tools, a policy — ran fine and
+    failed to type-check, and the README had to explain the discrepancy. `kw_only` so the field can
+    take a default without reordering the five that follow it; every caller already names it.
+
+    A provider driving through `AgentPort` also leaves this `None`: the reasoning is the provider's,
+    and this runtime supplies no model to it (D39).
+    """
+
     components: tuple[ComponentPort, ...]
     governance: GovernancePort
     sink: SinkPort

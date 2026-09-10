@@ -172,3 +172,96 @@ OpenCode     ready  1.18.21
 
 ---
 
+### [DECISION] 2026-09-11 — D44: the registry is connected to, never launched
+
+Topics: providers, recording, injection, mcp
+Affects-phases: phase-20-providers
+Affects-specs: architecture/adapters.md
+
+`RecordingServer` holds a live `RunContext` — the parent's lease, the parent's event stream — so it
+is not a program that can be started; it can only be connected to. Phase 5 said exactly this in
+`pipes.py` and named streamable HTTP as the answer for a child we do not spawn.
+
+A coding CLI is that child. It launches its own MCP servers from a configuration it is handed and
+will start whatever program that configuration names, and the program it starts cannot be our
+server. So the program it starts is a **relay**: it connects to a loopback port we are already
+listening on and copies bytes both ways. The child believes it started an MCP server; the server it
+reached is the run's own registry, in this process, with the lease and the record intact.
+
+Recorded as a decision rather than left as plumbing because it introduces a **console script that
+ships inside an adapter**, which is a new kind of thing here, and because it puts the run's registry
+on a socket. The port is loopback and ephemeral and the address is the caller's to keep: any process
+on this machine that guesses it reaches the registry. That is the trust boundary `served_over_http`
+already argues about, and it takes the same answer — a session-scoped token, when `wire.md`'s run
+token is built.
+
+*Why:* it is the only shape that works for a child we do not spawn. *Overturned by:* a CLI that will
+accept an already-listening MCP endpoint directly, which would make the relay unnecessary for that
+one and leave it needed for the rest.
+
+---
+
+### [SCOPE_CHANGE] 2026-09-11 — a second transport, and why the plan grew one
+
+Topics: providers, transports, jsonl, codex
+Affects-phases: phase-20-providers
+
+The plan had one transport, `acp`, and a provider record for Claude Code naming it. That record was
+a promise the file could not keep: Claude Code does not speak ACP natively — it speaks it only
+through an npm bridge nobody should have to install.
+
+The reference implementation does not use that bridge either. It drives Claude Code through the
+CLI's own `-p --output-format stream-json` mode, and reading its provider definitions showed why the
+shape generalises: **the unit of extension is the transport, not the agent.** Four or five stream
+formats carry twenty-eight CLIs there; the marginal agent is free because the format was already
+paid for.
+
+So the plan grew `jsonl`, and with it `Dialect` — the names one CLI uses, as data. Three providers
+now ship across two transports, and `codex` cost a file because the transport written for Claude
+Code already existed.
+
+Said as a scope change rather than slipped in as implementation: it is a second adapter and a new
+kernel record, which is a plan amendment by any reading of Rule 10.
+
+---
+
+### [NOTE] 2026-09-11 — the live proof, and the four things it took to get there
+
+Topics: providers, claude-code, injection, measurement
+Affects-phases: phase-20-providers
+
+The example runs. Claude Code reasons on the subscription; **our** components act:
+
+```
+  · write_file
+    → Completed(output={'path': 'primes.py', 'bytes': 416})
+  · run_shell
+    → Completed(output={'exit_code': 0, 'stdout': '2 3 5 7 11 13 17 19 23 29 31 37\n'})
+```
+
+Each of those is a child run on the parent's graph, judged before it happened and charged to the
+lease. The file is on disk and the agent never touched it.
+
+Four things stood in the way, and every one is now a **field** rather than a code path:
+
+**Its own permission layer.** The child answered *"Claude requested permissions to use
+mcp__shadow-hdk__write_file, but you haven't granted it yet"* and stopped — its own prompt, in a
+run where nobody can answer. Naming our server to `--allowedTools` removes *its* gate so the run's
+governance is the only one left, which is the arrangement D42 wants: one authority, and it is ours.
+
+**The prefix.** It lists injected tools as `mcp__<server>__<tool>` and accepts `mcp__<server>` for
+all of them. That convention is the CLI's, so it is on the record.
+
+**The driver was on offer.** The step that holds the conversation open lives in the registry, so the
+child was offered a `converse` tool that re-enters the conversation it is already inside.
+`RecordingServer` takes `withhold` now: what a parent offers a child is the parent's choice, and
+`visible()` answers *what may this run do*, which is a different question.
+
+**An `EffectProfile` of booleans.** `reads` and `writes` take a `ScopeSet`; passing `True` ended the
+run with a `TypeError` out of the governance port — correct behaviour (D7), from a mistake that
+should never have reached a run. `examples/` was outside `mypy`, and is not any more; that caught it
+in a second and closed **ENH-004** on the way, since the example made `Ports.model` being required
+into a real obstacle rather than a documented wart.
+
+---
+

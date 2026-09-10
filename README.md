@@ -308,8 +308,24 @@ loop, that is what `ModelPort` is for.
 ### Running the examples
 
 ```bash
-uv run python examples/bare.py
+uv run python examples/bare.py            # the harness on its own, with no product and no network
+uv run python -m examples.coder ./work    # a coding agent on your subscription, governed by us
 ```
+
+[`examples/coder`](examples/coder/README.md) is the one to read if you want to see all of this at
+once. Your subscription does the reasoning; its own file and shell tools are **refused** and the
+run's registry is handed to it instead, so every file it writes and every command it runs arrives
+as a step on our graph:
+
+```
+  · write_file
+    → Completed(output={'path': 'primes.py', 'bytes': 416})
+  · run_shell
+    → Completed(output={'exit_code': 0, 'stdout': '2 3 5 7 11 13 17 19 23 29 31 37\n'})
+```
+
+Swap the mode from `BUILDING` to `LOOKING` and ask again, and you get `✕ refused: mode 'looking'
+does not permit this` — from a policy that has never heard of `write_file`.
 
 `examples/bare.py` is the test that defines done: a composition running against a component that
 arrived from outside, a model and a sub-agent, governed by allow-all, everything written to stdout —

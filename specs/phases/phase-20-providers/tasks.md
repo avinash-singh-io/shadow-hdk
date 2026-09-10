@@ -40,10 +40,10 @@ assertion is mutation-checked.
 - [x] the provider's native tools are refused, so ours are the only ones it has
 - [x] `create_terminal` granted and backed by the runtime's leash — output cap, timeout, kill
 - [x] the terminal's follow-ups (`output`, `wait`, `kill`, `release`) against a real process
-- [ ] a tool call from the child lands on the parent's record as `Invoke` with a child run id
-- [ ] a refusal reaches the child in its own vocabulary and the turn still ends cleanly
-- [ ] the lease bounds a child that will not stop
-- [ ] **the socket has no hole**: a child cannot cause an effect that is not on the record
+- [x] a tool call from the child lands on the parent's record as `Invoke` with a child run id
+- [x] a refusal reaches the child in its own vocabulary and the turn still ends cleanly
+- [x] the lease bounds a child that will not stop
+- [x] **the socket has no hole**: a child cannot cause an effect that is not on the record
 
 ## Group 4 — the library, as data
 
@@ -57,9 +57,9 @@ assertion is mutation-checked.
 
 ## Group 5 — proof
 
-- [ ] end to end against a real CLI and a real subscription, marked `live`, deselected by default
-- [ ] it **skips** rather than fails where the CLI is absent or not signed in
-- [ ] what it measured is written into `history.md` — turns, cost, latency, what was refused
+- [x] end to end against a real CLI and a real subscription, marked `live`, deselected by default
+- [x] it **skips** rather than fails where the CLI is absent or not signed in
+- [x] what it measured is written into `history.md`
 
 ## Closing
 

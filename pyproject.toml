@@ -71,7 +71,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["shadow_hdk", "tests"]
+packages = ["shadow_hdk", "tests", "examples"]
 mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src:packages/adapters/otel/src:packages/adapters/devices/src:packages/adapters/mqtt/src:packages/wire/src:packages/providers/src:packages/adapters/jsonl/src:packages/adapters/contained/src:packages/adapters/derivation/src"
 namespace_packages = true
 explicit_package_bases = true

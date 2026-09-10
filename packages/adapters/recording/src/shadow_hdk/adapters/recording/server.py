@@ -37,10 +37,25 @@ from shadow_hdk.runtime import RunContext, run
 class RecordingServer:
     """Offers a run's visible components to a child, and routes every call back through the run."""
 
-    def __init__(self, context: RunContext, *, name: str = "shadow-hdk") -> None:
+    def __init__(
+        self,
+        context: RunContext,
+        *,
+        name: str = "shadow-hdk",
+        withhold: frozenset[str] | set[str] = frozenset(),
+    ) -> None:
         self._context = context
         self.name = name
         self.calls = 0
+        self._withheld = frozenset(withhold)
+        """Components the parent keeps to itself.
+
+        `visible()` answers *what may this run do*, which is not the same question as *what should
+        this child be offered*. A host driving a provider through a component of its own — the step
+        that holds the conversation open — would otherwise hand the child a tool that re-enters the
+        conversation it is already inside. Withholding is the parent's call and needs no policy
+        change to express.
+        """
 
     # ------------------------------------------------------------------ what it offers
 
@@ -54,6 +69,7 @@ class RecordingServer:
                 or {"type": "object"},
             )
             for registration in await self._context.visible()
+            if registration.component.interface.name not in self._withheld
         ]
 
     # ------------------------------------------------------------------ what it does
@@ -62,6 +78,11 @@ class RecordingServer:
         self, name: str, arguments: Mapping[str, JsonValue] | None = None
     ) -> types.CallToolResult:
         """Route the child's call through the parent's run, and hand back what came out."""
+        if name in self._withheld:
+            return types.CallToolResult(
+                content=[types.TextContent(type="text", text=f"no component named {name!r}")],
+                isError=True,
+            )
         self.calls += 1
         # `__` and not `:` — LangGraph reserves the colon for checkpoint namespaces, so a step id
         # carrying one fails at graph construction. The compiler learned this in Phase 0; a new
