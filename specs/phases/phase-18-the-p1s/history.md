@@ -309,3 +309,48 @@ something; and the ten `live` tests stay deselected because they need a broker, 
 turn.
 
 ---
+
+### [NOTE] 2026-09-10 — the first CI run went red, and it was right to
+Topics: ci, benchmark, d11, honesty
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md
+
+The first run in this repository's history, on `5cd57b4`. `ruff`, `ruff format` and `mypy` passed on
+Linux exactly as they do here. The tests reported **835 passed, 3 failed, 10 deselected**.
+
+Two of the three things predicted did not happen. The 90% coverage floor, never measured off this
+machine, came back at **96.77%**. The test skipped here for want of `prlimit` **ran on Linux for the
+first time and passed** — which is the whole reason it was written to skip rather than to pass
+vacuously.
+
+What failed was `test_benchmark.py`, all three assertions, by roughly four times. And the cause is
+not that a shared runner is slow.
+
+**The gating step measures `coverage.py`, not the runtime.** It runs with
+`--cov=shadow_hdk.runtime`, and the benchmark's entire subject is the per-step overhead of
+`shadow_hdk.runtime` — so every line it times is being traced. Reproduced here, on the machine
+where the plain run passes: **179.7 ms clean, 425.3 ms under the gate's own coverage flags**, against
+a 300 ms assertion. The workflow already had a second, uninstrumented step for the budget; the
+gating run was picking the benchmark up as well. It is excluded there now and measured on its own.
+
+**The second finding is the one that matters.** With the instrumentation removed and the numbers
+read properly, a hundred sequential steps take **135.9, 136.9 and 136.4 ms — 1.36 ms/step**. This
+file recorded **0.570 ms/step** on 2026-09-10, and D11's budget is **≤ 1 ms**. The overhead has more
+than doubled and is now outside the budget, and the gate never noticed because the assertion sits at
+three times the target — which this file's own docstring says catches an order of magnitude and not
+a drift. It also says *the printed numbers are the real signal; read them*. Nobody did, including me,
+through five groups of Phase 18.
+
+Filed as **BUG-016** rather than accommodated. Raising the assertion would retire the budget D11
+exists to defend, and the 0.8 ms is real work: everything added to the step path since the figure
+was taken is a candidate — spend (D33), children (D37), the resuming map (D38), posture (D30), the
+trust-checked registry refresh (D27).
+
+The stale figure in the docstring is corrected in place, because a recorded measurement that is no
+longer true reads as a claim.
+
+**This is what the widened trigger was for.** One push, and the first thing CI did was find a broken
+budget and a gate measuring the wrong thing — after eighteen phases of green reported from one
+laptop.
+
+---

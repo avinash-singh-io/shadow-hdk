@@ -4,10 +4,17 @@ The runtime's overhead per step is what a host pays for governance, events and b
 of whatever the component itself does. A no-op component under allow-all isolates exactly that.
 
 **D11's targets** are 100 ms for a hundred sequential steps, 50 ms for a fifty-way fan-out, and 1 ms
-of overhead per step. Measured on the development machine, 2026-09-10: **57.0 ms (0.570 ms/step)**
-and **27.2 ms** — inside all three. The assertions are set at three times those targets so a shared
-runner does not flake, which means they catch a regression of an order of magnitude rather than a
-drift of ten per cent. The printed numbers are the real signal; read them.
+of overhead per step. The assertions are set at three times those targets so a shared runner does
+not flake, which means they catch a regression of an order of magnitude rather than a drift of ten
+per cent. The printed numbers are the real signal; read them.
+
+**Nobody read them, and the budget is now broken (BUG-016).** The line above used to record *57.0 ms
+(0.570 ms/step), inside all three*, measured 2026-09-10. Measured again the same day after Phase 18:
+**135.9, 136.9 and 136.4 ms — 1.36 ms/step**, which is over D11's 1 ms and about two and a half
+times what was recorded. The gate at three times the target never went red, which is exactly the
+drift this docstring warned the slack could not catch. The number is left failing-in-fact and
+recorded rather than accommodated: raising the assertion would retire the budget, and finding the
+0.8 ms is real work with its own backlog row.
 
 What the budget protects is the *design* behind D11: governance in-process, no per-step
 serialisation, a cached plan, the observer off the critical path. Break one and this goes red.

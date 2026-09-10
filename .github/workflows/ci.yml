@@ -18,9 +18,14 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy
+      # The benchmark is excluded here and runs on its own below. Coverage traces every line of
+      # `shadow_hdk.runtime`, which is exactly what the benchmark measures — under these flags
+      # it reports the cost of `coverage.py`, not of the runtime. Measured on the development
+      # machine: 179.7 ms clean, 425.3 ms instrumented, against a 300 ms assertion. The first CI
+      # run in this repository's history failed on precisely that and nothing else.
       - name: tests, with the runtime's coverage floor
         run: >
-          uv run pytest -q
+          uv run pytest -q --ignore=tests/runtime/test_benchmark.py
           --cov=shadow_hdk.runtime --cov-report=term-missing --cov-fail-under=90
-      - name: the latency budget, printed
+      - name: the latency budget, measured and printed
         run: uv run pytest tests/runtime/test_benchmark.py -q -s
