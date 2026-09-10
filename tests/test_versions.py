@@ -18,8 +18,14 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.13.1"
-"""0.13.1 is a **patch**: nothing a host depends on moved. `served_over_http` stopped printing a
+EXPECTED = "0.14.0"
+"""0.14.0 because the kernel grew a **second provider seam** and the record that describes one
+(D39, D40). `AgentPort` and `AgentSession` are what a provider owning its own loop satisfies —
+messages do not go in and tool calls do not come back, because those leave through the injected
+registry (D42) — and `Provider` is the published contract a host reads its provider library into.
+A host that only ever held a `ModelPort` needs to change nothing; both are additions.
+
+0.13.1 is a **patch**: nothing a host depends on moved. `served_over_http` stopped printing a
 `CancelledError` traceback on a clean exit (BUG-017) — it cancelled uvicorn mid-`serve` instead of
 asking it to stop and waiting, and no wire test could see it because pytest's anyio runner absorbs
 an unretrieved exception. Everything else in the release is documentation. No *Pins* row.

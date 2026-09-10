@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk"
-version = "0.13.1"
+version = "0.14.0"
 description = "The shadow-hdk runtime: compositions compiled to graphs, every step governed, proposals to a sink."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,7 +8,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 # The kernel, and the engine that executes what we compile (D12). Nothing else: a model client, an
 # MCP server or a sandbox is an adapter's dependency, never the runtime's.
-dependencies = ["shadow-hdk-kernel==0.13.1", "langgraph>=1.2,<2"]
+dependencies = ["shadow-hdk-kernel==0.14.0", "langgraph>=1.2,<2"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

@@ -111,3 +111,61 @@ def test_claude_code_ships_and_carries_its_measured_quirk() -> None:
     assert "CLAUDECODE" in claude.strip_env
     assert claude.auth_probe, "a provider nobody can ask is always `unknown`"
     assert claude.injects_tools == "mcp", "without injection the socket cannot close (D42)"
+
+
+def test_the_second_provider_cost_a_file() -> None:
+    """D40's whole claim, stated as a test.
+
+    Two providers ship, they speak the **same** transport, and adding the second changed no Python:
+    no adapter, no branch, no code path that names it. If a third ever needs one, that is evidence
+    the record is missing a field rather than that the rule is wrong.
+    """
+    found = shipped()
+
+    assert {"claude-code", "opencode"} <= set(found)
+    assert found["claude-code"].transport == found["opencode"].transport == "acp"
+
+
+def test_opencode_carries_what_was_measured_of_it() -> None:
+    """Measured 2026-09-11 against opencode 1.18.21: `acp` is a documented subcommand, so this one
+    speaks our transport natively and needs no bridge; `auth list` exits 0 and prints credential
+    names rather than values."""
+    opencode = shipped()["opencode"]
+
+    assert opencode.launch_args == ("acp",)
+    assert opencode.auth_probe == ("auth", "list")
+    assert any(pair.name == "OPENCODE_DISABLE_PROJECT_CONFIG" for pair in opencode.set_env)
+
+
+def test_the_measured_environment_quirks_survive() -> None:
+    """Two fields, each one a measurement, each one silently fatal if it goes.
+
+    `USER` — bisected 2026-09-11 against claude 2.1.235: with HOME, PATH and SHELL alone,
+    `claude auth status` answers `"loggedIn": false` on a machine that is signed in. Of USER,
+    LOGNAME, TMPDIR, XPC_SERVICE_NAME and SSH_AUTH_SOCK, only USER flips it. Without the field this
+    library reports a working subscription as unusable and sends somebody to log in again.
+
+    `CLAUDECODE` — measured the same day: Claude Code refuses to start inside another Claude Code
+    session and names the variable to clear. Inherited, the child dies before the handshake.
+
+    Neither has a test elsewhere that would notice, because both fail as a *wrong answer* rather
+    than an error.
+    """
+    claude = shipped()["claude-code"]
+
+    assert "USER" in claude.backfill_env
+    assert "CLAUDECODE" in claude.strip_env
+
+
+def test_the_signed_out_pattern_is_a_working_regex() -> None:
+    """It was not, once. TOML literal strings need no escaping and the first draft doubled every
+    backslash, so `"loggedIn": false` matched nothing and a signed-out install read as `unknown`
+    instead of `not-signed-in` — a pattern that is present, plausible and inert."""
+    import re
+
+    claude = shipped()["claude-code"]
+    said = '{\n  "loggedIn": false,\n  "authMethod": "none"\n}'
+
+    assert any(re.search(p, said, re.IGNORECASE) for p in claude.auth_failure_patterns), (
+        f"none of {claude.auth_failure_patterns} matches a real signed-out answer"
+    )

@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-langchain"
-version = "0.13.1"
+version = "0.14.0"
 description = "One ModelPort over every provider LangChain integrates — OpenAI-compatible, Anthropic, Ollama, HuggingFace and the rest."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,7 +8,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 # `init_chat_model` lives in `langchain`; the vendor packages are extras, so the base install pulls
 # no provider SDK and a deployment carries only what it uses.
-dependencies = ["shadow-hdk-kernel==0.13.1", "shadow-hdk==0.13.1", "langchain>=1.0,<2"]
+dependencies = ["shadow-hdk-kernel==0.14.0", "shadow-hdk==0.14.0", "langchain>=1.0,<2"]
 
 [project.optional-dependencies]
 openai = ["langchain-openai>=1.0"]

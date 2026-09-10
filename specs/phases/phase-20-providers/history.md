@@ -113,3 +113,62 @@ rather than a limitation to be engineered away.
 by:* nothing — this is a property of what a subscription sells.
 
 ---
+
+### [NOTE] 2026-09-11 — what was measured, and what each measurement cost to find
+
+Topics: providers, claude-code, opencode, measurement
+Affects-phases: phase-20-providers
+
+Four facts that no amount of reading the help text would have produced, each now a field:
+
+**`CLAUDECODE` must be stripped.** Claude Code refuses to start inside another Claude Code session
+and names the variable to clear. Inherited, the child dies before the handshake and the failure
+arrives as a JSON-RPC *internal error* with the real cause on a stderr nobody was reading.
+
+**`claude auth status` is the probe, not `claude auth`.** The latter is the command *group*: it
+prints usage and exits 1. The first draft of the provider file said `["auth"]` and every install
+came back `unknown`. Found by running the README's own snippet rather than by reading it.
+
+**`USER` is load-bearing.** With `HOME`, `PATH` and `SHELL` alone, `claude auth status` answers
+`"loggedIn": false` on a machine that is signed in — it resolves the credential by user. Bisected
+against claude 2.1.235: of `USER`, `LOGNAME`, `TMPDIR`, `XPC_SERVICE_NAME` and `SSH_AUTH_SOCK`,
+only `USER` flips it. Left out, this library reports a working subscription as unusable and sends
+somebody to log in again — the exact failure the fifth status exists to prevent, arriving through
+the back door of a too-thin environment.
+
+**A TOML literal string needs no escaping.** The signed-out pattern was written with doubled
+backslashes, so `"loggedIn": false` matched nothing: a pattern that is present, plausible and
+inert, turning a signed-out install into `unknown` rather than `not-signed-in`. It has a test now
+that runs the regex against a real answer.
+
+Three of the four are *wrong answers* rather than errors, which is why each has a regression test
+of its own — nothing else in the suite would have noticed.
+
+The point of recording them together: **every one was fixed by editing a file.** That is D40's
+claim, and this is the evidence for it.
+
+---
+
+### [NOTE] 2026-09-11 — the second provider cost a file
+
+Topics: providers, opencode, d40
+Affects-phases: phase-20-providers
+
+`opencode` 1.18.21 was already on this machine, and `opencode acp` is a documented subcommand — it
+speaks the transport Claude Code needed an npm bridge for. Adding it changed **no Python**: no
+adapter, no branch, no code path that names it. One TOML file.
+
+Measured: `--version` prints `1.18.21`; `auth list` exits 0 and prints the credential *names* it
+holds, never the values, ending in a count. Not measured, and marked so in the file: the signed-out
+wording, because observing it would mean signing somebody out. Until then an unmatched answer is
+`unknown`, which is what the fifth status is for.
+
+Detection, end to end, on this machine:
+
+```
+Claude Code  ready  2.1.235
+OpenCode     ready  1.18.21
+```
+
+---
+

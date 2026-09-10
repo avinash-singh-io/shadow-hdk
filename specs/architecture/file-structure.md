@@ -26,6 +26,14 @@ shadow-hdk/
         loop.py                      run · resume — Started … Ended, child forwarding
         errors.py                    LeaseExhausted · Cancelled · PortFailure · DanglingRef
         testing/                     InMemoryComponents · ScriptedModel · ListSink · ListObserver · FixedClock
+    providers/                       shadow-hdk-providers                     Phase 20
+      src/shadow_hdk/providers/
+        resolution.py                every candidate, and further than PATH
+        probes.py                    version · authentication · the five answers
+        environment.py               set · strip · backfill, from the record not a branch
+        library.py                   a provider is a file
+        surface.py                   detect · open — by entry point, importing no adapter
+        library/                     the shipped providers, as TOML a team can read and edit
     adapters/
       basic/                         allow-all · stdout · callback · system clock · callable   Phase 0
       agent/                         the model loop as a component; Pattern; single            Phase 0

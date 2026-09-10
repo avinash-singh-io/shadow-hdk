@@ -92,6 +92,7 @@ adapters can, and does.
 | 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | 16 | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
 | 19 | The P2s | **DONE** · `phase-19-the-p2s` | 18 | BUG-016 the adapter cache; BUG-013 a derivation answers rather than raises; BUG-014 a crash costs the record nothing; TD-004 every port held to its contract; TD-005 growth bounded or argued; TD-006 a stop signal is not an ordinary exception (contract 0.13.0); TD-007 plumbing, its policy the owner's; TD-008 the documents, kept honest by an invariant |
+| 20 | Providers | **DONE** · `phase-20-providers` | 4, 5 | two seams — bring your own key, or your own subscription; a provider is a file; the socket closes around a child's effects |
 
 ## Epics
 

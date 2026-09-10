@@ -8,7 +8,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Seventeen distributions at `0.13.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
+**Eighteen distributions at `0.14.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -118,7 +118,8 @@ that was refused before it ran did none.
 
 ## The six ports
 
-The port set is open (D22); these are the six the runtime itself calls.
+The port set is open (D22). The first six are what the runtime itself calls; the seventh is the second
+**provider** seam (D39) — see *Your key, or your subscription* below.
 
 | Port | You supply | Shipped adapters |
 |---|---|---|
@@ -128,6 +129,7 @@ The port set is open (D22); these are the six the runtime itself calls.
 | `SinkPort` | `propose(proposal)` | `basic` — stdout, a file that survives a crash, a callback |
 | `ObserverPort` | `on(event)` | `basic`, `otel` |
 | `ClockPort` | `now()`, `new_id()` | `basic`, and a fixed clock for tests |
+| `AgentPort` | `open(tools, workspace)` → a resident session | `acp` — Claude Code, OpenCode, anything speaking ACP |
 
 A registry is the **union of every component port, recomputed every step** — so a tool that appears
 mid-run is seen, and one that vanishes is gone.
@@ -262,6 +264,47 @@ flowchart LR
     r ==>|"events"| app
 ```
 
+### Your key, or your subscription
+
+Two ways to pay for the thinking, and the harness governs both the same way.
+
+**Bring your own key.** A `ModelPort` — `LangChainModel` reaches OpenAI and every OpenAI-compatible
+endpoint, Anthropic, Ollama, Bedrock, Vertex, Mistral. Your loop, your patterns, your tools.
+
+**Bring your own subscription.** Many people already pay for a coding agent — Claude Code, OpenCode,
+Codex — and that is inference already bought. An `AgentPort` drives one that is already installed and
+already signed in:
+
+```python
+from shadow_hdk.providers import detect, open_with, shipped
+
+found = await detect(list(shipped().values()))
+for it in found:
+    print(it.provider.called, it.status, it.version or "", it.install_hint if not it.usable else "")
+# Claude Code  ready  2.1.235
+# OpenCode     ready  1.18.21
+```
+
+Three things that follow, and they are the whole design:
+
+- **No credential is ever read, stored, forwarded or logged** (D41). The provider is *asked* its own
+  status question. There is nothing to leak because nothing is held. Five answers, and `unknown`
+  means nobody could ask — not that the answer was no.
+- **Nothing is ever installed.** An absent provider is reported with the command that would fix it.
+- **Its loop, our tools** (D42). The provider is launched with the run's own registry as its tool
+  source and its native tools refused, so every file it writes and every command it runs arrives as
+  a step on our graph — judged on effects, charged to the lease, on the event stream. It reasons;
+  we govern.
+
+A provider is **data** (D40): one TOML file, the same way patterns are. Adding one costs a file, not
+a phase — `opencode` was added without a line of Python. And the selection surface imports no
+adapter: transports declare themselves through entry points, so a third party can ship one this
+repository has never heard of.
+
+The trade, stated plainly: when a subscription drives, **its** loop runs, not ours — our patterns
+and compositions do not apply (D43). You cannot buy an agent and also own its loop. If you need our
+loop, that is what `ModelPort` is for.
+
 ### Running the examples
 
 ```bash
@@ -276,13 +319,14 @@ with **zero lines of any application's code**. `examples/real.py` does the same 
 
 ## Layout
 
-Seventeen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
+Eighteen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
 takes only what it uses.
 
 ```
 packages/kernel                     pure types, one partial order, six ports — no I/O at all
 packages/runtime                    the loop, on LangGraph
 packages/wire                       the runtime behind JSON-RPC, ports inverted
+packages/providers                  what this machine can reach — your key, or your subscription
 packages/adapters/basic             allow-all · stdout · file · clock · callables
 packages/adapters/modes             governance as data: a mode is a ceiling and an ask line
 packages/adapters/agent             the model loop as a component; patterns and skills as TOML
@@ -306,11 +350,11 @@ has already drifted. They live in `tests/invariants/`:
 
 | Invariant | What it refuses |
 |---|---|
-| stands alone | the kernel importing I/O, a clock, logging or a framework; the runtime importing an adapter; **any adapter importing another** |
+| stands alone | the kernel importing I/O, a clock, logging or a framework; the runtime importing an adapter; **any adapter importing another**; the selection surface importing any |
 | the gate covers every package | a package quietly outside lint, types or tests — this repository shipped nine type errors that way once |
 | a wheel carries what it needs | a distribution that installs but cannot import |
 | every port is held to its contract | a new port implementation with no contract suite and no recorded reason |
-| the decisions index is true | the map of D1–D38 drifting from the decisions |
+| the decisions index is true | the map of D1–D43 drifting from the decisions |
 | the documents describe this tree | a document naming a path that does not exist, or a listing that no longer matches the directory it describes |
 
 The last one is why this file names only paths that are really here.
@@ -331,7 +375,7 @@ All four must exit zero. CI runs them on every push.
 
 ## Status
 
-Phases 0–19 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–20 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

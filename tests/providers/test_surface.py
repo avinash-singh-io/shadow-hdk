@@ -170,3 +170,46 @@ def test_discovery_reads_installed_distributions_rather_than_importing_adapters(
     from shadow_hdk.providers.surface import TRANSPORT_GROUP
 
     assert TRANSPORT_GROUP == "shadow_hdk.transports"
+
+
+async def test_a_probe_runs_with_the_environment_the_record_asks_for(tmp_path: Path) -> None:
+    """The bug this closes, found by running the README's own snippet: `detect` handed the probe an
+    **empty** environment, so a CLI that resolves its credentials under `HOME` could not find them
+    and every install came back `unknown`.
+
+    `backfill_env` existed for exactly this and was never wired into detection — the field was
+    right and nothing read it. A probe is only worth running in the environment the provider will
+    actually be run in.
+    """
+    seen = tmp_path / "what-the-probe-saw"
+    a_cli(tmp_path, "envy", f'echo "HOME=$HOME" > {seen}; echo 1.0.0')
+    provider = Provider(
+        id="envy",
+        kind="agent",
+        bin="envy",
+        version_probe=("--version",),
+        backfill_env=("HOME", "PATH"),
+    )
+
+    await detect([provider], path=[str(tmp_path)], extra_dirs=[])
+
+    assert seen.exists(), "the probe never ran"
+    assert seen.read_text().strip() != "HOME=", "the probe ran with no HOME"
+
+
+async def test_a_probe_still_does_not_inherit_a_credential(tmp_path: Path) -> None:
+    """D41 survives the fix: backfilling the environment must not become a way to hand a caller's
+    key to every CLI on the machine."""
+    seen = tmp_path / "leaked"
+    a_cli(tmp_path, "nosy", f'echo "[$ANTHROPIC_API_KEY]" > {seen}; echo 1.0.0')
+    provider = Provider(
+        id="nosy",
+        kind="agent",
+        bin="nosy",
+        version_probe=("--version",),
+        backfill_env=("HOME", "PATH", "ANTHROPIC_API_KEY"),
+    )
+
+    await detect([provider], path=[str(tmp_path)], extra_dirs=[])
+
+    assert seen.read_text().strip() == "[]", "a credential reached the probe"

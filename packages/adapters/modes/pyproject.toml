@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-modes"
-version = "0.13.1"
+version = "0.14.0"
 description = "Governance as data: a mode is a ceiling and an ask line."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.13.1", "shadow-hdk==0.13.1"]
+dependencies = ["shadow-hdk-kernel==0.14.0", "shadow-hdk==0.14.0"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

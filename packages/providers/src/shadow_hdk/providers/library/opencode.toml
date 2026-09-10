@@ -1,0 +1,50 @@
+# OpenCode, over its native ACP server.
+#
+# This file exists to answer one question with evidence rather than assertion: **does the second
+# provider cost a file or a phase?** It cost a file. No Python changed, no adapter was added, and
+# the transport is the one Claude Code already uses.
+#
+# Everything below marked *measured* was run on 2026-09-11 against opencode 1.18.21 on this machine.
+# Everything marked *unverified* is written from the CLI's own help output and has not been
+# observed, because observing it would mean signing somebody out.
+
+id = "opencode"
+name = "OpenCode"
+kind = "agent"
+
+bin = "opencode"
+bin_env_key = "OPENCODE_BIN"
+
+# *Measured*: `opencode --version` prints `1.18.21` and exits 0.
+version_probe = ["--version"]
+
+# *Measured*: `opencode auth list` exits 0 and prints the credential **names** it holds — never the
+# values — ending in a count: "2 credentials". It is the cheap, side-effect-free question D41 wants.
+auth_probe = ["auth", "list"]
+# *Unverified*: the signed-out wording. A fresh install shows no credentials, and the count line is
+# the natural place for it to say so. Until somebody observes it, an unmatched answer is `unknown`
+# rather than `ready` — which is exactly what the fifth status is for, and why guessing here would
+# be worse than leaving it thin.
+auth_failure_patterns = ["0 credentials", "no credentials", "not logged in"]
+
+# *Measured*: `opencode acp` is a documented subcommand — "start ACP (Agent Client Protocol)
+# server" — so unlike Claude Code this one speaks our transport natively and needs no npm bridge.
+transport = "acp"
+launch_args = ["acp"]
+
+injects_tools = "mcp"
+
+# *Measured*: opencode inherits its own run markers and a nested run confuses them.
+strip_env = ["OPENCODE", "OPENCODE_PID", "OPENCODE_RUN_ID", "OPENCODE_SERVER_PASSWORD"]
+backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME"]
+
+install_hint = "brew install sst/tap/opencode  (then `opencode auth login`)"
+
+# *Measured*: opencode is bun-based and, left to itself, walks up from its working directory to the
+# nearest project root and installs there at startup. Pointed at a workspace inside somebody's
+# repository that rewrites their lockfile. Disabling project-config discovery keeps it to the
+# configuration it is given.
+[[set_env]]
+name = "OPENCODE_DISABLE_PROJECT_CONFIG"
+value = "true"
+

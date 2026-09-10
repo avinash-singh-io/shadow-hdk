@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-providers"
-version = "0.13.1"
+version = "0.14.0"
 description = "Which model or agent this machine can reach — bring your own key, or your own subscription."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.13.1"]
+dependencies = ["shadow-hdk-kernel==0.14.0"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/shadow_hdk/providers/library" = "shadow_hdk/providers/library"

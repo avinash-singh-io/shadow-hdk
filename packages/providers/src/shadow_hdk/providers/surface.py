@@ -26,8 +26,9 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.kernel import Provider, ProviderStatus
+from shadow_hdk.providers.environment import environment_for
 from shadow_hdk.providers.probes import ask_auth, ask_version
-from shadow_hdk.providers.resolution import candidates
+from shadow_hdk.providers.resolution import candidates, search_dirs
 
 TRANSPORT_GROUP = "shadow_hdk.transports"
 """The entry-point group an adapter declares itself in."""
@@ -92,9 +93,14 @@ async def detect(
     one** rather than reported as the provider — which is the whole reason resolution hands over a
     list instead of a winner.
     """
-    environment = dict(env or {})
+    where = list(extra_dirs) if extra_dirs is not None else search_dirs(path=list(path or []))
     found: list[Available] = []
     for provider in providers:
+        # **The probe runs in the environment the provider will be run in.** Handing it an empty
+        # one made every CLI that resolves credentials under `HOME` come back `unknown`, which is
+        # how `backfill_env` came to exist as a field nothing read. Found by running the README's
+        # own snippet rather than by reading it.
+        environment = environment_for(provider, base=dict(env or {}), search=where)
         found.append(await _detect_one(provider, path, extra_dirs, environment))
     return found
 

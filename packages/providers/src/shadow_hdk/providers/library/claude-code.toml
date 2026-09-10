@@ -16,9 +16,22 @@ bin_env_key = "CLAUDE_BIN"
 version_probe = ["--version"]
 
 # Asked, never read (D41). Nothing here opens a keychain or a config file.
-auth_probe = ["auth"]
+#
+# **Measured 2026-09-11** against claude 2.1.235: `claude auth status` exits 0 and prints JSON —
+#   {"loggedIn": true, "authMethod": "claude.ai", ...}
+# The first draft of this file said `["auth"]`, which is the command *group*: it prints usage and
+# exits 1, so every install came back `unknown`. Caught by running the README's own snippet for
+# real rather than by reading the help text — which is the argument for probing over believing,
+# turned on ourselves.
+auth_probe = ["auth", "status"]
 # What "not signed in" looks like in its own words. Anything unmatched is `unknown`, never `ready`.
-auth_failure_patterns = ["not logged in", "please run .*login", "no credentials", "unauthorized"]
+auth_failure_patterns = [
+  '"loggedIn"\s*:\s*false',
+  "not logged in",
+  "please run .*login",
+  "no credentials",
+  "unauthorized",
+]
 
 # Claude Code does not speak ACP natively — it speaks it through the npm bridge below, which is what
 # `transport` names and `install_hint` says how to get. Measured in Phase 2.
@@ -38,6 +51,16 @@ strip_env = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"]
 
 # A child launched with a stripped environment otherwise fails for want of something nobody thought
 # to forward. Credential-looking names are refused here by construction (D41).
-backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM"]
+#
+# **`USER` is load-bearing and was measured to be.** With HOME, PATH and SHELL alone,
+# `claude auth status` answers `"loggedIn": false` on a machine that is signed in — it resolves the
+# credential by user and cannot without it. Bisected 2026-09-11 against claude 2.1.235: of USER,
+# LOGNAME, TMPDIR, XPC_SERVICE_NAME and SSH_AUTH_SOCK, only USER flips the answer.
+#
+# Left out, this library would report a signed-in subscription as unusable and send somebody to
+# log in again — the exact failure D41's fifth status exists to avoid, arriving through the back
+# door of a too-thin environment. That the fix is a field rather than a code change is the whole
+# argument for D40.
+backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME"]
 
 install_hint = "npm i -g @zed-industries/claude-code-acp  (and `claude auth login` for the subscription)"
