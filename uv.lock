@@ -18,6 +18,7 @@ members = [
     "shadow-hdk-adapters-langchain",
     "shadow-hdk-adapters-mcp",
     "shadow-hdk-adapters-modes",
+    "shadow-hdk-adapters-otel",
     "shadow-hdk-adapters-recording",
     "shadow-hdk-adapters-sandbox-subprocess",
     "shadow-hdk-adapters-workspace",
@@ -1377,6 +1378,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "shadow-hdk-adapters-otel"
+version = "0.7.0"
+source = { editable = "packages/adapters/otel" }
+dependencies = [
+    { name = "shadow-hdk-kernel" },
+    { name = "opentelemetry-api" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "opentelemetry-api", specifier = ">=1.44,<2" },
+]
+
+[[package]]
 name = "shadow-hdk-adapters-recording"
 version = "0.7.0"
 source = { editable = "packages/adapters/recording" }
@@ -1474,6 +1490,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-langchain", extra = ["huggingface", "openai"] },
     { name = "shadow-hdk-adapters-mcp" },
     { name = "shadow-hdk-adapters-modes" },
+    { name = "shadow-hdk-adapters-otel" },
     { name = "shadow-hdk-adapters-recording" },
     { name = "shadow-hdk-adapters-sandbox-subprocess" },
     { name = "shadow-hdk-adapters-workspace" },
@@ -1505,6 +1522,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-langchain", extras = ["openai", "huggingface"], editable = "packages/adapters/langchain" },
     { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
     { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
+    { name = "shadow-hdk-adapters-otel", editable = "packages/adapters/otel" },
     { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
     { name = "shadow-hdk-adapters-sandbox-subprocess", editable = "packages/adapters/sandbox_subprocess" },
     { name = "shadow-hdk-adapters-workspace", editable = "packages/adapters/workspace" },
