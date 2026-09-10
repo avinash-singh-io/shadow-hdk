@@ -77,5 +77,5 @@ phase: 9-the-wire
       `License-Expression: MIT` and a licence file — read back out of the built wheels, not assumed
 - [x] the version corrected: the plan said `v0.1.0`, written at founding before six contract changes
       each moved every package under D9. **The release is v0.6.0.** Never tagged here
-- [ ] records, board, status, and the *Pins* row P2 must read
-- [ ] Gate
+- [x] records, board, status, roadmap, and the *Pins* row P2 must read
+- [x] Gate

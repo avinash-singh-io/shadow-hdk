@@ -250,3 +250,36 @@ then collided with nothing only because the lesson from the previous run was alr
 seconds is generous for localhost and makes the same run finish in about one minute.
 
 ---
+
+### [DECISION] 2026-09-10 — the first release is v0.6.0, not v0.1.0
+Topics: versions, d9, release
+Affects-phases: none
+Affects-specs: specs/planning/roadmap.md, specs/phases/phase-9-the-wire/overview.md
+
+The roadmap and this phase's own specs said Phase 9 ships **v0.1.0**. That number was written at
+founding, and D9 has moved every package together on each contract change since: `ModelPort.stream`
+(0.2.0), `Provenance.posture` (0.3.0), `Ended.detail` (0.4.0), `Held` (0.5.0), and `Spent` with the
+state-holds-JSON change (0.6.0).
+
+So the packages have been at 0.6.0 for a phase, and releasing as 0.1.0 would mean going backwards
+past five recorded contract changes. The specs are corrected rather than the versions: **the number
+the packages carry is the true one**, because each step of it is recorded and tested.
+
+Measured rather than asserted: all twelve wheels build, every one reporting 0.6.0,
+`License-Expression: MIT`, and carrying a licence file — read back out of the built artifacts.
+
+### [DISCOVERY] 2026-09-10 — a publisher that never deletes made its own test blind
+Topics: schemas, mutation-check, tests
+Affects-phases: none
+Affects-specs: none
+
+The schema tests compared each checked-in file to the code that made it. A mutation making the
+publisher **skip** a contract survived all of them, because the publisher never deletes: the file
+from the previous good run was still on disk, correct, and satisfied both the set check and the
+content check.
+
+The fix is to publish into an empty directory and compare that, which catches a contract never
+written as well as one written wrongly. The general shape is worth remembering — **a test that reads
+an artifact cannot tell you the process still produces it.**
+
+---
