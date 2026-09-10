@@ -12,6 +12,11 @@ a host validating rules somebody typed into a form before it stores them.
 the given set would ever permit, which is what all of its always-rules come to. A rule the given set
 never named is not a loophole: it is checked the same way, or widening would only ever be a matter
 of inventing a name nobody had used.
+
+**Both lines are compared, not just the ceiling.** A rule has a ceiling — what may happen at all —
+and an ask line — what may happen without anybody being told. They are two different permissions and
+a set that keeps the ceiling while deleting the ask line has widened the deployment enormously
+without touching a single field of it.
 """
 
 from __future__ import annotations
@@ -44,12 +49,36 @@ class Wider:
 
 
 def widens(theirs: RuleSet, ours: RuleSet) -> list[Wider]:
-    """Every place `theirs` permits more than `ours` does. Empty means it may exist."""
-    allowed = ours.under(frozenset()).ceiling
+    """Every place `theirs` permits more than `ours` does. Empty means it may exist.
+
+    **Two lines per rule, not one** (BUG-012). The ceiling says what may happen at all; the ask line
+    says what may happen without anybody being told. A check that read only ceilings passed a rule
+    set with the deployment's own ceiling and no ask line at all — which is a team deleting every
+    approval in the house and being told it had changed nothing.
+    """
+    selected = ours.under(frozenset())
     found: list[Wider] = []
     for rule in theirs.rules:
-        found.extend(_compare(rule.name, rule.ceiling, allowed))
+        found.extend(_compare(rule.name, rule.ceiling, selected.ceiling))
+        found.extend(_compare_asks(rule.name, rule.ask_above, selected.ask_above))
     return found
+
+
+def _compare_asks(
+    name: str, asked: EffectProfile | None, allowed: EffectProfile | None
+) -> list[Wider]:
+    """An ask line further out than the house's — or absent where the house has one.
+
+    The asymmetry is deliberate. A house that never asks has drawn no line to cross, so a team that
+    adds one is adding caution, and refusing that would refuse the one change nobody should have to
+    argue for. A house that *does* ask has drawn one, and removing it is the widening that matters
+    most to whoever signs for the deployment.
+    """
+    if allowed is None:
+        return []
+    if asked is None:
+        return [Wider(name, "ask_above", allowed, "never asks")]
+    return _compare(f"{name} (ask)", asked, allowed)
 
 
 def _compare(name: str, asked: EffectProfile, allowed: EffectProfile) -> list[Wider]:

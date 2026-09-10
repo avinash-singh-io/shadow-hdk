@@ -12,6 +12,7 @@ What the model may do is the *pattern's* decision, not this class's: `single` of
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin
 from shadow_hdk.adapters.agent.meta import BY_NAME
@@ -27,6 +28,7 @@ from shadow_hdk.adapters.agent.pattern import (
     SPAWN,
     Pattern,
 )
+from shadow_hdk.adapters.agent.skills import Skill, missing_for
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
@@ -50,12 +52,16 @@ from shadow_hdk.kernel.observations import (
 )
 from shadow_hdk.kernel.ports import (
     ComponentPort,
+    Context,
+    GovernancePort,
+    Judgement,
     Message,
     ModelRequest,
+    Refuse,
     ToolCall,
     Usage,
 )
-from shadow_hdk.runtime import RunContext, current_run, run
+from shadow_hdk.runtime import Ports, RunContext, current_run, run
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -75,8 +81,13 @@ class AgentComponent(ComponentPort):
         registration_id: RegistrationId | None = None,
         registered_by: str = "host",
         at: str = "",
+        skill: Skill | None = None,
     ) -> None:
         self.pattern = pattern
+        self.skill = skill
+        """A team's procedure, and what it cannot do without (D17). Checked against what the policy
+        leaves visible **before the first turn**, so a skill needing a component this deployment
+        hides is refused for a penny rather than discovered halfway through for a pound."""
         self._registration = Registration(
             id=registration_id or name,
             component=Component(
@@ -133,14 +144,41 @@ class _Turnwise:
     # ------------------------------------------------------------------ the loop
 
     async def work(self, brief: str) -> Observation:
-        self.messages = [Message("system", self.pattern.system), Message("user", brief)]
+        skill = self.agent.skill
+        if skill is not None:
+            # Before the first turn, which is the whole value of the check (D17, BUG-012): against
+            # `visible()`, the same computation the catalogue comes from, so a skill can never be
+            # told it may use something the model would not be offered.
+            missing = missing_for(skill, await self.ctx.visible())
+            if missing:
+                return self.finished(
+                    "skill_unmet",
+                    text=(
+                        f"the skill {skill.name!r} needs "
+                        f"{', '.join(sorted(missing))}, which this deployment does not offer"
+                    ),
+                )
+        self.messages = [Message("system", self._role(skill)), Message("user", brief)]
         for turn in range(self.pattern.max_turns):
             if self.ctx.remaining().ceiling.max_steps <= 0:
                 return self.finished("lease_exhausted")
             self.turns = turn + 1
-            response = await self.ctx.ports.model.complete(
-                ModelRequest(tuple(self.messages), await self.catalogue())
-            )
+            # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
+            # meta-tool (BUG-001), and that is our refusal, not a provider's failure.
+            request = ModelRequest(tuple(self.messages), await self.catalogue())
+            try:
+                response = await self.ctx.ports.model.complete(request)
+            except Exception as broken:  # noqa: BLE001 — the money is the point, not the crash
+                # **Spend that happened is spend that is recorded** (D33, BUG-012). This used to
+                # throw straight out of the component, and `step.py` turns that into `Failed` (D7)
+                # — an observation with nowhere to carry usage — so every paid turn before the
+                # break was charged to nobody. It ends the way this loop ends every other way it
+                # stops early: `Completed`, with a `reason` and what it spent.
+                #
+                # `Exception`, not `BaseException`: a host cancelling a run (D15) travels as
+                # `CancelledError`, and catching that would turn *stop* into *carry on*.
+                self.turns -= 1
+                return self.finished("provider_failed", text=f"{type(broken).__name__}: {broken}")
             self.charge(response.usage)
             if not response.tool_calls:
                 self.messages.append(Message("assistant", response.text))
@@ -174,6 +212,16 @@ class _Turnwise:
 
     # ------------------------------------------------------------------ the moves
 
+    def _role(self, skill: Skill | None) -> str:
+        """The pattern says how this role works; the skill says what this piece of work is.
+
+        One system message rather than two: several providers accept only one, and a procedure
+        split from the role it runs under reads to the model as two voices disagreeing.
+        """
+        if skill is None:
+            return self.pattern.system
+        return f"{self.pattern.system}\n\n{skill.prompt}"
+
     async def catalogue(self) -> tuple[Interface, ...]:
         """What the model sees: the policy's answer, this role's names, and the pattern's verbs.
 
@@ -198,11 +246,38 @@ class _Turnwise:
             registration.component.interface
             for registration in visible
             if self.pattern.shows(registration.component.interface.name)
+            and self._within_the_ceiling(registration)
         ]
         # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
         # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
         return thin(tools, self.pattern) + tuple(
             BY_NAME[name] for name in sorted(self.pattern.meta_tools)
+        )
+
+    def _within_the_ceiling(self, registration: Registration) -> bool:
+        """Whether this role could ever be permitted to use it (BUG-012).
+
+        Discovery, not permission — but the two must agree, or the model is offered a tool whose
+        every use is refused and spends its turns learning that. Permission is enforced separately,
+        because a plan may name a component nobody offered.
+        """
+        if self.pattern.ceiling is None:
+            return True
+        return registration.component.effects.narrows(self.pattern.ceiling)
+
+    def _ports_for_this_role(self) -> Ports:
+        """The run's ports, with the pattern's ceiling in front of the deployment's policy.
+
+        A second gate, never a replacement: the deployment is asked first and its refusal stands,
+        so a pattern file can only ever narrow. A pattern that could widen the house would make
+        every pattern file a security decision, and pattern files are meant to be readable by the
+        team that writes them.
+        """
+        if self.pattern.ceiling is None:
+            return self.ctx.ports
+        return replace(
+            self.ctx.ports,
+            governance=_Bounded(self.ctx.ports.governance, self.pattern),
         )
 
     async def propose(self, call: ToolCall) -> None:
@@ -340,7 +415,7 @@ class _Turnwise:
         ceiling = self.ctx.remaining().ceiling
         observed: dict[str, Observation] = {}
         async for event in run(
-            composition, self.ctx.ports, options=self.ctx.spawn_options(ceiling)
+            composition, self._ports_for_this_role(), options=self.ctx.spawn_options(ceiling)
         ):
             if event.kind == "observed":
                 observed[event.step] = event.observation
@@ -353,6 +428,16 @@ class _Turnwise:
                 # implementations, so it is worth the four lines and the paragraph.
                 observed[event.step] = Refused(event.reason)
         for call in calls:
+            if call.name == COMPOSE:
+                # **The plan's own call is answered with the whole plan** (BUG-012). Its steps are
+                # named by the model — `s1`, `s2` — and belong to no tool call, so matching by
+                # `call.id` found nothing and the loop skipped `compose` as a meta-tool. That left
+                # the call unanswered, which is the dangling tool call every provider rejects, and
+                # broke this interface's own promise that *you see every result*.
+                self.messages.append(
+                    Message("tool", _readable_plan(composition, observed), tool_call_id=call.id)
+                )
+                continue
             if call.name in BY_NAME:
                 continue
             observation = observed.get(call.id)
@@ -391,6 +476,27 @@ class _Turnwise:
         )
 
 
+class _Bounded:
+    """The deployment's policy, then the role's ceiling. Both have to say yes.
+
+    Order matters for the *reason*, not the outcome. The deployment is asked first so that when the
+    house refuses, the house's own words are what a person reads — a team debugging its pattern
+    should not be sent to the pattern file over a rule it does not control.
+    """
+
+    def __init__(self, inner: GovernancePort, pattern: Pattern) -> None:
+        self._inner, self._pattern = inner, pattern
+
+    async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
+        judgement = await self._inner.judge(effects, context)
+        if isinstance(judgement, Refuse):
+            return judgement
+        ceiling = self._pattern.ceiling
+        if ceiling is not None and not effects.narrows(ceiling):
+            return Refuse(f"the pattern {self._pattern.name!r} does not permit this")
+        return judgement
+
+
 # ---------------------------------------------------------------- small helpers
 
 
@@ -413,6 +519,37 @@ def _last_observation(events: Sequence[Event]) -> str:
     """What a helper ended up saying, for the model to read."""
     seen = [e for e in events if e.kind == "observed"]
     return _readable(seen[-1].observation) if seen else "nothing"
+
+
+def _readable_plan(composition: Composition, observed: dict[str, Observation]) -> str:
+    """Every step of an authored plan, by the model's own name for it.
+
+    Named rather than positional because a plan is not always a straight line — a `FanOut` settles
+    in whatever order its branches finish, and a `Until` runs a step more than once. The name is the
+    only thing that survives all three, and it is what the model wrote and can refer to next turn.
+
+    A step with no observation is reported as such instead of being left out: *this did not run* is
+    what a model needs to know after a plan whose earlier step failed.
+    """
+    return _as_json({step: _readable(observed.get(step)) for step in _step_ids(composition)})
+
+
+def _step_ids(node: object) -> list[str]:
+    """Every step id in a composition, in the order it is written."""
+    found: list[str] = []
+    steps = getattr(node, "steps", None)
+    if steps is not None:
+        for step in steps:
+            found.extend(_step_ids(step))
+        return found
+    body = getattr(node, "body", None)
+    if body is not None:
+        found.extend(_step_ids(body))
+        return found
+    identifier = getattr(node, "id", None)
+    if isinstance(identifier, str):
+        found.append(identifier)
+    return found
 
 
 def _readable(observation: Observation | None) -> str:

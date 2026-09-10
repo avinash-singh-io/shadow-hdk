@@ -160,3 +160,89 @@ def test_everything_widens_a_constitution_that_permits_nothing() -> None:
     any rule granting anything is a widening — including one that only reads."""
     found = widens(a_set(reads=WORKSPACE, writes=ScopeSet()), RuleSet(()))
     assert [f.field for f in found] == ["reads"], found
+
+
+# ---------------------------------------------------------------- the ask line (BUG-012)
+
+ASKS = RuleSet(
+    (
+        Rule(
+            name="house",
+            ceiling=EffectProfile(reads=EVERYTHING, writes=WORKSPACE, reversible=False),
+            ask_above=EffectProfile(reads=WORKSPACE),
+        ),
+    )
+)
+"""A constitution that permits a good deal and **pauses** for most of it. The ceiling is what may
+happen at all; the ask line is what may happen without anyone being told."""
+
+
+def with_ask(ask: EffectProfile | None) -> RuleSet:
+    return RuleSet(
+        (
+            Rule(
+                name="theirs",
+                ceiling=EffectProfile(reads=EVERYTHING, writes=WORKSPACE, reversible=False),
+                ask_above=ask,
+            ),
+        )
+    )
+
+
+def test_a_rule_that_never_asks_widens_one_that_does() -> None:
+    """The bug. Both sets have the same ceiling, so the six-field sweep finds nothing — and yet
+    one of them pauses before an irreversible write and the other simply does it.
+
+    A check that reads only ceilings says a team may replace every approval in the deployment with
+    nothing, which is the widening that matters most to whoever has to sign for it.
+    """
+    found = widens(with_ask(None), ASKS)
+
+    assert [w.field for w in found] == ["ask_above"]
+    assert "never asks" in str(found[0])
+
+
+def test_a_rule_that_asks_later_widens() -> None:
+    """Not only the absent ask line: one drawn further out is the same widening, by degrees. Here
+    theirs would act on the whole filesystem before anybody is asked."""
+    found = widens(with_ask(EffectProfile(reads=EVERYTHING)), ASKS)
+
+    assert [w.field for w in found] == ["reads"]
+    assert "ask" in found[0].rule, f"the finding does not say it is about the ask line: {found[0]}"
+
+
+def test_a_rule_that_asks_earlier_does_not_widen() -> None:
+    """Asking sooner than the house does is narrowing, and must be allowed — a team is free to be
+    more cautious than the deployment requires."""
+    assert widens(with_ask(EffectProfile()), ASKS) == []
+
+
+def test_an_identical_ask_line_does_not_widen() -> None:
+    assert widens(with_ask(EffectProfile(reads=WORKSPACE)), ASKS) == []
+
+
+def test_a_set_that_asks_where_the_house_never_does_is_not_wider() -> None:
+    """The asymmetry is deliberate. A house that never asks has drawn no line to cross, so a team
+    that adds one is adding caution — and a check that called that a widening would refuse the one
+    change nobody should ever have to argue for.
+
+    The ceiling here is the constitution's own, so nothing but the ask line is under test.
+    """
+    cautious = RuleSet(
+        (
+            Rule(
+                name="theirs",
+                ceiling=EffectProfile(
+                    reads=WORKSPACE,
+                    writes=WORKSPACE,
+                    reaches=False,
+                    reversible=True,
+                    contained=True,
+                    costs=False,
+                ),
+                ask_above=EffectProfile(reads=WORKSPACE),
+            ),
+        )
+    )
+
+    assert widens(cautious, CONSTITUTION) == []
