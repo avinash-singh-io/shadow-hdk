@@ -2,7 +2,7 @@
 type: Epic
 id: "0007"
 slug: the-environment
-status: planned
+status: built-where-buildable
 owner: Avinash
 started: "2026-09-10"
 phases: [phase-15-environment-contract, phase-16-mqtt]
@@ -40,7 +40,7 @@ and every act) and `08` §4 (the posture table) do, and the decisions below are 
 | phase | builds | proves here |
 |---|---|---|
 | 15 — the environment contract | D29, D30, D31: `Observed.posture` (0.8.0); the runtime stamps and exposes posture; `Controlled`; `adapters/devices` with the three roles, `DeviceComponents`, and fakes | everything, with fake devices: disconnect mid-act, a late reading, a witness's act as an observed receipt |
-| 16 — MQTT | the first protocol adapter over D31 | with a localhost broker the tests start and stop, if the wheels can be added with a recorded reason; live tests skip naming what they need otherwise |
+| 16 — MQTT | the first protocol adapter over D31 — **built** (D32: the envelope is the payload) | against an `amqtt` broker on localhost the suite starts and stops; `paho-mqtt` and `amqtt` added as wheels with their licences recorded; nothing skipped |
 | `[~]` OPC-UA | the second, over D31 | needs `asyncua` (LGPL-3.0 — conditional under the licence allowlist) and a server; not on this machine |
 | `[~]` ROS 2 | the third, over D31 | needs a ROS distribution, which is not a wheel; not on this machine |
 
@@ -48,15 +48,15 @@ and every act) and `08` §4 (the posture table) do, and the decisions below are 
 
 > Checkable. "It works" is not a criterion.
 
-- [ ] Through a real run, an observed component's observation carries `posture: observed` on the event stream and a controlled one's carries `controlled`, stamped by the runtime and not by the component
-- [ ] `Controlled(AllowAll())` refuses an observed actuator with a reason naming the posture, admits an observed sensor, admits a controlled actuator
-- [ ] A fake actuator commanded through a run leaves an `Acted` receipt with the lease read at the act; commanded on a spent lease it refuses and the fake world is untouched; disconnected mid-act it is `Failed` and no receipt exists
-- [ ] A fake witness's overheard act arrives as an `Acted` with `posture: observed` and grounds that name the device, never as a proposal we made
-- [ ] A reading carries the device's own stamp and its age by the runtime's clock, tested by moving the clock
-- [ ] Contract 0.7.0 → 0.8.0 across every package, schemas republished, a *Pins* row on the board
-- [ ] The MQTT adapter's tests run against a broker on localhost that the suite starts and stops, or skip naming what they need
-- [ ] `tests/invariants` green: no adapter imports another; the kernel stays pure
-- [ ] Gate: ruff 0, format 0, mypy 0, pytest 0; every mutation bites or is named equivalent
+- [x] Through a real run, an observed component's observation carries `posture: observed` on the event stream and a controlled one's carries `controlled`, stamped by the runtime and not by the component
+- [x] `Controlled(AllowAll())` refuses an observed actuator with a reason naming the posture, admits an observed sensor, admits a controlled actuator
+- [x] A fake actuator commanded through a run leaves an `Acted` receipt with the lease read at the act; commanded on a spent lease it refuses and the fake world is untouched; disconnected mid-act it is `Failed` and no receipt exists
+- [x] A fake witness's overheard act arrives as an `Acted` with `posture: observed` and grounds that name the device, never as a proposal we made
+- [x] A reading carries the device's own stamp and its age by the runtime's clock, tested by moving the clock
+- [x] Contract 0.7.0 → 0.8.0 across every package, schemas republished, a *Pins* row on the board
+- [x] The MQTT adapter's tests run against a broker on localhost that the suite starts and stops (`amqtt`, 21 tests, none skipped)
+- [x] `tests/invariants` green: no adapter imports another; the kernel stays pure
+- [x] Gate: ruff 0, format 0, mypy 0, pytest 0; every mutation bites or is named equivalent (Phase 15: 34; Phase 16: 28)
 
 ## Non-goals
 
@@ -68,4 +68,5 @@ credential story (`10` §454); the OPC-UA and ROS 2 adapters beyond their `[~]` 
 
 > Operator changes made during the run land here, newest last.
 
-_(none yet)_
+- 2026-09-10 — the device contract moved from `adapters/devices` into `runtime/devices.py` before Phase 16, because no adapter may import another and every protocol adapter implements it; `adapters/devices` re-exports it. `Reading.stamped_by` added so a reading says whose clock stamped it.
+- 2026-09-10 — **closed where this machine can close it.** OPC-UA and ROS 2 stay `[~]`: the first needs `asyncua` (LGPL-3.0, conditional under the allowlist) and a server to prove against, the second a ROS distribution that is not a wheel. Both are adapters over D31's three roles, shaped exactly like `adapters/mqtt`.

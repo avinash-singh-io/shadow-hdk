@@ -27,3 +27,33 @@ wheels fetched. `amqtt` pins `websockets==15.0.1`, moving the dev resolution dow
 a dev-only cost, recorded so nobody later wonders why.
 
 ---
+
+### [DISCOVERY] 2026-09-10 — the dev broker stalls its shutdown on a clean goodbye mid-delivery
+Topics: amqtt, broker, testing
+Affects-phases: none
+Affects-specs: none
+
+`amqtt` 0.12's `shutdown()` waits up to forever when a client sends a clean DISCONNECT while a
+QoS 1 delivery to it — a retained message, typically — is still in flight; its broadcast loop
+waits on a PUBACK that will never come. A client that simply vanishes is handled fine — which is
+why the mutation *the DISCONNECT is not delivered* survives: the hygiene it performs is invisible
+to this broker, and equivalent for this suite. Deterministic, found on the closed-link test, which
+now waits for the retained message before closing; the fixture caps a stalled shutdown at three
+seconds with a warning naming the cause. Not our adapter's defect; recorded so nobody re-finds it.
+
+---
+
+### [NOTE] 2026-09-10 — three groups measured; what this machine cannot prove, named
+Topics: mqtt, mutation, environment
+Affects-phases: none
+Affects-specs: none
+
+Group 1: 18 tests, 23 of 24 mutations bite. Group 2: 3 tests, 4 mutations bite. Two races were
+the tests' own, not the adapter's: a first read on a fresh subscription must wait a short grace
+for a retained message (3.1.1 has no end marker — the adapter now does), and a publish right after
+connect must wait for the SUBACK (the link now tracks them and offers `subscribed()`). Two claims
+are design statements this suite cannot prove and says so: a PUBACK that never comes with the
+broker alive but silent (`_break` and `reconnect_on_failure=False`, so nothing in flight is
+re-sent) — `amqtt` always acks — and MQTT v5 properties, which no broker here can carry (D32).
+
+---
