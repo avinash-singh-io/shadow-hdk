@@ -1,0 +1,64 @@
+{
+  "$defs": {
+    "ScopeSet": {
+      "description": "A set of scopes that can also honestly say *everything*.\n\nA component that will not declare what it reads or writes is registered as touching everything\n(09 \u00a72: a missing declaration means assume the worst, never assume nothing), and \"everything\"\nover an open set of names cannot be spelled as a list.",
+      "properties": {
+        "everything": {
+          "default": false,
+          "title": "Everything",
+          "type": "boolean"
+        },
+        "names": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Names",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "title": "ScopeSet",
+      "type": "object"
+    }
+  },
+  "description": "Six fields. Names open, effects closed.",
+  "properties": {
+    "contained": {
+      "default": true,
+      "title": "Contained",
+      "type": "boolean"
+    },
+    "costs": {
+      "default": false,
+      "title": "Costs",
+      "type": "boolean"
+    },
+    "reaches": {
+      "default": false,
+      "title": "Reaches",
+      "type": "boolean"
+    },
+    "reads": {
+      "$ref": "#/$defs/ScopeSet",
+      "default": {
+        "everything": false,
+        "names": []
+      }
+    },
+    "reversible": {
+      "default": true,
+      "title": "Reversible",
+      "type": "boolean"
+    },
+    "writes": {
+      "$ref": "#/$defs/ScopeSet",
+      "default": {
+        "everything": false,
+        "names": []
+      }
+    }
+  },
+  "title": "EffectProfile",
+  "type": "object"
+}

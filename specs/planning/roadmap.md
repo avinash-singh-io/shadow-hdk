@@ -45,8 +45,10 @@ settled as **D22 — the port set is open**, six being a count rather than a con
 open spike was reframed from *what does a coding CLI do when refused* to the generic question and
 answered by research rather than by spending a subscription: `specs/architecture/refusal.md`.
 
-**Still with the owner:** ADR-1 and ADR-2, landing the linear stack, and the **v0.1.0 tag** at the
-end of Phase 9.
+**Still with the owner:** ADR-1 and ADR-2, landing the linear stack, and the **first release tag**
+at the end of Phase 9 — which is **v0.6.0**, not the `v0.1.0` this document said at founding. Six
+contract changes have each moved every package under D9 since then, so the number the packages
+carry is the true one and the plan's was stale.
 
 ## Timeline
 

@@ -54,7 +54,7 @@ phase: 9-the-wire
 ## Group 4 — schemas, the version, and the record
 
 - `all_schemas()` published as files, and the published set checked against the code
-- Every package prepared at **0.1.0-worthy** state; the release itself **is the owner's** — prepared
+- Every package prepared at a releasable state; the release itself **is the owner's** — prepared
   and said to be ready, never tagged here
 - `[~]` anything that cannot be settled without the owner, with the command that would settle it
 - tasks, history, status, board — and the *Pins* row P2 has to read

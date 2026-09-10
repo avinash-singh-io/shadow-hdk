@@ -13,7 +13,13 @@ deps: [phase-8-patterns-skills-replay]
 ## Goal
 
 `specs/architecture/wire.md`, built. The runtime becomes reachable from another process or another
-language, in two forms — `serve` over HTTP and `--stdio` — and the version becomes **v0.1.0**.
+language, in two forms — `serve` over HTTP and `--stdio` — and the packages become releasable.
+
+**The version is `v0.6.0`, not `v0.1.0`.** The roadmap named `v0.1.0` at founding. Since then six
+contract changes have each moved every package together under D9 — `ModelPort.stream`,
+`Provenance.posture`, `Ended.detail`, `Held`, `Spent`, and the state-holds-JSON change — so the
+packages are at 0.6.0 and have been for a phase. Releasing as 0.1.0 would mean going backwards
+past five recorded contract changes; the plan's number is the stale one.
 
 The spec fixes the shape and this phase does not get to revisit it:
 
@@ -88,7 +94,7 @@ would mean `Usage` is the wrong shape and the event wants a broader one.
   a port of the runtime (`09` §3b), and it is not this package's to ship.
 - **Authentication beyond the run token.** wire.md fixes the token's shape; a host's own identity
   system is the host's.
-- **Tagging v0.1.0.** The version is prepared and said to be ready. Tagging is the owner's.
+- **Tagging the release.** The version is prepared and said to be ready. Tagging is the owner's.
 
 ## Exit criteria
 

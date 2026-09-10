@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "Asked": {
+      "description": "The step paused; whoever implements governance decides what asking means.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "asked",
+          "default": "asked",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "Asked",
+      "type": "object"
+    },
+    "Completed": {
+      "properties": {
+        "kind": {
+          "const": "completed",
+          "default": "completed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        }
+      },
+      "title": "Completed",
+      "type": "object"
+    },
+    "Failed": {
+      "properties": {
+        "error": {
+          "title": "Error",
+          "type": "string"
+        },
+        "kind": {
+          "const": "failed",
+          "default": "failed",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "Failed",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Pending": {
+      "description": "The answer arrives later, under this handle.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "pending",
+          "default": "pending",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "title": "Pending",
+      "type": "object"
+    },
+    "Refused": {
+      "properties": {
+        "kind": {
+          "const": "refused",
+          "default": "refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Refused",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "asked": "#/$defs/Asked",
+      "completed": "#/$defs/Completed",
+      "failed": "#/$defs/Failed",
+      "pending": "#/$defs/Pending",
+      "refused": "#/$defs/Refused"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Completed"
+    },
+    {
+      "$ref": "#/$defs/Refused"
+    },
+    {
+      "$ref": "#/$defs/Asked"
+    },
+    {
+      "$ref": "#/$defs/Failed"
+    },
+    {
+      "$ref": "#/$defs/Pending"
+    }
+  ]
+}

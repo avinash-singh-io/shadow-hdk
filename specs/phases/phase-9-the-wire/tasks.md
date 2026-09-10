@@ -70,7 +70,12 @@ phase: 9-the-wire
 
 ## Group 4 — schemas, the version, and the record
 
-- [ ] `all_schemas()` published as files, checked against the code
-- [ ] the version prepared for **v0.1.0** — never tagged here
+- [x] all twelve contracts published as files under `schemas/`, plus an index naming the protocol
+      version — and a test comparing each file to the code that made it, because a schema that has
+      drifted is worse than none: it looks authoritative
+- [x] every package **verified releasable**: all twelve wheels build, all at **0.6.0**, all carrying
+      `License-Expression: MIT` and a licence file — read back out of the built wheels, not assumed
+- [x] the version corrected: the plan said `v0.1.0`, written at founding before six contract changes
+      each moved every package under D9. **The release is v0.6.0.** Never tagged here
 - [ ] records, board, status, and the *Pins* row P2 must read
 - [ ] Gate

@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "Ceiling": {
+      "properties": {
+        "max_cost_cents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Cents"
+        },
+        "max_steps": {
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_wall_seconds": {
+          "title": "Max Wall Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_steps",
+        "max_wall_seconds"
+      ],
+      "title": "Ceiling",
+      "type": "object"
+    },
+    "Floor": {
+      "properties": {
+        "min_steps": {
+          "default": 0,
+          "title": "Min Steps",
+          "type": "integer"
+        }
+      },
+      "title": "Floor",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "ceiling": {
+      "$ref": "#/$defs/Ceiling"
+    },
+    "floor": {
+      "$ref": "#/$defs/Floor",
+      "default": {
+        "min_steps": 0
+      }
+    }
+  },
+  "required": [
+    "ceiling"
+  ],
+  "title": "Lease",
+  "type": "object"
+}

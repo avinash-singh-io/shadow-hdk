@@ -1,0 +1,329 @@
+{
+  "$defs": {
+    "Await": {
+      "description": "Wait for something slow \u2014 a person, a job. Compiles to an interrupt.",
+      "properties": {
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Binding"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "kind": {
+          "const": "await",
+          "default": "await",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "component"
+      ],
+      "title": "Await",
+      "type": "object"
+    },
+    "Binding": {
+      "description": "One input: either a literal value or a reference to an earlier step's output by handle.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Binding",
+      "type": "object"
+    },
+    "Condition": {
+      "description": "A total, non-looping test over the last observation's output: ``output[path] == equals``.",
+      "properties": {
+        "equals": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "equals"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "FanOut": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "fan_out",
+          "default": "fan_out",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "await": "#/$defs/Await",
+                "fan_out": "#/$defs/FanOut",
+                "invoke": "#/$defs/Invoke",
+                "sequence": "#/$defs/Sequence",
+                "until": "#/$defs/Until"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Invoke"
+              },
+              {
+                "$ref": "#/$defs/Await"
+              },
+              {
+                "$ref": "#/$defs/Sequence"
+              },
+              {
+                "$ref": "#/$defs/FanOut"
+              },
+              {
+                "$ref": "#/$defs/Until"
+              }
+            ]
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "FanOut",
+      "type": "object"
+    },
+    "Invoke": {
+      "properties": {
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Binding"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "kind": {
+          "const": "invoke",
+          "default": "invoke",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "component"
+      ],
+      "title": "Invoke",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Sequence": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "sequence",
+          "default": "sequence",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "await": "#/$defs/Await",
+                "fan_out": "#/$defs/FanOut",
+                "invoke": "#/$defs/Invoke",
+                "sequence": "#/$defs/Sequence",
+                "until": "#/$defs/Until"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Invoke"
+              },
+              {
+                "$ref": "#/$defs/Await"
+              },
+              {
+                "$ref": "#/$defs/Sequence"
+              },
+              {
+                "$ref": "#/$defs/FanOut"
+              },
+              {
+                "$ref": "#/$defs/Until"
+              }
+            ]
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Sequence",
+      "type": "object"
+    },
+    "Until": {
+      "description": "Loop with a stop: repeat ``step`` until ``condition`` holds, at most ``max_iterations``.",
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/Condition"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "until",
+          "default": "until",
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_iterations": {
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "step": {
+          "discriminator": {
+            "mapping": {
+              "await": "#/$defs/Await",
+              "fan_out": "#/$defs/FanOut",
+              "invoke": "#/$defs/Invoke",
+              "sequence": "#/$defs/Sequence",
+              "until": "#/$defs/Until"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Invoke"
+            },
+            {
+              "$ref": "#/$defs/Await"
+            },
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "$ref": "#/$defs/FanOut"
+            },
+            {
+              "$ref": "#/$defs/Until"
+            }
+          ],
+          "title": "Step"
+        }
+      },
+      "required": [
+        "id",
+        "step",
+        "condition",
+        "max_iterations"
+      ],
+      "title": "Until",
+      "type": "object"
+    }
+  },
+  "description": "A first-class value: visible while it runs, changeable mid-flight, emitted as an event.",
+  "properties": {
+    "steps": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "await": "#/$defs/Await",
+            "fan_out": "#/$defs/FanOut",
+            "invoke": "#/$defs/Invoke",
+            "sequence": "#/$defs/Sequence",
+            "until": "#/$defs/Until"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Invoke"
+          },
+          {
+            "$ref": "#/$defs/Await"
+          },
+          {
+            "$ref": "#/$defs/Sequence"
+          },
+          {
+            "$ref": "#/$defs/FanOut"
+          },
+          {
+            "$ref": "#/$defs/Until"
+          }
+        ]
+      },
+      "title": "Steps",
+      "type": "array"
+    }
+  },
+  "title": "Composition",
+  "type": "object"
+}

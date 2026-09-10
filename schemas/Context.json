@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "description": "Opaque to the runtime. A product's adapter interprets it; the runtime only carries it.",
+  "properties": {
+    "attributes": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Attributes",
+      "type": "object"
+    },
+    "principal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Principal"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "step": {
+      "title": "Step",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "step"
+  ],
+  "title": "Context",
+  "type": "object"
+}

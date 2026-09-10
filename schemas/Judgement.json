@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "Allow": {
+      "properties": {
+        "kind": {
+          "const": "allow",
+          "default": "allow",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "Allow",
+      "type": "object"
+    },
+    "Ask": {
+      "properties": {
+        "kind": {
+          "const": "ask",
+          "default": "ask",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "title": "Ask",
+      "type": "object"
+    },
+    "Refuse": {
+      "properties": {
+        "kind": {
+          "const": "refuse",
+          "default": "refuse",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Refuse",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "allow": "#/$defs/Allow",
+      "ask": "#/$defs/Ask",
+      "refuse": "#/$defs/Refuse"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Allow"
+    },
+    {
+      "$ref": "#/$defs/Ask"
+    },
+    {
+      "$ref": "#/$defs/Refuse"
+    }
+  ]
+}

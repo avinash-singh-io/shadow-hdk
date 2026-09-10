@@ -1,0 +1,1153 @@
+{
+  "$defs": {
+    "Await": {
+      "description": "Wait for something slow \u2014 a person, a job. Compiles to an interrupt.",
+      "properties": {
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Binding"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "kind": {
+          "const": "await",
+          "default": "await",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "component"
+      ],
+      "title": "Await",
+      "type": "object"
+    },
+    "Binding": {
+      "description": "One input: either a literal value or a reference to an earlier step's output by handle.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Binding",
+      "type": "object"
+    },
+    "Ceiling": {
+      "properties": {
+        "max_cost_cents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Cents"
+        },
+        "max_steps": {
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "max_wall_seconds": {
+          "title": "Max Wall Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_steps",
+        "max_wall_seconds"
+      ],
+      "title": "Ceiling",
+      "type": "object"
+    },
+    "Completed": {
+      "properties": {
+        "kind": {
+          "const": "completed",
+          "default": "completed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        }
+      },
+      "title": "Completed",
+      "type": "object"
+    },
+    "Composed": {
+      "description": "What the agent planned \u2014 emitted every time the composition changes, so plan-versus-actual\ncomes for free.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "composition": {
+          "$ref": "#/$defs/Composition"
+        },
+        "kind": {
+          "const": "composed",
+          "default": "composed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "composition"
+      ],
+      "title": "Composed",
+      "type": "object"
+    },
+    "Composition": {
+      "description": "A first-class value: visible while it runs, changeable mid-flight, emitted as an event.",
+      "properties": {
+        "steps": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "await": "#/$defs/Await",
+                "fan_out": "#/$defs/FanOut",
+                "invoke": "#/$defs/Invoke",
+                "sequence": "#/$defs/Sequence",
+                "until": "#/$defs/Until"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Invoke"
+              },
+              {
+                "$ref": "#/$defs/Await"
+              },
+              {
+                "$ref": "#/$defs/Sequence"
+              },
+              {
+                "$ref": "#/$defs/FanOut"
+              },
+              {
+                "$ref": "#/$defs/Until"
+              }
+            ]
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "title": "Composition",
+      "type": "object"
+    },
+    "Condition": {
+      "description": "A total, non-looping test over the last observation's output: ``output[path] == equals``.",
+      "properties": {
+        "equals": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "equals"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "Ended": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "kind": {
+          "const": "ended",
+          "default": "ended",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "completed",
+            "lease_exhausted",
+            "gave_up",
+            "cancelled",
+            "failed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "steps_taken": {
+          "title": "Steps Taken",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "reason",
+        "steps_taken"
+      ],
+      "title": "Ended",
+      "type": "object"
+    },
+    "Failed": {
+      "properties": {
+        "error": {
+          "title": "Error",
+          "type": "string"
+        },
+        "kind": {
+          "const": "failed",
+          "default": "failed",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "Failed",
+      "type": "object"
+    },
+    "FanOut": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "fan_out",
+          "default": "fan_out",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "await": "#/$defs/Await",
+                "fan_out": "#/$defs/FanOut",
+                "invoke": "#/$defs/Invoke",
+                "sequence": "#/$defs/Sequence",
+                "until": "#/$defs/Until"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Invoke"
+              },
+              {
+                "$ref": "#/$defs/Await"
+              },
+              {
+                "$ref": "#/$defs/Sequence"
+              },
+              {
+                "$ref": "#/$defs/FanOut"
+              },
+              {
+                "$ref": "#/$defs/Until"
+              }
+            ]
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "FanOut",
+      "type": "object"
+    },
+    "Floor": {
+      "properties": {
+        "min_steps": {
+          "default": 0,
+          "title": "Min Steps",
+          "type": "integer"
+        }
+      },
+      "title": "Floor",
+      "type": "object"
+    },
+    "Held": {
+      "description": "A child parked instead of ending, and its parent is keeping it (D16).\n\nWithout this a host would have to infer holding from the *absence* of `Ended` \u2014 which a child\nthat died silently also looks like. `steps_spent` is what the child cost on the way in; it is\nnot a reservation, because a parked run settles what it did not use back to its parent.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "child_run_id": {
+          "title": "Child Run Id",
+          "type": "string"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "held",
+          "default": "held",
+          "title": "Kind",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "steps_spent": {
+          "title": "Steps Spent",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "child_run_id",
+        "handle",
+        "steps_spent"
+      ],
+      "title": "Held",
+      "type": "object"
+    },
+    "Invoke": {
+      "properties": {
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Binding"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "kind": {
+          "const": "invoke",
+          "default": "invoke",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "component"
+      ],
+      "title": "Invoke",
+      "type": "object"
+    },
+    "Invoked": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "component": {
+          "title": "Component",
+          "type": "string"
+        },
+        "inputs": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "kind": {
+          "const": "invoked",
+          "default": "invoked",
+          "title": "Kind",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "component",
+        "inputs"
+      ],
+      "title": "Invoked",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Lease": {
+      "properties": {
+        "ceiling": {
+          "$ref": "#/$defs/Ceiling"
+        },
+        "floor": {
+          "$ref": "#/$defs/Floor",
+          "default": {
+            "min_steps": 0
+          }
+        }
+      },
+      "required": [
+        "ceiling"
+      ],
+      "title": "Lease",
+      "type": "object"
+    },
+    "Observed": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "observed",
+          "default": "observed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "observation": {
+          "discriminator": {
+            "mapping": {
+              "asked": "#/$defs/shadow_hdk__kernel__observations__Asked",
+              "completed": "#/$defs/Completed",
+              "failed": "#/$defs/Failed",
+              "pending": "#/$defs/Pending",
+              "refused": "#/$defs/shadow_hdk__kernel__observations__Refused"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Completed"
+            },
+            {
+              "$ref": "#/$defs/shadow_hdk__kernel__observations__Refused"
+            },
+            {
+              "$ref": "#/$defs/shadow_hdk__kernel__observations__Asked"
+            },
+            {
+              "$ref": "#/$defs/Failed"
+            },
+            {
+              "$ref": "#/$defs/Pending"
+            }
+          ],
+          "title": "Observation"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "observation"
+      ],
+      "title": "Observed",
+      "type": "object"
+    },
+    "Pending": {
+      "description": "The answer arrives later, under this handle.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "pending",
+          "default": "pending",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "title": "Pending",
+      "type": "object"
+    },
+    "Proposal": {
+      "description": "What the runtime hands to the sink. It proposes; it never commits anything anywhere.",
+      "properties": {
+        "grounds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grounds",
+          "type": "array"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "kind",
+        "payload",
+        "provenance"
+      ],
+      "title": "Proposal",
+      "type": "object"
+    },
+    "Proposed": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "proposed",
+          "default": "proposed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "proposal": {
+          "$ref": "#/$defs/Proposal"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "proposal"
+      ],
+      "title": "Proposed",
+      "type": "object"
+    },
+    "Provenance": {
+      "description": "Who registered it, what adapter it came through, who signed it, when \u2014 and whether we could\nhave stopped it.\n\n``at`` is whatever the registering side's clock said, as text \u2014 the kernel has no clock.\n``licence`` is recorded here because an open-source component is whatever it is, behind an\nadapter, with its licence in provenance (09 \u00a74).\n\n``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The\nexception has to be explicit: an adapter that forgets to say produces a claim that is true of\neverything the runtime does.",
+      "properties": {
+        "adapter": {
+          "title": "Adapter",
+          "type": "string"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "licence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Licence"
+        },
+        "posture": {
+          "default": "controlled",
+          "enum": [
+            "controlled",
+            "observed"
+          ],
+          "title": "Posture",
+          "type": "string"
+        },
+        "registered_by": {
+          "title": "Registered By",
+          "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        }
+      },
+      "required": [
+        "registered_by",
+        "adapter",
+        "at"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Sequence": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "sequence",
+          "default": "sequence",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "await": "#/$defs/Await",
+                "fan_out": "#/$defs/FanOut",
+                "invoke": "#/$defs/Invoke",
+                "sequence": "#/$defs/Sequence",
+                "until": "#/$defs/Until"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Invoke"
+              },
+              {
+                "$ref": "#/$defs/Await"
+              },
+              {
+                "$ref": "#/$defs/Sequence"
+              },
+              {
+                "$ref": "#/$defs/FanOut"
+              },
+              {
+                "$ref": "#/$defs/Until"
+              }
+            ]
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Sequence",
+      "type": "object"
+    },
+    "Spawned": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "child_run_id": {
+          "title": "Child Run Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "spawned",
+          "default": "spawned",
+          "title": "Kind",
+          "type": "string"
+        },
+        "lease": {
+          "$ref": "#/$defs/Lease"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "child_run_id",
+        "lease"
+      ],
+      "title": "Spawned",
+      "type": "object"
+    },
+    "Spent": {
+      "description": "What a step cost, said out loud (D20).\n\nPhase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a\n`Completed` observation's output dict, by convention, and anyone wanting to know what a run cost\nhad to know that convention and parse somebody else's payload. Reporting and recording are\ndifferent jobs, and this is the record.\n\nEmitted only when there is something to say \u2014 a step that cost nothing emits none, because a\nkind that appears when there is nothing to report is a kind readers learn to skip.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "spent",
+          "default": "spent",
+          "title": "Kind",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "usage"
+      ],
+      "title": "Spent",
+      "type": "object"
+    },
+    "Started": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "started",
+          "default": "started",
+          "title": "Kind",
+          "type": "string"
+        },
+        "lease": {
+          "$ref": "#/$defs/Lease"
+        },
+        "parent_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Run Id"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "lease"
+      ],
+      "title": "Started",
+      "type": "object"
+    },
+    "Until": {
+      "description": "Loop with a stop: repeat ``step`` until ``condition`` holds, at most ``max_iterations``.",
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/Condition"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "until",
+          "default": "until",
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_iterations": {
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "step": {
+          "discriminator": {
+            "mapping": {
+              "await": "#/$defs/Await",
+              "fan_out": "#/$defs/FanOut",
+              "invoke": "#/$defs/Invoke",
+              "sequence": "#/$defs/Sequence",
+              "until": "#/$defs/Until"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Invoke"
+            },
+            {
+              "$ref": "#/$defs/Await"
+            },
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "$ref": "#/$defs/FanOut"
+            },
+            {
+              "$ref": "#/$defs/Until"
+            }
+          ],
+          "title": "Step"
+        }
+      },
+      "required": [
+        "id",
+        "step",
+        "condition",
+        "max_iterations"
+      ],
+      "title": "Until",
+      "type": "object"
+    },
+    "Usage": {
+      "description": "What the call cost. A model adapter that cannot say reports ``None`` for the field it does\nnot know \u2014 *unknown*, never zero (10 \u00a75 R2).",
+      "properties": {
+        "cost_cents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Cents"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "shadow_hdk__kernel__events__Asked": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "asked",
+          "default": "asked",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "question",
+        "handle"
+      ],
+      "title": "Asked",
+      "type": "object"
+    },
+    "shadow_hdk__kernel__events__Refused": {
+      "description": "Governance said no before the step ran.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "refused",
+          "default": "refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "reason"
+      ],
+      "title": "Refused",
+      "type": "object"
+    },
+    "shadow_hdk__kernel__observations__Asked": {
+      "description": "The step paused; whoever implements governance decides what asking means.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "asked",
+          "default": "asked",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "Asked",
+      "type": "object"
+    },
+    "shadow_hdk__kernel__observations__Refused": {
+      "properties": {
+        "kind": {
+          "const": "refused",
+          "default": "refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Refused",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "asked": "#/$defs/shadow_hdk__kernel__events__Asked",
+      "composed": "#/$defs/Composed",
+      "ended": "#/$defs/Ended",
+      "held": "#/$defs/Held",
+      "invoked": "#/$defs/Invoked",
+      "observed": "#/$defs/Observed",
+      "proposed": "#/$defs/Proposed",
+      "refused": "#/$defs/shadow_hdk__kernel__events__Refused",
+      "spawned": "#/$defs/Spawned",
+      "spent": "#/$defs/Spent",
+      "started": "#/$defs/Started"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Started"
+    },
+    {
+      "$ref": "#/$defs/Composed"
+    },
+    {
+      "$ref": "#/$defs/Invoked"
+    },
+    {
+      "$ref": "#/$defs/Observed"
+    },
+    {
+      "$ref": "#/$defs/Proposed"
+    },
+    {
+      "$ref": "#/$defs/shadow_hdk__kernel__events__Refused"
+    },
+    {
+      "$ref": "#/$defs/shadow_hdk__kernel__events__Asked"
+    },
+    {
+      "$ref": "#/$defs/Spawned"
+    },
+    {
+      "$ref": "#/$defs/Held"
+    },
+    {
+      "$ref": "#/$defs/Spent"
+    },
+    {
+      "$ref": "#/$defs/Ended"
+    }
+  ]
+}

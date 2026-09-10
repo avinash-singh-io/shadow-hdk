@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "Provenance": {
+      "description": "Who registered it, what adapter it came through, who signed it, when \u2014 and whether we could\nhave stopped it.\n\n``at`` is whatever the registering side's clock said, as text \u2014 the kernel has no clock.\n``licence`` is recorded here because an open-source component is whatever it is, behind an\nadapter, with its licence in provenance (09 \u00a74).\n\n``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The\nexception has to be explicit: an adapter that forgets to say produces a claim that is true of\neverything the runtime does.",
+      "properties": {
+        "adapter": {
+          "title": "Adapter",
+          "type": "string"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "licence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Licence"
+        },
+        "posture": {
+          "default": "controlled",
+          "enum": [
+            "controlled",
+            "observed"
+          ],
+          "title": "Posture",
+          "type": "string"
+        },
+        "registered_by": {
+          "title": "Registered By",
+          "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        }
+      },
+      "required": [
+        "registered_by",
+        "adapter",
+        "at"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "description": "What the runtime hands to the sink. It proposes; it never commits anything anywhere.",
+  "properties": {
+    "grounds": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Grounds",
+      "type": "array"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/JsonValue"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    }
+  },
+  "required": [
+    "kind",
+    "payload",
+    "provenance"
+  ],
+  "title": "Proposal",
+  "type": "object"
+}

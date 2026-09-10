@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "Component": {
+      "properties": {
+        "effects": {
+          "$ref": "#/$defs/EffectProfile"
+        },
+        "interface": {
+          "$ref": "#/$defs/Interface"
+        },
+        "labels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "interface",
+        "effects",
+        "provenance"
+      ],
+      "title": "Component",
+      "type": "object"
+    },
+    "EffectProfile": {
+      "description": "Six fields. Names open, effects closed.",
+      "properties": {
+        "contained": {
+          "default": true,
+          "title": "Contained",
+          "type": "boolean"
+        },
+        "costs": {
+          "default": false,
+          "title": "Costs",
+          "type": "boolean"
+        },
+        "reaches": {
+          "default": false,
+          "title": "Reaches",
+          "type": "boolean"
+        },
+        "reads": {
+          "$ref": "#/$defs/ScopeSet",
+          "default": {
+            "everything": false,
+            "names": []
+          }
+        },
+        "reversible": {
+          "default": true,
+          "title": "Reversible",
+          "type": "boolean"
+        },
+        "writes": {
+          "$ref": "#/$defs/ScopeSet",
+          "default": {
+            "everything": false,
+            "names": []
+          }
+        }
+      },
+      "title": "EffectProfile",
+      "type": "object"
+    },
+    "Interface": {
+      "description": "What the agent can invoke: a name, a description, typed input, typed output.",
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "input_schema": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Input Schema",
+          "type": "object"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "output_schema": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Output Schema",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "title": "Interface",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Provenance": {
+      "description": "Who registered it, what adapter it came through, who signed it, when \u2014 and whether we could\nhave stopped it.\n\n``at`` is whatever the registering side's clock said, as text \u2014 the kernel has no clock.\n``licence`` is recorded here because an open-source component is whatever it is, behind an\nadapter, with its licence in provenance (09 \u00a74).\n\n``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The\nexception has to be explicit: an adapter that forgets to say produces a claim that is true of\neverything the runtime does.",
+      "properties": {
+        "adapter": {
+          "title": "Adapter",
+          "type": "string"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "licence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Licence"
+        },
+        "posture": {
+          "default": "controlled",
+          "enum": [
+            "controlled",
+            "observed"
+          ],
+          "title": "Posture",
+          "type": "string"
+        },
+        "registered_by": {
+          "title": "Registered By",
+          "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        }
+      },
+      "required": [
+        "registered_by",
+        "adapter",
+        "at"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ScopeSet": {
+      "description": "A set of scopes that can also honestly say *everything*.\n\nA component that will not declare what it reads or writes is registered as touching everything\n(09 \u00a72: a missing declaration means assume the worst, never assume nothing), and \"everything\"\nover an open set of names cannot be spelled as a list.",
+      "properties": {
+        "everything": {
+          "default": false,
+          "title": "Everything",
+          "type": "boolean"
+        },
+        "names": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Names",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "title": "ScopeSet",
+      "type": "object"
+    }
+  },
+  "description": "``register(Component) -> RegistrationId``, as a value. The registry is a set of these.",
+  "properties": {
+    "component": {
+      "$ref": "#/$defs/Component"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "component"
+  ],
+  "title": "Registration",
+  "type": "object"
+}

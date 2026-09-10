@@ -1,0 +1,17 @@
+{
+  "contracts": [
+    "Component",
+    "Composition",
+    "Context",
+    "EffectProfile",
+    "Event",
+    "Judgement",
+    "Lease",
+    "ModelRequest",
+    "ModelResponse",
+    "Observation",
+    "Proposal",
+    "Registration"
+  ],
+  "protocol_version": "1"
+}
