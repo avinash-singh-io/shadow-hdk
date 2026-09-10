@@ -62,12 +62,25 @@ def test_what_a_step_writes_into_the_graph_state_is_json() -> None:
         async def invoke(self, _step: object, _state: object) -> Observation:
             return Completed({"found": "a lathe"})
 
+        def spent(self) -> dict[str, float]:
+            """What the meter and the record had reached — a step writes it so a park cannot
+            forget it (D33), and `json.dumps` below is what proves it crosses as plain types."""
+            return {"steps": 1, "cost_cents": 2, "unpriced": 0, "elapsed_seconds": 0.5, "seq": 7}
+
     import anyio
 
     node = _step_node(Invoke("s1", FREE.id), _Executor())  # type: ignore[arg-type]
-    written = anyio.run(node, {"handles": {}, "observations": {}, "iterations": {}})  # type: ignore[arg-type]
+    empty: dict[str, object] = {"handles": {}, "observations": {}, "iterations": {}, "spent": {}}
+    written = anyio.run(node, empty)  # type: ignore[arg-type]
     json.dumps(written)  # raises if anything in here is one of our classes
     assert written["observations"] == {"s1": {"output": {"found": "a lathe"}, "kind": "completed"}}
+    assert written["spent"] == {
+        "steps": 0,
+        "cost_cents": 0,
+        "unpriced": 0,
+        "elapsed_seconds": 0.5,
+        "seq": 7,
+    }, "a step writes its own contribution, and the marks it reached"
 
 
 async def test_a_whole_run_leaves_a_checkpoint_of_plain_types() -> None:

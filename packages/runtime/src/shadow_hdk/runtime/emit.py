@@ -32,6 +32,16 @@ class Emitter:
         self._pump: asyncio.Task[None] | None = None
         self.observer_failures = 0
 
+    @property
+    def seq(self) -> int:
+        """The next sequence number this emitter will stamp."""
+        return self._seq
+
+    def restore(self, seq: int) -> None:
+        """Continue a run's numbering rather than starting it again (D33). Two events sharing a
+        `(run_id, seq)` are two different events on one record, which no reader can order."""
+        self._seq = max(self._seq, seq)
+
     async def emit(self, make: MakeEvent) -> Event:
         """Stamp an event and put it on both queues. Returns the event it built."""
         event = make(run_id=self._run_id, seq=self._seq, at=self._clock.now())

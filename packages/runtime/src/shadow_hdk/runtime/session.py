@@ -6,6 +6,7 @@ is a runtime that cannot be replaced.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
 
 from pydantic import JsonValue
@@ -34,6 +35,7 @@ class LeaseMeter:
         self._cost_known = True
         self._carved_steps = 0
         self._carved_cost = 0
+        self._carried_seconds = 0.0
 
     @property
     def lease(self) -> Lease:
@@ -78,7 +80,28 @@ class LeaseMeter:
             self._cost += usage.cost_cents
 
     def elapsed_seconds(self) -> float:
-        return (datetime.fromisoformat(self._clock.now()) - self._started).total_seconds()
+        """This leg's seconds, plus every earlier leg's. **Parked time is not counted** (D33): a
+        run waiting on an Ask is not running, and a person who takes a day to answer must not come
+        back to a spent budget."""
+        this_leg = (datetime.fromisoformat(self._clock.now()) - self._started).total_seconds()
+        return self._carried_seconds + this_leg
+
+    def spent(self) -> dict[str, float]:
+        """The counters, as JSON, for the checkpoint to carry (D33)."""
+        return {
+            "steps": self._steps,
+            "cost_cents": self._cost,
+            "unpriced": 0 if self._cost_known else 1,
+            "elapsed_seconds": self.elapsed_seconds(),
+            "seq": 0,
+        }
+
+    def restore(self, spent: Mapping[str, float]) -> None:
+        """Seed this meter with what earlier legs of the same run already spent."""
+        self._steps = int(spent.get("steps", 0))
+        self._cost = int(spent.get("cost_cents", 0))
+        self._cost_known = not int(spent.get("unpriced", 0))
+        self._carried_seconds = float(spent.get("elapsed_seconds", 0.0))
 
     def check(self) -> EndReason | None:
         """Called before every step. `None` means go ahead."""

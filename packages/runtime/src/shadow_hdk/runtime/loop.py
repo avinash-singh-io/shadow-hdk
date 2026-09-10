@@ -27,7 +27,7 @@ from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import RuntimeStop
 from shadow_hdk.runtime.registry import Registry
 from shadow_hdk.runtime.session import Session
-from shadow_hdk.runtime.state import initial_state
+from shadow_hdk.runtime.state import initial_state, no_spend
 from shadow_hdk.runtime.step import StepExecutor
 
 RECURSION_HEADROOM = 4
@@ -122,6 +122,46 @@ async def _drive(
         emitter.close()
 
 
+async def _carried(options: RunOptions, run_id: str) -> dict[str, float]:
+    """What earlier legs of this run already spent, read from the checkpoint (D33).
+
+    The runtime owns nothing durable (`09` §6), so the only place a parked run's spend can have
+    survived is the checkpoint the host holds. A checkpointer that answers neither shape, or a
+    thread with nothing in it, means *nothing spent yet* — a first leg, which is the truth.
+    """
+    checkpointer = options.checkpointer
+    if checkpointer is None:
+        return no_spend()
+    config = {"configurable": {"thread_id": run_id}}
+    try:
+        if hasattr(checkpointer, "aget_tuple"):
+            found = await checkpointer.aget_tuple(config)
+        else:
+            found = await asyncio.to_thread(checkpointer.get_tuple, config)
+    except Exception:  # noqa: BLE001 — an unreadable checkpoint is a first leg, not a crash
+        return no_spend()
+    values = getattr(found, "checkpoint", {}).get("channel_values", {}) if found else {}
+    spent = values.get("spent")
+    carried = {**no_spend(), **spent} if isinstance(spent, dict) else no_spend()
+    # The state's mark was written when the last node returned; a step that parked emitted its
+    # `Asked` or `Observed(Pending)` *after* that, and said where to continue in the interrupt it
+    # raised. A fan-out can park more than once, so the furthest one wins.
+    carried["seq"] = max(carried["seq"], _resume_seq(found))
+    return carried
+
+
+def _resume_seq(found: Any) -> int:
+    furthest = 0
+    for write in getattr(found, "pending_writes", None) or ():
+        if len(write) < 3 or write[1] != "__interrupt__":
+            continue
+        for interrupt in write[2] if isinstance(write[2], list | tuple) else (write[2],):
+            value = getattr(interrupt, "value", None)
+            if isinstance(value, dict) and isinstance(value.get("resume_seq"), int):
+                furthest = max(furthest, value["resume_seq"])
+    return furthest
+
+
 async def _stream(
     composition: Composition, ports: Ports, options: RunOptions, payload: Any
 ) -> AsyncIterator[Event]:
@@ -142,6 +182,12 @@ async def _stream(
     # forwards them on, so the observer is reached exactly once however deep the tree; a child that
     # also called it would report an event once per level it sits under.
     emitter = Emitter(run_id, ports.clock, ports.observer if parent is None else None)
+    if isinstance(payload, Command):
+        # A resume continues a run; it does not start one (D33). The meter and the record's
+        # numbering pick up where the parked leg left them.
+        carried = await _carried(options, run_id)
+        session.meter.restore(carried)
+        emitter.restore(int(carried["seq"]))
     registry = Registry(ports.components, trust=ports.trust)
     context = RunContext(session, emitter, ports, registry)
     driving = asyncio.create_task(

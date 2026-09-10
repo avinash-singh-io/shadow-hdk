@@ -41,7 +41,7 @@ from shadow_hdk.kernel.composition import (
 )
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.kernel.observations import Completed, Observation
-from shadow_hdk.runtime.state import RunState
+from shadow_hdk.runtime.state import MARKS, SUMS, RunState
 from shadow_hdk.runtime.step import StepExecutor
 
 # ---------------------------------------------------------------- the plan
@@ -250,12 +250,19 @@ def _reach(value: JsonValue, path: str) -> JsonValue:
 def _step_node(step: Step, executor: StepExecutor) -> Callable[[RunState], Any]:
     async def node(state: RunState) -> dict[str, Any]:
         assert isinstance(step, Invoke | Await)
+        before = executor.spent()
         observation = await executor.invoke(step, state)
+        after = executor.spent()
         return {
             "handles": {step.id: _output_of(observation)},
             # Plain JSON on the way into the state (D19) — a checkpointer is a boundary, and our
             # class names are not something a host should have to name in its serializer.
             "observations": {step.id: json.loads(dump(observation, Observation))},
+            # What *this step* added, so the reducer can sum across a fan-out's branches (D33).
+            "spent": {
+                **{name: after[name] - before[name] for name in SUMS},
+                **{name: after[name] for name in MARKS},
+            },
         }
 
     return node

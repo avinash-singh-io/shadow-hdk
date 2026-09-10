@@ -51,6 +51,10 @@ class StepExecutor:
         self._emitter = emitter
         self._ports = ports
 
+    def spent(self) -> dict[str, float]:
+        """The meter's counters and the record's high-water mark, for the state to carry (D33)."""
+        return {**self.session.meter.spent(), "seq": self._emitter.seq}
+
     # ------------------------------------------------------------------ the seven moves
 
     async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
@@ -121,7 +125,16 @@ class StepExecutor:
         *raise to park, return to proceed*, and the event belongs on the raising path.
         """
         handle = f"{self.session.run_id}:{step.id}"
-        payload = {"run_id": self.session.run_id, "step": step.id, "question": question}
+        # `resume_seq` is where the record continues (D33). The checkpoint's own mark was written
+        # when the last node *returned*, and this path still emits `Asked` after that — so the
+        # number to come back on is one past what this emitter is about to stamp. The property
+        # that guards it is a test that no seq is reused across a park, for an ask and a wait.
+        payload = {
+            "run_id": self.session.run_id,
+            "step": step.id,
+            "question": question,
+            "resume_seq": self._emitter.seq + 1,
+        }
         try:
             return interrupt(payload)
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
@@ -139,7 +152,12 @@ class StepExecutor:
         raising, so the wait ends rather than repeating. A component put on an `Await` therefore has
         to tolerate being called twice, which is the same rule everything above `interrupt()` obeys.
         """
-        payload = {"run_id": self.session.run_id, "step": step.id, "handle": pending.handle}
+        payload = {
+            "run_id": self.session.run_id,
+            "step": step.id,
+            "handle": pending.handle,
+            "resume_seq": self._emitter.seq + 1,  # this path emits one `Observed` before it parks
+        }
         try:
             answer: JsonValue = interrupt(payload)
             return answer

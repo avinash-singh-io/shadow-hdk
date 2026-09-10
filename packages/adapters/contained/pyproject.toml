@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-contained"
-version = "0.8.0"
+version = "0.9.0"
 description = "A sandbox that proves it is contained, or refuses to exist."
 readme = "README.md"
 requires-python = ">=3.12"

@@ -11,8 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.8.0"
-"""0.8.0 because `Observed` grew `posture` — every observation carries the posture of the component
+EXPECTED = "0.9.0"
+"""0.9.0 because `RunState` grew `spent` — what a run has spent rides in the checkpoint so it
+survives a park (D33, BUG-004). A host reading graph state directly sees a new field; the event
+stream is unchanged. Before it, a lease of three steps admitted five across an Ask.
+
+0.8.0 because `Observed` grew `posture` — every observation carries the posture of the component
 that produced it, stamped by the runtime (D30); default `controlled`, so nothing that read the
 stream before needs to change.
 
