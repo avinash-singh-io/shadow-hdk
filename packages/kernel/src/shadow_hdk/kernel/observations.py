@@ -43,6 +43,24 @@ class Failed:
 
 
 @dataclass(frozen=True)
+class Acted:
+    """The receipt of a world-effect (`08` §249: `ActReceipt`). *The only place anything happens
+    outside the log* — so every one of them is attributed and re-checkable.
+
+    `foreign_id` is what the world called it; `idempotency_key` is what we called it, so a retry
+    can be told from a second act; `exit` is how it ended in the world's own vocabulary; `grounds`
+    is what it was performed under — the argv, the lease remaining, the warrant — so an auditor can
+    ask not only *what happened* but *on whose authority at that moment*.
+    """
+
+    foreign_id: str
+    idempotency_key: str
+    exit: str
+    grounds: JsonValue = None
+    kind: Literal["acted"] = "acted"
+
+
+@dataclass(frozen=True)
 class Pending:
     """The answer arrives later, under this handle."""
 
@@ -50,7 +68,9 @@ class Pending:
     kind: Literal["pending"] = "pending"
 
 
-Observation = Annotated[Completed | Refused | Asked | Failed | Pending, Field(discriminator="kind")]
+Observation = Annotated[
+    Completed | Refused | Asked | Failed | Pending | Acted, Field(discriminator="kind")
+]
 
 
 @dataclass(frozen=True)

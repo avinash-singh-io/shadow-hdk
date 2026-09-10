@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "Acted": {
+      "description": "The receipt of a world-effect (`08` \u00a7249: `ActReceipt`). *The only place anything happens\noutside the log* \u2014 so every one of them is attributed and re-checkable.\n\n`foreign_id` is what the world called it; `idempotency_key` is what we called it, so a retry\ncan be told from a second act; `exit` is how it ended in the world's own vocabulary; `grounds`\nis what it was performed under \u2014 the argv, the lease remaining, the warrant \u2014 so an auditor can\nask not only *what happened* but *on whose authority at that moment*.",
+      "properties": {
+        "exit": {
+          "title": "Exit",
+          "type": "string"
+        },
+        "foreign_id": {
+          "title": "Foreign Id",
+          "type": "string"
+        },
+        "grounds": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "idempotency_key": {
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "kind": {
+          "const": "acted",
+          "default": "acted",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "foreign_id",
+        "idempotency_key",
+        "exit"
+      ],
+      "title": "Acted",
+      "type": "object"
+    },
     "Asked": {
       "description": "The step paused; whoever implements governance decides what asking means.",
       "properties": {
@@ -103,6 +137,7 @@
   },
   "discriminator": {
     "mapping": {
+      "acted": "#/$defs/Acted",
       "asked": "#/$defs/Asked",
       "completed": "#/$defs/Completed",
       "failed": "#/$defs/Failed",
@@ -126,6 +161,9 @@
     },
     {
       "$ref": "#/$defs/Pending"
+    },
+    {
+      "$ref": "#/$defs/Acted"
     }
   ]
 }

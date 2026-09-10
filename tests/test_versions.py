@@ -11,8 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.6.0"
-"""0.6.0 because the stream grew an **eleventh** kind, `Spent` — what a step cost, said out loud
+EXPECTED = "0.7.0"
+"""0.7.0 because two contracts grew: `Provenance.signature`, the proof beside the claim that
+`signed_by` had been making since Phase 0 without anything reading it, and `Acted`, the receipt of
+a world-effect — foreign id, idempotency key, exit, grounds — as a sixth observation kind. Both are
+D27. Before that:
+0.6.0 because the stream grew an **eleventh** kind, `Spent` — what a step cost, said out loud
 instead of left in an output dict by convention (D20) — and `Usage` moved beneath both `ports` and
 `events`, which could not import each other. 0.5.0 was the tenth kind, `Held` — a child parked
 instead of ending and

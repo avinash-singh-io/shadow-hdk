@@ -37,6 +37,18 @@
           "title": "Registered By",
           "type": "string"
         },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signature"
+        },
         "signed_by": {
           "anyOf": [
             {

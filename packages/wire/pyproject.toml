@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-wire"
-version = "0.6.0"
+version = "0.7.0"
 description = "The runtime, reachable from another process or another language."
 readme = "README.md"
 requires-python = ">=3.12"

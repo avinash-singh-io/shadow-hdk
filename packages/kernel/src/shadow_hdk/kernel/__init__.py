@@ -52,6 +52,7 @@ from shadow_hdk.kernel.events import (
 )
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
 from shadow_hdk.kernel.observations import (
+    Acted,
     Asked,
     Completed,
     Failed,
@@ -84,6 +85,7 @@ __all__ = [
     "NOTHING",
     "Allow",
     "Ask",
+    "Acted",
     "Asked",
     "AskedEvent",
     "Await",

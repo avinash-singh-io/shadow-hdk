@@ -55,6 +55,11 @@ class Provenance:
     adapter: str
     at: str
     signed_by: str | None = None
+    signature: str | None = None
+    """The proof beside the claim (D27). An HMAC over the registration's canonical form — id,
+    interface, **effects**, labels, and this provenance minus this field — so it binds to what the
+    driver declared. `signed_by` names the key; this is what the key produced. Nothing read
+    `signed_by` for thirteen phases; this is what makes it mean something."""
     licence: str | None = None
     posture: Posture = "controlled"
 
