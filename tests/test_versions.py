@@ -11,8 +11,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.10.0"
-"""0.10.0 because `Message` grew `tool_calls` — an assistant message carries the calls it made
+EXPECTED = "0.11.0"
+"""0.11.0 because `RunState` grew `children` — what a run is holding rides in the checkpoint, so a
+parent that parks comes back holding it still (D37, BUG-015). Before it, the parent found an empty
+hand and quietly spawned a second child while the first stayed parked forever.
+
+0.10.0 because `Message` grew `tool_calls` — an assistant message carries the calls it made
 (BUG-005). Every provider rejects a tool result whose call is in no preceding message, and every
 test used `ScriptedModel`, which never looked. `ModelRequest` is a published contract, so this one
 crosses the wire.

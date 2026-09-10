@@ -1,6 +1,6 @@
 [project]
 name = "shadow-hdk-adapters-derivation"
-version = "0.10.0"
+version = "0.11.0"
 description = "Total expressions over typed tables, fixed-point arithmetic, re-executable grounds."
 readme = "README.md"
 requires-python = ">=3.12"

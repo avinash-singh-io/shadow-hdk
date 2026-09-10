@@ -79,7 +79,7 @@ async def _drive(
                 await parent.announce_child(session.run_id, session.meter.lease)
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
-        executor = StepExecutor(session, emitter, ports, registry)
+        executor = StepExecutor(session, emitter, ports, registry, context)
         config = {
             "configurable": {"thread_id": session.run_id},
             "recursion_limit": session.meter.lease.ceiling.max_steps * RECURSION_HEADROOM,
@@ -122,7 +122,9 @@ async def _drive(
         emitter.close()
 
 
-async def _carried(options: RunOptions, run_id: str) -> dict[str, float]:
+async def _carried(
+    options: RunOptions, run_id: str, carried_children: dict[str, Any]
+) -> dict[str, float]:
     """What earlier legs of this run already spent, read from the checkpoint (D33).
 
     The runtime owns nothing durable (`09` §6), so the only place a parked run's spend can have
@@ -141,6 +143,9 @@ async def _carried(options: RunOptions, run_id: str) -> dict[str, float]:
     except Exception:  # noqa: BLE001 — an unreadable checkpoint is a first leg, not a crash
         return no_spend()
     values = getattr(found, "checkpoint", {}).get("channel_values", {}) if found else {}
+    held = values.get("children")
+    if isinstance(held, dict):
+        carried_children.update(held)
     spent = values.get("spent")
     carried = {**no_spend(), **spent} if isinstance(spent, dict) else no_spend()
     # The state's mark was written when the last node returned; a step that parked emitted its
@@ -182,14 +187,19 @@ async def _stream(
     # forwards them on, so the observer is reached exactly once however deep the tree; a child that
     # also called it would report an event once per level it sits under.
     emitter = Emitter(run_id, ports.clock, ports.observer if parent is None else None)
+    registry = Registry(ports.components, trust=ports.trust)
+    checkpointer = options.checkpointer or InMemorySaver()
+    context = RunContext(session, emitter, ports, registry, checkpointer)
     if isinstance(payload, Command):
         # A resume continues a run; it does not start one (D33). The meter and the record's
-        # numbering pick up where the parked leg left them.
-        carried = await _carried(options, run_id)
+        # numbering pick up where the parked leg left them, and so does what the run was holding
+        # when it parked (D37) — a parent that came back to an empty hand made a second child.
+        carried_children: dict[str, Any] = {}
+        carried = await _carried(options, run_id, carried_children)
         session.meter.restore(carried)
         emitter.restore(int(carried["seq"]))
-    registry = Registry(ports.components, trust=ports.trust)
-    context = RunContext(session, emitter, ports, registry)
+        if carried_children:
+            context.children.restore(carried_children, checkpointer)
     driving = asyncio.create_task(
         _drive(
             composition,
@@ -200,7 +210,7 @@ async def _stream(
             registry,
             parent,
             payload,
-            options.checkpointer or InMemorySaver(),
+            checkpointer,
         )
     )
     try:

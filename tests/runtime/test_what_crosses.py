@@ -62,6 +62,12 @@ def test_what_a_step_writes_into_the_graph_state_is_json() -> None:
         async def invoke(self, _step: object, _state: object) -> Observation:
             return Completed({"found": "a lathe"})
 
+        def holding(self) -> dict[str, object]:
+            """What the run is holding, for the state to carry (D37) — a handle mapped to what a
+            resume needs, and `None` for one that was let go. Plain types, like everything that
+            crosses a checkpoint."""
+            return {"id-0001": {"run_id": "id-0001", "shares_the_checkpointer": True}}
+
         def spent(self) -> dict[str, float]:
             """What the meter and the record had reached — a step writes it so a park cannot
             forget it (D33), and `json.dumps` below is what proves it crosses as plain types."""
@@ -70,7 +76,13 @@ def test_what_a_step_writes_into_the_graph_state_is_json() -> None:
     import anyio
 
     node = _step_node(Invoke("s1", FREE.id), _Executor())  # type: ignore[arg-type]
-    empty: dict[str, object] = {"handles": {}, "observations": {}, "iterations": {}, "spent": {}}
+    empty: dict[str, object] = {
+        "handles": {},
+        "observations": {},
+        "iterations": {},
+        "children": {},
+        "spent": {},
+    }
     written = anyio.run(node, empty)  # type: ignore[arg-type]
     json.dumps(written)  # raises if anything in here is one of our classes
     assert written["observations"] == {"s1": {"output": {"found": "a lathe"}, "kind": "completed"}}
@@ -81,6 +93,9 @@ def test_what_a_step_writes_into_the_graph_state_is_json() -> None:
         "elapsed_seconds": 0.5,
         "seq": 7,
     }, "a step writes its own contribution, and the marks it reached"
+    assert written["children"] == {
+        "id-0001": {"run_id": "id-0001", "shares_the_checkpointer": True}
+    }
 
 
 async def test_a_whole_run_leaves_a_checkpoint_of_plain_types() -> None:

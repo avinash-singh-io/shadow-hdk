@@ -258,6 +258,8 @@ def _step_node(step: Step, executor: StepExecutor) -> Callable[[RunState], Any]:
             # Plain JSON on the way into the state (D19) — a checkpointer is a boundary, and our
             # class names are not something a host should have to name in its serializer.
             "observations": {step.id: json.loads(dump(observation, Observation))},
+            # What the run holds after this step, so a park does not lose it (D37).
+            "children": executor.holding(),
             # What *this step* added, so the reducer can sum across a fan-out's branches (D33).
             "spent": {
                 **{name: after[name] - before[name] for name in SUMS},

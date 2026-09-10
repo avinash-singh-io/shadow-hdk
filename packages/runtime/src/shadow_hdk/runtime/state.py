@@ -47,6 +47,10 @@ class RunState(TypedDict):
     into a store the host chose. The types stay ours; what crosses stays plain, and the runtime
     loads observations back at its own edge."""
     iterations: Annotated[dict[StepId, int], merge_counts]
+    children: Annotated[dict[StepId, JsonValue], merge_dicts]
+    """What this run is holding, so a parent that parks comes back holding it still (D37).
+    A handle mapped to `None` is one that was released — kept as a headstone so the record merges
+    the same in any order, which is what a `FanOut` requires."""
     spent: Annotated[dict[str, float], merge_spent]
     """What the run has spent, in the only durable place the runtime has (D33). `run` and `resume`
     each build a fresh meter and emitter, so without this a lease of three steps admitted five
@@ -59,4 +63,4 @@ def no_spend() -> dict[str, float]:
 
 
 def initial_state() -> RunState:
-    return RunState(handles={}, observations={}, iterations={}, spent=no_spend())
+    return RunState(handles={}, observations={}, iterations={}, children={}, spent=no_spend())

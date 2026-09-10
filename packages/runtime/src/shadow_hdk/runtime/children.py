@@ -17,6 +17,8 @@ the way out, so what a parent gives up by holding a child is the steps that chil
 
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -36,7 +38,13 @@ RELEASED = "released"
 
 @dataclass(frozen=True)
 class HeldChild:
-    """What a parent keeps about a held child. Ephemeral, like all the runtime owns."""
+    """What a parent keeps about a held child.
+
+    Four of these six cross a checkpoint as JSON (D37); the checkpointer and the cancellation are
+    objects and cannot, which is why `shares_the_checkpointer` is recorded — a child that shared
+    its parent's is reachable again after a park, and one that did not is reported as lost rather
+    than replaced by a duplicate.
+    """
 
     handle: str
     run_id: str
@@ -44,6 +52,7 @@ class HeldChild:
     ceiling: Ceiling
     checkpointer: Any
     cancellation: Cancellation
+    shares_the_checkpointer: bool = False
 
 
 class Children:
@@ -52,14 +61,84 @@ class Children:
     def __init__(self, context: RunContext) -> None:
         self._context = context
         self._held: dict[str, HeldChild] = {}
+        self._released: set[str] = set()
+        self._lost: dict[str, str] = {}
 
     @property
     def held(self) -> tuple[str, ...]:
         """The handles of children parked and waiting. In the order they were spawned."""
         return tuple(self._held)
 
+    @property
+    def lost(self) -> tuple[str, ...]:
+        """Children this run was holding before it parked and cannot reach again (D37).
+
+        A parent that came back to an empty hand used to start over and quietly make a second
+        child, leaving the first parked forever. A handle here says *this one is gone*, which is a
+        different thing from *I never had one*, and `why_lost` says which.
+        """
+        return tuple(self._lost)
+
+    def why_lost(self, handle: str) -> str:
+        return self._lost[handle]
+
     def __contains__(self, handle: str) -> bool:
         return handle in self._held
+
+    # ------------------------------------------------------------------ across a park (D37)
+
+    def record(self) -> dict[str, JsonValue]:
+        """What this run is holding, as JSON for the checkpoint (D19).
+
+        A released handle is kept as `None` rather than dropped, so two branches of a `FanOut`
+        merge to the same answer whichever arrives first: *held* and *let go* are both statements,
+        and only *never mentioned* is silence.
+        """
+        from shadow_hdk.kernel.contracts import dump
+
+        written: dict[str, JsonValue] = {handle: None for handle in self._released}
+        for handle, child in self._held.items():
+            written[handle] = {
+                "run_id": child.run_id,
+                "composition": json.loads(dump(child.composition, Composition)),
+                "ceiling": json.loads(dump(child.ceiling, Ceiling)),
+                "shares_the_checkpointer": child.shares_the_checkpointer,
+            }
+        return written
+
+    def restore(self, records: Mapping[str, JsonValue], checkpointer: Any) -> None:
+        """Rebuild what the parent was holding when it parked (D37).
+
+        A child that shared this run's checkpointer is reachable again, because that checkpointer
+        is the one the host just handed back. One spawned with a checkpointer of its own is not:
+        the object cannot cross a checkpoint, and inventing a fresh one would produce a handle
+        that answers nothing. That child is **named in `lost`**, never silently dropped.
+        """
+        from shadow_hdk.kernel.contracts import load
+
+        for handle, record in records.items():
+            if record is None:
+                self._released.add(handle)
+                continue
+            if not isinstance(record, dict):  # pragma: no cover — a checkpoint we did not write
+                continue
+            if not record.get("shares_the_checkpointer"):
+                self._lost[handle] = (
+                    "it was spawned with a checkpointer of its own, which cannot cross a "
+                    "checkpoint; it is still parked wherever that checkpointer lives"
+                )
+                continue
+            self._held[handle] = HeldChild(
+                handle=handle,
+                run_id=str(record["run_id"]),
+                composition=load(json.dumps(record["composition"]), Composition),
+                ceiling=load(json.dumps(record["ceiling"]), Ceiling),
+                checkpointer=checkpointer,
+                # A fresh handle to stop it with: the old one was an object, and nothing this run
+                # was holding had been cancelled, or it would not still be held.
+                cancellation=Cancellation(),
+                shares_the_checkpointer=True,
+            )
 
     async def spawn(
         self, composition: Composition, ceiling: Ceiling, *, checkpointer: Any = None
@@ -70,11 +149,13 @@ class Children:
         this process. A host that wants a child to outlive a restart passes its own — the same
         checkpointer it would hand `run()`, and the same one Phase 6 proved on a file.
         """
-        from langgraph.checkpoint.memory import InMemorySaver
-
         from shadow_hdk.runtime.loop import run
 
-        saver = checkpointer if checkpointer is not None else InMemorySaver()
+        # **The parent's own, by default** (D37). A fresh in-memory saver made a child that could
+        # not outlive this process — and, worse, could not be reached after its own parent parked,
+        # so the parent came back holding nothing and started again.
+        shared = checkpointer is None
+        saver = checkpointer if checkpointer is not None else self._context.checkpointer
         # Its own handle, not the parent's: releasing one child must say nothing about its siblings.
         cancellation = Cancellation()
         handle = self._context.ports.clock.new_id()
@@ -90,6 +171,7 @@ class Children:
                 ceiling=ceiling,
                 checkpointer=saver,
                 cancellation=cancellation,
+                shares_the_checkpointer=shared,
             )
             await self._context.announce_held(handle, _steps_in(events))
         return handle, events
@@ -107,6 +189,7 @@ class Children:
         ]
         if any(isinstance(event, Ended) for event in events):
             del self._held[handle]
+            self._released.add(handle)
         return events
 
     async def release(self, handle: str) -> list[Event]:
@@ -125,6 +208,7 @@ class Children:
         from shadow_hdk.runtime.loop import resume
 
         child = self._held.pop(handle)
+        self._released.add(handle)
         child.cancellation.cancel(f"released by {self._context.run_id}")
         return [
             event

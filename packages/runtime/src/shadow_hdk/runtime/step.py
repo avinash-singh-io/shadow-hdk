@@ -44,12 +44,26 @@ from shadow_hdk.runtime.state import RunState
 
 class StepExecutor:
     def __init__(
-        self, session: Session, emitter: Emitter, ports: Ports, registry: Registry
+        self,
+        session: Session,
+        emitter: Emitter,
+        ports: Ports,
+        registry: Registry,
+        context: Any = None,
     ) -> None:
         self.session = session
         self.registry = registry
         self._emitter = emitter
         self._ports = ports
+        self._context = context
+
+    def holding(self) -> dict[str, Any]:
+        """What this run is holding, for the state to carry (D37). Empty when it holds nothing,
+        which is most runs."""
+        if self._context is None:
+            return {}
+        record: dict[str, Any] = self._context.children.record()
+        return record
 
     def spent(self) -> dict[str, float]:
         """The meter's counters and the record's high-water mark, for the state to carry (D33)."""

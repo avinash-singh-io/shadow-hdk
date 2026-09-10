@@ -77,13 +77,25 @@ class RunContext:
     """What a component sees of the run it is inside. Returned by `current_run()`."""
 
     def __init__(
-        self, session: Session, emitter: Emitter, ports: Ports, registry: Registry
+        self,
+        session: Session,
+        emitter: Emitter,
+        ports: Ports,
+        registry: Registry,
+        checkpointer: Any = None,
     ) -> None:
         self._session = session
         self._emitter = emitter
         self._ports = ports
         self._registry = registry
+        self._checkpointer = checkpointer
         self._children: Children | None = None
+
+    @property
+    def checkpointer(self) -> Any:
+        """The one this run was driven with. A child spawned here shares it by default (D37), so
+        a parent that parks can reach that child again when it comes back."""
+        return self._checkpointer
 
     @property
     def run_id(self) -> RunId:
