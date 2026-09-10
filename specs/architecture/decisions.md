@@ -151,3 +151,33 @@ There is one flat registry. Four mechanisms keep a large one from becoming the m
 *Why:* the harness's job is to make scoping free; whether a given catalogue degrades a given model is
 the product's eval, not the harness's. *Overturned by:* a measurement showing a scoped catalogue still
 degrades quality, which would move compaction earlier.
+
+## D22 — The port set is open. Six is a count, not a constraint
+
+The architecture describes six ports — model, component, governance, sink, observer, clock — with
+sandboxes as components rather than a port of their own. That reading was carried as an open
+question for the owner through nine phases, on the theory that it needed confirming before too much
+was built on it.
+
+**Settled 2026-09-10, and settled differently than the question assumed.** The owner's answer: it
+does not matter whether everything fits into six. When there is a gap, or a need for a new port,
+one gets added.
+
+That is not a smaller answer than confirmation — it is a different and better one, and it changes
+how the number should be read everywhere it appears. Six is a *description of today*, not a budget.
+The design already says the same thing one level down: D14 lets a port grow a method with a
+refuse-not-crash default, precisely so that growing an interface breaks no adapter. D22 says the set
+of interfaces is open on the same terms.
+
+What this does **not** licence is a port per problem. The bar is unchanged and it is the one `09`
+§3 already sets: a port is a seam where the host owns something the runtime must not — durability,
+policy, identity, money, time. A thing the runtime can do itself is a component, and a thing one
+host needs is an adapter. The reason to add a seventh is that some host owns something none of the
+six describe, not that a new feature would be tidier with its own interface.
+
+*Why:* nine phases and eleven adapters have needed no seventh port, which is evidence the six are
+well-chosen and no evidence at all that a seventh is forbidden. Treating the count as a constraint
+would make the next genuine seam an argument instead of a decision.
+
+*Overturned by:* nothing — this decision is what removes the constraint. What a future decision
+might change is the **bar**, if adding ports turns out to be how the design decays.

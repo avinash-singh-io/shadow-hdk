@@ -83,6 +83,8 @@ runtime that turns the bare-harness test green.
 ## Key Decisions Made
 
 - D1–D13 in `specs/architecture/decisions.md`, settled at founding from `09` and the founding conversation; recorded on Epic 0001
+- D14–D22 settled per phase: D15 cancellation (6), D16 held children (7), D17 files and D18 compaction (8), D19 state-as-JSON, D20 `Spent`, D21 the crossed context (9). **D22 — the port set is open**: six is a count, not a constraint, settled by the owner 2026-09-10, which closes O4
+- **Licensed MIT** 2026-09-10 (O3), declared in every package and verified in the built wheels
 - The name and the repository: `10-the-roadmap.md` §7d; the two-lane plan: §3b; the board: `intent-ecosystem/lanes/board.md`
 
 ## Recent Changes
