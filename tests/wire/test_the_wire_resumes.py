@@ -36,8 +36,8 @@ from shadow_hdk.runtime.testing import (
     make_registration,
 )
 from shadow_hdk.wire.peer import RemoteError
-from shadow_hdk.wire.protocol import PROTOCOL_VERSION, RUN
-from shadow_hdk.wire.sides import loopback
+from shadow_hdk.wire.protocol import PROTOCOL_VERSION, RESUME, RUN
+from shadow_hdk.wire.sides import RuntimeSide, loopback
 
 WORK = make_registration("work")
 THREE = Composition(tuple(Invoke(f"s{i}", WORK.id) for i in range(1, 4)))
@@ -131,6 +131,38 @@ async def test_a_run_before_initialize_is_refused() -> None:
     assert ran.count == 0, "the run started before the peers had agreed anything"
 
 
+async def test_a_resume_before_initialize_is_refused_too() -> None:
+    """Both doors, not one: `resume` is where a parked run comes back, and it agrees a version
+    first for the same reason `run` does."""
+    ran = Ran()
+    async with loopback(_ports(AsksOnce("never"), ran)) as (host, _runtime):
+        with pytest.raises(RemoteError) as refused:
+            await host.peer.call(
+                RESUME,
+                {
+                    "composition": json.loads(dump(THREE, Composition)),
+                    "lease": json.loads(dump(_options().lease, Lease)),
+                    "answer": "yes",
+                },
+            )
+    assert "initialize" in str(refused.value)
+    assert ran.count == 0
+
+
+def test_a_runtime_waits_a_bounded_time_by_default() -> None:
+    """The default is what most deployments get. `None` there would put the hang back for everyone
+    who did not think to pass a number."""
+    from shadow_hdk.wire.channel import channel_pair
+
+    async def _look() -> float | None:
+        async with channel_pair() as (_host_end, runtime_end):
+            return RuntimeSide(runtime_end).peer.timeout
+
+    timeout = anyio.run(_look)
+    assert timeout is not None
+    assert 0 < timeout < 3600
+
+
 async def test_an_omitted_protocol_version_is_a_mismatch_not_a_match() -> None:
     """It defaulted to `PROTOCOL_VERSION` — so a peer that said nothing was treated as agreeing.
     Refuse, never degrade: silence is not agreement."""
@@ -207,6 +239,23 @@ async def test_a_token_is_required_when_one_is_set() -> None:
             "GET", f"{address}/rpc", headers={"authorization": "Bearer a-test-token"}
         ) as allowed:
             assert allowed.status_code == 200
+
+
+async def test_a_wrong_token_is_refused_not_merely_a_missing_one() -> None:
+    """*Some* credential is not the credential. A check that only tests for presence admits
+    everyone who sends anything."""
+    import httpx
+
+    from shadow_hdk.wire import served_over_http
+
+    async with (
+        served_over_http(token="a-test-token") as address,
+        httpx.AsyncClient(timeout=10.0) as client,
+        client.stream(
+            "GET", f"{address}/rpc", headers={"authorization": "Bearer not-the-token"}
+        ) as wrong,
+    ):
+        assert wrong.status_code == 401
 
 
 async def test_serving_beyond_loopback_without_a_token_is_refused() -> None:
