@@ -83,7 +83,7 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_REMAINING, self._context_remaining)
 
     def ports(self) -> Ports:
-        from shadow_hdk.adapters.basic import SystemClock
+        from shadow_hdk.runtime.clock import SystemClock
 
         return Ports(
             model=RemoteModel(self.peer),  # type: ignore[arg-type]
