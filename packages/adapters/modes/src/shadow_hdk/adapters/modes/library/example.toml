@@ -1,0 +1,50 @@
+# How a team writes its rules. Copy this file and change it.
+#
+# Every rule is a row. Rows that apply at once intersect, so adding a row can only narrow what is
+# permitted — never widen it. A rule with no `applies_to` is always in force; one with names is in
+# force when the host selects one of those names.
+#
+# The six effect fields are the whole vocabulary: `reads` and `writes` are sets of scope names (or
+# `{ everything = true }`), and `reaches`, `reversible`, `contained`, `costs` are booleans. Leaving
+# one out means the narrowest value for it.
+
+[[rule]]
+name = "house"
+# Always in force. The widest anything may ever do here.
+
+[rule.ceiling]
+reads = { everything = true }
+writes = { names = ["workspace", "record"] }
+reaches = true
+reversible = false
+contained = true
+costs = true
+
+[[rule]]
+name = "reading"
+applies_to = ["reading"]
+# Look, do not touch. Selected by the host for anything that should only ever read.
+
+[rule.ceiling]
+reads = { everything = true }
+contained = true
+costs = true
+
+[[rule]]
+name = "careful"
+applies_to = ["careful"]
+# May write, but asks before anything it cannot undo.
+
+[rule.ceiling]
+reads = { everything = true }
+writes = { names = ["workspace"] }
+reversible = false
+contained = true
+costs = true
+
+[rule.ask_above]
+reads = { everything = true }
+writes = { names = ["workspace"] }
+reversible = true
+contained = true
+costs = true
