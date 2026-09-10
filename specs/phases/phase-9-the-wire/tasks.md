@@ -7,14 +7,18 @@ phase: 9-the-wire
 
 ## Group 0 — what crosses (D19, D20)
 
-- [ ] `RunState.observations` holds JSON; the runtime loads at its edge
-- [ ] RED: a parked-and-resumed run under `LANGGRAPH_STRICT_MSGPACK=true` carries no unregistered type
-- [ ] RED: observations still arrive as observations on the event stream
-- [ ] `Spent(step, usage)` — the eleventh kind — where the meter is charged
-- [ ] RED: `Spent` reaches an observer with a model call's tokens
-- [ ] RED: a step that cost nothing emits no `Spent`
-- [ ] every package to the next minor (D9); `test_versions.py`; a *Pins* row
-- [ ] Gate
+- [x] `RunState.observations` holds JSON; the runtime loads at its edge
+- [x] **measured**: `LANGGRAPH_STRICT_MSGPACK=true uv run pytest -q -W default` reports **zero**
+      "Deserializing unregistered type" lines across 406 tests, where before it reported them.
+      TD-001 is settled
+- [x] RED: observations still arrive as observations on the event stream — the types stay ours,
+      only what crosses is plain
+- [x] `Spent(step, usage)` — the eleventh kind — where the meter is charged, and only there
+- [x] RED: `Spent` reaches an observer with a model call's tokens
+- [x] RED: a step that cost nothing emits no `Spent`
+- [x] every package to **0.6.0** (D9); `test_versions.py`; a *Pins* row. `Usage` moved to
+      `kernel/usage.py` because `ports` already imports `events`, and is re-exported from `ports`
+- [x] Gate
 
 ## Group 1 — the protocol, and the suite through a loopback
 

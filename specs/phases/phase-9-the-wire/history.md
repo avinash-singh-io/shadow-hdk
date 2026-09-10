@@ -46,3 +46,33 @@ absent teaches a reader to ignore it. *Rejected:* leaving it in the output dict 
 stays, because it is how an adapter *reports* cost, but reporting and recording are different jobs.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-10 — Group 0: TD-001 settled, and Phase 1's debt paid
+Topics: state, checkpoints, td-001, spent, usage, d9, d19, d20
+Affects-phases: none
+Affects-specs: specs/architecture/runtime.md, specs/architecture/decisions.md
+
+`RunState.observations` holds JSON (D19) and `Spent` is the eleventh event kind (D20). Every package
+to **0.6.0**, and a *Pins* row: the event union is now eleven wide, so anything matching
+exhaustively on `Event` sees a new arm.
+
+**Measured, not asserted.** `LANGGRAPH_STRICT_MSGPACK=true uv run pytest -q -W default` reports
+**zero** "Deserializing unregistered type" lines across 406 tests, where before this change it
+reported them. TD-001 moves to closed.
+
+### [DISCOVERY] 2026-09-10 — `ports` already imports `events`, so `Usage` had to move
+Topics: kernel, imports, usage
+Affects-phases: none
+Affects-specs: none
+
+`Spent` carries a `Usage`, which lived in `ports.py` — and `ports` imports `events` for
+`ObserverPort`, so the reach back would have been a cycle.
+
+`Usage` is now `kernel/usage.py`: a value type shared by two modules that cannot import each other
+belongs beneath both. It is re-exported from `ports` with an explicit `as`, so every existing
+`from ...ports import Usage` still works and mypy still calls it an export.
+
+Small, but worth recording because it is the first time the kernel's own layering pushed back — and
+the answer was to move the value down rather than to weaken a boundary.
+
+---
