@@ -142,7 +142,7 @@ async def _stream(
     # forwards them on, so the observer is reached exactly once however deep the tree; a child that
     # also called it would report an event once per level it sits under.
     emitter = Emitter(run_id, ports.clock, ports.observer if parent is None else None)
-    registry = Registry(ports.components)
+    registry = Registry(ports.components, trust=ports.trust)
     context = RunContext(session, emitter, ports, registry)
     driving = asyncio.create_task(
         _drive(

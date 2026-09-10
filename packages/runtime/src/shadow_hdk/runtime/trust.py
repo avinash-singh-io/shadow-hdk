@@ -21,9 +21,11 @@ import dataclasses
 import hashlib
 import hmac
 import json
+from collections.abc import Mapping
 
 from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.contracts import dump
+from shadow_hdk.kernel.effects import EffectProfile
 
 
 def signing_bytes(registration: Registration) -> bytes:
@@ -72,4 +74,51 @@ def _with_signed_by(registration: Registration, key_id: str) -> Registration:
     )
 
 
-__all__ = ["sign", "signing_bytes", "verify"]
+@dataclasses.dataclass(frozen=True)
+class Trust:
+    """What a deployment trusts: keys by id, the ids it has withdrawn, which effects need proof.
+
+    `must_sign` is an effect ceiling, not a predicate (D23 applies): a driver whose declared effects
+    do not narrow it must carry a signature. `None` verifies only what claims one — the honest
+    default until ADR-1 says which effects must be signed at all.
+
+    Checked on **every** refresh, never remembered: a key revoked between two refreshes is refused
+    on the second. Trust is a list the deployment keeps, not a memory the registry forms.
+    """
+
+    keys: Mapping[str, bytes]
+    revoked: frozenset[str] = frozenset()
+    must_sign: EffectProfile | None = None
+
+    def __post_init__(self) -> None:
+        if self.must_sign is not None and not isinstance(self.must_sign, EffectProfile):
+            raise TypeError(
+                f"must_sign is an EffectProfile or None, not {type(self.must_sign).__name__}"
+            )
+
+    def refusal(self, registration: Registration) -> str | None:
+        """Why this registration may not enter the catalogue, or `None` if it may.
+
+        A registration with no signature is admitted only where nothing requires one. One that
+        claims a signature is held to it: the key must be known, not revoked, and the signature
+        must verify over exactly what was declared. Revocation is checked **before** verification
+        so a revoked key is refused for that reason, however valid its signature.
+        """
+        provenance = registration.component.provenance
+        signature, key = provenance.signature, provenance.signed_by
+        if signature is None:
+            if self.must_sign is None or registration.component.effects.narrows(self.must_sign):
+                return None
+            return f"{registration.id}: declares effects that must be signed, and is not signed"
+        if key is None:
+            return f"{registration.id}: carries a signature but names no key"
+        if key in self.revoked:
+            return f"{registration.id}: signed by revoked key {key}"
+        if key not in self.keys:
+            return f"{registration.id}: signed by unknown key {key}"
+        if not verify(registration, self.keys[key]):
+            return f"{registration.id}: signature by {key} does not verify over what it declares"
+        return None
+
+
+__all__ = ["Trust", "sign", "signing_bytes", "verify"]

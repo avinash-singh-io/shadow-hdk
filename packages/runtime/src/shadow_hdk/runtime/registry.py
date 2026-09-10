@@ -7,6 +7,11 @@ invoke any of it is governance's answer, and lives in `StepExecutor`.
 A port whose catalogue call fails contributes nothing this step rather than ending the run. That is
 the registry shrinking, which the design says must be as ordinary as it growing — one unreachable
 MCP server is not a reason to lose a turn's work.
+
+With a `Trust`, the registry is also where a driver proves itself (D27). A registration that cannot
+— unsigned where a signature is required, signed by a key unknown or revoked, or not verifying over
+what it declares — is **refused**: absent from the catalogue, so the model never sees it, with the
+reason kept in `refused`. Checked here, at the one funnel, on every refresh.
 """
 
 from __future__ import annotations
@@ -15,17 +20,21 @@ from collections.abc import Sequence
 
 from shadow_hdk.kernel.components import Registration, RegistrationId
 from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.runtime.trust import Trust
 
 
 class Registry:
-    def __init__(self, ports: Sequence[ComponentPort]) -> None:
+    def __init__(self, ports: Sequence[ComponentPort], *, trust: Trust | None = None) -> None:
         self._ports = tuple(ports)
         self._by_id: dict[RegistrationId, tuple[ComponentPort, Registration]] = {}
+        self.trust = trust
         self.unreachable: list[str] = []
+        self.refused: list[str] = []
 
     async def refresh(self) -> None:
         found: dict[RegistrationId, tuple[ComponentPort, Registration]] = {}
         unreachable: list[str] = []
+        refused: list[str] = []
         for port in self._ports:
             try:
                 registrations = await port.registrations()
@@ -33,9 +42,14 @@ class Registry:
                 unreachable.append(f"{type(port).__name__}: {type(exc).__name__}: {exc}")
                 continue
             for registration in registrations:
+                reason = self.trust.refusal(registration) if self.trust is not None else None
+                if reason is not None:
+                    refused.append(reason)
+                    continue
                 found[registration.id] = (port, registration)
         self._by_id = found
         self.unreachable = unreachable
+        self.refused = refused
 
     def resolve(self, registration_id: RegistrationId) -> tuple[ComponentPort, Registration]:
         """Raises `KeyError` for anything not registered — the caller turns that into `Failed`."""

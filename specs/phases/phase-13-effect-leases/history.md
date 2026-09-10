@@ -33,3 +33,22 @@ R9 waits on ADR-1. The mechanism is built here; which effects must be signed, wh
 a warrant's scope is, and which acts need one are ADR-1's and are recorded as `[~]`, not decided.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 1: three survivors, three tests
+Topics: mutation, trust, registry
+Affects-phases: none
+Affects-specs: none
+
+Fifteen RED-first tests; fourteen mutations bit at once and three survived. None was a test bug in
+the usual sense — each was an untested claim. (1) The signature-without-key guard was shadowed:
+`None not in keys` refuses anyway, so its distinct reason was never exercised; the reason is more
+honest than "unknown key None", so it got a test rather than being deleted. (2) `refused` had no
+two-refresh test, so `+=` survived; now it is asserted to be this refresh's list, like
+`unreachable`. (3) "Revocation before verification" was a docstring claim: the revoked test used a
+valid signature, which refuses in either order. Now a revoked, unknown, forged key is refused as
+*revoked* — revocation is a fact about the key, and the actionable reason wins.
+
+Also: a mutation pass whose backups silently failed stacks mutations and reports nonsense. The
+scratch path must be set explicitly in the shell that runs the pass.
+
+---

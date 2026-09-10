@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from shadow_hdk.runtime.emit import Emitter
     from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
+    from shadow_hdk.runtime.trust import Trust
 
 MISSING: Final = object()
 """`RunOptions.parent` default: *look for an ambient parent*. `None` means *be a root*."""
@@ -42,7 +43,13 @@ MISSING: Final = object()
 
 @dataclass(frozen=True)
 class Ports:
-    """The six, bundled. Only `observer` is optional — `run()` always yields events regardless."""
+    """The six, bundled. Only `observer` is optional — `run()` always yields events regardless.
+
+    `trust` is not a port (D22 leaves the set open, but this is configuration, not a seam): the
+    keys a deployment holds and the effects it requires proof for, checked at the registry on every
+    refresh. `None` means no driver is asked to prove itself — the state of every deployment before
+    ADR-1 says otherwise.
+    """
 
     model: ModelPort
     components: tuple[ComponentPort, ...]
@@ -50,6 +57,7 @@ class Ports:
     sink: SinkPort
     clock: ClockPort
     observer: ObserverPort | None = None
+    trust: Trust | None = None
 
 
 @dataclass(frozen=True)

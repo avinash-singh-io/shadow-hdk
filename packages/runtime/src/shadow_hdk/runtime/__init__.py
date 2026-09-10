@@ -6,6 +6,7 @@ Four public names:
     resume(composition, answer, ports, …)   -> AsyncIterator[Event]
     current_run()                           -> RunContext | None
     Ports, RunOptions                        how a runtime is configured
+    Trust                                    which driver keys a deployment holds
 
 Everything else in this package is internal.
 """
@@ -13,5 +14,15 @@ Everything else in this package is internal.
 from shadow_hdk.runtime.bindings import Ports, RunContext, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.loop import resume, run
+from shadow_hdk.runtime.trust import Trust
 
-__all__ = ["Cancellation", "Ports", "RunContext", "RunOptions", "current_run", "resume", "run"]
+__all__ = [
+    "Cancellation",
+    "Ports",
+    "RunContext",
+    "RunOptions",
+    "Trust",
+    "current_run",
+    "resume",
+    "run",
+]

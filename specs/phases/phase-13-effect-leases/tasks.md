@@ -12,10 +12,10 @@ phase: 13-effect-leases
 - [ ] Gate
 
 ## Group 1 — trust at the registry
-- [ ] `Trust(keys, revoked, must_sign)`
-- [ ] `Registry(ports, trust=…)` refuses at refresh, recording reasons
-- [ ] RED: each refusal by name; revoked-with-valid-signature; must_sign inside/outside; visible() omits
-- [ ] Gate
+- [x] `Trust(keys, revoked, must_sign)` — `runtime/trust.py`; `Ports.trust`, `None` checks nothing
+- [x] `Registry(ports, trust=…)` refuses at refresh, recording reasons in `registry.refused`
+- [x] RED: each refusal by name; revoked-with-valid-signature; must_sign inside/outside; visible() omits — 15 tests, `tests/runtime/test_registry_trust.py`
+- [x] Gate — ruff 0 / format 0 / mypy 0 (99 files) / pytest 596 passed, 9 deselected; 17 mutations bite
 
 ## Group 2 — the receipt, and the lease at the act
 - [ ] a test driver returning `Acted`, reading the lease at act time
