@@ -41,6 +41,9 @@ dev = [
     "mypy>=1.11",
     "agent-client-protocol>=0.12",
     "pytest-timeout>=2.3",
+    # A checkpointer we do NOT ship, to prove the host can bring its own. Everything before
+    # Phase 6 was proven against `InMemorySaver`, which is not durability.
+    "langgraph-checkpoint-sqlite>=2.0",
 ]
 
 [tool.ruff]
