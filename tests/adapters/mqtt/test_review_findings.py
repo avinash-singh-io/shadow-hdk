@@ -101,36 +101,85 @@ async def test_a_fault_in_routing_does_not_kill_the_network_thread(
     await link.close()
 
 
-def test_registration_and_routing_do_not_race() -> None:
-    """Registration mutates the filter sets the network thread iterates. Two threads, many
-    iterations: with the sets mutated outside the lock this raises *Set changed size during
-    iteration* almost at once; under the lock it never does."""
+class RecordingLock:
+    """A lock that remembers who held it, so *under the lock* is a fact and not a hope. A stress
+    test racing two threads passed with and without the lock — under the GIL the window is too
+    small to hit on purpose — so the claim is asserted directly."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.held_during: list[str] = []
+        self._during: str | None = None
+
+    def during(self, what: str) -> None:
+        self._during = what
+
+    def __enter__(self) -> RecordingLock:
+        self._lock.acquire()
+        if self._during is not None:
+            self.held_during.append(self._during)
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self._lock.release()
+
+
+def test_registration_happens_under_the_lock_the_network_thread_uses() -> None:
     link = MqttLink("127.0.0.1", 1, clock=FixedClock(NOON))
-    problems: list[BaseException] = []
+    lock = RecordingLock()
+    link._lock = lock  # type: ignore[assignment]
+    lock.during("sensor")
+    link.sensor("thermometer", "plant/temp")
+    lock.during("witness")
+    link.witness("panel", "plant/events/#")
+    lock.during("actuator")
+    link.actuator("valve", "plant/valve/set", ack_topic="plant/valve/ack")
+    assert {"sensor", "witness", "actuator"} <= set(lock.held_during), lock.held_during
 
-    class Message:
-        topic = "plant/x/temp"
-        payload = b'{"value": 1}'
 
-    def route() -> None:
-        for _ in range(3000):
-            try:
-                link._route(Message())  # type: ignore[arg-type]
-            except BaseException as raised:  # noqa: BLE001 — the point is to catch it
-                problems.append(raised)
-                return
+def test_the_tables_exist_before_the_filter_is_visible() -> None:
+    """A message routed between the filter appearing and its table appearing was a `KeyError` on
+    the network thread. The filter set refuses an add whose table is not there yet."""
+    link = MqttLink("127.0.0.1", 1, clock=FixedClock(NOON))
 
-    def register() -> None:
-        for i in range(3000):
-            link.sensor(f"s{i}", f"plant/{i}/temp")
-            link.witness(f"w{i}", f"plant/{i}/events/#")
+    class Checking(set[str]):
+        def __init__(self, table: dict[str, Any]) -> None:
+            super().__init__()
+            self._table = table
 
-    threads = [threading.Thread(target=route), threading.Thread(target=register)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(20)
-    assert problems == [], problems
+        def add(self, topic: str) -> None:
+            assert topic in self._table, f"{topic} became visible before its table existed"
+            super().add(topic)
+
+    link._sensor_filters = Checking(link._first)
+    link._witness_filters = Checking(link._queues)
+    link.sensor("thermometer", "plant/temp")
+    link.witness("panel", "plant/events/#")
+    assert "plant/temp" in link._sensor_filters and "plant/events/#" in link._witness_filters
+
+
+async def test_a_fault_in_another_callback_does_not_kill_the_thread_either(
+    broker: LocalBroker, device_side: DeviceSide, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`_on_message` is wrapped; `on_subscribe` is not. paho would end its thread on the raise;
+    `suppress_exceptions` is what keeps it alive, and this test is what makes it not dead code."""
+    link = MqttLink("127.0.0.1", broker.port, clock=FixedClock(NOON))
+    sensor = link.sensor("thermometer", "plant/temp")
+
+    def broken(*_: Any) -> None:
+        raise RuntimeError("a fault in on_subscribe")
+
+    monkeypatch.setattr(link, "_on_subscribe", broken)
+    await link.connect()
+    await asyncio.sleep(0.2)
+    assert link.connected
+    await device_side.publish("plant/temp", {"value": 5}, retain=True)
+    assert await until(lambda: link.seen("plant/temp")), "the thread died in on_subscribe"
+    events = await _run(DeviceComponents(sensors=[sensor]), Invoke("s1", "thermometer"))
+    reading = _observed(events, "s1").observation
+    assert isinstance(reading, Completed) and isinstance(reading.output, dict)
+    assert reading.output["value"] == 5
+    await link.close()
 
 
 async def test_a_device_registered_while_the_link_opens_is_subscribed(
