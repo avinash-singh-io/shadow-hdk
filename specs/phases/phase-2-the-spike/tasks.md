@@ -18,7 +18,7 @@ phase: 2-the-spike
 ## Group 1 — measure it over a pipe
 
 - [x] `spikes/acp/agent.py` — a minimal conformant ACP agent that requests permission before a tool call
-- [x] `spikes/acp/drive.py` — a client that answers a chosen way and records what came back
+- [x] `spikes/acp/drive_real.py` — a client that answers a chosen way and records what came back
 - [x] RED first, each under `asyncio.wait_for`, because the failure being probed is a hang
 - [x] measured: permission **denied** → the turn ends, with which stop reason, in what time
 - [x] measured: a **`reject_once`** option selected → the turn ends, with which stop reason

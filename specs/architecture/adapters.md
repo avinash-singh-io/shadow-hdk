@@ -39,7 +39,7 @@ class Pattern:
     name: str
     system: str                                   # the role prompt
     meta_tools: frozenset[str]                    # which of compose · propose · done · spawn · … exist
-    tool_filter: Callable[[Registration], bool] = always
+    tool_names: frozenset[str] | None = None      # None → every component the policy leaves visible
     ceiling: EffectProfile | None = None          # narrows this role, beyond the mode
     max_turns: int = 12
 
@@ -56,7 +56,12 @@ product uses. Adding a pattern — today's or one invented in five years — is 
 
 ```python
 class AgentComponent(ComponentPort):
-    def __init__(self, *, name="agent", pattern: Pattern, effects: EffectProfile, tools=None): ...
+    def __init__(
+        self, *, pattern: Pattern, effects: EffectProfile, name="agent", skill: Skill | None = None
+    ): ...
+    # No `tools=`: an agent sees what the run's registry leaves visible, which is the same
+    # computation the policy narrows — so *what the model was offered* and *what the runtime will
+    # let it invoke* cannot drift apart. A `skill` is checked against that before the first turn.
 
     async def invoke(self, registration, inputs) -> Observation:
         ctx = current_run()                                  # None → this agent is the root

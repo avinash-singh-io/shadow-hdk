@@ -32,11 +32,11 @@
 |----------|------|
 | Current state / what phase? | `specs/status.md` |
 | What's in the backlog? | `specs/backlog/backlog.md` |
-| Phase tasks/progress? | `specs/phases/phase-N-*/tasks.md` |
+| Phase tasks/progress? | `specs/phases/phase-<n>-*/tasks.md` |
 | Why was X chosen? | `specs/decisions/NNNN-*.md` |
 | Roadmap / timeline? | `specs/planning/roadmap.md` (authored at founding — `/start-project`) |
 | Project config (forge, publish, branch flow)? | `specs/config.md` (inferred by `momentum init`, authored at `/start-project`) |
-| How to contribute? | `docs/developer-guide.md` |
+| How to contribute? | `specs/architecture/overview.md` |
 
 > **First file to read: ALWAYS `specs/status.md`.**
 
@@ -306,7 +306,7 @@ Before building any learning, optimization, or self-improvement loop:
 
 1. Define the **evaluation set** — a fixed corpus with known-good outputs
 2. Define the **scalar** — a single number that improves or doesn't
-3. Commit the evaluator to `tests/benchmarks/` with a version tag
+3. Commit the evaluator to `tests/runtime/test_benchmark.py` with a version tag
 4. Build the loop **AFTER** the evaluator is committed
 5. **NEVER** change the evaluator while the loop is being optimized
 
@@ -414,7 +414,7 @@ worktree) bound to one phase or ad-hoc record.
 #### Lane binding — which phase is yours
 
 - Your phase is **the phase bound to your branch**: branch
-  `phase-N-shortname` ↔ directory `specs/phases/phase-N-shortname/`.
+  `phase-N-shortname` ↔ directory `specs/phases/phase-<n>-<shortname>/`.
 - `specs/status.md`'s Active Phase table is the **fallback and the
   cross-lane overview** — read it to see what else is in flight, not to
   decide which phase is yours.

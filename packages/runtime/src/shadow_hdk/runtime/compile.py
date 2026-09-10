@@ -12,9 +12,10 @@ go. Execution, concurrency, checkpointing and interrupts are LangGraph's.
 Synthetic node names use ``__`` rather than ``:``: LangGraph reserves the colon for checkpoint
 namespaces and refuses a node name containing one.
 
-A composite nested inside another is **inlined** — more nodes and edges in the same graph. True
-subgraphs, with their own checkpoint namespaces, arrive with sub-agents in Phase 6, which is the
-first thing that needs them.
+A composite nested inside another is a **subgraph** with its own checkpoint namespace, which is
+what lets a branch be cancelled and a child be resumed where it slept (Phase 6, D15). It was inlined
+at first — more nodes and edges in one graph — and this paragraph went on saying so for six phases
+after that stopped being true (TD-008).
 """
 
 from __future__ import annotations

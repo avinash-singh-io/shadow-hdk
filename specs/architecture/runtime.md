@@ -148,7 +148,14 @@ classDiagram
 | `compile.py` | `compile_composition`; the structural-hash cache (D11) |
 | `state.py` | `RunState` TypedDict and its reducers |
 | `loop.py` | `run`, `resume` — Started … Ended, end reasons, child forwarding |
-| `errors.py` | `LeaseExhausted`, `Cancelled`, `PortFailure`, `DanglingRef` |
+| `errors.py` | `RuntimeStop` and its three — `LeaseExhausted`, `Cancelled`, `PortFailure` — plus `DanglingRef`. **A stop is a `BaseException`** (TD-006): every component adapter catches `Exception`, and it should, so a stop that was one got swallowed by whatever component was running |
+| `cancel.py` | the handle a host keeps and the check a step makes (D15) |
+| `children.py` | what a run is holding — spawn · send · release, and the records that survive a park (D16, D37) |
+| `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
+| `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
+| `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
+| `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006) |
+| `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
 | `testing/` | `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock` (D8) |
 
 ## The governed step — the algorithm, in full

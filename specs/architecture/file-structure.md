@@ -29,20 +29,22 @@ shadow-hdk/
     adapters/
       basic/                         allow-all · stdout · callback · system clock · callable   Phase 0
       agent/                         the model loop as a component; Pattern; single            Phase 0
+        library/                     the shipped patterns, as TOML a team can read and edit    Phase 8
       langchain/                     one ModelPort over every LangChain provider; stream       Phase 1
       mcp/                           MCP servers as components                                 Phase 1
-      modes/                         Mode · ModeGovernance                                     Phase 1
       workspace/                     files within a root                                       Phase 3
       sandbox_subprocess/            run code with limits                                      Phase 3
       acp/                           Codex · Claude Code over ACP                              Phase 4
       recording/                     our registry as an MCP server                             Phase 5
-      effect_rules/                  rules as rows; the narrowing check                        Phase 10
-      sandbox_gvisor/  sandbox_firecracker/                                                    Phase 11
+      modes/                         rules as rows; the narrowing check                        Phase 1 / 10
+      contained/                     gVisor and Firecracker, each proving containment          Phase 11
       derivation/                    total expressions over typed tables                       Phase 12
       otel/                          the event stream exported                                 Phase 14
-  patterns/                          single.md · plan-and-execute.md · … (data, not code)      Phase 0 / 8
+      devices/                       sensors, actuators, witnesses                             Phase 15
+      mqtt/                          one link, three roles over MQTT 3.1.1                     Phase 16
   tests/
-    invariants/                      stands alone · layering · no adapter cross-imports
+    invariants/                      stands alone · layering · no adapter cross-imports · every port
+                                     contracted · the decision map · these documents
     kernel/                          order properties · leases · contracts round-trip
     runtime/                         compile · governance · leases · events · spawn · errors · replay · benchmark
     adapters/
