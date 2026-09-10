@@ -1,0 +1,337 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The Governed Step \u2014 The Whole Enforcement Story",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "the-order",
+        "label": "The seven moves",
+        "focus": [
+          "lease",
+          "resolve",
+          "inputs",
+          "judge",
+          "invoke",
+          "observe"
+        ],
+        "note": "Every step of every composition takes these moves, in this order, in one function."
+      },
+      {
+        "id": "three-answers",
+        "label": "Governance has three answers",
+        "focus": [
+          "judge",
+          "ask",
+          "refused",
+          "invoke"
+        ],
+        "note": "Allow proceeds, Ask parks the run for a human, Refuse means the component is never called."
+      },
+      {
+        "id": "two-errors",
+        "label": "Two classes of error",
+        "focus": [
+          "unknown",
+          "dangling",
+          "raised",
+          "exhausted",
+          "portfail"
+        ],
+        "note": "A component's failure is data the agent can see; a port's failure ends the run."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "stop",
+      "label": "Failure \u2014 the run ends here",
+      "variant": "exception"
+    },
+    {
+      "id": "step",
+      "label": "The step, in order"
+    },
+    {
+      "id": "policy",
+      "label": "Governance"
+    },
+    {
+      "id": "data",
+      "label": "Data \u2014 the agent sees it, the run goes on"
+    }
+  ],
+  "phases": [
+    {
+      "id": "before",
+      "label": "Before anything is called",
+      "fromCol": 0,
+      "toCol": 2
+    },
+    {
+      "id": "decide",
+      "label": "The decision",
+      "fromCol": 3,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "work",
+      "label": "The work, and the record",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "lease",
+    "resolve",
+    "inputs",
+    "judge",
+    "invoke",
+    "observe"
+  ],
+  "nodes": [
+    {
+      "id": "exhausted",
+      "lane": "stop",
+      "col": 0,
+      "type": "security",
+      "label": "Ended",
+      "sublabel": "lease exhausted",
+      "width": 150
+    },
+    {
+      "id": "portfail",
+      "lane": "stop",
+      "col": 4,
+      "type": "security",
+      "label": "Ended: failed",
+      "sublabel": "a port raised",
+      "width": 150
+    },
+    {
+      "id": "lease",
+      "lane": "step",
+      "col": 0,
+      "type": "security",
+      "label": "Lease check",
+      "sublabel": "steps \u00b7 time \u00b7 money",
+      "width": 150
+    },
+    {
+      "id": "resolve",
+      "lane": "step",
+      "col": 1,
+      "type": "backend",
+      "label": "Refresh \u00b7 resolve",
+      "sublabel": "who owns this id",
+      "width": 150
+    },
+    {
+      "id": "inputs",
+      "lane": "step",
+      "col": 2,
+      "type": "backend",
+      "label": "Inputs",
+      "sublabel": "handles, not tokens",
+      "width": 150
+    },
+    {
+      "id": "judge",
+      "lane": "step",
+      "col": 3,
+      "type": "security",
+      "label": "Judge",
+      "sublabel": "the effect profile",
+      "width": 150
+    },
+    {
+      "id": "invoke",
+      "lane": "step",
+      "col": 4,
+      "type": "backend",
+      "label": "Invoke",
+      "sublabel": "the component runs",
+      "width": 150
+    },
+    {
+      "id": "observe",
+      "lane": "step",
+      "col": 5,
+      "type": "backend",
+      "label": "Observe",
+      "sublabel": "event + handle",
+      "width": 150
+    },
+    {
+      "id": "ask",
+      "lane": "policy",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Ask",
+      "sublabel": "park; a human answers",
+      "width": 150
+    },
+    {
+      "id": "unknown",
+      "lane": "data",
+      "col": 1,
+      "type": "external",
+      "label": "Failed",
+      "sublabel": "no such component",
+      "width": 150
+    },
+    {
+      "id": "dangling",
+      "lane": "data",
+      "col": 2,
+      "type": "external",
+      "label": "Failed",
+      "sublabel": "binding to nothing",
+      "width": 150
+    },
+    {
+      "id": "refused",
+      "lane": "data",
+      "col": 3,
+      "type": "external",
+      "label": "Refused",
+      "sublabel": "never invoked at all",
+      "width": 150
+    },
+    {
+      "id": "raised",
+      "lane": "data",
+      "col": 5,
+      "type": "external",
+      "label": "Failed",
+      "sublabel": "the component raised",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "to-resolve",
+      "from": "lease",
+      "to": "resolve",
+      "variant": "emphasis"
+    },
+    {
+      "id": "to-inputs",
+      "from": "resolve",
+      "to": "inputs",
+      "variant": "emphasis"
+    },
+    {
+      "id": "to-judge",
+      "from": "inputs",
+      "to": "judge",
+      "variant": "emphasis"
+    },
+    {
+      "id": "allow",
+      "from": "judge",
+      "to": "invoke",
+      "label": "Allow",
+      "variant": "emphasis"
+    },
+    {
+      "id": "to-observe",
+      "from": "invoke",
+      "to": "observe",
+      "variant": "emphasis"
+    },
+    {
+      "id": "no-budget",
+      "from": "lease",
+      "to": "exhausted",
+      "label": "nothing left",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "no-component",
+      "from": "resolve",
+      "to": "unknown",
+      "label": "unknown id",
+      "role": "error"
+    },
+    {
+      "id": "no-ref",
+      "from": "inputs",
+      "to": "dangling",
+      "label": "dangling ref",
+      "role": "error"
+    },
+    {
+      "id": "to-ask",
+      "from": "judge",
+      "to": "ask",
+      "label": "Ask",
+      "variant": "security"
+    },
+    {
+      "id": "answered",
+      "from": "ask",
+      "to": "invoke",
+      "label": "the host allows",
+      "role": "return"
+    },
+    {
+      "id": "refuse",
+      "from": "judge",
+      "to": "refused",
+      "label": "Refuse",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "it-raised",
+      "from": "invoke",
+      "to": "raised",
+      "label": "it raised",
+      "role": "error",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "port-raised",
+      "from": "invoke",
+      "to": "portfail",
+      "label": "a port raised",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One function, seven moves",
+      "items": [
+        "This is the whole enforcement story, and it lives in a single function of the runtime",
+        "The order is fixed: the lease is checked before anything, and the judgement precedes every call",
+        "The runtime never branches on a name, a label, or a product word \u2014 only on effects, leases and observations"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Two error classes, on purpose",
+      "items": [
+        "A component that raises, an unknown id, and a binding to nothing are all data \u2014 a Failed observation the agent can read and work around",
+        "A port that raises is a failure \u2014 the host itself is broken, and the run ends rather than reasoning past it",
+        "Refuse is not an error at all: it is a decision, recorded, with the component never called"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Ask is not a rejection",
+      "items": [
+        "Ask parks the run on a checkpoint and yields an Asked event to the host",
+        "The answer may come back seconds later or from a different process entirely",
+        "That is the same mechanism a slow human, a long job, or a sub-agent uses"
+      ]
+    }
+  ]
+}

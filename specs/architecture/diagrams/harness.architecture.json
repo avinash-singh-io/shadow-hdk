@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "shadow-hdk \u2014 The Shape",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1050,
+      660
+    ],
+    "views": [
+      {
+        "id": "the-spine",
+        "label": "The spine",
+        "focus": [
+          "host",
+          "drive",
+          "compiler",
+          "step",
+          "components"
+        ],
+        "note": "A host hands in a plan; the compiler makes it a graph; every node of it is one governed step."
+      },
+      {
+        "id": "ports",
+        "label": "The six ports",
+        "focus": [
+          "model",
+          "components",
+          "governance",
+          "observer",
+          "sink"
+        ],
+        "note": "Every seam a host plugs into. A new vendor or protocol is a new adapter, never a runtime change."
+      },
+      {
+        "id": "outward",
+        "label": "The only way out",
+        "focus": [
+          "drive",
+          "observer",
+          "sink"
+        ],
+        "note": "Events are the only channel out, and a proposal is the only way to reach the host's record."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "sink",
+      "type": "database",
+      "label": "Sink",
+      "sublabel": "the record",
+      "pos": [
+        210,
+        110
+      ],
+      "size": [
+        140,
+        58
+      ]
+    },
+    {
+      "id": "observer",
+      "type": "messagebus",
+      "label": "Observer",
+      "sublabel": "UI \u00b7 telemetry",
+      "pos": [
+        390,
+        110
+      ],
+      "size": [
+        140,
+        58
+      ]
+    },
+    {
+      "id": "governance",
+      "type": "security",
+      "label": "Governance",
+      "sublabel": "modes \u00b7 rules",
+      "pos": [
+        670,
+        110
+      ],
+      "size": [
+        150,
+        58
+      ]
+    },
+    {
+      "id": "model",
+      "type": "cloud",
+      "label": "Model",
+      "sublabel": "any provider",
+      "pos": [
+        880,
+        110
+      ],
+      "size": [
+        140,
+        58
+      ]
+    },
+    {
+      "id": "host",
+      "type": "external",
+      "label": "Host / Product",
+      "sublabel": "your product",
+      "pos": [
+        40,
+        290
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "drive",
+      "type": "backend",
+      "label": "run()",
+      "sublabel": "the loop",
+      "pos": [
+        250,
+        290
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "compiler",
+      "type": "backend",
+      "label": "Compiler",
+      "sublabel": "plan to graph",
+      "pos": [
+        460,
+        290
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "step",
+      "type": "security",
+      "label": "Governed step",
+      "sublabel": "seven moves",
+      "pos": [
+        670,
+        290
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "components",
+      "type": "backend",
+      "label": "Components",
+      "sublabel": "what it can do",
+      "pos": [
+        880,
+        290
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "kernel",
+      "type": "database",
+      "label": "Kernel",
+      "sublabel": "frozen types \u00b7 JSON only \u00b7 depends on nothing",
+      "pos": [
+        250,
+        470
+      ],
+      "size": [
+        770,
+        58
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "runtime \u2014 everything ephemeral, nothing durable",
+      "wraps": [
+        "drive",
+        "compiler",
+        "step"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "start",
+      "from": "host",
+      "to": "drive",
+      "label": "run(plan)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "plan",
+      "from": "drive",
+      "to": "compiler",
+      "label": "compile",
+      "variant": "emphasis"
+    },
+    {
+      "id": "nodes",
+      "from": "compiler",
+      "to": "step",
+      "label": "each node",
+      "variant": "emphasis"
+    },
+    {
+      "id": "invoke",
+      "from": "step",
+      "to": "components",
+      "label": "invoke",
+      "variant": "emphasis"
+    },
+    {
+      "id": "think",
+      "from": "components",
+      "to": "model",
+      "label": "thinks"
+    },
+    {
+      "id": "judge",
+      "from": "step",
+      "to": "governance",
+      "label": "judge",
+      "variant": "security"
+    },
+    {
+      "id": "propose",
+      "from": "drive",
+      "to": "sink",
+      "label": "proposals",
+      "variant": "dashed",
+      "labelDy": -28,
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "events",
+      "from": "drive",
+      "to": "observer",
+      "label": "events",
+      "variant": "dashed",
+      "labelDy": -28,
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "types",
+      "from": "step",
+      "to": "kernel",
+      "label": "depends on",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Arrows point one way",
+      "items": [
+        "The kernel depends on nothing: frozen dataclasses and protocols, no I/O and no clock",
+        "The runtime depends only on the kernel and never imports an adapter",
+        "Adapters depend on the runtime and never on each other \u2014 each is its own package"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Six ports, and what each is for",
+      "items": [
+        "Model thinks; Components can be invoked; Governance judges; Sink receives proposals",
+        "Observer is the only channel out; a sixth port, Clock, holds the one non-determinism so a replay costs nothing",
+        "The registry is the union of every component port, recomputed every step"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Where the boundary falls",
+      "items": [
+        "Mechanism here, policy and content in the product",
+        "Model adapters here; which provider and whose key, there",
+        "The rules engine here; the rules themselves, there"
+      ]
+    }
+  ]
+}

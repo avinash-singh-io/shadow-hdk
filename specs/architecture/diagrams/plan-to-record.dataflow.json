@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "From a Brief to the Record",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      700
+    ],
+    "views": [
+      {
+        "id": "plan-is-data",
+        "label": "The plan is data",
+        "focus": [
+          "model",
+          "plan",
+          "step"
+        ],
+        "note": "The model's tool calls become a composition, and the composition is compiled rather than interpreted."
+      },
+      {
+        "id": "two-writes",
+        "label": "Two kinds of write",
+        "focus": [
+          "step",
+          "world",
+          "proposal"
+        ],
+        "note": "A component changes the world; a proposal only asks the host to remember. They are not the same power."
+      },
+      {
+        "id": "what-comes-back",
+        "label": "What comes back",
+        "focus": [
+          "step",
+          "events",
+          "plan"
+        ],
+        "note": "Events are the only channel out of the runtime; anyone may observe, and nobody may reach back in."
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "Asked"
+    },
+    {
+      "label": "Thought"
+    },
+    {
+      "label": "Planned"
+    },
+    {
+      "label": "Run"
+    },
+    {
+      "label": "Out"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "brief",
+      "type": "external",
+      "label": "Brief",
+      "sublabel": "what was asked",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "catalogue",
+      "type": "backend",
+      "label": "Catalogue",
+      "sublabel": "what it may see",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "tag": "filtered by ceiling"
+    },
+    {
+      "id": "model",
+      "type": "cloud",
+      "label": "Model",
+      "sublabel": "picks tools",
+      "stage": 1,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "plan",
+      "type": "backend",
+      "label": "Composition",
+      "sublabel": "data, then graph",
+      "stage": 2,
+      "row": 1,
+      "width": 150,
+      "tag": "five step kinds"
+    },
+    {
+      "id": "step",
+      "type": "security",
+      "label": "Governed step",
+      "sublabel": "judged, then run",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "events",
+      "type": "messagebus",
+      "label": "Event stream",
+      "sublabel": "eleven kinds",
+      "stage": 4,
+      "row": 0,
+      "width": 150,
+      "tag": "the only way out"
+    },
+    {
+      "id": "proposal",
+      "type": "database",
+      "label": "Proposal",
+      "sublabel": "the host decides",
+      "stage": 4,
+      "row": 1,
+      "width": 150,
+      "tag": "never committed"
+    },
+    {
+      "id": "world",
+      "type": "external",
+      "label": "The world",
+      "sublabel": "files \u00b7 APIs",
+      "stage": 4,
+      "row": 2,
+      "width": 150,
+      "tag": "Acted receipt"
+    }
+  ],
+  "flows": [
+    {
+      "id": "ask",
+      "from": "brief",
+      "to": "model",
+      "label": "the ask",
+      "variant": "emphasis"
+    },
+    {
+      "id": "visible",
+      "from": "catalogue",
+      "to": "model",
+      "label": "what it may see",
+      "classification": "governance decides"
+    },
+    {
+      "id": "calls",
+      "from": "model",
+      "to": "plan",
+      "label": "tool calls become steps",
+      "variant": "emphasis",
+      "labelDy": -23
+    },
+    {
+      "id": "compile",
+      "from": "plan",
+      "to": "step",
+      "label": "compiled, never interpreted",
+      "variant": "emphasis",
+      "labelDy": -23
+    },
+    {
+      "id": "stream",
+      "from": "step",
+      "to": "events",
+      "label": "events",
+      "classification": "eleven kinds"
+    },
+    {
+      "id": "propose",
+      "from": "step",
+      "to": "proposal",
+      "label": "propose",
+      "classification": "host decides",
+      "variant": "dashed",
+      "labelAt": [
+        960,
+        328
+      ]
+    },
+    {
+      "id": "act",
+      "from": "step",
+      "to": "world",
+      "label": "an act",
+      "classification": "attributed",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "The plan is a value, not a script",
+      "items": [
+        "The model's tool calls become a Composition \u2014 Invoke, Await, Sequence, FanOut, Until",
+        "A composition is compiled to a graph and executed by the engine; the runtime never interprets it",
+        "It is emitted as an event every time it changes, so plan-versus-actual costs nothing"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Two kinds of write, and only one is forbidden",
+      "items": [
+        "Changing the world happens through a component whose effects are declared and judged",
+        "Changing the host's record happens only by proposing; the host's own gate decides",
+        "The runtime has no write path into any durable store \u2014 that is the whole of propose, never commit"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "What the model is allowed to see",
+      "items": [
+        "The catalogue is the registry narrowed by the ceiling in force, so a forbidden tool is not merely refused \u2014 it is invisible",
+        "Handles carry real values between steps, so a large result is never flattened into tokens",
+        "An act on the world leaves a receipt with its key, its exit and the authority it ran under"
+      ]
+    }
+  ]
+}

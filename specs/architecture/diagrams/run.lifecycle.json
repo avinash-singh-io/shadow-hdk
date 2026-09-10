@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "A Run's Life",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1020,
+      566
+    ],
+    "views": [
+      {
+        "id": "straight-through",
+        "label": "Straight through",
+        "focus": [
+          "started",
+          "running",
+          "ended"
+        ],
+        "note": "A run that never has to wait goes from its first step to its last without parking."
+      },
+      {
+        "id": "parking",
+        "label": "Parking and resuming",
+        "focus": [
+          "running",
+          "parked",
+          "resumed"
+        ],
+        "note": "Ask, Await and a held child all park the same way: on a checkpoint that outlives the process."
+      },
+      {
+        "id": "exits",
+        "label": "The five ways it ends",
+        "focus": [
+          "ended",
+          "exhausted",
+          "cancelled",
+          "failed"
+        ],
+        "note": "Every ending is named on the record, in the words of whoever stopped it."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "The run"
+    },
+    {
+      "id": "exits",
+      "label": "Terminal exits"
+    }
+  ],
+  "states": [
+    {
+      "id": "started",
+      "type": "start",
+      "label": "Started",
+      "sublabel": "a lease is carved",
+      "lane": "main",
+      "col": 0,
+      "step": "01"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "label": "Running",
+      "sublabel": "one step at a time",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "governed"
+    },
+    {
+      "id": "parked",
+      "type": "waiting",
+      "label": "Parked",
+      "sublabel": "on a checkpoint",
+      "lane": "main",
+      "col": 2,
+      "step": "03",
+      "tag": "no process held"
+    },
+    {
+      "id": "resumed",
+      "type": "active",
+      "label": "Resumed",
+      "sublabel": "possibly elsewhere",
+      "lane": "main",
+      "col": 3,
+      "step": "04"
+    },
+    {
+      "id": "ended",
+      "type": "success",
+      "label": "Completed",
+      "sublabel": "the plan is done",
+      "lane": "main",
+      "col": 4,
+      "step": "05"
+    },
+    {
+      "id": "exhausted",
+      "type": "failure",
+      "label": "Lease exhausted",
+      "sublabel": "budget is spent",
+      "lane": "exits",
+      "col": 0,
+      "tag": "terminal"
+    },
+    {
+      "id": "cancelled",
+      "type": "failure",
+      "label": "Cancelled",
+      "sublabel": "the host stopped it",
+      "lane": "exits",
+      "col": 1,
+      "tag": "terminal"
+    },
+    {
+      "id": "failed",
+      "type": "failure",
+      "label": "Failed",
+      "sublabel": "a port broke",
+      "lane": "exits",
+      "col": 2,
+      "tag": "terminal"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "begin",
+      "from": "started",
+      "to": "running",
+      "route": "straight"
+    },
+    {
+      "id": "park",
+      "from": "running",
+      "to": "parked",
+      "label": "Ask \u00b7 Await \u00b7 a held child",
+      "route": "straight",
+      "labelDy": -30
+    },
+    {
+      "id": "wake",
+      "from": "parked",
+      "to": "resumed",
+      "label": "answered",
+      "route": "straight",
+      "labelDy": -30
+    },
+    {
+      "id": "finish",
+      "from": "resumed",
+      "to": "ended",
+      "label": "no steps left",
+      "route": "straight",
+      "labelDy": -30
+    },
+    {
+      "id": "more",
+      "from": "resumed",
+      "to": "running",
+      "label": "more steps remain",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [
+        [
+          556,
+          52
+        ],
+        [
+          248,
+          52
+        ]
+      ]
+    },
+    {
+      "id": "no-budget",
+      "from": "running",
+      "to": "exhausted",
+      "label": "nothing left",
+      "variant": "security"
+    },
+    {
+      "id": "stopped",
+      "from": "parked",
+      "to": "cancelled",
+      "label": "the host asked",
+      "variant": "security"
+    },
+    {
+      "id": "broke",
+      "from": "resumed",
+      "to": "failed",
+      "label": "a port raised",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Parking is not pausing a process",
+      "items": [
+        "A parked run is a checkpoint on disk, not an object left running in memory",
+        "The same mechanism serves a governance Ask, an Await on a slow job, and a sub-agent held between messages",
+        "It can be resumed by a different process, on a different machine, minutes or days later"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "The lease is the clock and the wallet",
+      "items": [
+        "A ceiling on steps, wall time and money; a floor on effort before the agent may give up",
+        "A child's lease is carved from the parent's, so fanning out changes shape but never the ceiling",
+        "The ceiling always beats the floor, because the ceiling is someone's money"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Five endings, each named",
+      "items": [
+        "completed, lease_exhausted, gave_up, cancelled, failed",
+        "The record carries the words of whoever stopped it, so a closed tab reads differently from a spent budget",
+        "gave_up is the agent's own answer, and the floor is what stops it being given too early"
+      ]
+    }
+  ]
+}
