@@ -23,6 +23,16 @@ type: Status
 > stack is prepared and deliberately not opened**, in `specs/adhoc/TD-009/`, because that is the
 > owner's.
 >
+> **The first CI run in this repository's history went red, and it was right to.** `ruff`, format
+> and `mypy` passed on Linux; the coverage floor came back at 96.77%; the test that skips here for
+> want of `prlimit` **ran on Linux and passed**. What failed was the benchmark — because the gating
+> step traces `shadow_hdk.runtime` with coverage and that is exactly what the benchmark
+> measures, so it was timing `coverage.py` (179.7 ms clean against 425.3 ms instrumented, on a 300
+> ms assertion). Fixed. **And with the numbers finally read: the runtime's per-step overhead is
+> 1.36 ms against D11's budget of ≤ 1 ms, and 2.4× the 0.570 recorded in the file.** Filed as
+> BUG-016 rather than accommodated; the gate never caught it because the assertion sits at three
+> times the target.
+>
 > Phases 0–18 are complete and unmerged. 837 tests; mypy strict over 132 files; seventeen
 > distributions all at **0.12.0**, all MIT. **What remains buildable is the P2s**: BUG-013 (the
 > derivation evaluator), BUG-014 (`FileSink`'s torn tail), TD-004 (the contract suites reach 7 of
