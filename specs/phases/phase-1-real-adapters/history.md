@@ -264,3 +264,25 @@ stopped — 51 events became 13.
 
 Worth stating plainly because the temptation was to change the harness: the agent behaved correctly
 throughout, and the honest fix was to the thing that was actually wrong.
+
+### [CORRECTION] 2026-09-10 — I committed over a red gate, because `| tail` hid its exit code
+Topics: gate, tooling, discipline
+
+`9d08285` was committed with **four mypy errors**. The cause is worth writing down because it will
+recur otherwise: the gate was being run as
+
+    uv run ruff check -q && uv run ruff format --check -q && uv run mypy 2>&1|tail -1 && uv run pytest …
+
+and a pipeline's exit status is the **last** command's. `tail` always succeeds, so mypy's failure
+was printed and then stepped over, and the `&&` chain carried on to a green-looking pytest. The
+output said `Found 4 errors in 1 file` in plain sight and the chain said everything was fine.
+
+Fixed in `0e4d0b1`. The gate is now run so each exit code is read on its own:
+
+    uv run ruff check -q; echo $?
+    uv run mypy > out 2>&1; echo $?
+
+The errors themselves were narrowing in the new live test — reading `.output` off an `Observation`
+union rather than off a `Completed`. Trivial to fix; the point is that a tool was allowed to lie
+about whether the work was done, which is exactly the class of thing the mutation-check discipline
+exists to catch, applied to the gate rather than to a test.

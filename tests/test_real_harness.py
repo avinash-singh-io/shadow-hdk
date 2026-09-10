@@ -18,7 +18,16 @@ from typing import Any
 import pytest
 from examples.real import real_harness
 
-from shadow_hdk.kernel import Composed, Ended, Invoked, Observed, Proposed, Spawned, Started
+from shadow_hdk.kernel import (
+    Completed,
+    Composed,
+    Ended,
+    Invoked,
+    Observed,
+    Proposed,
+    Spawned,
+    Started,
+)
 
 pytestmark = [
     pytest.mark.live,
@@ -52,12 +61,12 @@ async def test_the_harness_runs_on_a_real_model_and_a_real_server() -> None:
     invoked = [e for e in events if isinstance(e, Invoked)]
     assert any(e.component == "look_up" for e in invoked), f"the server was never called: {invoked}"
     answers = [
-        e.observation
+        e.observation.output
         for e in events
-        if isinstance(e, Observed) and getattr(e.observation, "output", None)
+        if isinstance(e, Observed) and isinstance(e.observation, Completed)
     ]
     assert any(
-        isinstance(o.output, dict) and o.output.get("asset") == "LATHE-3" for o in answers
+        isinstance(output, dict) and output.get("asset") == "LATHE-3" for output in answers
     ), "the lathe record never came back"
 
     # Everything left through the ports, and only through them.
