@@ -166,3 +166,36 @@ async def test_empty_frames_are_not_yielded_as_pieces_of_answer() -> None:
     assert [c.text for c in chunks] == ["One two three four five", ""]
     assert all(c.text for c in chunks[:-1])
     assert chunks[-1].done and chunks[-1].usage == Usage(13, 6, None)
+
+
+def test_an_assistant_message_reaches_langchain_with_its_calls() -> None:
+    """The adapter's half of BUG-005, without a provider: what `_to_langchain` builds."""
+    from langchain_core.messages import AIMessage
+    from shadow_hdk.adapters.langchain.model import _to_langchain
+
+    from shadow_hdk.kernel.ports import Message, ToolCall
+
+    built = _to_langchain(
+        (
+            Message("user", "look it up"),
+            Message(
+                "assistant", "looking", tool_calls=(ToolCall("c1", "look", {"topic": "lathes"}),)
+            ),
+            Message("tool", "found lathes", tool_call_id="c1"),
+        )
+    )
+    assistant = built[1]
+    assert isinstance(assistant, AIMessage)
+    assert assistant.tool_calls == [
+        {"name": "look", "args": {"topic": "lathes"}, "id": "c1", "type": "tool_call"}
+    ]
+
+
+def test_arguments_that_are_not_a_mapping_are_carried_not_dropped() -> None:
+    """A provider names its arguments, so LangChain wants a mapping. A model that sent something
+    else is still shown to the next turn rather than silently losing its own call."""
+    from shadow_hdk.adapters.langchain.model import _calls_for
+
+    from shadow_hdk.kernel.ports import ToolCall
+
+    assert _calls_for((ToolCall("c1", "look", "lathes"),))[0]["args"] == {"value": "lathes"}

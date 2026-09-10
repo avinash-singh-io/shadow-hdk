@@ -145,7 +145,11 @@ class _Turnwise:
             if not response.tool_calls:
                 self.messages.append(Message("assistant", response.text))
                 return self.finished("answered", text=response.text)
-            self.messages.append(Message("assistant", response.text))
+            # With the calls it made: a tool result whose call is in no message is rejected by
+            # every provider, and a model that cannot see what it called cannot reason about it.
+            self.messages.append(
+                Message("assistant", response.text, tool_calls=response.tool_calls)
+            )
 
             for call in [c for c in response.tool_calls if c.name == PROPOSE]:
                 await self.propose(call)

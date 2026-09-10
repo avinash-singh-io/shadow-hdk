@@ -110,3 +110,29 @@ async def test_a_real_stream_is_translated_faithfully() -> None:
     priced = [c for c in chunks if c.usage is not None]
     assert priced in ([], [chunks[-1]])
     assert all(c.text for c in chunks[:-1]), "empty deltas are noise and are not yielded"
+
+
+async def test_a_real_provider_accepts_a_second_turn(caplog: object) -> None:
+    """BUG-005 on a real wire, which is the only place it could be seen: a tool result must be
+    preceded by the assistant message that made the call. Every unit test used `ScriptedModel`,
+    which never checked, so the suite was green while a real second turn would have been rejected.
+    """
+    model = live()
+    first = await model.complete(
+        ModelRequest(
+            (Message("user", "How heavy is the lathe? Use the weigh tool."),), tools=(WEIGH,)
+        )
+    )
+    assert first.tool_calls, f"no tool call to answer in {first!r}"
+    call = first.tool_calls[0]
+    second = await model.complete(
+        ModelRequest(
+            (
+                Message("user", "How heavy is the lathe? Use the weigh tool."),
+                Message("assistant", first.text, tool_calls=first.tool_calls),
+                Message("tool", '{"kilograms": 812}', tool_call_id=call.id),
+            ),
+            tools=(WEIGH,),
+        )
+    )
+    assert "812" in second.text, f"the provider did not use the answer it was given: {second!r}"

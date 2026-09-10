@@ -45,17 +45,26 @@ from shadow_hdk.kernel.usage import Usage as Usage
 
 
 @dataclass(frozen=True)
-class Message:
-    role: Literal["system", "user", "assistant", "tool"]
-    content: str
-    tool_call_id: str | None = None
-
-
-@dataclass(frozen=True)
 class ToolCall:
     id: str
     name: str
     arguments: JsonValue
+
+
+@dataclass(frozen=True)
+class Message:
+    """One turn in a transcript.
+
+    `tool_calls` is what an **assistant** message asked for, and it is not optional decoration: a
+    tool result carries a `tool_call_id`, and every provider rejects a result whose call is in no
+    preceding message. Without it the model is also never shown which tool it called with what
+    arguments, so its next turn reasons about a step it cannot see.
+    """
+
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+    tool_call_id: str | None = None
+    tool_calls: tuple[ToolCall, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -11,8 +11,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.9.0"
-"""0.9.0 because `RunState` grew `spent` — what a run has spent rides in the checkpoint so it
+EXPECTED = "0.10.0"
+"""0.10.0 because `Message` grew `tool_calls` — an assistant message carries the calls it made
+(BUG-005). Every provider rejects a tool result whose call is in no preceding message, and every
+test used `ScriptedModel`, which never looked. `ModelRequest` is a published contract, so this one
+crosses the wire.
+
+0.9.0 because `RunState` grew `spent` — what a run has spent rides in the checkpoint so it
 survives a park (D33, BUG-004). A host reading graph state directly sees a new field; the event
 stream is unchanged. Before it, a lease of three steps admitted five across an Ask.
 

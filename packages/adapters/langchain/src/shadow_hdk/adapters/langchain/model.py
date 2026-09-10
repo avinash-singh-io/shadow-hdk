@@ -139,7 +139,9 @@ def _to_langchain(messages: tuple[Message, ...]) -> list[BaseMessage]:
             case "user":
                 out.append(HumanMessage(content=message.content))
             case "assistant":
-                out.append(AIMessage(content=message.content))
+                out.append(
+                    AIMessage(content=message.content, tool_calls=_calls_for(message.tool_calls))
+                )
             case "tool":
                 out.append(
                     ToolMessage(content=message.content, tool_call_id=message.tool_call_id or "")
@@ -158,6 +160,22 @@ def _text_of(message: BaseMessage) -> str:
         for part in content
         if isinstance(part, dict) and part.get("type") == "text"
     )
+
+
+def _calls_for(calls: tuple[ToolCall, ...]) -> list[dict[str, Any]]:
+    """Ours, in LangChain's shape. `args` must be a mapping — a provider names arguments — so a
+    call whose arguments are not one is carried under a single key rather than dropped."""
+    return [
+        {
+            "name": call.name,
+            "args": call.arguments
+            if isinstance(call.arguments, dict)
+            else {"value": call.arguments},
+            "id": call.id,
+            "type": "tool_call",
+        }
+        for call in calls
+    ]
 
 
 def _calls_of(message: BaseMessage) -> tuple[ToolCall, ...]:
