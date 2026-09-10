@@ -200,11 +200,38 @@ def test_a_text_column_of_numeric_looking_cells_still_does_not_sum() -> None:
 
 
 def test_a_ground_round_trips_through_its_canonical_tree() -> None:
-    """`to_tree(parse(x))` is `x`, keys sorted — including a literal's unit, which a fingerprint
-    test alone could not pin because both sides would drop it the same way."""
+    """A ground survives the tree, and the tree settles after one pass.
+
+    **This test used to assert `to_tree(parse(x)) == x`** — that the tree echoes the caller's own
+    spelling back. That is a weaker property than canonical, and it is the one that let `"1"`,
+    `"1.0"` and `"1.00"` carry three different fingerprints for one quantity (BUG-013). `to_tree`
+    lives under a heading that says *canonical*, and a canonicaliser that returns its input
+    unchanged is not canonicalising.
+
+    The two properties worth holding are the ones a caller actually depends on. **A ground survives
+    the round trip** — store the tree, parse it back, get the same ground, unit and all, which is
+    what a fingerprint test alone could not pin because both sides would drop the unit the same
+    way. And **the tree is a fixed point**: one pass canonicalises, and further passes change
+    nothing, which is what makes it usable as an identity.
+    """
     from shadow_hdk.adapters.derivation import to_tree
 
-    assert to_tree(parse(AGAINST_THE_LIMIT)) == AGAINST_THE_LIMIT
+    ground = parse(AGAINST_THE_LIMIT)
+    tree = to_tree(ground)
+
+    assert parse(tree) == ground
+    assert to_tree(parse(tree)) == tree
+    assert tree != AGAINST_THE_LIMIT, "the literal was not canonicalised at all"
+
+
+def test_the_canonical_tree_keeps_a_literals_unit() -> None:
+    """Split out of the round-trip test, which is now about spelling and could no longer carry it:
+    a unit is not spelling, and losing one would be silent on both sides of any comparison."""
+    from shadow_hdk.adapters.derivation import to_tree
+
+    tree = to_tree(parse(AGAINST_THE_LIMIT))
+
+    assert tree["cmp"][2] == {"lit": "0.050000000000", "unit": "%"}  # type: ignore[index]
 
 
 def test_an_unknown_column_type_is_refused_when_the_table_is_built() -> None:

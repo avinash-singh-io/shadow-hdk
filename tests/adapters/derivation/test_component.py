@@ -15,7 +15,7 @@ from __future__ import annotations
 from shadow_hdk.adapters.basic import AllowAll
 from pydantic import JsonValue
 
-from shadow_hdk.adapters.derivation import DerivationComponents
+from shadow_hdk.adapters.derivation import DerivationComponents, parse, to_tree
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,
@@ -161,6 +161,9 @@ async def test_a_comparison_through_the_component_is_a_verdict_with_its_ground()
     out = [e for e in events if isinstance(e, Observed)][-1].observation
     assert out.kind == "completed" and isinstance(out.output, dict)
     assert out.output["value"] is True
-    assert out.output["ground"] == against
+    # The **canonical** ground, not the caller's spelling. A claim records what it derived from in
+    # one form, so that two callers who wrote the same comparison differently record one thing
+    # (BUG-013); the literal below is `"0.05"` as written and twelve places as recorded.
+    assert out.output["ground"] == to_tree(parse(against))
     proposed = sink.proposals[0].payload
     assert isinstance(proposed, dict) and proposed["value"] is True

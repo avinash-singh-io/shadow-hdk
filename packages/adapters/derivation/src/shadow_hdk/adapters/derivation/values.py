@@ -12,12 +12,18 @@ number that has already been rounded.
 **Total.** No operation raises on its inputs. Division by zero and a unit mismatch each return an
 `Indeterminate` that says why, and an indeterminate propagates through anything built on it — the
 same object, so a reader can find where it started.
+
+That was a claim this module made and did not keep (BUG-013). `_fix` quantizes to `SCALE` places
+under a 34-digit context, and a magnitude that does not fit — `1e22`, `Infinity`, the product of two
+values that each fit — raises `InvalidOperation`. It raised through `evaluate`, through `invoke`,
+and out of the component altogether, which is exactly what D7 says a component may not do.
+`evaluate` catches it now and answers `out_of_range`, so the sentence above is true.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import ROUND_HALF_EVEN, Context, Decimal
+from decimal import ROUND_HALF_EVEN, Context, Decimal, InvalidOperation
 from typing import Literal
 
 SCALE = 12
@@ -31,7 +37,13 @@ CONTEXT = Context(prec=34, rounding=ROUND_HALF_EVEN)
 QUANTUM = Decimal(10) ** -SCALE
 
 Reason = Literal[
-    "division_by_zero", "unit_mismatch", "missing_column", "type_mismatch", "empty", "unknown_node"
+    "division_by_zero",
+    "unit_mismatch",
+    "missing_column",
+    "type_mismatch",
+    "empty",
+    "unknown_node",
+    "out_of_range",
 ]
 
 
@@ -48,6 +60,28 @@ class Indeterminate:
 
 def _fix(magnitude: Decimal) -> Decimal:
     return CONTEXT.quantize(magnitude, QUANTUM)
+
+
+def canonical(magnitude: Decimal | str) -> str:
+    """One spelling per quantity (BUG-013).
+
+    `"1"`, `"1.0"` and `"1.00"` are one number and produced three different fingerprints, because
+    identity was built by `str()`-ing whatever `Decimal` happened to be parsed. A fingerprint that
+    changes with spelling cannot answer *have I derived this before*.
+
+    Through the **same quantizer the arithmetic uses**, so the identity of a derivation is stated at
+    the scale the derivation is actually carried out at — twelve places. A difference this engine
+    can represent is a difference it keeps; one it cannot represent was never going to survive the
+    calculation either.
+
+    A magnitude that does not fit is spelled as it was given. It cannot be derived from, and
+    `evaluate` says so — but a fingerprint is an identity, not a judgement, and two unusable inputs
+    that differ should still be told apart.
+    """
+    try:
+        return str(_fix(Decimal(magnitude)))
+    except (InvalidOperation, ValueError, ArithmeticError):
+        return str(magnitude)
 
 
 @dataclass(frozen=True)

@@ -11,9 +11,12 @@ a float never enters, and a cell that cannot be parsed names its row in the inde
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
+
+from shadow_hdk.adapters.derivation.values import canonical
 
 ColumnType = Literal["number", "text", "bool"]
 COLUMN_TYPES: frozenset[str] = frozenset({"number", "text", "bool"})
@@ -40,14 +43,32 @@ class Table:
             raise ValueError(f"units for columns that do not exist: {sorted(stray)}")
 
     def canonical(self) -> dict[str, object]:
-        """The table as plain data. **Not** sorted here: key order is `canonical_json`'s job, and
-        one canonicalizer is one place for a mutation to bite. A second sort in this method
-        survived every test, because it made the JSON step's sort unable to change anything."""
+        """The table as plain data, in one spelling per value.
+
+        **Not** sorted here: key order is `canonical_json`'s job, and one canonicalizer is one place
+        for a mutation to bite. A second sort in this method survived every test, because it made
+        the JSON step's sort unable to change anything.
+
+        Cells **are** canonicalised here, because that is what a spelling is (BUG-013). A number
+        column's cell goes through the same quantizer the arithmetic uses, so `"2"` and `"2.00"` are
+        one table; text goes through NFC, so a word composed and a word decomposed are one table —
+        and the same normalisation runs at the query, so the value and the identity agree.
+        """
         return {
             "columns": dict(self.columns),
             "units": dict(self.units),
             "row_unit": self.row_unit,
-            "rows": [dict(row) for row in self.rows],
+            "rows": [self._cells(row) for row in self.rows],
+        }
+
+    def _cells(self, row: Mapping[str, str | bool]) -> dict[str, str | bool]:
+        return {
+            column: value
+            if isinstance(value, bool)
+            else canonical(value)
+            if self.columns.get(column) == "number"
+            else unicodedata.normalize("NFC", value)
+            for column, value in row.items()
         }
 
 

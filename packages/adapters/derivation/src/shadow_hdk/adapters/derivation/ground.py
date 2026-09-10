@@ -18,17 +18,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Literal, get_args
 
 from shadow_hdk.adapters.derivation.table import Table
 from shadow_hdk.adapters.derivation.values import (
+    SCALE,
     Comparison,
     Indeterminate,
     Quantity,
     Value,
     add,
+    canonical,
     compare,
     div,
     mul,
@@ -149,6 +152,34 @@ def parse(tree: object) -> Ground:
 
 
 def evaluate(ground: Ground, table: Table) -> Value | bool | Indeterminate:
+    """Total (D26, BUG-013). A magnitude that will not fit is an answer, never an exception.
+
+    `values.py` promises totality and `_fix` broke it: quantizing to twelve places under a 34-digit
+    context raises `InvalidOperation` for `1e22`, for `Infinity`, and for the product of two values
+    that each fit on their own. It raised through here and out of `invoke`, past the boundary D7
+    draws — where the runtime can only call it a crash rather than something an agent can read.
+
+    Caught **here** rather than in the component, because this is the module that made the promise
+    and the component is only one of its callers.
+    """
+    try:
+        return _evaluate(ground, table)
+    except ArithmeticError as beyond:
+        return Indeterminate(
+            "out_of_range", f"{_offending(ground)} is beyond {SCALE} places: {beyond}"
+        )
+
+
+def _offending(ground: Ground) -> str:
+    """The literal a reader should look at first, or the whole tree if it is not one."""
+    match ground:
+        case Lit(magnitude, _):
+            return str(magnitude)
+        case _:
+            return canonical_json(to_tree(ground))
+
+
+def _evaluate(ground: Ground, table: Table) -> Value | bool | Indeterminate:
     match ground:
         case Lit(magnitude, unit):
             return Quantity(magnitude, unit)
@@ -161,18 +192,26 @@ def evaluate(ground: Ground, table: Table) -> Value | bool | Indeterminate:
         case CountWhere(col, eq):
             if col not in table.columns:
                 return _missing(col, table)
-            matched = sum(1 for row in table.rows if str(row.get(col, "")) == eq)
+            # Both sides normalised (BUG-013). The same word composed and decomposed is
+            # two strings to `==` and one word to every reader, so a cell typed on one keyboard
+            # and a query typed on another silently answered zero.
+            wanted = unicodedata.normalize("NFC", eq)
+            matched = sum(
+                1
+                for row in table.rows
+                if unicodedata.normalize("NFC", str(row.get(col, ""))) == wanted
+            )
             return Quantity(Decimal(matched), table.row_unit)
         case Sum(col):
             return _sum(col, table)
         case Binary(op, left, right):
-            a = evaluate(left, table)
-            b = evaluate(right, table)
+            a = _evaluate(left, table)
+            b = _evaluate(right, table)
             if isinstance(a, bool) or isinstance(b, bool):
                 return Indeterminate("type_mismatch", f"cannot {op} a comparison verdict")
             return {"add": add, "sub": sub, "mul": mul, "div": div}[op](a, b)
         case Percent(inner):
-            x = evaluate(inner, table)
+            x = _evaluate(inner, table)
             if isinstance(x, bool):
                 return Indeterminate("type_mismatch", "cannot take a percentage of a verdict")
             return percent(x)
@@ -219,7 +258,8 @@ def _sum(col: str, table: Table) -> Value:
 def to_tree(ground: Ground) -> object:
     match ground:
         case Lit(magnitude, unit):
-            return {"lit": str(magnitude), "unit": unit} if unit else {"lit": str(magnitude)}
+            spelled = canonical(magnitude)
+            return {"lit": spelled, "unit": unit} if unit else {"lit": spelled}
         case Count(None):
             return {"count": "*"}
         case Count(col):

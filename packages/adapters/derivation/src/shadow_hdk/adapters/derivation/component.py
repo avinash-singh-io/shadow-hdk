@@ -84,9 +84,12 @@ class DerivationComponents(ComponentPort):
         try:
             table = _table_from(arguments.get("table"))
             ground = parse(arguments.get("ground"))
-        except (ValueError, TypeError, KeyError) as bad:
+            # **Inside the try** (BUG-013). `evaluate` is total now and answers `out_of_range`
+            # rather than raising — but it sat outside this block, so anything it did raise left
+            # `invoke` entirely, past the boundary D7 draws. Belt and braces, cheaply.
+            claim = _claim(evaluate(ground, table), ground, table)
+        except (ValueError, TypeError, KeyError, ArithmeticError) as bad:
             return Failed(f"the derivation could not be read: {bad}")
-        claim = _claim(evaluate(ground, table), ground, table)
 
         from shadow_hdk.runtime import current_run
 
@@ -113,6 +116,7 @@ def _table_from(raw: Any) -> Table:
     rows = raw.get("rows", [])
     if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
         raise ValueError("a table's 'rows' is a list of objects")
+    _cells_are_exact(rows)
     units = raw.get("units", {})
     if not isinstance(units, dict):
         raise ValueError("a table's 'units' is a mapping of column to unit")
@@ -122,6 +126,36 @@ def _table_from(raw: Any) -> Table:
         row_unit=str(raw.get("row_unit", "row")),
         rows=[dict(row) for row in rows],
     )
+
+
+def _cells_are_exact(rows: list[Any]) -> None:
+    """A cell is a string or a boolean, which `Table.rows` has said since Phase 12 (BUG-013).
+
+    Nothing enforced it, so a JSON number went straight through. **Refused rather than coerced**,
+    and the reason is this engine's whole claim: a JSON number has already been through a float by
+    the time it arrives here, so accepting one means the exactness promised downstream started from
+    a value somebody else had already rounded. A string is the only JSON form that carries a decimal
+    intact, and a boolean carries itself.
+
+    The measured damage was narrower than the audit suggested and still real: the arithmetic
+    survived — `0.1` and `"0.1"` both summed to `0.300000000000`, because the value goes through
+    `str()` — but the **fingerprint did not**, so two identical tables had two identities. Refusing
+    at the edge is what makes the identity trustworthy rather than usually right.
+
+    The row index is named because a refusal a caller cannot locate in two thousand rows is a
+    refusal that costs an afternoon.
+    """
+    for index, row in enumerate(rows):
+        for column, value in row.items():
+            if isinstance(value, str | bool):
+                continue
+            # Quoted the way JSON quotes, because the caller is writing JSON and a message that
+            # shows Python's repr tells them to send something they cannot send.
+            raise ValueError(
+                f"row {index}, column {column!r}: a cell is a string or a boolean, and "
+                f'{value!r} is neither — send a number as text, "{value}", so the decimal '
+                f"arrives exactly as written"
+            )
 
 
 def _claim(
