@@ -22,12 +22,23 @@ phase: 9-the-wire
 
 ## Group 1 — the protocol, and the suite through a loopback
 
-- [ ] method names, envelope, `initialize` with version refusal
-- [ ] the five inverted ports
-- [ ] the loopback transport
-- [ ] RED: each direction, and a refused `initialize`
-- [ ] the in-process runtime suite passes through the loopback
-- [ ] Gate
+- [x] method names, envelope, `initialize` refusing a version mismatch and naming **both**
+      versions, because a mismatch is somebody's deployment problem
+- [x] four inverted ports — judge, complete, invoke, propose. The **clock and observer do not
+      invert**: a clock round-trip per event stamp buys nothing, and the observer already *is*
+      the event stream
+- [x] the loopback, carrying **JSON text** — a loopback passing live objects would prove the
+      plumbing and nothing about the boundary
+- [x] RED: each direction, a refused `initialize`, a component the host does not have, and a
+      port that raises
+- [x] **D21**: a component executes on the *host*, so `current_run()` was `None` and every idiom
+      built on it broke — the host now binds a `WireRunContext`
+- [~] the in-process suite through the loopback is **not yet the literal thing wire.md asks for**.
+      `drive()` has `run()`'s signature so a test moves over by one word, and a representative set
+      is proven both ways — but switching all 417 through the wire needs a conftest hook and a
+      second pytest pass, and two idioms would have to cross first (`children`, `visible`). Group 4
+      or its own group; the mechanism is named so nobody has to rediscover it
+- [x] Gate
 
 ## Group 2 — `--stdio`
 

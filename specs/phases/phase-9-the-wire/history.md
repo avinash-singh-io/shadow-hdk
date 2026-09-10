@@ -76,3 +76,72 @@ Small, but worth recording because it is the first time the kernel's own layerin
 the answer was to move the value down rather than to weaken a boundary.
 
 ---
+
+### [DECISION] 2026-09-10 — D21: a component that crosses still needs a context, and the host binds one
+Topics: wire, current-run, contextvar, propose, d21
+Affects-phases: none
+Affects-specs: specs/architecture/wire.md
+
+Found by a test, not by reading. When the ports invert, a component **executes on the host** — that
+is what `components.invoke` means. But `current_run()` is a contextvar set by the runtime's own loop
+in the runtime's own task, so a component that crossed found `None` there and every idiom built on
+it broke at once. `09`'s principle 3 is *act through components; record through the sink*, and the
+way a component records is `current_run().propose(...)`.
+
+The host now binds a `WireRunContext` for the duration of the call. What it can answer locally it
+does — `ports` is the host's own bundle, and the model and the sink genuinely live there. What
+belongs to the run it **crosses back for**, because there is exactly one meter and exactly one event
+stream and neither is the host's.
+
+`propose` is the interesting case: it could have written straight to the host's sink one hop
+cheaper. It does not, because `RunContext.propose` emits `Proposed` *and* calls the sink, and an
+event emitted host-side lands on a stream nobody reads. A mutation taking the cheap path kills the
+test.
+
+*Not across the wire yet, and saying so out loud:* `children`, `visible()` and `spawn_options()`
+raise `NotAcrossTheWire` with a message naming the reason. Spawning across a wire is a real question
+— which side does the child's run live on? — and it deserves its own decision rather than an
+accident.
+
+### [DISCOVERY] 2026-09-10 — the live context was captured in the wrong task
+Topics: wire, contextvar, tasks
+Affects-phases: none
+Affects-specs: none
+
+`RuntimeSide` first captured the running context from the loop consuming the event stream. That loop
+is a different task from the one `run()` sets the contextvar in, so it read `None` every time and
+nothing a component proposed ever reached the sink.
+
+It is now captured inside `RemoteComponents.invoke`, which is called from within the step, in the
+run's own task — the one place it exists.
+
+### [DISCOVERY] 2026-09-10 — a guard deleted rather than tested
+Topics: wire, d7, mutation-check, redundancy
+Affects-phases: none
+Affects-specs: none
+
+`RemoteComponents.invoke` caught `RemoteError` and returned `Failed` — D7, a component is untrusted
+and its raising is data. A mutation deleting the catch left every test green, and the reason is that
+`step.py` already observes any exception out of a component port as `Failed`. A second catch could
+not change an outcome.
+
+So it is gone rather than pinned by a test. A guard that cannot change an outcome is a claim that
+something is handled where nothing is, and a test written to defend it would have made the claim
+harder to remove later.
+
+### [SCOPE_CHANGE] 2026-09-10 — the whole suite through the wire is named, not done
+Topics: wire, acceptance, testing
+Affects-phases: phase-9
+Affects-specs: specs/architecture/wire.md
+
+wire.md's acceptance rule is *the wire passes the in-process runtime suite through a loopback
+transport, or the wire is not done*. What exists is `drive()` with `run()`'s exact signature, so a
+test moves across by changing one word, and a representative set — sequence, governance refusal,
+model inversion, sink inversion, port failure — is proven both ways.
+
+Switching all 417 needs a conftest hook and a second pytest pass, and two idioms have to cross
+first: `children` (a real design question — which side does a spawned child live on?) and
+`visible()`. Recorded as `[~]` with the mechanism named, so the remaining work is a task rather
+than a rediscovery.
+
+---
