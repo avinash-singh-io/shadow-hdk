@@ -123,3 +123,91 @@ to catch was **2.4×**. Those two numbers are close enough to touch, which is th
 counting adapters instead of timing steps.
 
 ---
+
+### [NOTE] 2026-09-10 — Group 2: a canonicaliser that returns its input is not canonicalising
+Topics: derivation, canonical, testing, bug-013
+Affects-phases: none
+Affects-specs: none
+
+Two existing tests failed when the fingerprint was made canonical, and both were right to. Each
+asserted `to_tree(parse(x)) == x` — that the canonical tree echoes the caller's own spelling back.
+
+That is a **weaker property than canonical**, and it is precisely what let `"1"`, `"1.0"` and
+`"1.00"` carry three identities for one quantity. `to_tree` lives under a section heading that says
+*canonical*, and a canonicaliser that returns its input unchanged is not doing the job its heading
+claims. The tests were not wrong about something small; they had pinned the bug in place.
+
+What they hold now is what a caller actually depends on: **a ground survives the round trip** —
+store the tree, parse it back, get the same ground, unit and all — and **the tree is a fixed
+point**, so one pass canonicalises and further passes change nothing, which is what makes it usable
+as an identity. The unit claim moved into a test of its own, because it is not about spelling and
+would otherwise have been carried by a test that no longer says anything about it.
+
+The component's test asserted the claim carries *the caller's* ground; it carries the canonical one,
+so that two callers who wrote the same comparison differently record one thing.
+
+---
+
+### [DECISION] 2026-09-10 — a cell is a string or a boolean, and a number arrives as text
+Topics: derivation, exactness, d26, bug-013
+Affects-phases: none
+Affects-specs: none
+
+`Table.rows` has been annotated `Mapping[str, str | bool]` since Phase 12 and nothing enforced it,
+so a JSON number went straight through. **Refused rather than coerced.**
+
+The measured damage was narrower than the audit implied and still decisive. The arithmetic survived:
+`0.1` as a JSON number and `"0.1"` as a string both sum to `0.300000000000`, because the value goes
+through `str()` and Python's shortest-repr round-trips the double faithfully. What did not survive
+was the **fingerprint** — two identical tables had two identities, so the damage is to re-derivation
+rather than to the number.
+
+Coercing would have fixed the fingerprint and left the deeper thing wrong. A JSON number has already
+been through a float by the time this engine sees it, so accepting one means the exactness D26
+promises started from a value somebody else had already rounded. **A string is the only JSON form
+that carries a decimal intact**, and a boolean carries itself — which is why `str | bool` was the
+right annotation and only ever needed enforcing.
+
+The refusal names the row index, the column and what to send instead, quoted the way JSON quotes,
+because a caller writing JSON cannot send what Python's `repr` shows them.
+
+Rejected: coercing `int` but refusing `float`, which is defensible and leaves callers guessing which
+of two JSON numbers is acceptable; and accepting both with a canonical fingerprint, which makes the
+identity trustworthy while leaving the inputs not.
+
+*Overturned by:* a caller with a real corpus of integer cells and no ability to quote them, which
+would be an argument for a documented coercion rather than for silence.
+
+**Units are still string equality with no cancellation, and that is deliberate.** Whether `kg·m/s²`
+cancels is a question about what this engine's unit system *is*, not a defect in what it does today;
+nothing in the backlog asks for it, and inventing an algebra here would be inventing a contract.
+
+---
+
+### [NOTE] 2026-09-10 — Group 2: an equivalence that was true until the process restarted
+Topics: sink, durability, mutation, bug-014
+Affects-phases: none
+Affects-specs: none
+
+Phase 14 named two mutants equivalent in `FileSink` and gave reasons: `fsync` is per-inode, and **a
+torn line can only be the last**. The first still holds. The second is false, and the way it is
+false is worth keeping.
+
+It holds within one process's lifetime — a torn line is what a crash mid-write leaves, and nothing
+after it is written. But **a restart opens the same file `O_APPEND` and writes onto the end of it**,
+which puts a torn line in the middle. And a restart is the only time a torn line exists at all, so
+the assumption failed in exactly the case the reasoning was about.
+
+Measured: one proposal, a crash, then a restart writing two more gave three lines on disk,
+`p.jsonl:2 is not a proposal`, and both later proposals unreachable behind the glue. A crash that
+cost nothing on its own became total loss the moment the process came back.
+
+The lesson is not that Phase 14 was careless. The reasoning was sound about the scope it considered,
+and the scope was one process. **An equivalence argument carries its assumptions with it**, and the
+assumption worth writing down next to one is *what would have to change for this to stop being
+true*.
+
+This group's own equivalent mutant is named in `sinks.py` for that reason, with the arithmetic that
+makes it equivalent rather than the conclusion alone.
+
+---

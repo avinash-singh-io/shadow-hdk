@@ -90,7 +90,7 @@ adapters can, and does.
 | — | **The environment** (epic 0007) | **DONE** for phases 15 and 16; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
 | 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | 16 | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
-| 19 | The P2s | **IN PROGRESS**, group 1 of 4 · `phase-19-the-p2s` | 18 | **BUG-016 closed** — the adapter cache; 0.594 ms/step, back inside D11, and CI green for the first time. Next: BUG-013, BUG-014, TD-004…TD-008 |
+| 19 | The P2s | **IN PROGRESS**, groups 1–2 of 4 · `phase-19-the-p2s` | 18 | **BUG-016** the adapter cache (0.594 ms/step, back inside D11, and CI green for the first time); **BUG-013** a derivation answers rather than raises and one quantity has one identity; **BUG-014** a crash costs the record nothing. Next: TD-004…TD-008 |
 
 ## Epics
 

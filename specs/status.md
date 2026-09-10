@@ -5,29 +5,30 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: **Phase 19 — the P2s**, group 1 of 4 done. **BUG-016 closed**: 57% of the
-> runtime's per-step overhead was Pydantic rebuilding the same schema — `contracts.py` built a
-> fresh `TypeAdapter` on every call at 0.743 ms each, one per step under D19, so a hundred-step run
-> built 101 of them. One dict keyed on the type. Measured after: **0.594 ms/step**, back inside
-> D11's ≤ 1 ms from the 1.36 it had drifted to. **D11's 3× slack was deliberately not tightened** —
-> the CI runner measures 2.1× this machine and the regression was 2.4×, so the ranges overlap and no
-> stopwatch threshold separates slower code from slower hardware; what guards it now is a count of
-> adapters, which is the same number on every machine.
+> **Current Phase**: **Phase 19 — the P2s**, groups 1 and 2 of 4 done. **BUG-016**: 57% of the
+> runtime's per-step overhead was Pydantic rebuilding the same schema on every call; one dict keyed
+> on the type took 1.36 → **0.594 ms/step**, inside D11. **BUG-013**: the derivation engine promised
+> totality in its own docstring and raised out of `invoke` on three literals; it answers
+> `out_of_range` now, magnitudes are canonical through the arithmetic's own quantizer so one
+> quantity has one identity, text normalises to NFC on both sides of a query, and a cell is a string
+> or a boolean as `Table.rows` has said since Phase 12. **BUG-014**: a short write returned as
+> though it had written everything, and a torn tail plus a restart glued two records and made the
+> rest of the record unreadable — measured, two good proposals lost to one that never finished.
 >
-> **CI is green for the first time in this repository's history** (run 34504668539): 96.77%
-> coverage, 842 passed on Linux, and all three benchmarks inside their assertions where two runs
-> earlier they were red. The trigger had fired only on branches nothing has ever landed on, so
-> eighteen phases and 141 commits had been checked by one laptop.
+> **Three of the audit's rows were corrected rather than merely implemented.** Unicode normalisation
+> bites in a *cell* and produces a **wrong count**, not a different hash. A `NaN` literal does not
+> raise where three others do. A float cell leaves the arithmetic intact and breaks the fingerprint,
+> so the damage is to identity rather than to the number.
 >
-> **Phases 0–18 are complete**, pushed, unmerged. Every P0 and P1 the audit filed is closed —
-> BUG-008, BUG-009 (D35, D36), BUG-015 (D37), BUG-010 (D38, contract 0.12.0), BUG-011, BUG-012,
-> TD-003, TD-009, and before them the four P0s of Phase 17. 845 tests; mypy strict over 133 files;
-> seventeen distributions at **0.12.0**, all MIT.
+> **CI is green** (run 34504668539: 96.77% coverage, 842 passed on Linux). The trigger had fired
+> only on branches nothing has ever landed on, so eighteen phases and 141 commits had been checked
+> by one laptop.
 >
-> **BUG-013 is reproduced and Group 2 starts from facts.** Three literals raise past `invoke`;
-> `"1"`, `"1.0"` and `"1.00"` fingerprint differently; and the audit's Unicode claim is right about
-> the bug and wrong about the place — normalisation bites in a **cell**, where it produces a wrong
-> *count* rather than a different hash. What remains after Group 2 is TD-004…TD-008.
+> **Phases 0–18 are complete**, pushed, unmerged. Every P0 and P1 the audit filed is closed. 871
+> tests; mypy strict over 133 files; seventeen distributions at **0.12.0**, all MIT. What remains is
+> **TD-004…TD-008**, and two deliberate deferrals recorded rather than hidden: unit cancellation in
+> the derivation engine is a design question, and ENH-002/ENH-003 wait on a TLS broker and a second
+> protocol adapter.
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
