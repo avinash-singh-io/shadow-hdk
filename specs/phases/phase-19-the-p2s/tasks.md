@@ -38,6 +38,17 @@ phase: 19-the-p2s
 - [x] **two of TD-005's three claims were stale** — the witness queue was bounded in Phase 16, and the wire has no queues
 - [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 924 passed, 1 skipped, 10 deselected; 11 mutations, all bite
 
-## Group 4
+## Group 4 — the leaks and the record (TD-006, TD-007, TD-008)
+- [x] TD-006 reproduced, and **six claims turned out to be one root cause**: `RuntimeStop` was an `Exception`, so every component adapter's `except Exception` swallowed a lease, a cancellation and a port failure alike
+- [x] `RuntimeStop` is a `BaseException` — the argument that moved `asyncio.CancelledError` in 3.8; it fixes adapters nobody has written yet
+- [x] `visible()` wraps its judgement; `propose()` announces only what the sink took; `unreachable` is readable; the lease is charged for work, not for being refused
+- [x] the step's docstring said seven moves, `runtime.md` a different seven — it does **nine**, and the two that arrived unrecorded were D15's cancellation check and D38's resume branch
+- [x] **an existing test asserted the inversion while citing D7** and was rewritten, name included
+- [x] **contract 0.12.0 → 0.13.0** — see *Pins*
+- [x] TD-007's plumbing: `posture` and `component` refused at the door rather than silently overwritten
+- [x] **TD-007's policy recorded as the owner's under ADR-1**, not invented: whether an irreversible step must produce an `Acted` whichever port it came through
+- [x] TD-008: `specs/decisions/` carries a **map of all thirty-eight**, with an invariant that keeps it true; the decisions stay beside the work that forced them
+- [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 940 passed, 1 skipped, 10 deselected; 9 mutations, all bite
+- [ ] **TD-008's remaining half**: `runtime.md`, `file-structure.md`, `adapters.md`, `wire.md`, `CLAUDE.md`'s dead link, the `.githooks`, and `recursion_limit`
 - [ ] TD-006, TD-007, TD-008
 - [ ] records, board, status, roadmap

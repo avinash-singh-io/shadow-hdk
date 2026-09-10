@@ -29,8 +29,8 @@ it.
 ## Where this stands — 2026-09-10
 
 **Phases 0–18 are done. Every phase branch is pushed and none is merged** — landing is the owner's
-gate (Rule 6). The suite is **837 tests**, mypy strict over **132 source files**, all seventeen
-distributions at **0.12.0**, all MIT.
+gate (Rule 6). The suite is **940 tests**, mypy strict over **133 source files**, all seventeen
+distributions at **0.13.0**, all MIT.
 
 | | phases | state |
 |---|---|---|
@@ -57,7 +57,7 @@ comes back holding its children, D38 a parked step resumes where it parked (phas
 settled as **D22 — the port set is open**, six being a count rather than a constraint (O4).
 
 **Still with the owner:** ADR-1 and ADR-2; landing the linear stack — **the pull request is prepared
-and not opened**, in `specs/adhoc/TD-009/`; and the first release tag, which is **v0.12.0**. Twelve
+and not opened**, in `specs/adhoc/TD-009/`; and the first release tag, which is **v0.13.0**. Thirteen
 contract changes have each moved every package under D9, so the number the packages carry is the
 true one and this plan's founding `v0.1.0` was stale.
 
@@ -90,7 +90,7 @@ adapters can, and does.
 | — | **The environment** (epic 0007) | **DONE** for phases 15 and 16; OPC-UA and ROS 2 `[~]` | 3, 7, 13 | protocol adapters for devices — MQTT, OPC-UA, ROS 2 — sensors as `reads: {world}`, actuators as irreversible writes; controlled vs observed posture |
 | 17 | The audit's P0s | **DONE** · `phase-17-the-audit` | 16 | the lease survives a park (D33); an assistant message carries its tool calls; resume over the wire, `initialize` required, callbacks timed out, `serve` loopback-only (D34); the gate widened to every package |
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
-| 19 | The P2s | **IN PROGRESS**, groups 1–3 of 4 · `phase-19-the-p2s` | 18 | **BUG-016** the adapter cache (0.594 ms/step, and CI green for the first time); **BUG-013** a derivation answers rather than raises and one quantity has one identity; **BUG-014** a crash costs the record nothing; **TD-004** every port implementation is held to its contract, kept true by an invariant; **TD-005** what grows with traffic is bounded and what does not is argued. Next: TD-006, TD-007, TD-008 |
+| 19 | The P2s | **groups 1–4 done**, one documentation pass left · `phase-19-the-p2s` | 18 | **BUG-016** the adapter cache; **BUG-013** a derivation answers rather than raises; **BUG-014** a crash costs the record nothing; **TD-004** every port held to its contract; **TD-005** growth bounded or argued; **TD-006** a stop signal is not an ordinary exception (contract 0.13.0); **TD-007** plumbing done, policy the owner's; **TD-008** the decisions mapped. Left: the architecture documents |
 
 ## Epics
 

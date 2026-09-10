@@ -266,3 +266,85 @@ What differs is not whether the shape is there at the end. It is **how often it 
 the way**, and counting the misses is the assertion that could always have failed.
 
 ---
+
+### [DECISION] 2026-09-10 — a stop signal is not an ordinary exception
+Topics: errors, d7, runtime, td-006
+Affects-phases: none
+Affects-specs: specs/architecture/runtime.md
+
+TD-006 listed six places where governance or port handling escaped the governed step. Reproducing
+them found one cause underneath four of the six.
+
+**Every component adapter catches `Exception` around the callable it runs, and it is right to** —
+D7 says a component raising is data, a `Failed` the agent can route around. `RuntimeStop` was an
+`Exception`. So a **lease that ran out**, a **host that cancelled**, and a **port that broke** were
+each caught by whatever component happened to be running, returned as that component's own failure,
+and the run carried on past the very things that exist to stop it.
+
+`RuntimeStop` is a `BaseException` now. This is the argument that moved `asyncio.CancelledError` out
+of `Exception` in Python 3.8, and it is the same one: **a signal that must not be swallowed must not
+be catchable by code that is right to swallow errors.** It fixes the inversion in adapters nobody
+has written yet, which no amount of care inside `step.py` could — and a mutation then proved the
+explicit `except PortFailure` first added there was already dead code, so it went.
+
+`loop.py` still catches `BaseException` and asks `_stop_reason`, so every stop ends the run with a
+reason on the record rather than a traceback; its guard now asks *did we recognise it* rather than
+*is it an Exception*, so a `KeyboardInterrupt` still reaches whoever is driving.
+
+Rejected: catching `PortFailure` explicitly in each adapter, which is a rule every future adapter
+must remember; and a marker attribute checked at each catch site, which is the same rule wearing a
+different hat.
+
+*Overturned by:* nothing likely. The alternative is that a component may decide whether a run stops,
+which is the inversion this fixes.
+
+---
+
+### [NOTE] 2026-09-10 — Group 4: what TD-007 asks that is not mine to answer
+Topics: posture, d30, adr-1, td-007
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md
+
+One half of TD-007 is plumbing and is done: `context_for` wrote `posture` and `component` over the
+host's own context values **silently**, on every step, in the one message governance ever sees.
+Overwriting is right — D30 puts posture in front of governance precisely because a value the host
+can set is a value a driver can influence — and being silent was not. Both names are refused at the
+door now.
+
+**The other half is a policy question and is left.** `exhausted()`, `grounds()` and `Acted` are
+called only inside the devices adapter, so a `writes: {world}` component registered through
+callables, MCP or the wire acts with **no exhaustion check and no receipt**, and nothing in
+`step.py` requires one. The row proposes an ADR: require an `Acted` for any step whose profile is
+irreversible, whichever port it came through.
+
+That is a real proposal and it is not mine. It decides what a receipt is *for* — evidence for an
+auditor, or a precondition the runtime enforces — and it makes every irreversible component in every
+adapter answerable to a shape only one of them implements today. ADR-1 is the owner's and unwritten;
+inventing its answer here would put a rule in the runtime that nobody agreed to, which is the shape
+of mistake this lane has spent two phases correcting in the other direction.
+
+What is recorded instead: the hole, its size, and what closing it would cost.
+
+---
+
+### [NOTE] 2026-09-10 — Group 4: a map, not a second copy
+Topics: decisions, documentation, td-008
+Affects-phases: none
+Affects-specs: specs/decisions/index.md
+
+`specs/decisions/` held a template and no decisions, while D1–D38 lived in phase overviews and
+histories — so `CLAUDE.md`'s *why was X chosen* sent a reader to an empty folder.
+
+The obvious fix is to move them, and it is the wrong one. A decision is legible next to the work
+that forced it: D36 next to the five-line fake `runsc` that produced *gvisor proved containment*,
+D38 next to the transcript of a policy overruling the human it had asked. Moved into a folder they
+become thirty-eight paragraphs with no evidence attached, and the phase histories keep their copies
+— **a second version of each to hold in step**, which is precisely the disease TD-008 describes
+rather than a cure for it.
+
+So the directory gets a map, generated from the documents. And because a map is exactly the kind of
+thing that rots, it comes with the pair that has now been used three times in this phase: every
+decision in the tree is listed, every row points at a document that **really contains it**, and the
+walk itself is asserted to find something so the guards cannot go vacuous.
+
+---

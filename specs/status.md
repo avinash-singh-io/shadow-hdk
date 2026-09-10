@@ -5,30 +5,30 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: **Phase 19 — the P2s**, groups 1–3 of 4 done. **BUG-016**: 57% of the
-> runtime's per-step overhead was Pydantic rebuilding the same schema; 1.36 → **0.594 ms/step**,
-> inside D11. **BUG-013**: the derivation engine is total, canonical, NFC-normalised on both sides
-> of a query, and refuses a cell that is not a string or a boolean. **BUG-014**: every byte written
-> or a raise, and a torn tail cut back before any append. **TD-004**: the contract suites reached 7
-> of 14 adapters, and the fix is an **invariant** rather than the wiring — every port implementation
-> must name the module that contracts it, and that module is checked to really contain a contract.
-> **TD-005**: the plan cache is bounded at 512 least-recently-used, and the observer queue at 4096
-> dropping the oldest and counting; the caller's stream stays unbounded and argued.
+> **Current Phase**: **Phase 19 — the P2s**, all four groups done bar one documentation pass.
+> **BUG-016** the adapter cache (0.594 ms/step, inside D11). **BUG-013** the derivation engine total,
+> canonical and NFC-normalised, refusing a cell that is not a string or a boolean. **BUG-014** the
+> record survives a crash. **TD-004** every port implementation held to its contract, kept true by
+> an invariant. **TD-005** what grows with traffic bounded, what does not argued. **TD-006** — six
+> claims, **one cause**: `RuntimeStop` was an `Exception`, so every component adapter's `except
+> Exception` swallowed a lease that ran out, a host that cancelled and a port that broke alike. It
+> is a `BaseException` now. **Contract 0.12.0 → 0.13.0.** **TD-007's plumbing** closed and **its
+> policy recorded as the owner's** under ADR-1. **TD-008** in part: the decisions directory now maps
+> all thirty-eight.
 >
-> **Four of the audit's claims have been corrected rather than merely implemented.** Unicode
-> normalisation bites in a *cell* and produces a wrong count, not a different hash. A `NaN` literal
-> does not raise where three others do. A float cell leaves the arithmetic intact and breaks the
-> fingerprint. And two of TD-005's three claims were stale — the witness queue was bounded in Phase
-> 16, and the wire has no queues at all.
+> **Seven of the audit's own claims have been corrected rather than implemented as written** — the
+> gate's reach, the fan-out that does not fail, "CI has never run", where Unicode normalisation
+> bites, a `NaN` literal, what a float cell costs, and two queues that were already bounded.
 >
-> **CI is green** and runs on every push. The trigger had fired only on branches nothing has ever
-> landed on, so eighteen phases and 141 commits had been checked by one laptop.
+> **CI is green** and runs on every push. 940 tests; mypy strict over 133 files; seventeen
+> distributions at **0.13.0**, all MIT. Phases 0–18 complete, pushed, unmerged.
 >
-> **Phases 0–18 are complete**, pushed, unmerged. Every P0 and P1 the audit filed is closed. 924
-> tests; mypy strict over 133 files; seventeen distributions at **0.12.0**, all MIT. What remains is
-> **Group 4 — TD-006, TD-007, TD-008**, and three deliberate deferrals recorded rather than hidden:
-> unit cancellation in the derivation engine is a design question, and ENH-002/ENH-003 wait on a TLS
-> broker and a second protocol adapter.
+> **What remains buildable**: TD-008's document half — `runtime.md`'s module table and `resume`
+> signature, `file-structure.md`'s four directories that do not exist, `adapters.md`'s stale
+> options, `wire.md`'s transport, a dead link in `CLAUDE.md`, `.githooks` that fail open without
+> `node`, and `recursion_limit` ending a nested fan-out before the lease speaks. Everything else is
+> the owner's or recorded as deferred: ADR-1 (which gates TD-007's other half), ADR-2, the merge,
+> the tag, and ENH-002/ENH-003.
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 
