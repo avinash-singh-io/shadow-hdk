@@ -106,6 +106,13 @@ class MqttLink:
     async def __aexit__(self, *_: object) -> None:
         await self.close()
 
+    @property
+    def connected(self) -> bool:
+        """Whether the link currently holds a live session — false once the broker has gone,
+        as soon as the network thread notices."""
+        client = self._client
+        return client is not None and client.is_connected()
+
     def seen(self, topic: str) -> bool:
         """Whether a sensor topic has had a message yet."""
         with self._lock:
