@@ -164,7 +164,10 @@ def _text_of(message: BaseMessage) -> str:
 
 def _calls_for(calls: tuple[ToolCall, ...]) -> list[dict[str, Any]]:
     """Ours, in LangChain's shape. `args` must be a mapping — a provider names arguments — so a
-    call whose arguments are not one is carried under a single key rather than dropped."""
+    call whose arguments are not one is carried under a single key rather than dropped.
+
+    No `"type"`: `AIMessage` stamps `tool_call` on every entry itself, with a wrong value or with
+    none, so writing one here is a literal no test could tell from its absence."""
     return [
         {
             "name": call.name,
@@ -172,7 +175,6 @@ def _calls_for(calls: tuple[ToolCall, ...]) -> list[dict[str, Any]]:
             if isinstance(call.arguments, dict)
             else {"value": call.arguments},
             "id": call.id,
-            "type": "tool_call",
         }
         for call in calls
     ]
