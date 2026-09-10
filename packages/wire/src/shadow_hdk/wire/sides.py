@@ -141,6 +141,8 @@ class HostSide:
         self.peer = Peer(channel, name="host")
         self.ports = ports
         self.events: list[Event] = []
+        self.child_pid: int | None = None
+        """Set when the runtime is a process rather than a task, so a test can prove it is one."""
         self.peer.serves(JUDGE, self._judge)
         self.peer.serves(COMPLETE, self._complete)
         self.peer.serves(REGISTRATIONS, self._registrations)

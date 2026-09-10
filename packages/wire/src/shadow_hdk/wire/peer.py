@@ -37,6 +37,9 @@ class RemoteError(Exception):
 REFUSED = -32000
 """Application-level *no*. Distinct from a malformed message, because a refusal is an answer."""
 
+GONE = -32003
+"""The other end went away. Distinct from a refusal: nobody decided anything."""
+
 
 class Peer:
     """A JSON-RPC 2.0 peer over a text channel."""
@@ -97,10 +100,25 @@ class Peer:
                     group.start_soon(self._handle, message)
                 else:
                     self._answer(message)
-        except anyio.EndOfStream:
+        except (anyio.EndOfStream, anyio.ClosedResourceError):
             return
-        except anyio.ClosedResourceError:
-            return
+        finally:
+            self._hang_up()
+
+    def _hang_up(self) -> None:
+        """Wake everyone still waiting, because nothing is coming.
+
+        Without this a peer whose other end died mid-call waits for a reply for ever — and over a
+        pipe that means a host blocked on `run` while the child it was talking to is already a
+        zombie. A dead peer is a failure the caller can act on; a hang is not.
+        """
+        for message_id, waiting in list(self._waiting.items()):
+            self._replies[message_id] = {
+                "id": message_id,
+                "error": {"code": GONE, "message": "the other end closed", "data": "Gone"},
+            }
+            waiting.set()
+        self._waiting.clear()
 
     async def _handle(self, message: dict[str, Any]) -> None:
         method = str(message.get("method"))
@@ -146,7 +164,16 @@ class Peer:
         waiting.set()
 
     async def _write(self, message: dict[str, Any]) -> None:
-        await self.channel.send(json.dumps(message))
+        """One frame out, or one error type saying the other end is gone.
+
+        A broken pipe and a reply that never comes are the same condition to a caller, so they are
+        the same exception. Leaving the transport's own error to escape would make every call site
+        catch two unrelated types to handle one situation.
+        """
+        try:
+            await self.channel.send(json.dumps(message))
+        except (anyio.BrokenResourceError, anyio.ClosedResourceError) as gone:
+            raise RemoteError(GONE, "the other end closed", "Gone") from gone
 
 
-__all__ = ["Peer", "REFUSED", "RemoteError"]
+__all__ = ["GONE", "REFUSED", "Peer", "RemoteError"]

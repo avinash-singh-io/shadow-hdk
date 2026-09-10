@@ -15,6 +15,7 @@ from shadow_hdk.wire.remote import (
     RemoteSink,
 )
 from shadow_hdk.wire.sides import HostSide, RuntimeSide, drive, loopback
+from shadow_hdk.wire.stdio import StdioChannel, over_a_child_process, serve_stdio
 
 __all__ = [
     "PROTOCOL_VERSION",
@@ -29,9 +30,12 @@ __all__ = [
     "RemoteModel",
     "RemoteSink",
     "RuntimeSide",
+    "StdioChannel",
     "VersionMismatch",
     "WireError",
     "channel_pair",
     "drive",
     "loopback",
+    "over_a_child_process",
+    "serve_stdio",
 ]
