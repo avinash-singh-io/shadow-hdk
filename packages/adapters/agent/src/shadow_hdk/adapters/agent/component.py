@@ -41,6 +41,7 @@ from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import (
+    Acted,
     Completed,
     Failed,
     Observation,
@@ -398,6 +399,15 @@ def _readable(observation: Observation | None) -> str:
         return "that step did not run"
     if isinstance(observation, Completed):
         return _as_json(observation.output)
+    if isinstance(observation, Acted):
+        # The receipt, not the grounds: what the world called it and how it ended are the model's
+        # to cite; the lease and argv it ran under are the auditor's (R9).
+        receipt = {
+            "foreign_id": observation.foreign_id,
+            "idempotency_key": observation.idempotency_key,
+            "exit": observation.exit,
+        }
+        return _as_json({"acted": receipt})
     why = getattr(observation, "reason", None) or getattr(observation, "error", "")
     return f"{observation.kind}: {why}"
 

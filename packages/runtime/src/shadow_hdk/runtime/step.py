@@ -33,7 +33,7 @@ from shadow_hdk.kernel.observations import (
     Refused,
 )
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse, Usage
-from shadow_hdk.runtime.bindings import Ports
+from shadow_hdk.runtime.bindings import Ports, executing
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import DanglingRef, LeaseExhausted, PortFailure, RuntimeStop
 from shadow_hdk.runtime.inputs import resolve_inputs
@@ -109,7 +109,8 @@ class StepExecutor:
             lambda **k: Invoked(step=step.id, component=registration.id, inputs=inputs, **k)
         )
         try:
-            observation = await port.invoke(registration.id, inputs)
+            with executing(step.id):
+                observation = await port.invoke(registration.id, inputs)
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
         usage = _usage_of(observation)

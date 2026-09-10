@@ -7,7 +7,8 @@ proposes, reads what is left of its lease, and spawns children without any of th
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final
@@ -119,6 +120,19 @@ class RunContext:
     def remaining(self) -> Lease:
         return self._session.meter.remaining()
 
+    @property
+    def step(self) -> str | None:
+        """The step being executed, or `None` outside one — while the catalogue is read, say."""
+        return _STEP.get()
+
+    def idempotency_key(self) -> str:
+        """What *we* call this act: the run and the step. A retry of the step — LangGraph re-runs a
+        node on resume — carries the same key, so the world can tell it from a second act."""
+        step = self.step
+        if step is None:
+            raise RuntimeError("no step is executing, so there is no act to name")
+        return f"{self.run_id}/{step}"
+
     def floor_met(self) -> bool:
         return self._session.meter.floor_met()
 
@@ -181,6 +195,17 @@ class RunContext:
 
 
 _CURRENT: ContextVar[RunContext | None] = ContextVar("shadow_hdk_current_run", default=None)
+_STEP: ContextVar[str | None] = ContextVar("shadow_hdk_current_step", default=None)
+
+
+@contextmanager
+def executing(step: str) -> Iterator[None]:
+    """The scope within which `current_run().step` is this step: the component's invoke, only."""
+    token = _STEP.set(step)
+    try:
+        yield
+    finally:
+        _STEP.reset(token)
 
 
 def current_run() -> RunContext | None:
