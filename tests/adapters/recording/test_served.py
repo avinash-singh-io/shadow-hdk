@@ -17,14 +17,19 @@ from shadow_hdk.adapters.recording import RecordingServer
 from mcp import ClientSession, types
 from mcp.shared.memory import create_client_server_memory_streams
 
-from shadow_hdk.kernel import Event
+from shadow_hdk.kernel import Event, Invoked, Observed
+from shadow_hdk.kernel.ports import GovernancePort
 from shadow_hdk.runtime import RunContext
 
 from .conftest import with_a_run
+from .test_recording import READING, mode
 
 
 async def over_the_wire[T](
     use: Callable[[ClientSession], Awaitable[T]],
+    *,
+    governance: GovernancePort | None = None,
+    steps: int = 20,
 ) -> tuple[T, list[Event]]:
     """Serve one run's registry to `use` as a client, and give back the run's events too."""
 
@@ -57,7 +62,7 @@ async def over_the_wire[T](
             group.cancel_scope.cancel()
         return answer[0]
 
-    return await with_a_run(drive)
+    return await with_a_run(drive, governance=governance, steps=steps)
 
 
 def text_of(result: types.CallToolResult) -> str:
@@ -67,6 +72,7 @@ def text_of(result: types.CallToolResult) -> str:
 @pytest.mark.anyio
 async def test_the_registry_reaches_a_real_client_with_its_schemas_intact() -> None:
     listed, _ = await over_the_wire(lambda session: session.list_tools())
+    assert {tool.name for tool in listed.tools} == {"look", "wipe", "breaks", "driver"}
     look = next(tool for tool in listed.tools if tool.name == "look")
     assert look.description == "Look a topic up."
     assert look.input_schema["properties"]["topic"]["description"] == "what to look up"
@@ -99,5 +105,39 @@ async def test_what_the_client_did_is_on_the_parents_record() -> None:
         return await session.call_tool("look", {"topic": "lathe"})
 
     _, events = await over_the_wire(call)
-    invoked = [e for e in events if e.kind == "invoked" and "shadow-hdk__look" in e.step]
+    invoked = [e for e in events if isinstance(e, Invoked) and e.component == "look"]
+    observed = [e for e in events if isinstance(e, Observed) and e.step != "s1"]
     assert len(invoked) == 1, "the child's call did not reach the parent's stream"
+    assert observed, "the child's answer did not reach the parent's stream"
+    assert invoked[0].step.startswith("shadow-hdk__look")
+    assert invoked[0].run_id != events[0].run_id, (
+        "it should carry the child's run id, not the parent's"
+    )
+
+
+@pytest.mark.anyio
+async def test_a_narrowing_mode_narrows_a_real_client_with_nothing_in_between() -> None:
+    """The mode is the only thing between the registry and the wire. `wipe` writes irreversibly, so
+    a reading mode removes it from the client's list because it removed it from the run."""
+    listed, _ = await over_the_wire(lambda session: session.list_tools(), governance=mode(READING))
+    names = {tool.name for tool in listed.tools}
+    assert "look" in names
+    assert "wipe" not in names
+
+
+@pytest.mark.anyio
+async def test_a_client_that_calls_forever_is_stopped_by_the_parents_lease() -> None:
+    """Nothing in the server counts the child's calls. The ceiling it was carved from does."""
+
+    async def call_until_stopped(session: ClientSession) -> int:
+        errors = 0
+        for _ in range(40):
+            result = await session.call_tool("look", {"topic": "lathe"})
+            if result.is_error:
+                errors += 1
+                if errors > 2:
+                    break
+        return errors
+
+    errors, _ = await over_the_wire(call_until_stopped, steps=6)
+    assert errors > 0, "the client was never stopped"
