@@ -41,8 +41,39 @@ CONTRACTS: dict[str, Any] = {
 """Every published type, by the name a host will look it up under."""
 
 
+_ADAPTERS: dict[Any, TypeAdapter[Any]] = {}
+"""One adapter per type, for the life of the process."""
+
+
+def adapter_for(as_type: Any) -> TypeAdapter[Any]:
+    """The `TypeAdapter` for a type, built once (BUG-016).
+
+    Constructing one walks the whole annotation and builds a core schema — for `Observation`, a
+    six-arm discriminated union, thousands of nodes. It is a **pure function of the type**: nothing
+    about it varies per call. Building it per call cost **0.743 ms**, and D19 means every step of
+    every run dumps its observation through here, so a hundred-step run built 101 adapters and
+    spent 57% of the runtime's entire per-step overhead rebuilding the same schema.
+
+    **Unbounded on purpose, and it is not TD-005's kind of growth.** The key is a *type*, and a
+    program holds finitely many of those — they are created by module import, not by traffic. An
+    eviction policy here would throw away exactly the object that is expensive to rebuild, on a set
+    that cannot grow with load.
+
+    An unhashable annotation cannot be a key, and is built fresh rather than refused. A shape like
+    `list[dict[str, int]]` is an ordinary thing to ask of a kernel whose job is crossing wires, and
+    a cache that turned a working call into a `TypeError` would be worse than the bug it fixes.
+    """
+    try:
+        cached = _ADAPTERS.get(as_type)
+    except TypeError:
+        return TypeAdapter(as_type)
+    if cached is None:
+        cached = _ADAPTERS[as_type] = TypeAdapter(as_type)
+    return cached
+
+
 def json_schema(name: str) -> dict[str, JsonValue]:
-    schema: dict[str, JsonValue] = TypeAdapter(CONTRACTS[name]).json_schema()
+    schema: dict[str, JsonValue] = adapter_for(CONTRACTS[name]).json_schema()
     return schema
 
 
@@ -51,7 +82,7 @@ def all_schemas() -> dict[str, dict[str, JsonValue]]:
 
 
 def dump(value: object, as_type: Any) -> str:
-    return TypeAdapter(as_type).dump_json(value).decode()
+    return adapter_for(as_type).dump_json(value).decode()
 
 
 @overload
@@ -69,10 +100,11 @@ def load(text: str, as_type: Any) -> Any:
     because those packages were outside the gate (BUG-007). A union caller annotates what it
     expects, and `TypeAdapter` is what makes the annotation true rather than a hope.
     """
-    return TypeAdapter(as_type).validate_json(text)
+    return adapter_for(as_type).validate_json(text)
 
 
 def round_trip[T](value: T, as_type: Any) -> T:
     """``load(dump(value))`` — equal to ``value`` for every contract, or the build fails."""
-    result: T = TypeAdapter(as_type).validate_json(TypeAdapter(as_type).dump_json(value))
+    adapter = adapter_for(as_type)
+    result: T = adapter.validate_json(adapter.dump_json(value))
     return result

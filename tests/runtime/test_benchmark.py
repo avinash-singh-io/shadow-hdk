@@ -8,13 +8,24 @@ of overhead per step. The assertions are set at three times those targets so a s
 not flake, which means they catch a regression of an order of magnitude rather than a drift of ten
 per cent. The printed numbers are the real signal; read them.
 
-**Nobody read them, and the budget is now broken (BUG-016).** The line above used to record *57.0 ms
-(0.570 ms/step), inside all three*, measured 2026-09-10. Measured again the same day after Phase 18:
-**135.9, 136.9 and 136.4 ms — 1.36 ms/step**, which is over D11's 1 ms and about two and a half
-times what was recorded. The gate at three times the target never went red, which is exactly the
-drift this docstring warned the slack could not catch. The number is left failing-in-fact and
-recorded rather than accommodated: raising the assertion would retire the budget, and finding the
-0.8 ms is real work with its own backlog row.
+**Measured on the development machine, 2026-09-10: 59.4 / 60.0 / 59.7 ms — 0.594 ms/step — and
+24 ms for the fan-out.** Inside all three.
+
+**It was not, for a while, and how that was missed is the useful part (BUG-016).** After Phase 18
+the same run measured **1.36 ms/step**, over D11's budget and two and a half times what had been
+recorded — and this gate never went red, because its assertion sits at three times the target. The
+cause was `kernel/contracts.py` building a fresh `TypeAdapter` on every call: 0.743 ms each, one per
+step under D19, **57% of the runtime's entire per-step overhead** spent rebuilding a schema that is
+a pure function of the type. Caching it restored the number exactly.
+
+**The slack was not tightened, and that is a decision rather than an omission.** A shared runner is
+about three times slower than this machine — measured, 3.93 ms/step on `ubuntu-latest` against 1.36
+here — so any assertion tight enough to have caught a 2.4× drift would fail on hardware that is
+merely slower. Those two ranges overlap, so **a stopwatch cannot do this job**, and asserting a
+tighter number would repeat the mistake in a smaller font. What catches this class of regression is
+a claim about the mechanism, on any hardware, with no flake:
+`tests/kernel/test_an_adapter_is_built_once_per_type.py` asserts that a run builds **one** adapter
+per contract type however many steps it takes.
 
 What the budget protects is the *design* behind D11: governance in-process, no per-step
 serialisation, a cached plan, the observer off the critical path. Break one and this goes red.
