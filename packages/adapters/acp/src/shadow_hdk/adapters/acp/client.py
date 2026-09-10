@@ -13,7 +13,7 @@ exists**. Nobody had to enumerate Codex's tools.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -34,6 +34,7 @@ from shadow_hdk.kernel.effects import ASSUME_WORST, EffectProfile
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import Ask, Refuse
 from shadow_hdk.runtime import current_run
+from shadow_hdk.runtime.leash import HeldProcess, start_leashed
 
 REFUSED = 403
 """The JSON-RPC code a refusal travels back on. ACP has no refusal shape for the non-permission
@@ -166,8 +167,14 @@ class BridgeClient(acp.Client):
         contained: bool = False,
         network: bool = False,
         currency: str = "USD",
+        terminal_timeout_s: float = 120.0,
+        terminal_output_limit: int = 64_000,
     ) -> None:
         self.workspace = Path(workspace).resolve() if workspace else None
+        self._terminal_timeout_s = terminal_timeout_s
+        self._terminal_output_limit = terminal_output_limit
+        self._terminals: dict[str, HeldProcess] = {}
+        self._opened = 0
         self._contained = contained
         self._network = network
         self.spend = Spend(currency)
@@ -311,25 +318,91 @@ class BridgeClient(acp.Client):
         output_byte_limit: int | None = None,
         **kwargs: Any,
     ) -> schema.CreateTerminalResponse:
+        """Grant a terminal, on our leash and inside the workspace (D42).
+
+        Judged **before anything starts**: a refusal that had already run the command would be a
+        report rather than a refusal. The effects are those of opening a terminal at all — reading
+        and writing the workspace, reaching the network unless containment says otherwise,
+        irreversible — so a mode that permits no writes refuses this without knowing the word
+        *terminal*.
+
+        The process itself is the runtime's `HeldProcess`: its own group, a capped output, a
+        timeout that runs whether or not anybody waits, and a kill that takes the group (D35). This
+        adapter borrows all of it, which is why granting a terminal does not make the ACP adapter
+        import the sandbox adapter — rule 4 stays green because the leash sits below both.
+        """
         effects = opening_a_terminal(contained=self._contained, network=self._network)
         if refused := await self._judge(effects, "create_terminal"):
             raise RequestError(REFUSED, refused)
-        raise RequestError(REFUSED, "this bridge grants no terminals yet — Phase 11")
+        if self.workspace is None:
+            raise RequestError(
+                REFUSED,
+                "this bridge has no workspace, and nowhere to run it is not somewhere to run it",
+            )
+        where = self._inside(cwd) if cwd else self.workspace
+        try:
+            held = await start_leashed(
+                [command, *(args or [])],
+                cwd=where,
+                timeout_s=self._terminal_timeout_s,
+                output_limit=output_byte_limit or self._terminal_output_limit,
+            )
+        except OSError as broken:
+            raise RequestError(REFUSED, f"{type(broken).__name__}: {broken}") from broken
+        self._opened += 1
+        terminal_id = f"terminal-{self._opened}"
+        self._terminals[terminal_id] = held
+        return schema.CreateTerminalResponse(terminalId=terminal_id)
 
     # The follow-ups are **not re-judged**: the grant was at creation, and asking again for every
-    # read of a terminal that was already allowed is noise, not safety. They refuse here only
-    # because no terminal is ever created.
-    async def terminal_output(self, session_id: str, terminal_id: str, **kwargs: Any) -> Any:
-        raise RequestError(REFUSED, f"no terminal {terminal_id!r}")
+    # read of a terminal that was already allowed is noise, not safety.
+    def _terminal(self, terminal_id: str) -> HeldProcess:
+        if (held := self._terminals.get(terminal_id)) is None:
+            raise RequestError(REFUSED, f"no terminal {terminal_id!r}")
+        return held
 
-    async def wait_for_terminal_exit(self, session_id: str, terminal_id: str, **kwargs: Any) -> Any:
-        raise RequestError(REFUSED, f"no terminal {terminal_id!r}")
+    async def terminal_output(
+        self, session_id: str, terminal_id: str, **kwargs: Any
+    ) -> schema.TerminalOutputResponse:
+        text, truncated = self._terminal(terminal_id).captured()
+        status = self._terminal(terminal_id).exit_status
+        return schema.TerminalOutputResponse(
+            output=text,
+            truncated=truncated,
+            exitStatus=(
+                schema.TerminalExitStatus(exitCode=status.exit_code, signal=status.signal)
+                if status
+                else None
+            ),
+        )
 
-    async def kill_terminal(self, session_id: str, terminal_id: str, **kwargs: Any) -> Any:
-        raise RequestError(REFUSED, f"no terminal {terminal_id!r}")
+    async def wait_for_terminal_exit(
+        self, session_id: str, terminal_id: str, **kwargs: Any
+    ) -> schema.WaitForTerminalExitResponse:
+        ended = await self._terminal(terminal_id).wait()
+        return schema.WaitForTerminalExitResponse(exitCode=ended.exit_code, signal=ended.signal)
 
-    async def release_terminal(self, session_id: str, terminal_id: str, **kwargs: Any) -> Any:
-        raise RequestError(REFUSED, f"no terminal {terminal_id!r}")
+    async def kill_terminal(
+        self, session_id: str, terminal_id: str, **kwargs: Any
+    ) -> schema.KillTerminalResponse:
+        await self._terminal(terminal_id).kill()
+        return schema.KillTerminalResponse()
+
+    async def release_terminal(
+        self, session_id: str, terminal_id: str, **kwargs: Any
+    ) -> schema.ReleaseTerminalResponse:
+        """The child is finished with it. Anything still running is **ended** rather than left
+        behind — a step owns the process tree it starts (D35)."""
+        await self._terminal(terminal_id).release()
+        del self._terminals[terminal_id]
+        return schema.ReleaseTerminalResponse()
+
+    async def end_every_terminal(self) -> None:
+        """Everything this bridge opened, ended. Called when the session closes, so a child that
+        forgot to release leaves nothing running."""
+        for terminal_id in list(self._terminals):
+            with suppress(Exception):
+                await self._terminals.pop(terminal_id).release()
 
     # ------------------------------------------------------------------ asking a person
 

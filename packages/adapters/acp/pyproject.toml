@@ -8,6 +8,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel==0.13.1", "shadow-hdk==0.13.1", "agent-client-protocol>=0.12,<1"]
 
+[project.entry-points."shadow_hdk.transports"]
+acp = "shadow_hdk.adapters.acp.transport:open_agent"
+
 [build-system]
 requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"

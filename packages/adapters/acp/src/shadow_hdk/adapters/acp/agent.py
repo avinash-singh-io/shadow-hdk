@@ -17,6 +17,7 @@ Three things it owns, each because Phase 2 measured that somebody had to:
 from __future__ import annotations
 
 import asyncio
+import shlex
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -35,7 +36,7 @@ from shadow_hdk.kernel.components import (
 )
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
-from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.kernel.ports import ComponentPort, ToolSource, Turn, Usage
 from shadow_hdk.runtime import current_run
 from shadow_hdk.runtime.processes import stop_or_kill
 
@@ -44,6 +45,42 @@ BRIEF_SCHEMA: dict[str, JsonValue] = {
     "properties": {"brief": {"type": "string"}},
     "required": ["brief"],
 }
+
+
+def mcp_servers_from(tools: Sequence[ToolSource]) -> list[Any]:
+    """Turn the run's tool sources into what ACP's `session/new` takes (D42).
+
+    **This adapter never learns whose registry it is.** `ToolSource` is a kernel type; whoever opens
+    the session builds it. That is what lets the registry's address travel in here without this
+    package importing the one that serves it, which rule 4 of the stands-alone invariant would fail
+    the build for.
+
+    A kind nothing here can serve is **refused, naming it**. Dropping it silently would launch the
+    child with no tools at all, which looks exactly like a model that chose not to use any — the
+    most expensive possible way to fail, because it fails after the turn is paid for.
+    """
+    made: list[Any] = []
+    for source in tools:
+        match source.kind:
+            case "mcp":
+                command, *arguments = shlex.split(source.address)
+                made.append(
+                    schema.McpServerStdio(
+                        name="shadow-hdk", command=command, args=list(arguments), env=[]
+                    )
+                )
+            case "mcp-http":
+                made.append(
+                    schema.HttpMcpServer(
+                        type="http", name="shadow-hdk", url=source.address, headers=[]
+                    )
+                )
+            case other:
+                raise ValueError(
+                    f"nothing here serves a tool source of kind {other!r}; the child would be "
+                    "launched with no tools and look like a model that chose not to use any"
+                )
+    return made
 
 
 class AcpAgent(ComponentPort):
@@ -56,6 +93,7 @@ class AcpAgent(ComponentPort):
         effects: EffectProfile,
         description: str = "Hand a brief to another agent and get back what it did.",
         workspace: Path | None = None,
+        tools: Sequence[ToolSource] = (),
         contained: bool = False,
         network: bool = False,
         currency: str = "USD",
@@ -70,6 +108,7 @@ class AcpAgent(ComponentPort):
         self._cwd = cwd
         self._timeout_s = timeout_s
         self._workspace = workspace
+        self._tools = tuple(tools)
         self.client = BridgeClient(
             workspace=workspace, contained=contained, network=network, currency=currency
         )
@@ -114,7 +153,11 @@ class AcpAgent(ComponentPort):
         self._agent = acp.connect_to_agent(self.client, self._process.stdin, self._process.stdout)
         await asyncio.wait_for(self._agent.initialize(protocol_version=1), self._timeout_s)
         opened = await asyncio.wait_for(
-            self._agent.new_session(cwd=str(self._workspace or Path.cwd())), self._timeout_s
+            self._agent.new_session(
+                cwd=str(self._workspace or Path.cwd()),
+                mcp_servers=mcp_servers_from(self._tools),
+            ),
+            self._timeout_s,
         )
         self._session = opened.session_id
         self.sessions_opened += 1
@@ -144,6 +187,45 @@ class AcpAgent(ComponentPort):
         """Whether the child is still alive. A timed-out child that is merely *ignored* is a leaked
         process holding a subscription seat, so this is asserted rather than assumed."""
         return self._process is not None and self._process.returncode is None
+
+    # ------------------------------------------------------------------ the agent seam (D39)
+
+    async def turn(self, prompt: str) -> Turn:
+        """One turn of the provider's own loop.
+
+        **No tool calls come back.** They left through the injected registry and landed on the run's
+        graph, judged and charged and recorded (D42). What is here is what only the provider knows:
+        what it said, what it spent, and why it stopped.
+        """
+        if self._agent is None or self._session is None:
+            await self.start()
+        assert self._agent is not None and self._session is not None
+
+        said_before = len(self.client.said)
+        with self.client.governed_by(current_run()):
+            answered = await asyncio.wait_for(
+                self._agent.prompt(
+                    session_id=self._session,
+                    prompt=[schema.TextContentBlock(type="text", text=prompt)],
+                ),
+                self._clock(),
+            )
+        self.client.spend.add_tokens(getattr(answered, "usage", None))
+        charge = self.client.spend.take()
+        return Turn(
+            text="".join(self.client.said[said_before:]),
+            usage=Usage(
+                input_tokens=charge.input_tokens or None,
+                output_tokens=charge.output_tokens or None,
+                cost_cents=charge.cents or None,
+            ),
+            stop_reason=str(getattr(answered, "stop_reason", "") or ""),
+        )
+
+    async def close(self) -> None:
+        """Ending the session ends everything it opened — terminals included (D35)."""
+        await self.client.end_every_terminal()
+        await self.stop()
 
     # ------------------------------------------------------------------ the port
 
