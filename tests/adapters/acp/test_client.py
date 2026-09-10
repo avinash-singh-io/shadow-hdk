@@ -287,3 +287,42 @@ async def test_a_usage_update_over_the_wire_reaches_the_purse() -> None:
 
 def test_the_worst_case_is_what_an_extension_is_judged_as() -> None:
     assert ASSUME_WORST.reaches and not ASSUME_WORST.reversible and not ASSUME_WORST.contained
+
+
+# ---------------------------------------------------------------- what we only heard about
+
+
+async def test_a_tool_call_the_child_made_on_its_own_is_marked_observed() -> None:
+    """The other half of posture, and the reason the field exists.
+
+    A child agent does work we never gated — its own file edits, its own shell. ACP tells us about
+    it in a `tool_call` notification **after** it happened. We could not have refused it, so it is
+    recorded honestly as `observed` rather than dressed up as something we consented to.
+    """
+    client = BridgeClient()
+    await client.session_update(
+        "s",
+        schema.ToolCallStart(
+            session_update="tool_call",
+            tool_call_id="native-1",
+            title="edit src/main.py",
+            kind="edit",
+        ),
+    )
+    assert len(client.overheard) == 1
+    heard = client.overheard[0]
+    assert heard.provenance.posture == "observed"
+    assert heard.kind == "tool_call"
+    assert isinstance(heard.payload, dict)
+    assert heard.payload["title"] == "edit src/main.py"
+
+
+async def test_what_we_gated_is_not_marked_observed() -> None:
+    """A permission request is the child *asking*, which we can refuse — so it is controlled. If
+    both came out observed the field would say nothing."""
+    client = BridgeClient()
+    await inside_a_run(
+        lambda: client.request_permission("s", a_call("read"), options("allow_once")),
+        governance=mode(READING),
+    )
+    assert client.overheard == [], "an request we judged is not something we merely overheard"

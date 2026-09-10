@@ -11,8 +11,9 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.2.0"
-"""0.2.0 because `ModelPort` grew `stream` — a contract change, so every package moves (D9)."""
+EXPECTED = "0.3.0"
+"""0.3.0 because `Provenance` grew `posture` — a contract change, so every package moves (D9).
+0.2.0 was `ModelPort.stream`, for the same reason."""
 
 
 def _packages() -> dict[str, str]:

@@ -62,3 +62,30 @@ is true of everything the runtime does.
 
 A kernel field is a contract change: every package takes a minor bump under D9, and it earns a row
 under *Pins* on the board.
+
+### [ARCH_CHANGE] 2026-09-10 — Group 0: posture ships, and every package moves to 0.3.0
+Topics: posture, provenance, kernel, acp, d9, g0
+
+`Provenance.posture` exists, defaulting to `controlled`. The ACP bridge stamps `observed` on a
+`tool_call` notification — work the child did on its own and told us about afterwards, which we
+could not have refused.
+
+Both halves are tested against each other, because either alone says nothing: a permission request
+we judged comes out **not** overheard, and an unmediated call comes out `observed`. If both landed
+in the same bucket the field would be decoration.
+
+Every package to **0.3.0** (D9), and a *Pins* row on the board.
+
+### [DISCOVERY] 2026-09-10 — a helper that always passes an argument cannot test its default
+Topics: mutation-check, tests
+
+A mutation flipping the default posture to `observed` **left the suite green**. The cause was a test
+helper I had just written: `a_provenance(posture="controlled")` passed the value explicitly every
+time, so the one test named *"the default is controlled"* never exercised a default at all.
+
+It now constructs a bare `Provenance` with no `posture` argument. Fourteenth vacuous test a mutation
+has found here, and the first caused by a *convenience helper* rather than by a missing case —
+worth the entry because the helper looked like it made the test clearer.
+
+Also caught: `from __future__ import annotations` makes an undefined name in a type annotation a
+**lint** error and not a runtime one, so a missing import passed 308 tests and only ruff objected.

@@ -28,7 +28,9 @@ from shadow_hdk.adapters.acp.kinds import (
 import acp
 from acp import schema
 from acp.exceptions import RequestError
+from shadow_hdk.kernel.components import Provenance
 from shadow_hdk.kernel.effects import ASSUME_WORST, EffectProfile
+from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import Ask, Refuse
 from shadow_hdk.runtime import current_run
 
@@ -105,6 +107,7 @@ class BridgeClient(acp.Client):
         self.refusals: list[str] = []
         self.updates: list[Any] = []
         self.said: list[str] = []
+        self.overheard: list[Proposal] = []
         self._run: Any = None
 
     # ------------------------------------------------------------------ governance
@@ -278,6 +281,26 @@ class BridgeClient(acp.Client):
         kind = getattr(update, "session_update", None)
         if kind == "usage_update":
             self.spend.add_cost(getattr(update, "cost", None))
+        elif kind == "tool_call":
+            # **Work we did not gate.** The child did this on its own and is telling us afterwards,
+            # so it is recorded as `observed` — we could not have refused it, and saying otherwise
+            # would make an ungated effect indistinguishable from a consented one (`08` §9 R9).
+            self.overheard.append(
+                Proposal(
+                    kind="tool_call",
+                    payload={
+                        "tool_call_id": getattr(update, "tool_call_id", None),
+                        "title": getattr(update, "title", None),
+                        "kind": getattr(update, "kind", None),
+                    },
+                    provenance=Provenance(
+                        registered_by=session_id,
+                        adapter="acp",
+                        at="",
+                        posture="observed",
+                    ),
+                )
+            )
         elif kind == "agent_message_chunk":
             text = getattr(getattr(update, "content", None), "text", None)
             if isinstance(text, str):

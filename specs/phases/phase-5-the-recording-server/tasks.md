@@ -7,11 +7,11 @@ phase: 5-the-recording-server
 
 ## Group 0 — posture
 
-- [ ] `Provenance.posture: Literal["controlled", "observed"] = "controlled"`
-- [ ] RED: the default is `controlled`; `observed` round-trips through JSON
-- [ ] every package to the next minor; `test_versions.py` updated
-- [ ] the ACP bridge marks a tool call it only *heard about* as `observed`
-- [ ] Gate
+- [x] `Provenance.posture: Literal["controlled", "observed"] = "controlled"`
+- [x] RED: the default is `controlled`; `observed` round-trips through JSON
+- [x] every package to the next minor; `test_versions.py` updated
+- [x] the ACP bridge marks a tool call it only *heard about* as `observed`
+- [x] Gate
 
 ## Group 1 — the server
 

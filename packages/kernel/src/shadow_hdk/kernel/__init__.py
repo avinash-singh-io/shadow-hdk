@@ -7,6 +7,7 @@ this package; this package depends on nothing but pydantic, and only for the pub
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
+    Posture,
     Provenance,
     Registration,
     RegistrationId,
@@ -117,6 +118,7 @@ __all__ = [
     "Proposal",
     "Proposed",
     "RunId",
+    "Posture",
     "Provenance",
     "Refuse",
     "Refused",

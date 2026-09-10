@@ -7,6 +7,7 @@ runtime never branches on them, and a sixth label costs nothing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Literal
 
 from pydantic import JsonValue
 
@@ -25,13 +26,29 @@ class Interface:
     output_schema: dict[str, JsonValue] = field(default_factory=dict)
 
 
+Posture = Literal["controlled", "observed"]
+"""Whether an effect was **gated** or merely **reported** (`08` §9 R9).
+
+``controlled`` — we judged it before it happened. Only this satisfies consent-before-effect.
+``observed`` — we found out afterwards, and could not have refused it.
+
+The line is *gated versus merely reported*, and it cuts through the middle of a child agent: what it
+routes through us is controlled, what it does natively and tells us about is observed.
+"""
+
+
 @dataclass(frozen=True)
 class Provenance:
-    """Who registered it, what adapter it came through, who signed it, when.
+    """Who registered it, what adapter it came through, who signed it, when — and whether we could
+    have stopped it.
 
     ``at`` is whatever the registering side's clock said, as text — the kernel has no clock.
     ``licence`` is recorded here because an open-source component is whatever it is, behind an
     adapter, with its licence in provenance (09 §4).
+
+    ``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The
+    exception has to be explicit: an adapter that forgets to say produces a claim that is true of
+    everything the runtime does.
     """
 
     registered_by: str
@@ -39,6 +56,7 @@ class Provenance:
     at: str
     signed_by: str | None = None
     licence: str | None = None
+    posture: Posture = "controlled"
 
 
 @dataclass(frozen=True)
