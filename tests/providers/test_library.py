@@ -1,0 +1,113 @@
+"""Providers are files, and a bad file is refused at load naming what is wrong (D40).
+
+D17 made agent architectures TOML a team writes without touching Python; this is the same move for
+providers, and the test of it is whether the **second** provider costs a file or a phase.
+
+A loader that shrugs at a typo is worse than no loader: `strip_evn = ["CLAUDECODE"]` would parse,
+load, and produce a provider that silently fails to start on the machines where it matters. So an
+unknown key is an error, and the error names the file and the key.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from shadow_hdk.providers.library import MalformedProvider, load_provider, shipped
+
+CLAUDE = """
+id = "claude-code"
+name = "Claude Code"
+kind = "agent"
+bin = "claude"
+fallback_bins = ["openclaude"]
+version_probe = ["--version"]
+auth_probe = ["auth", "status"]
+auth_failure_patterns = ["not logged in"]
+strip_env = ["CLAUDECODE"]
+transport = "acp"
+injects_tools = "mcp"
+install_hint = "npm i -g @zed-industries/claude-code-acp"
+
+[[set_env]]
+name = "SHADOW_HDK_HARNESS"
+value = "1"
+"""
+
+
+def a_file(where: Path, text: str, name: str = "p.toml") -> Path:
+    made = where / name
+    made.write_text(text, encoding="utf-8")
+    return made
+
+
+def test_a_file_becomes_a_provider(tmp_path: Path) -> None:
+    provider = load_provider(a_file(tmp_path, CLAUDE))
+
+    assert provider.id == "claude-code"
+    assert provider.kind == "agent"
+    assert provider.fallback_bins == ("openclaude",)
+    assert provider.strip_env == ("CLAUDECODE",)
+    assert provider.set_env[0].name == "SHADOW_HDK_HARNESS"
+    assert provider.injects_tools == "mcp"
+
+
+def test_a_missing_required_field_is_refused_naming_it(tmp_path: Path) -> None:
+    broken = a_file(tmp_path, 'id = "x"\nkind = "agent"\n')
+
+    with pytest.raises(MalformedProvider, match="bin"):
+        load_provider(broken)
+
+
+def test_an_unknown_key_is_refused_rather_than_ignored(tmp_path: Path) -> None:
+    """The typo that would otherwise ship: a provider that looks configured and is not."""
+    typo = a_file(tmp_path, 'id = "x"\nkind = "agent"\nbin = "x"\nstrip_evn = ["A"]\n')
+
+    with pytest.raises(MalformedProvider, match="strip_evn"):
+        load_provider(typo)
+
+
+def test_a_refusal_names_the_file(tmp_path: Path) -> None:
+    """A library of twenty files and an error naming none of them is not a diagnosis."""
+    typo = a_file(tmp_path, 'id = "x"\nkind = "agent"\nbin = "x"\nnope = 1\n', name="codex.toml")
+
+    with pytest.raises(MalformedProvider, match="codex.toml"):
+        load_provider(typo)
+
+
+def test_a_kind_that_is_neither_seam_is_refused(tmp_path: Path) -> None:
+    """D39: a provider sells inference or agency. A third value is a design question, not a typo,
+    and it must not reach a caller that will branch on it."""
+    odd = a_file(tmp_path, 'id = "x"\nkind = "hybrid"\nbin = "x"\n')
+
+    with pytest.raises(MalformedProvider, match="hybrid"):
+        load_provider(odd)
+
+
+def test_broken_toml_is_refused_as_broken_toml(tmp_path: Path) -> None:
+    with pytest.raises(MalformedProvider):
+        load_provider(a_file(tmp_path, 'id = "x\n'))
+
+
+# ------------------------------------------------------------------ what ships
+
+
+def test_every_shipped_provider_parses() -> None:
+    """The library is data, so nothing type-checks it. This does."""
+    found = shipped()
+
+    assert found, "the shipped library is empty"
+    assert all(p.id for p in found.values())
+
+
+def test_claude_code_ships_and_carries_its_measured_quirk() -> None:
+    """Measured 2026-09-11: Claude Code refuses to launch inside another Claude Code session, and
+    says which variable to clear. A record that forgot it produces a provider which never starts,
+    and an error that names neither cause."""
+    claude = shipped()["claude-code"]
+
+    assert claude.kind == "agent"
+    assert "CLAUDECODE" in claude.strip_env
+    assert claude.auth_probe, "a provider nobody can ask is always `unknown`"
+    assert claude.injects_tools == "mcp", "without injection the socket cannot close (D42)"

@@ -23,6 +23,7 @@ from shadow_hdk.kernel.ports import (
     ModelRequest,
     ModelResponse,
 )
+from shadow_hdk.kernel.providers import Provider
 
 CONTRACTS: dict[str, Any] = {
     "EffectProfile": EffectProfile,
@@ -37,6 +38,7 @@ CONTRACTS: dict[str, Any] = {
     "ModelResponse": ModelResponse,
     "Context": Context,
     "Judgement": Judgement,
+    "Provider": Provider,
 }
 """Every published type, by the name a host will look it up under."""
 

@@ -45,6 +45,7 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.contracts import CONTRACTS, all_schemas, round_trip
 from shadow_hdk.kernel.ports import Message
+from shadow_hdk.kernel.providers import EnvVar, Provider
 
 PROVENANCE = Provenance(registered_by="tests", adapter="python-callable", at="2026-09-10T00:00:00Z")
 COMPONENT = Component(
@@ -69,12 +70,24 @@ COMPOSITION = Composition(
 )
 LEASE = Lease(Ceiling(max_steps=10, max_wall_seconds=600, max_cost_cents=100), Floor(2))
 
+PROVIDER = Provider(
+    id="claude-code",
+    kind="agent",
+    bin="claude",
+    fallback_bins=("openclaude",),
+    auth_probe=("auth", "status"),
+    set_env=(EnvVar(name="SHADOW_HDK", value="1"),),
+    strip_env=("CLAUDECODE",),
+)
+"""A provider crosses the wire because a host in another language reads the library too."""
+
 EXAMPLES = {
     "EffectProfile": (
         EffectProfile(reads=ScopeSet(everything=True), reversible=False),
         EffectProfile,
     ),
     "Component": (COMPONENT, Component),
+    "Provider": (PROVIDER, Provider),
     "Registration": (Registration("reg-1", COMPONENT), Registration),
     "Composition": (COMPOSITION, Composition),
     "Observation": (Pending(handle="h1"), CONTRACTS["Observation"]),

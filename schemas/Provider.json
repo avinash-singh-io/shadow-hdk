@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "EnvVar": {
+      "description": "One name and one value, for the environment a provider is launched with.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "EnvVar",
+      "type": "object"
+    }
+  },
+  "description": "One provider, as read from its file.\n\nEvery field that encodes a quirk is here rather than in a code path, and the file that carries\nit also carries the measurement that found it.",
+  "properties": {
+    "auth_failure_patterns": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Auth Failure Patterns",
+      "type": "array"
+    },
+    "auth_probe": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Auth Probe",
+      "type": "array"
+    },
+    "backfill_env": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Backfill Env",
+      "type": "array"
+    },
+    "bin": {
+      "title": "Bin",
+      "type": "string"
+    },
+    "bin_env_key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bin Env Key"
+    },
+    "fallback_bins": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Fallback Bins",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "injects_tools": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Injects Tools"
+    },
+    "install_hint": {
+      "default": "",
+      "title": "Install Hint",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "model",
+        "agent"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "launch_args": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Launch Args",
+      "type": "array"
+    },
+    "minimum_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Minimum Version"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "set_env": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EnvVar"
+      },
+      "title": "Set Env",
+      "type": "array"
+    },
+    "strip_env": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Strip Env",
+      "type": "array"
+    },
+    "transport": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Transport"
+    },
+    "version_probe": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Version Probe",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "bin"
+  ],
+  "title": "Provider",
+  "type": "object"
+}

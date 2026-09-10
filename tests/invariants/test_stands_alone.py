@@ -9,6 +9,10 @@ Four rules, all AST walks, all build failures rather than review comments:
 3. **The runtime imports no adapter.** Arrows point one way: kernel ← runtime ← adapters. A runtime
    that knows an adapter's name has a favourite, and a favourite is a branch waiting to happen.
 4. **No adapter imports another.** Each is meant to be replaceable on its own.
+5. **The selection surface imports no adapter.** `providers` decides *which* model or agent to
+   open, and a module that imported the two it chooses between would have a favourite and a
+   hard dependency on both. It discovers them through entry points instead, which is what makes
+   the dependency arrow point from detail to abstraction (D39) rather than the other way.
 
 **Each rule is written once**, as a ``_violations`` function, and called from two places: the guard
 that walks the real tree, and ``test_the_rules_catch_what_they_look_for``, which walks synthetic
@@ -28,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGES = ROOT / "packages"
 KERNEL = PACKAGES / "kernel" / "src" / "shadow_hdk" / "kernel"
 RUNTIME = PACKAGES / "runtime" / "src" / "shadow_hdk" / "runtime"
+PROVIDERS = PACKAGES / "providers" / "src" / "shadow_hdk" / "providers"
 ADAPTERS = PACKAGES / "adapters"
 EXAMPLES = ROOT / "examples"
 
@@ -116,6 +121,18 @@ def adapter_violations(paths: Iterable[Path], *, own: str | None) -> list[str]:
 # --------------------------------------------------------------------------- the guards
 
 
+def test_the_selection_surface_imports_no_adapter() -> None:
+    """Rule 5. `providers` hands back a `ModelPort` from one adapter or an `AgentPort` from another,
+    and the naive way to write that imports both — which is a hard dependency on every provider it
+    can ever choose between, and the opposite of the inversion D39 is for.
+
+    Deferring the import inside a function does not evade this walk, and should not: a lazy import
+    is still a dependency, it just fails later and somewhere less obvious.
+    """
+    violations = adapter_violations(_sources(PROVIDERS), own=None)
+    assert not violations, "the selection surface knows an adapter:\n  " + "\n  ".join(violations)
+
+
 def test_no_package_imports_a_product() -> None:
     violations = product_violations(_sources(PACKAGES))
     assert not violations, "the harness imports a product:\n  " + "\n  ".join(violations)
@@ -147,6 +164,7 @@ def test_the_walks_look_where_the_code_is() -> None:
     """A guard that walks an empty directory proves nothing."""
     assert len(_sources(KERNEL)) >= 8, "the kernel walk found nothing"
     assert len(_sources(RUNTIME)) >= 6, "the runtime walk found nothing"
+    assert len(_sources(PROVIDERS)) >= 5, "the providers walk found nothing"
 
 
 def test_the_rules_catch_what_they_look_for(tmp_path: Path) -> None:
@@ -164,6 +182,17 @@ def test_the_rules_catch_what_they_look_for(tmp_path: Path) -> None:
     assert len(adapter_violations([sideways], own=None)) == 1
     assert len(adapter_violations([sideways], own=f"{ADAPTER_ROOT}.acp")) == 1
     assert adapter_violations([sideways], own=f"{ADAPTER_ROOT}.mcp") == []
+
+    # Rule 5 shares `adapter_violations` with rules 3 and 4, so the synthetic case that breaks
+    # it is the same file read with `own=None` — asserted here so deleting the guard above
+    # cannot leave the suite green on a tree that happens to be clean.
+    deferred = tmp_path / "imports_late.py"
+    deferred.write_text(
+        f"def open_it():\n    from {ADAPTER_ROOT}.acp import AcpAgent\n    return AcpAgent\n"
+    )
+    assert len(adapter_violations([deferred], own=None)) == 1, (
+        "a deferred import is still a dependency and must still be caught"
+    )
 
     clean = tmp_path / "clean.py"
     clean.write_text("from shadow_hdk.kernel import EffectProfile\n")

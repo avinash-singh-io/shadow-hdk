@@ -190,3 +190,79 @@ class ClockPort(Protocol):
     def now(self) -> str: ...
 
     def new_id(self) -> str: ...
+
+
+# ---------------------------------------------------------------- agents
+
+
+@dataclass(frozen=True)
+class ToolSource:
+    """Where a provider's tools are — and under D42 they are always **ours**.
+
+    `kind` is an open string for the same reason `Provider.transport` is: teaching this runtime a
+    new way to hand a registry over must not change the kernel's contract.
+    """
+
+    kind: str
+    address: str
+
+
+@dataclass(frozen=True)
+class Turn:
+    """What one turn of an agent provider produced.
+
+    **The tool calls are deliberately absent.** They did not come back through this port; they left
+    through the injected registry and landed on the run's own graph, where they were judged,
+    charged and recorded (D42). What is here is what only the provider knows: what it said, what it
+    spent, and why it stopped.
+    """
+
+    text: str = ""
+    usage: Usage | None = None
+    stop_reason: str = ""
+
+
+@dataclass(frozen=True)
+class TurnChunk:
+    """A piece of a turn as it arrives. `text` is the delta, never the accumulation."""
+
+    text: str = ""
+    usage: Usage | None = None
+    done: bool = False
+
+
+@runtime_checkable
+class AgentSession(Protocol):
+    """A provider that owns its own loop, held open across turns.
+
+    Residency is in the contract rather than in one adapter because Phase 4 measured why: a child
+    agent is expensive to start, and a five-step composition must not be five cold starts.
+    """
+
+    async def turn(self, prompt: str) -> Turn: ...
+
+    async def close(self) -> None: ...
+
+    async def stream(self, prompt: str) -> AsyncIterator[TurnChunk]:
+        """Tokens as they arrive — with a default, so growing this port breaks no adapter (D14).
+
+        The same argument as `ModelPort.stream`, one level down: the default calls `turn` and yields
+        the whole answer as one chunk, which is honest rather than pretend. A provider that answers
+        all at once really does produce one chunk, and this does not chop it into fake deltas to
+        look like streaming.
+        """
+        done = await self.turn(prompt)
+        yield TurnChunk(text=done.text, usage=done.usage, done=True)
+
+
+@runtime_checkable
+class AgentPort(Protocol):
+    """The second provider seam (D39): agency rather than inference.
+
+    One method, because everything else a provider needs to be told — where its tools are, which
+    directory it works in — is an argument to it rather than a second call.
+    """
+
+    async def open(
+        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
+    ) -> AgentSession: ...

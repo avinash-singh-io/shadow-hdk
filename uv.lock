@@ -25,6 +25,7 @@ members = [
     "shadow-hdk-adapters-sandbox-subprocess",
     "shadow-hdk-adapters-workspace",
     "shadow-hdk-kernel",
+    "shadow-hdk-providers",
     "shadow-hdk-wire",
     "shadow-hdk-workspace",
 ]
@@ -1577,6 +1578,17 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
 
 [[package]]
+name = "shadow-hdk-providers"
+version = "0.13.1"
+source = { editable = "packages/providers" }
+dependencies = [
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "shadow-hdk-kernel", editable = "packages/kernel" }]
+
+[[package]]
 name = "shadow-hdk-wire"
 version = "0.13.1"
 source = { editable = "packages/wire" }
@@ -1623,6 +1635,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-sandbox-subprocess" },
     { name = "shadow-hdk-adapters-workspace" },
     { name = "shadow-hdk-kernel" },
+    { name = "shadow-hdk-providers" },
     { name = "shadow-hdk-wire", extra = ["serve"] },
 ]
 
@@ -1658,6 +1671,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-sandbox-subprocess", editable = "packages/adapters/sandbox_subprocess" },
     { name = "shadow-hdk-adapters-workspace", editable = "packages/adapters/workspace" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "shadow-hdk-providers", editable = "packages/providers" },
     { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
 ]
 

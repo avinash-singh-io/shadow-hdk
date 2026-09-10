@@ -11,6 +11,7 @@
     "ModelResponse",
     "Observation",
     "Proposal",
+    "Provider",
     "Registration"
   ],
   "protocol_version": "1"

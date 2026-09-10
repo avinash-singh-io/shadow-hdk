@@ -56,6 +56,11 @@ rather than remembered.
 | D36 | containment is proven by what is denied, never by what is announced | [`phases/phase-18-the-p1s/history.md`](/phases/phase-18-the-p1s/history.md) |
 | D37 | a parent that parks comes back holding its children | [`phases/phase-18-the-p1s/history.md`](/phases/phase-18-the-p1s/history.md) |
 | D38 | a parked step resumes where it parked — in progress, not from the top | [`phases/phase-18-the-p1s/history.md`](/phases/phase-18-the-p1s/history.md) |
+| D39 | inference and agency are two seams, not one interface | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D40 | a provider is data, like a pattern | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D41 | the harness asks; it never reads a credential and never installs | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D42 | the socket — every effect routes through the run's registry | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D43 | the loop stays theirs, and that is the price on the label | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 
 ## Also here
 

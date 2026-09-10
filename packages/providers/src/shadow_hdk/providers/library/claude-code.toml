@@ -1,0 +1,43 @@
+# Claude Code, driven over ACP.
+#
+# Every field below that encodes a quirk carries the measurement that found it. A provider file is
+# read by people deciding whether to trust it, so an unexplained field is a field nobody can check.
+
+id = "claude-code"
+name = "Claude Code"
+kind = "agent"
+
+bin = "claude"
+# Drop-in forks shipping an argv-compatible binary under another name. A single-binary install of
+# one is still this provider.
+fallback_bins = ["openclaude"]
+bin_env_key = "CLAUDE_BIN"
+
+version_probe = ["--version"]
+
+# Asked, never read (D41). Nothing here opens a keychain or a config file.
+auth_probe = ["auth"]
+# What "not signed in" looks like in its own words. Anything unmatched is `unknown`, never `ready`.
+auth_failure_patterns = ["not logged in", "please run .*login", "no credentials", "unauthorized"]
+
+# Claude Code does not speak ACP natively — it speaks it through the npm bridge below, which is what
+# `transport` names and `install_hint` says how to get. Measured in Phase 2.
+transport = "acp"
+launch_args = []
+
+# How the run's own registry reaches it, and therefore how D42's socket closes around it. A provider
+# with nothing here cannot be governed and is refused rather than admitted ungoverned.
+injects_tools = "mcp"
+
+# **Measured 2026-09-11.** Claude Code refuses to start inside another Claude Code session:
+#   "Claude Code cannot be launched inside another Claude Code session. ...
+#    To bypass this check, unset the CLAUDECODE environment variable."
+# Inherited, it makes the child exit before the handshake, and the failure surfaces as a JSON-RPC
+# internal error with the real cause on a stderr nobody was reading.
+strip_env = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"]
+
+# A child launched with a stripped environment otherwise fails for want of something nobody thought
+# to forward. Credential-looking names are refused here by construction (D41).
+backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM"]
+
+install_hint = "npm i -g @zed-industries/claude-code-acp  (and `claude auth login` for the subscription)"

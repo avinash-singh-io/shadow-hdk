@@ -62,6 +62,8 @@ from shadow_hdk.kernel.observations import (
     Refused,
 )
 from shadow_hdk.kernel.ports import (
+    AgentPort,
+    AgentSession,
     Allow,
     Ask,
     ClockPort,
@@ -77,10 +79,28 @@ from shadow_hdk.kernel.ports import (
     Refuse,
     SinkPort,
     ToolCall,
+    ToolSource,
+    Turn,
+    TurnChunk,
     Usage,
+)
+from shadow_hdk.kernel.providers import (
+    EnvVar,
+    Provider,
+    ProviderKind,
+    ProviderStatus,
 )
 
 __all__ = [
+    "TurnChunk",
+    "Turn",
+    "ToolSource",
+    "AgentSession",
+    "AgentPort",
+    "ProviderStatus",
+    "ProviderKind",
+    "Provider",
+    "EnvVar",
     "ASSUME_WORST",
     "NOTHING",
     "Allow",
