@@ -56,11 +56,7 @@ async def test_the_line_is_visible_to_another_descriptor_before_propose_returns(
     assert load(raw.decode("utf-8"), Proposal) == a_proposal(1)
 
 
-async def test_fsync_is_asked_of_this_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The one thing about durability that can be observed without a crash. `fsync` flushes the
-    *file*, whichever descriptor names it, so the inode is what this proves — a sink that opened
-    a second descriptor to sync would leak one per proposal and still be durable."""
-    synced: list[int] = []
+def _watching_fsync(monkeypatch: pytest.MonkeyPatch, synced: list[int]) -> None:
     real = os.fsync
 
     def spy(fd: int) -> None:
@@ -68,10 +64,46 @@ async def test_fsync_is_asked_of_this_file(tmp_path: Path, monkeypatch: pytest.M
         real(fd)
 
     monkeypatch.setattr(os, "fsync", spy)
+
+
+async def test_fsync_is_asked_of_this_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The one thing about durability that can be observed without a crash. `fsync` flushes the
+    *file*, whichever descriptor names it, so the inode is what this proves — a sink that opened
+    a second descriptor to sync would leak one per proposal and still be durable.
+
+    Watched from **after** construction, because the sink also syncs the directory once when it
+    creates the name (BUG-014), and that is a different claim tested below. Watching from before
+    would fold the two together and make either of them able to satisfy this one.
+    """
     path = tmp_path / "proposals.jsonl"
     sink = FileSink(path)
+    synced: list[int] = []
+    _watching_fsync(monkeypatch, synced)
+
     await sink.propose(a_proposal(1))
+
     assert synced == [os.stat(path).st_ino], "fsync was not asked of this file, once, per proposal"
+
+
+async def test_the_directory_is_synced_once_when_the_name_is_created(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`fsync` on the file makes its **contents** durable; the directory entry is a separate write.
+
+    Without this a crash straight after `O_CREAT` could leave a machine with fsynced bytes and no
+    name to find them under. Once, at construction — a name is created once, and syncing a directory
+    per proposal would be a cost paid on every record for a guarantee already held.
+    """
+    synced: list[int] = []
+    _watching_fsync(monkeypatch, synced)
+    path = tmp_path / "proposals.jsonl"
+
+    sink = FileSink(path)
+    await sink.propose(a_proposal(1))
+    sink.close()
+
+    assert synced[0] == os.stat(tmp_path).st_ino, "the directory holding the name was not synced"
+    assert synced.count(os.stat(tmp_path).st_ino) == 1, "the directory was synced more than once"
 
 
 async def test_a_torn_tail_does_not_poison_the_next_read(tmp_path: Path) -> None:

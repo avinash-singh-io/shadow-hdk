@@ -7,6 +7,8 @@ All three are honest sinks — the runtime proposes and something else keeps or 
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
 import sys
 from collections.abc import Awaitable, Callable, Iterator
@@ -43,15 +45,104 @@ class FileSink(SinkPort):
 
     def __init__(self, path: str | os.PathLike[str]) -> None:
         self.path = Path(path)
+        _discard_a_torn_tail(self.path)
         self._fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        self._closed = False
+        _make_the_name_durable(self.path)
 
     async def propose(self, proposal: Proposal) -> None:
         line = (dump(proposal, Proposal) + "\n").encode("utf-8")
-        os.write(self._fd, line)
+        # **Off the loop thread** (BUG-014). `write` and `fsync` wait on hardware, and they ran
+        # inside an `async def` on the event loop, so one slow disk stalled every other run in the
+        # process — including the ones not writing anything.
+        await asyncio.to_thread(self._record, line)
+
+    def _record(self, line: bytes) -> None:
+        _write_all(self._fd, line)
         os.fsync(self._fd)
 
     def close(self) -> None:
-        os.close(self._fd)
+        """Idempotent, because `__exit__` runs and a careful host closes in its own teardown too."""
+        if not self._closed:
+            self._closed = True
+            os.close(self._fd)
+
+    def __enter__(self) -> FileSink:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+
+def _write_all(fd: int, data: bytes) -> None:
+    """Every byte, or raise (BUG-014).
+
+    `os.write` returns how many bytes it took and nothing read it, so half a record could reach the
+    disk while `propose` returned as though all of it had — against this class's own promise that a
+    proposal not recorded is never reported as recorded.
+
+    A partial write is **ordinary**: a signal arrives mid-call, a pipe fills. So the rest is
+    written rather than treated as a failure. What is a failure is a write that stops making
+    progress, and that raises with how far it got, because *the disk is full* and *the disk is slow*
+    want different answers from whoever reads it.
+    """
+    written = 0
+    while written < len(data):
+        just = os.write(fd, data[written:])
+        if just <= 0:
+            raise OSError(
+                f"wrote {written} of {len(data)} bytes to the record and then stopped; "
+                "the proposal is not recorded"
+            )
+        written += just
+
+
+def _discard_a_torn_tail(path: Path) -> None:
+    """Cut back to the last complete line before anything is appended (BUG-014).
+
+    A crash mid-write leaves bytes with no newline. `proposals_in` stops there, which is right and
+    was already tested — but the **next process** opened the same file `O_APPEND` and wrote straight
+    onto the end of it, gluing its first proposal to the half-written one. Measured: two good
+    proposals became unreachable behind `p.jsonl:2 is not a proposal`. A crash that cost nothing on
+    its own became total loss the moment the process came back.
+
+    **Discarding is not data loss.** `propose` does not return until the record is on disk, so an
+    unfinished record is one whose caller was never told it was recorded. Keeping it would preserve
+    half a line that no reader can use and every reader must step over.
+
+    This also retires an equivalent-mutant claim from Phase 14 — *a torn line can only be the last*
+    — which holds within one process's lifetime and fails across a restart, and a restart is the
+    only time a torn line exists. Phase 14's other claim, that `fsync` is per-inode, still holds.
+
+    **The healthy-file early return is a fast path, not a rule, and removing it is an equivalent
+    mutant** — named here so the next pass does not spend a test deriving it again. A file ending
+    in a newline has its last newline at `len - 1`, so `keep` is the file's own length and the
+    truncate is a no-op. The return saves a syscall on every open and says the intent out loud.
+    """
+    if not path.exists() or path.stat().st_size == 0:
+        return
+    with path.open("rb") as record:
+        content = record.read()
+    if content.endswith(b"\n"):
+        return
+    keep = content.rfind(b"\n") + 1  # 0 when there is no complete line at all
+    os.truncate(path, keep)
+
+
+def _make_the_name_durable(path: Path) -> None:
+    """`fsync` on the file makes its **contents** durable; the directory entry is a separate write.
+
+    A crash right after `O_CREAT` could otherwise leave a machine with fsynced bytes and no file to
+    find them under. Once at construction, because a name is created once — and best-effort,
+    because some filesystems refuse to open a directory for this and a sink that cannot exist on
+    them is a worse answer than one whose first record is a little less durable.
+    """
+    with contextlib.suppress(OSError):
+        fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
 
 def proposals_in(path: str | os.PathLike[str]) -> Iterator[Proposal]:
