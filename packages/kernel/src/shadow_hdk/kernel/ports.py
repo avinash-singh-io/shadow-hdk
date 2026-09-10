@@ -205,6 +205,9 @@ class ToolSource:
 
     kind: str
     address: str
+    env: tuple[tuple[str, str], ...] = ()
+    """What the tool source needs told. A registry served on a loopback port has to hand the port
+    to whatever the child launches, and there is nowhere else for it to travel."""
 
 
 @dataclass(frozen=True)
@@ -220,6 +223,13 @@ class Turn:
     text: str = ""
     usage: Usage | None = None
     stop_reason: str = ""
+    failed: bool = False
+    """The provider said this turn did not work.
+
+    Read from what it reported, never inferred from an exit code: these CLIs exit non-zero for
+    reasons that are not failures and zero for failures that are. Measured — an expired session
+    answers `is_error: true` inside a result whose own subtype still says `success`.
+    """
 
 
 @dataclass(frozen=True)

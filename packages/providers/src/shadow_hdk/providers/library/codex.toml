@@ -1,0 +1,59 @@
+# Codex CLI, over its line-delimited JSON exec mode.
+#
+# **Not measured here.** Codex is not installed on the machine this file was written on, so unlike
+# `claude-code.toml` and `opencode.toml` nothing below was observed. It is transcribed from the
+# reference implementation's own provider definition (nexu-io/open-design,
+# `apps/daemon/src/runtimes/defs/codex.ts`), which *is* measured evidence — by them, not by us.
+#
+# The distinction matters and is the reason this comment exists rather than a silent file: a field
+# that has been read off a running CLI and a field that has been copied from somebody else's
+# codebase are different kinds of claim. The first turn anyone runs against a real Codex should
+# correct whatever is wrong here, and the corrections belong in this file rather than in a code path.
+#
+# What is transcribed:
+#   - `codex exec --json --skip-git-repo-check` is the line-delimited JSON mode
+#   - `codex login status` is the authentication probe
+#   - `CODEX_HOME` must be named explicitly; the collector refuses a home-directory fallback so it
+#     can never attribute one install's sessions to another
+#   - a turn is one process, threaded to the last by `exec resume <id>`
+
+id = "codex"
+name = "Codex CLI"
+kind = "agent"
+
+bin = "codex"
+bin_env_key = "CODEX_BIN"
+
+version_probe = ["--version"]
+auth_probe = ["login", "status"]
+auth_failure_patterns = ["not logged in", "please run .*login", "no credentials", "unauthorized"]
+
+transport = "jsonl"
+launch_args = ["exec", "--json", "--skip-git-repo-check"]
+
+injects_tools = "mcp"
+
+strip_env = ["CODEX", "CODEX_PID"]
+backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME", "CODEX_HOME"]
+
+install_hint = "npm i -g @openai/codex, then `codex login` to attach your subscription"
+
+# **Unverified.** Every name in this block is transcribed rather than observed; see the header.
+[dialect]
+resident = false
+prompt_shape = "text"
+resume_args = ["exec", "resume"]
+session_id_at = "thread.started.thread_id"
+say_on = ["item.completed", "agent_message"]
+say_at = "item.text"
+done_on = ["turn.completed", "task_complete"]
+done_at = "item.text"
+failed_at = "error"
+cost_usd_at = "usage.total_cost_usd"
+input_tokens_at = "usage.input_tokens"
+output_tokens_at = "usage.output_tokens"
+
+mcp_config_arg = "-c"
+mcp_strict_args = []
+disallow_arg = ""
+disallow = []

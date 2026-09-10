@@ -8,6 +8,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel==0.14.0", "shadow-hdk==0.14.0", "mcp>=2.0,<3"]
 
+[project.scripts]
+shadow-hdk-registry = "shadow_hdk.adapters.recording.socket:relay"
+
 [build-system]
 requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"

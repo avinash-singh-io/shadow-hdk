@@ -42,7 +42,8 @@ shadow-hdk/
       mcp/                           MCP servers as components                                 Phase 1
       workspace/                     files within a root                                       Phase 3
       sandbox_subprocess/            run code with limits                                      Phase 3
-      acp/                           Codex · Claude Code over ACP                              Phase 4
+      acp/                           an agent over ACP — OpenCode, anything Zed-compatible      Phase 4
+      jsonl/                         a CLI answering in line-delimited JSON — Claude Code, Codex  Phase 20
       recording/                     our registry as an MCP server                             Phase 5
       modes/                         rules as rows; the narrowing check                        Phase 1 / 10
       contained/                     gVisor and Firecracker, each proving containment          Phase 11

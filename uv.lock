@@ -16,6 +16,7 @@ members = [
     "shadow-hdk-adapters-contained",
     "shadow-hdk-adapters-derivation",
     "shadow-hdk-adapters-devices",
+    "shadow-hdk-adapters-jsonl",
     "shadow-hdk-adapters-langchain",
     "shadow-hdk-adapters-mcp",
     "shadow-hdk-adapters-modes",
@@ -1420,6 +1421,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "shadow-hdk-adapters-jsonl"
+version = "0.14.0"
+source = { editable = "packages/adapters/jsonl" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
 name = "shadow-hdk-adapters-langchain"
 version = "0.14.0"
 source = { editable = "packages/adapters/langchain" }
@@ -1626,6 +1642,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-contained" },
     { name = "shadow-hdk-adapters-derivation" },
     { name = "shadow-hdk-adapters-devices" },
+    { name = "shadow-hdk-adapters-jsonl" },
     { name = "shadow-hdk-adapters-langchain", extra = ["huggingface", "openai"] },
     { name = "shadow-hdk-adapters-mcp" },
     { name = "shadow-hdk-adapters-modes" },
@@ -1662,6 +1679,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-contained", editable = "packages/adapters/contained" },
     { name = "shadow-hdk-adapters-derivation", editable = "packages/adapters/derivation" },
     { name = "shadow-hdk-adapters-devices", editable = "packages/adapters/devices" },
+    { name = "shadow-hdk-adapters-jsonl", editable = "packages/adapters/jsonl" },
     { name = "shadow-hdk-adapters-langchain", extras = ["openai", "huggingface"], editable = "packages/adapters/langchain" },
     { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
     { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },

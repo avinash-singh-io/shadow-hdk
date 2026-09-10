@@ -14,7 +14,14 @@ from pathlib import Path
 
 import pytest
 
-from shadow_hdk.providers.library import MalformedProvider, load_provider, shipped
+from shadow_hdk.providers.library import (
+    HERE as LIBRARY,
+)
+from shadow_hdk.providers.library import (
+    MalformedProvider,
+    load_provider,
+    shipped,
+)
 
 CLAUDE = """
 id = "claude-code"
@@ -113,17 +120,39 @@ def test_claude_code_ships_and_carries_its_measured_quirk() -> None:
     assert claude.injects_tools == "mcp", "without injection the socket cannot close (D42)"
 
 
-def test_the_second_provider_cost_a_file() -> None:
-    """D40's whole claim, stated as a test.
+def test_the_marginal_provider_costs_a_file() -> None:
+    """D40's whole claim, stated as a test — and the shape of the answer matters.
 
-    Two providers ship, they speak the **same** transport, and adding the second changed no Python:
-    no adapter, no branch, no code path that names it. If a third ever needs one, that is evidence
-    the record is missing a field rather than that the rule is wrong.
+    Three providers ship across **two** transports. That ratio is the point: the unit of extension
+    is the transport, not the agent. `opencode` cost one file because `acp` already existed;
+    `codex` cost one file because `jsonl` already existed, written for Claude Code. The next agent
+    costs a file unless it invents a protocol.
+
+    The reference implementation makes the same cut and pays more for it: twenty-eight providers
+    over a handful of hand-written stream parsers, with the per-provider parts in TypeScript. Here
+    the per-provider parts are fields.
     """
     found = shipped()
 
-    assert {"claude-code", "opencode"} <= set(found)
-    assert found["claude-code"].transport == found["opencode"].transport == "acp"
+    assert {"claude-code", "codex", "opencode"} <= set(found)
+    assert {p.transport for p in found.values()} == {"acp", "jsonl"}
+    assert found["codex"].transport == found["claude-code"].transport, (
+        "codex reuses the transport written for Claude Code — that is what made it a file"
+    )
+
+
+def test_a_provider_nobody_here_could_measure_says_so() -> None:
+    """Codex is not installed on the machine this library was written on, so its record is
+    transcribed from the reference implementation rather than observed.
+
+    Transcribed and measured are different kinds of claim, and a file that hid the difference would
+    invite somebody to trust a field nobody has run. The header says which it is; this makes the
+    saying non-optional.
+    """
+    text = (LIBRARY / "codex.toml").read_text(encoding="utf-8")
+
+    assert "Not measured here" in text
+    assert "open-design" in text, "a transcribed record must name what it was transcribed from"
 
 
 def test_opencode_carries_what_was_measured_of_it() -> None:

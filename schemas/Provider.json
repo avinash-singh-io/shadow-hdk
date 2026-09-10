@@ -1,5 +1,117 @@
 {
   "$defs": {
+    "Dialect": {
+      "description": "How to read one CLI's line-delimited JSON event stream (D40).\n\nClaude Code and Codex both answer on stdout as newline-delimited JSON. They disagree about every\n*name* \u2014 which key holds the event type, which type carries assistant text, where the text sits,\nwhat ends a turn \u2014 and about nothing else. The shape is shared; only the names differ. So the\nnames are data.\n\n**This is not a query language and must not become one.** Ten fields, each a literal event name\nor a dotted path where `[]` means *each element of this list*. No expressions, no conditionals,\nno arithmetic. A CLI whose stream does not fit gets code \u2014 the same cut the reference makes with\nits `streamFormat` enum, except these are fields where those are hand-written parsers.\n\nEvery default is the conservative one. A dialect that named no event reads nothing rather than\nmatching something by accident: a stream nobody described is a stream nobody can read, and\nsaying so is better than inventing a reading of it.",
+      "properties": {
+        "cost_usd_at": {
+          "default": "",
+          "title": "Cost Usd At",
+          "type": "string"
+        },
+        "disallow": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Disallow",
+          "type": "array"
+        },
+        "disallow_arg": {
+          "default": "",
+          "title": "Disallow Arg",
+          "type": "string"
+        },
+        "done_at": {
+          "default": "",
+          "title": "Done At",
+          "type": "string"
+        },
+        "done_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Done On",
+          "type": "array"
+        },
+        "failed_at": {
+          "default": "",
+          "title": "Failed At",
+          "type": "string"
+        },
+        "input_tokens_at": {
+          "default": "",
+          "title": "Input Tokens At",
+          "type": "string"
+        },
+        "mcp_config_arg": {
+          "default": "",
+          "title": "Mcp Config Arg",
+          "type": "string"
+        },
+        "mcp_strict_args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Mcp Strict Args",
+          "type": "array"
+        },
+        "output_tokens_at": {
+          "default": "",
+          "title": "Output Tokens At",
+          "type": "string"
+        },
+        "prompt_shape": {
+          "default": "text",
+          "title": "Prompt Shape",
+          "type": "string"
+        },
+        "resident": {
+          "default": false,
+          "title": "Resident",
+          "type": "boolean"
+        },
+        "resume_args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Resume Args",
+          "type": "array"
+        },
+        "say_at": {
+          "default": "",
+          "title": "Say At",
+          "type": "string"
+        },
+        "say_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Say On",
+          "type": "array"
+        },
+        "session_id_at": {
+          "default": "",
+          "title": "Session Id At",
+          "type": "string"
+        },
+        "stop_reason_at": {
+          "default": "",
+          "title": "Stop Reason At",
+          "type": "string"
+        },
+        "type_key": {
+          "default": "type",
+          "title": "Type Key",
+          "type": "string"
+        }
+      },
+      "title": "Dialect",
+      "type": "object"
+    },
     "EnvVar": {
       "description": "One name and one value, for the environment a provider is launched with.",
       "properties": {
@@ -61,6 +173,17 @@
       ],
       "default": null,
       "title": "Bin Env Key"
+    },
+    "dialect": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Dialect"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "fallback_bins": {
       "default": [],

@@ -33,14 +33,23 @@ auth_failure_patterns = [
   "unauthorized",
 ]
 
-# Claude Code does not speak ACP natively — it speaks it through the npm bridge below, which is what
-# `transport` names and `install_hint` says how to get. Measured in Phase 2.
-transport = "acp"
-launch_args = []
+# **Its own mode, not a bridge.** Claude Code does not speak ACP natively — it would need the
+# `@zed-industries/claude-code-acp` npm package for that. It does speak a line-delimited JSON event
+# stream on its own (`-p --output-format stream-json`), which is the transport open-design drives it
+# with too, and which costs the user no extra install. Measured 2026-09-11 against claude 2.1.235.
+transport = "jsonl"
+launch_args = [
+  "-p",
+  "--input-format", "stream-json",
+  "--output-format", "stream-json",
+  "--verbose",
+]
 
 # How the run's own registry reaches it, and therefore how D42's socket closes around it. A provider
 # with nothing here cannot be governed and is refused rather than admitted ungoverned.
 injects_tools = "mcp"
+
+
 
 # **Measured 2026-09-11.** Claude Code refuses to start inside another Claude Code session:
 #   "Claude Code cannot be launched inside another Claude Code session. ...
@@ -63,4 +72,43 @@ strip_env = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"]
 # argument for D40.
 backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME"]
 
-install_hint = "npm i -g @zed-industries/claude-code-acp  (and `claude auth login` for the subscription)"
+install_hint = "install Claude Code, then `claude auth login` to attach your subscription"
+
+# How to read its stream, and how to hand it our tools. Every name below was **measured** on
+# 2026-09-11 by running one turn of claude 2.1.235 and reading the lines it printed.
+#
+#   {"type":"system","subtype":"init", ...}
+#   {"type":"assistant","message":{"content":[{"type":"text","text":"..."}],"usage":{...}}}
+#   {"type":"result","subtype":"success","result":"...","is_error":false,
+#    "stop_reason":"end_turn","total_cost_usd":0.0031,"usage":{...}}
+#
+# `is_error` is read rather than the exit code, and that is not fastidiousness: a turn whose OAuth
+# session had expired answered `is_error: true` inside a result whose own subtype still said
+# `success`. Believing the subtype would have reported a failed turn as a finished one.
+[dialect]
+resident = true
+prompt_shape = "stream-json-user"
+say_on = ["assistant"]
+say_at = "message.content[].text"
+done_on = ["result"]
+done_at = "result"
+failed_at = "is_error"
+stop_reason_at = "stop_reason"
+cost_usd_at = "total_cost_usd"
+input_tokens_at = "usage.input_tokens"
+output_tokens_at = "usage.output_tokens"
+
+# D42's socket. The run's registry goes in through `--mcp-config`; `--strict-mcp-config` stops the
+# user's own global MCP configuration joining the run ungoverned; and its native file and shell
+# tools are refused so ours are the only ones it has. A provider left holding its own tools does
+# its work outside the registry, where nothing here sees it.
+mcp_config_arg = "--mcp-config"
+mcp_strict_args = ["--strict-mcp-config"]
+disallow_arg = "--disallowedTools"
+disallow = [
+  "Bash", "BashOutput", "KillShell",
+  "Edit", "Write", "NotebookEdit",
+  "Read", "Glob", "Grep",
+  "WebFetch", "WebSearch",
+  "Task",
+]

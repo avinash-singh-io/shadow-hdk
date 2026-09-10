@@ -85,6 +85,7 @@ from shadow_hdk.kernel.ports import (
     Usage,
 )
 from shadow_hdk.kernel.providers import (
+    Dialect,
     EnvVar,
     Provider,
     ProviderKind,
@@ -92,6 +93,7 @@ from shadow_hdk.kernel.providers import (
 )
 
 __all__ = [
+    "Dialect",
     "TurnChunk",
     "Turn",
     "ToolSource",

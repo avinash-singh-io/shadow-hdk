@@ -50,6 +50,81 @@ class EnvVar:
 
 
 @dataclass(frozen=True)
+class Dialect:
+    """How to read one CLI's line-delimited JSON event stream (D40).
+
+    Claude Code and Codex both answer on stdout as newline-delimited JSON. They disagree about every
+    *name* — which key holds the event type, which type carries assistant text, where the text sits,
+    what ends a turn — and about nothing else. The shape is shared; only the names differ. So the
+    names are data.
+
+    **This is not a query language and must not become one.** Ten fields, each a literal event name
+    or a dotted path where `[]` means *each element of this list*. No expressions, no conditionals,
+    no arithmetic. A CLI whose stream does not fit gets code — the same cut the reference makes with
+    its `streamFormat` enum, except these are fields where those are hand-written parsers.
+
+    Every default is the conservative one. A dialect that named no event reads nothing rather than
+    matching something by accident: a stream nobody described is a stream nobody can read, and
+    saying so is better than inventing a reading of it.
+    """
+
+    resident: bool = False
+    """Whether one process serves the whole conversation, or one process serves one turn.
+
+    Claude Code with `--input-format stream-json` keeps reading stdin, so the conversation is one
+    process and its own memory carries the history. `codex exec` is the other shape: a turn per
+    process, with the CLI's own resume flag threading them together. Both are facts about that CLI,
+    so both are fields.
+    """
+
+    resume_args: tuple[str, ...] = ()
+    """What a non-resident CLI is given to continue its previous session, with the session id
+    appended. Empty means each turn starts cold."""
+
+    session_id_at: str = ""
+    """Where a non-resident CLI reports the session id a later turn resumes from."""
+
+    prompt_shape: str = "text"
+    """How a turn is written to the child. `text` is the words on stdin; a CLI wanting an envelope
+    names its own. A fact about that CLI, not about this runtime."""
+
+    type_key: str = "type"
+    """Which key on each line says what kind of event it is."""
+
+    say_on: tuple[str, ...] = ()
+    say_at: str = ""
+    """The event types carrying assistant text, and where the text is inside them."""
+
+    done_on: tuple[str, ...] = ()
+    done_at: str = ""
+    """What ends a turn, and where its final text is."""
+
+    failed_at: str = ""
+    """A boolean saying the turn failed. Read rather than inferred from an exit code: these CLIs
+    exit non-zero for reasons that are not failures and zero for failures that are."""
+
+    mcp_config_arg: str = ""
+    """The flag that takes an MCP server configuration as JSON. This is how D42's socket closes
+    around a CLI of this shape: the run's registry goes in here and its tools become the only ones
+    worth having."""
+
+    mcp_strict_args: tuple[str, ...] = ()
+    """Flags that stop it loading MCP servers from anywhere else. Without them a user's own global
+    configuration joins the run ungoverned."""
+
+    disallow_arg: str = ""
+    disallow: tuple[str, ...] = ()
+    """The flag that refuses the CLI's own tools, and their names. A provider left holding its
+    native file and shell tools does its work outside the registry, where nothing here sees it —
+    which is the socket open, not closed."""
+
+    stop_reason_at: str = ""
+    cost_usd_at: str = ""
+    input_tokens_at: str = ""
+    output_tokens_at: str = ""
+
+
+@dataclass(frozen=True)
 class Provider:
     """One provider, as read from its file.
 
@@ -107,6 +182,9 @@ class Provider:
     """Variables to supply from the OS when the parent's environment lacks them. A child spawned
     with a stripped environment otherwise fails for want of something nobody forwarded."""
 
+    dialect: Dialect | None = None
+    """How to read this provider's stream, when its transport is one that needs telling."""
+
     install_hint: str = ""
     """What a person would run to get this provider, said when it is absent. Said — never run
     (D41): installing software on somebody's machine is not this library's business."""
@@ -116,4 +194,4 @@ class Provider:
         return self.name or self.id
 
 
-__all__ = ["EnvVar", "Provider", "ProviderKind", "ProviderStatus"]
+__all__ = ["Dialect", "EnvVar", "Provider", "ProviderKind", "ProviderStatus"]
