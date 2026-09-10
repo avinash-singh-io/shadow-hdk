@@ -49,6 +49,14 @@ phase: 19-the-p2s
 - [x] **TD-007's policy recorded as the owner's under ADR-1**, not invented: whether an irreversible step must produce an `Acted` whichever port it came through
 - [x] TD-008: `specs/decisions/` carries a **map of all thirty-eight**, with an invariant that keeps it true; the decisions stay beside the work that forced them
 - [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 940 passed, 1 skipped, 10 deselected; 9 mutations, all bite
-- [ ] **TD-008's remaining half**: `runtime.md`, `file-structure.md`, `adapters.md`, `wire.md`, `CLAUDE.md`'s dead link, the `.githooks`, and `recursion_limit`
+- [x] **TD-008's document half** — and the fix is an invariant, not a pass: a path a document names must exist, the adapter listing must match the tree, the module table must match the tree
+- [x] found: two dead links in `CLAUDE.md`, four wrong directories and two missing ones in `file-structure.md`, **thirteen of twenty** modules in `runtime.md`'s table, a spike script named by a filename it never had, and `compile.py` saying subgraphs *arrive in Phase 6* for six phases after they did
+- [x] **three of the row's own claims were already false** (`adapters.md`'s `memory_mb` and `write_file`; `wire.md`'s transport and token) and **one does not reproduce** (`recursion_limit`, measured at depths 40, 80 and 150)
+- [x] **`.githooks` failing open is deliberate and recorded**, not fixed: CI runs on every push now, so the hooks are belt-and-braces
+- [x] Gate — ruff 0 / format 0 / mypy 0 (133 files) / pytest 946 passed, 1 skipped, 10 deselected; 9 mutations, all bite
+
+## Phase 19 — closed
+- [x] **Every P0, P1 and P2 in the backlog is closed**, bar ENH-003, which is deliberately deferred to the first OPC-UA or ROS adapter and needs a server or a ROS distribution that is not on this machine
+- [x] records, board, status, roadmap
 - [ ] TD-006, TD-007, TD-008
 - [ ] records, board, status, roadmap

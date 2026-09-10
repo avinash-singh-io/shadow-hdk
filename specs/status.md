@@ -5,30 +5,35 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-10 (Phase 16)
-> **Current Phase**: **Phase 19 — the P2s**, all four groups done bar one documentation pass.
-> **BUG-016** the adapter cache (0.594 ms/step, inside D11). **BUG-013** the derivation engine total,
-> canonical and NFC-normalised, refusing a cell that is not a string or a boolean. **BUG-014** the
-> record survives a crash. **TD-004** every port implementation held to its contract, kept true by
-> an invariant. **TD-005** what grows with traffic bounded, what does not argued. **TD-006** — six
-> claims, **one cause**: `RuntimeStop` was an `Exception`, so every component adapter's `except
-> Exception` swallowed a lease that ran out, a host that cancelled and a port that broke alike. It
-> is a `BaseException` now. **Contract 0.12.0 → 0.13.0.** **TD-007's plumbing** closed and **its
-> policy recorded as the owner's** under ADR-1. **TD-008** in part: the decisions directory now maps
-> all thirty-eight.
+> **Current Phase**: **Phase 19 COMPLETE — every P0, P1 and P2 the audit filed is closed.** The
+> exception is ENH-003, deliberately deferred to the first OPC-UA or ROS adapter, which needs a
+> server or a ROS distribution that is not on this machine.
 >
-> **Seven of the audit's own claims have been corrected rather than implemented as written** — the
-> gate's reach, the fan-out that does not fail, "CI has never run", where Unicode normalisation
-> bites, a `NaN` literal, what a float cell costs, and two queues that were already bounded.
+> Phase 19 closed **BUG-016** (57% of the runtime's per-step overhead was Pydantic rebuilding the
+> same schema; 1.36 → **0.594 ms/step**), **BUG-013** (the derivation engine total, canonical and
+> NFC-normalised), **BUG-014** (the record survives a crash), **TD-004** (every port held to its
+> contract), **TD-005** (what grows with traffic bounded, what does not argued), **TD-006** (six
+> leaks, one cause: `RuntimeStop` was an `Exception`, so every adapter's `except Exception`
+> swallowed a lease, a cancellation and a port failure alike — **contract 0.13.0**), **TD-007's
+> plumbing**, and **TD-008** (the documents, kept honest by an invariant).
 >
-> **CI is green** and runs on every push. 940 tests; mypy strict over 133 files; seventeen
-> distributions at **0.13.0**, all MIT. Phases 0–18 complete, pushed, unmerged.
+> **Ten of the audit's own claims were wrong and are corrected on the record** — understated,
+> misplaced, already fixed, or not reproducible. Every row was reproduced before it was touched, and
+> that changed the fix in about a third of them.
 >
-> **What remains buildable**: TD-008's document half — `runtime.md`'s module table and `resume`
-> signature, `file-structure.md`'s four directories that do not exist, `adapters.md`'s stale
-> options, `wire.md`'s transport, a dead link in `CLAUDE.md`, `.githooks` that fail open without
-> `node`, and `recursion_limit` ending a nested fan-out before the lease speaks. Everything else is
-> the owner's or recorded as deferred: ADR-1 (which gates TD-007's other half), ADR-2, the merge,
-> the tag, and ENH-002/ENH-003.
+> **CI is green** and runs on every push. It had never run on any of 141 commits until this phase
+> widened a trigger that only fired on branches nothing has ever landed on.
+>
+> 946 tests; mypy strict over 133 files; seventeen distributions at **0.13.0**, all MIT. Phases 0–19
+> complete, pushed, **unmerged** — landing is the owner's gate.
+>
+> **Nothing further is buildable here.** What remains is the owner's: **ADR-1** (which gates
+> TD-007's other half — whether an irreversible step must produce an `Acted` whichever port it came
+> through), **ADR-2**, landing the stack in one merge (**the pull request is prepared and not
+> opened**, in `specs/adhoc/TD-009/`), and the **v0.13.0** tag. Recorded deferrals: unit
+> cancellation in the derivation engine, a twelfth event kind for an unreachable port, ENH-002 (a
+> TLS broker), ENH-003 (a second protocol adapter), and Phase 11's live gVisor and Firecracker
+> proofs (a Linux host).
 > **Latest Release**: None (every package 0.0.1; 0.1.0 at Phase 0's end)
 > **Health**: On Track
 

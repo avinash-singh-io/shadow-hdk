@@ -348,3 +348,56 @@ decision in the tree is listed, every row points at a document that **really con
 walk itself is asserted to find something so the guards cannot go vacuous.
 
 ---
+
+### [NOTE] 2026-09-10 — Phase 19 closed: what the audit got wrong, and how often
+Topics: audit, honesty, invariants
+Affects-phases: none
+Affects-specs: none
+
+Nineteen phases and an audit of eleven bugs and seven debts. Phase 19 closes the last of them, and
+the number worth writing down is not the count fixed — it is **ten claims in the audit that were
+wrong**, found only because every row was reproduced before it was touched.
+
+They were wrong in every direction. Some **understated**: `compose` did not merely drop a plan's
+results, it left the call unanswered, which is the dangling tool call every provider rejects. Some
+**misplaced**: Unicode normalisation makes no difference in a unit and produces a *wrong count* in a
+cell. Some were **already fixed**: the witness queue was bounded in Phase 16, `adapters.md`'s
+`write_file` in Phase 18, `wire.md`'s transport in Phase 17. One **does not reproduce at all**: the
+recursion limit never bit at any depth the runtime can serialise. And one, TD-009's, was right about
+a thing so large it changed how everything else should be read — **CI had never run on a single
+commit** of a 141-commit stack.
+
+The audit was still worth more than any of this suggests. Every one of the P0s was real and two were
+security-shaped. The lesson is narrower and more useful than *audits are unreliable*: **a row is a
+hypothesis with a location attached**, and its value is the location. Reproducing before fixing cost
+perhaps a fifth of the time and changed the fix in ten cases out of about thirty.
+
+The other thing this phase kept finding is that **a fix and a guard are different work**. Four rows
+ended in an invariant rather than a repair — every port held to its contract, the decision map, the
+documents, and the adapter count — because the repair addresses the day and the invariant addresses
+the class. Each of those invariants then failed its own mutation pass at least once, always in the
+same way: **the rule could not be seen to work, because the real tree satisfies it.** The remedy is
+the one `test_stands_alone.py` had already written down twice — the rule as a function, called from
+the guard and from a synthetic case built to break it — and it is now used in four files.
+
+---
+
+### [DECISION] 2026-09-10 — the commit hooks fail open, and that stays
+Topics: hooks, ci, td-008
+Affects-phases: none
+Affects-specs: none
+
+`.githooks/commit-msg` runs `run-check.js` when `node` is on the `PATH`, and when it is not it warns
+on stderr and exits 0. TD-008 lists this as a defect.
+
+**It stays, and the reason changed this phase.** A hook that blocked every commit on a machine
+without `node` would stop work on a machine that is otherwise fine, to enforce a convention whose
+violation costs a rewritten commit message. That trade was already poor. It is now clearly poor,
+because **CI runs on every push** as of TD-009 — so the hook is a courtesy that catches a mistake
+early, and the gate that actually enforces anything is somewhere it cannot be skipped.
+
+What would make this wrong: a check the hook performs that CI does not. There is none today; the
+hook and the workflow run the same rules. If one ever diverges, the divergence is the bug, not the
+exit code.
+
+---
