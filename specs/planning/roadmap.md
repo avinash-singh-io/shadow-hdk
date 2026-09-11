@@ -26,7 +26,17 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-11
+## Where this stands — 2026-09-12
+
+**Phases 0–24 are done** and v0.20.0 is released. Then the harness was *used* for a day — five
+real tasks through the studio on a subscription — and that found seven bugs (all closed) and a
+shape the reference implementations agree on and we lacked: a **turn** on the record, **activity**
+streaming beside it, **modes** that carry a behaviour and switch mid-run, **questions** that a host
+in any language can answer and that the agent itself can raise. `specs/planning/the-substrate.md`
+is the grounded plan; phases 25–27 below are it. Context engineering and collaboration move to
+28 and 29 unchanged.
+
+### Where this stood — 2026-09-11
 
 **Phases 0–24 are done**, merged and released; the latest is **v0.18.0** (Phase 24): 1,153 tests,
 mypy strict over 198 files, seventeen distributions, all MIT. The consumable line is reached: a
@@ -105,8 +115,11 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
 | 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
 | 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
-| 25 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
-| 26 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
+| 25 | The host's controls | planned | 24 | activity beside the record; the conversation as a primitive with turns on the record; modes = policy + behaviour + presentation, switchable by a dial; questions both ways, with "add a rule" |
+| 26 | Any language | planned | 25 | `serve` over stdio and HTTP; every host handle crosses the wire; TypeScript generated from the schemas; the studio on the wire only |
+| 27 | Batteries and the facade | planned | 25 | web search and fetch consumed; `harness.toml` and `Harness.load()`; the optimiser port specified |
+| 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
+| 29 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 
 ## What comes next — the consumable line
 
@@ -126,8 +139,11 @@ files; the phases after it are capability, not readiness.
 | **22** | **The environment** | 21 | `workspace`, `sandbox_subprocess` and `contained` become **one concept with a mode** — `read-only`, `workspace-write`, `full` — enforced by the environment, true for every operation in it, and the effect profile derived from environment × mode × operation once (BUG-018's class, closed by shape rather than by invariant). `LocalEnvironment` on the OS sandbox (seatbelt on macOS; Landlock on Linux) — the model the mature coding agents use. `SandboxEnvironment` **consuming** an existing sandbox platform behind the `IsolationBackend` seam with the root mounted in, isolation proven by what is denied (D36). The hand-rolled gVisor and Firecracker wrappers are deleted. Widening — *may I read elsewhere?* — is an `Ask`. |
 | **23** | **A host, in-process and in any language** | 21, 22 | The runtime consumed by a real host: its own governance, sink and checkpointer handed in; the visible-agent projection rendered by its UI; a subscription provider or a key, its choice. The **wire held to parity** with in-process — every event kind, the projection, resume, and the registry offered outward — so a host in another language is not a second-class one. Socket authentication (D44's debt). The live proof runnable on demand. This is the consumable line. |
 | 24 | The skill registry | 23 | Skills as a **registry** rather than a directory: predefined, minted during a run, and *proposed for keeping* through the sink — which is what makes self-evolution a governed act rather than a side effect. Progressive disclosure: a skill costs a name and a line until it is chosen. Promotion is a host decision. |
-| 25 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
-| 26 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
+| **25** | **The host's controls** | 24 | What every product that ships an agent has and we measured we lacked (`the-substrate.md` §1). **Activity**: an ephemeral stream beside the record — partial thinking, partial text, a running command's output, "composing" — never checkpointed (principle 6). **Conversation**: the thread-of-turns moved out of the example into the harness; a turn is a *step* of the conversation's run, so Thread → Turn → Item is Run → Step → child steps with no new concept; `steer` and `interrupt`. **Modes** = policy + `Behaviour` (role, model, effort, temperature, tools offered) + presentation, authored as data, the provider file mapping behaviour to that CLI's flags; the three defaults per environment mode shipped, not exampled. **Dials**: a host handle turned mid-run; `Dialed` on the record. **Questions both ways**: "allow, and add this rule" proposed through the sink; `ask_person` for the agent's own questions. The studio consumes all of it: collapsed step runs, streamed thinking and text, a mode selector, a question item. |
+| **26** | **Any language** | 25 | `shadow-hdk serve` over stdio JSONL (Codex's default) and HTTP/SSE; **every host handle crosses the wire** — questions, dials, cancellation — and the parity invariant covers handles; a TypeScript package generated from the published schemas at build time; the studio rewritten to consume the wire and nothing local, which is how a product in another language would. |
+| 27 | Batteries and the facade | 25 | `web_search` and `web_fetch` consumed as MCP servers behind the component port (wigolo first, `ddgs` as the light alternative), `reaches` so the modes already judge them. `harness.toml` — environment, modes, provider, tools, skills — and `Harness.load()`: three lines for a product that wants defaults, every port open underneath (principle 9); the coder and host examples reduced to it. The optimiser port (DSPy behind it, later) *specified*, not built — Rule 11 first. |
+| 28 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
+| 29 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
 
 ## Epics
 
@@ -158,3 +174,7 @@ already settled by `09` where `09` speaks.
 3. Defer scope, not quality — red tests first, contracts round-trip, the benchmark runs
 4. A new capability is an adapter or a pattern file; a runtime branch on a name is a defect
 5. **Build the loop; consume the rest.** Before an adapter is written, what already exists is surveyed and the survey is recorded. The loop — governance by effects, leases, the sink, the record — is the only thing this repository exists to build; a sandbox, a browser, a memory, a protocol is something it exists to *govern*, and is consumed behind a port. The survey that should have preceded Phase 3 was done before Phase 21, and it re-ordered the plan.
+6. **The record is complete; the activity is live.** Everything that happened is on the record, once, replayable. Everything that is *happening* — a token, a line of output — is on an ephemeral stream beside it, never checkpointed, never required for correctness.
+7. **A host holds handles, not code.** What a person does *during* a run — answer, cancel, turn a dial, steer — is a handle the host keeps, and every handle crosses the wire, so a host in any language holds the same ones.
+8. **A product's vocabulary is the product's.** The registry's name, the labels on activity, the wording of a question, the names of modes: data the host supplies with defaults, never a string a product would have to fork to change.
+9. **Simple by default, deep by choice.** A harness is a file and three lines; the same file drives `serve` for a host in another language; every port stays open for a product that composes by hand.

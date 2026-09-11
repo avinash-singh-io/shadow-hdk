@@ -1,6 +1,6 @@
 ---
 type: Plan
-status: proposed
+status: accepted
 date: 2026-09-12
 ---
 
@@ -144,6 +144,35 @@ taking a behaviour or a skill, examples and a metric, and proposing a better one
 (`Proposal(kind="behaviour")`, the same governed self-evolution as D56). Rule 11 applies: no
 optimiser before the evaluator is locked. Not this round.
 
+### 1.8 Ours against Codex's three nouns — an honest comparison
+
+The owner asked whether Run → Step → Event is as good as Thread → Turn → Item. Side by side:
+
+| | Codex App Server | shadow-hdk today | Verdict |
+|---|---|---|---|
+| The durable container | **Thread**: start, resume, fork, list, read, archive, rollback | **Run** with a checkpointer: park, resume, held children; no list/fork/rollback | theirs is more complete *as a container*; ours is more complete *as a ledger* (every step judged by effects, leased, costed, with provenance and posture) |
+| One exchange | **Turn**: `start`, `steer`, `interrupt`, completed with usage | **not on the record** — a turn is a `you`/`agent` note the studio writes; `Cancellation` interrupts, nothing steers | **theirs is better.** A turn boundary is a fact every host needs and ours does not record it |
+| The atomic unit | **Item**: `started → delta × N → completed`, typed (message, reasoning, command, file change, tool call) | **Step** (`Invoked → Observed`), typed by the component's effects, with reasoning, usage, children, refusal, question | equal in kind; **theirs streams, ours does not** |
+| Approval | a request from server to client, typed per item, four answers | `Asked` on the record with what it is about (D59); two answers | theirs is better shaped for a client; ours is better grounded (the question names effects, not a tool) |
+| What it governs | Codex, its own agent | any agent — Claude Code, Codex itself, OpenCode, an in-process pattern — under one policy | **ours is a level up**: theirs *is* an agent behind a protocol; ours is the substrate an agent runs *in* |
+| The vocabulary a client holds | three nouns | Run, Step, Event, Observation, Composition, Lease, … | theirs is smaller, which matters for adoption |
+
+So: at the ledger, ours is richer and more principled — governance by effects, leases, a
+complete replayable record, provenance, nested runs with their own budgets — and nothing in
+Codex's protocol has those. At the *host-facing* surface, theirs is better shaped today: a turn is
+first-class, items stream, approvals are requests, and a client developer can hold the whole thing
+in their head.
+
+**The decision that closes the gap without a new concept.** A conversation is a run; **a turn is a
+step of that run**; the agent's tool calls are child steps under it (already so, by `parent`);
+activity streams beside each step. Then Thread → Turn → Item *is* Run → Step → child steps, the
+record gains turn boundaries for free, `steer` and `interrupt` are operations on the current step,
+and the projection a client renders is exactly Codex's shape with our ledger underneath. What it
+costs: the provider's session must be held across steps by the `Conversation` object rather than
+inside one long-lived `converse` step — which is the right place for it anyway (the registry
+socket served for the conversation's lifetime, not per step). The host-facing vocabulary becomes
+**Conversation · Turn · Step · Activity** — four nouns, one of them ours.
+
 ## 2. Principles this adds
 
 Principles 1–5 stand. Using the harness for a day produced three more, each already violated once:
@@ -262,9 +291,10 @@ what it always was.
   streams).
 - The studio consumes the wire like any other host would — nothing local.
 
-## 4. Phases proposed
+## 4. Phases — accepted by the owner 2026-09-12
 
-Bigger than a hardening round; three phases, each releasable, in `deps` order.
+Bigger than a hardening round; three phases, each releasable, in `deps` order. The studio goes
+through the wire in 26, once the handles cross; in 25 it consumes the primitives in-process.
 
 | # | Name | deps | Delivers |
 |---|---|---|---|
@@ -273,7 +303,7 @@ Bigger than a hardening round; three phases, each releasable, in `deps` order.
 | 27 | **Batteries and the facade** | 25 | web search/fetch consumed; `harness.toml` + `Harness.load`; the coder and host examples reduced to the facade; the DSPy optimiser port *specified*, not built |
 
 Context engineering and collaboration (today's 25/26) move to 28/29; nothing in them depends on
-being earlier.
+being earlier. The roadmap says so.
 
 ## 5. What is not proposed
 
