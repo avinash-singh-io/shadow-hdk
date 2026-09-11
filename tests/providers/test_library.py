@@ -142,17 +142,19 @@ def test_the_marginal_provider_costs_a_file() -> None:
 
 
 def test_a_record_says_which_of_its_fields_were_measured_and_which_transcribed() -> None:
-    """Codex was installed locally and read off signed out (Phase 23): its probes and its session
-    id are measured; the signed-in shapes are still transcribed from the reference implementation,
-    because a signed-in Codex is a person's login and not this lane's to hold.
+    """Codex was measured signed in on the owner's login (the hardening round after Phase 24):
+    the turn's shapes, the sub-type, the usage, the override spelling. Two things still were not
+    seen — a reasoning item and a mid-turn failure — and the header says so, with the source they
+    are transcribed from.
 
     Transcribed and measured are different kinds of claim, and a file that hid the difference would
     invite somebody to trust a field nobody has run. The header says which is which; this makes the
-    saying non-optional. (Written first as *nothing here is measured*; the premise moved.)
+    saying non-optional. (Written first as *nothing here is measured*, then *partly*; the premise
+    moved twice, each time by running the thing.)
     """
     text = (LIBRARY / "codex.toml").read_text(encoding="utf-8")
 
-    assert "Partly measured" in text
+    assert "Measured signed-in" in text
     assert "Still transcribed" in text, "the header must say what has not been run"
     assert "open-design" in text, "a transcribed field must name what it was transcribed from"
     assert "0.154.0" in text, "a measurement names the version it was made against"

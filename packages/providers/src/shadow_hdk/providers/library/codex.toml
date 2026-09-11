@@ -1,25 +1,56 @@
 # Codex CLI, over its line-delimited JSON exec mode.
 #
-# **Partly measured.** On 2026-09-11 `@openai/codex` 0.154.0 was installed *locally* (into a scratch
-# directory, never globally — the harness detects and reports, it does not install; D41) and read
-# off, signed out. What that run settled, against a real binary:
+# **Measured signed-in**, 2026-09-11/12, `codex-cli 0.154.0`, on the owner's ChatGPT login (the
+# harness read nothing of it — `codex login status` said `Logged in using ChatGPT`, and that line is
+# the whole of what it saw). What a turn looks like, verbatim shapes:
 #
-#   - `codex --version` prints `codex-cli 0.154.0`; the version probe reads it
-#   - `codex login status` prints `Not logged in` and exits 1 when signed out; `detect()` reports
-#     `not-signed-in` with that line as the message, through `CODEX_BIN` (which `detect()` did not
-#     honour until this measurement — it does now)
-#   - `codex exec --json --skip-git-repo-check` reads the prompt from stdin, and its first two lines
-#     are `{"type":"thread.started","thread_id":"…"}` and `{"type":"turn.started"}` — so
-#     `session_id_at` is right — before it fails `401 Unauthorized` on `wss://api.openai.com`
-#   - tools are configured with `-c mcp_servers.<name>…` (`-c` takes a dotted TOML override)
+#   {"type":"thread.started","thread_id":"…"}
+#   {"type":"turn.started"}
+#   {"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"…"}}
+#   {"type":"item.started",  "item":{"id":"item_1","type":"command_execution","command":"…",
+#                                    "aggregated_output":"","exit_code":null,"status":"in_progress"}}
+#   {"type":"item.completed","item":{"id":"item_1","type":"command_execution",…,"exit_code":0}}
+#   {"type":"turn.completed","usage":{"input_tokens":32154,"cached_input_tokens":26112,
+#                                     "cache_write_input_tokens":0,"output_tokens":182,
+#                                     "reasoning_output_tokens":51}}
 #
-# **Still transcribed**, because every one of them needs a signed-in Codex, which is a person's
-# OpenAI login and not this lane's to hold: the shape of `item.completed`, where the final text
-# and the usage live, and what `error` looks like mid-turn. They are copied from the reference
-# implementation's own provider definition (nexu-io/open-design,
-# `apps/daemon/src/runtimes/defs/codex.ts`), which *is* measured evidence — by them, not by us.
-# The first signed-in turn should correct whatever is wrong in the `[dialect]` block below, and the
-# corrections belong in this file rather than in a code path.
+# So: every item arrives as `item.completed` and the **sub-type** says what it is — the assistant's
+# words are `agent_message` items only. The turn ends on `turn.completed`, which carries usage and
+# no text (the final text is what was said). There is no price in the stream: a subscription turn is
+# unpriced, and `cost_usd_at` is left blank so the meter says *unknown* rather than zero. Tools go in
+# as repeated `-c mcp_servers.<name>.<field>=<toml>` overrides (`-c` takes a dotted TOML override).
+# `--sandbox read-only` keeps the CLI's *own* shell from writing anywhere: it has no flag to refuse
+# its tools outright, so its reads stay its own (declared: the converse step reads everything) and
+# every write has to come through this run's registry. Under `exec` the approval policy is `never`,
+# and an injected tool that is not read-only is refused with *MCP tool call requires approval* —
+# measured — unless the server is pre-permitted: `default_tools_approval_mode = "approve"` (the
+# accepted values are `auto`, `prompt`, `writes`, `approve`; the CLI names them itself when handed
+# any other). That is `allow_override` below, the same argument as Claude Code's `--allowedTools`.
+#
+# **What it cannot do**: a strict mode. Codex has no flag that stops the user's own configured MCP
+# servers joining the run (Claude Code has `--strict-mcp-config`); `mcp_servers.<name>.enabled =
+# false` works for a server in `config.toml` and breaks the bootstrap for one a plugin bundles, and
+# this harness will not read a person's configuration to enumerate them. So a Codex run carries
+# the user's own servers, ungoverned, and the converse step's declared effects say so (reads
+# everything, reaches). Filed as ENH-005.
+#
+# A failed turn, measured (the owner's free-tier limit, hit by these very measurements):
+#
+#   {"type":"error","message":"You've hit your usage limit. …"}
+#   {"type":"turn.failed","error":{"message":"You've hit your usage limit. …"}}
+#
+# so a turn ends on `turn.completed` *or* `turn.failed`, `failed_at = "error"` is true on the
+# latter, and `failed_text_at` puts the reason where the person reads it.
+#
+# **Still transcribed** (from the Codex docs and nexu-io/open-design's `codex.ts`), because three
+# signed-in turns with `show_raw_agent_reasoning=true` and `model_reasoning_summary="detailed"`
+# produced none: a `reasoning` item's shape (`item.type == "reasoning"`, `item.text`).
+# `reasoning_output_tokens` was 51 on a turn that showed no reasoning item, so the tokens are spent
+# and the text is withheld by the CLI in this mode. **Not yet proven end to end**: Codex calling
+# this run's tools through the registry relay — it called an injected stdio server's tools
+# (including a destructive one, once pre-permitted), and the relay is the same shape, but the
+# quota ran out one turn short of the proof. `uv run pytest -m live -rs` on a signed-in machine
+# with quota is where that proof runs.
 #
 # What else is transcribed:
 #   - `CODEX_HOME` must be named explicitly; the collector refuses a home-directory fallback so it
@@ -38,7 +69,7 @@ auth_probe = ["login", "status"]
 auth_failure_patterns = ["not logged in", "please run .*login", "no credentials", "unauthorized"]
 
 transport = "jsonl"
-launch_args = ["exec", "--json", "--skip-git-repo-check"]
+launch_args = ["exec", "--json", "--skip-git-repo-check", "--sandbox", "read-only"]
 
 injects_tools = "mcp"
 
@@ -47,23 +78,27 @@ backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME", "COD
 
 install_hint = "npm i -g @openai/codex, then `codex login` to attach your subscription"
 
-# `session_id_at` is measured; the rest of this block is transcribed rather than observed — see
-# the header.
 [dialect]
 resident = false
 prompt_shape = "text"
 resume_args = ["exec", "resume"]
-session_id_at = "thread.started.thread_id"
-say_on = ["item.completed", "agent_message"]
+session_id_at = "thread_id"
+subtype_key = "item.type"
+say_on = ["item.completed/agent_message"]
 say_at = "item.text"
-done_on = ["turn.completed", "task_complete"]
-done_at = "item.text"
+think_on = ["item.completed/reasoning"]
+think_at = "item.text"
+done_on = ["turn.completed", "turn.failed"]
+done_at = ""
 failed_at = "error"
-cost_usd_at = "usage.total_cost_usd"
+failed_text_at = "error.message"
+cost_usd_at = ""
 input_tokens_at = "usage.input_tokens"
 output_tokens_at = "usage.output_tokens"
 
 mcp_config_arg = "-c"
+mcp_config_shape = "overrides"
+allow_override = 'mcp_servers.{name}.default_tools_approval_mode="approve"'
 mcp_strict_args = []
 disallow_arg = ""
 disallow = []

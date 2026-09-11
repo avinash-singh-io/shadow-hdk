@@ -91,6 +91,12 @@ class Dialect:
     type_key: str = "type"
     """Which key on each line says what kind of event it is."""
 
+    subtype_key: str = ""
+    """A second key that refines the kind — `item.type` for a CLI whose every item arrives as
+    `item.completed`. An `*_on` entry written `type/subtype` matches only when both agree; a plain
+    entry matches on the type alone. Empty means the CLI has no such refinement, and a `type/sub`
+    entry can then match nothing rather than something by accident."""
+
     say_on: tuple[str, ...] = ()
     say_at: str = ""
     """The event types carrying assistant text, and where the text is inside them."""
@@ -108,10 +114,20 @@ class Dialect:
     """A boolean saying the turn failed. Read rather than inferred from an exit code: these CLIs
     exit non-zero for reasons that are not failures and zero for failures that are."""
 
+    failed_text_at: str = ""
+    """Where a failed turn says why, when the ending event carries it — `error.message` on Codex's
+    `turn.failed` (measured: *You've hit your usage limit…*). Shown as the turn's text when the
+    turn failed and said nothing else, so the person reads the reason and not a blank."""
+
     mcp_config_arg: str = ""
     """The flag that takes an MCP server configuration as JSON. This is how D42's socket closes
     around a CLI of this shape: the run's registry goes in here and its tools become the only ones
     worth having."""
+
+    mcp_config_shape: str = "json"
+    """How the configuration is spelled after the flag: `json` is one argument holding
+    `{"mcpServers": …}` (Claude Code); `overrides` is one `<flag> mcp_servers.<name>.<field>=<toml>`
+    per field (Codex). Measured, both; a third CLI with a third spelling costs a value here."""
 
     mcp_strict_args: tuple[str, ...] = ()
     """Flags that stop it loading MCP servers from anywhere else. Without them a user's own global
@@ -126,6 +142,14 @@ class Dialect:
     run's governance is the only one left, which is the arrangement D42 wants: one authority, and
     it is ours.
     """
+
+    allow_override: str = ""
+    """For a CLI whose configuration is overrides (`mcp_config_shape = "overrides"`): the per-server
+    override that pre-permits an injected server's tools, with `{name}` for the server's name.
+    Measured on Codex: `mcp_servers.{name}.default_tools_approval_mode="approve"` — without it an
+    `exec` run (approval policy `never`) refuses every injected tool that is not read-only with
+    *MCP tool call requires approval*. The same argument as `allow_arg`: removing **its** gate
+    leaves the run's governance as the only one."""
 
     allow_tool_prefix: str = ""
     """What the CLI prefixes an injected server's tools with, when naming them to `allow_arg`.

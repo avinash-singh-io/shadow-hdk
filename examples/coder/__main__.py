@@ -1,6 +1,6 @@
 """Talk to it.
 
-    uv run python -m examples.coder [workspace]
+    uv run python -m examples.coder [workspace] [--mode=…] [--provider=claude-code|codex|opencode]
 
 Everything it does happens in the workspace directory and nowhere else, and every action it takes
 is printed as it lands on the run's event stream — so you can watch the governing happen rather
@@ -69,12 +69,15 @@ def show(event: Event) -> None:
 async def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("-")]
     mode: EnvironmentMode = "workspace-write"
+    want: str | None = None
     for flag in sys.argv[1:]:
         if flag.startswith("--mode="):
             mode = flag.split("=", 1)[1]  # type: ignore[assignment]
+        if flag.startswith("--provider="):
+            want = flag.split("=", 1)[1]
     root = Path(argv[0] if argv else "./coder-workspace").resolve()
     try:
-        async with a_conversation(root, mode=mode, on_event=show) as talk:
+        async with a_conversation(root, want=want, mode=mode, on_event=show) as talk:
             print(f"{BOLD}Workspace:{OFF} {root}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
             if mode == "workspace-write":

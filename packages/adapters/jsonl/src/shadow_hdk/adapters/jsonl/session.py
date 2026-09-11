@@ -151,7 +151,7 @@ class JsonlSession:
             if not isinstance(event, dict):
                 continue
             kind = event.get(dialect.type_key)
-            if kind in dialect.think_on:
+            if matches(event, kind, dialect.think_on, dialect.subtype_key):
                 # **Why before what** (D45). The tool calls this thinking led to are already
                 # landing on the record through the socket as they happen; a thought held back
                 # until the turn ended would read as hindsight. So each one goes on the record as
@@ -161,11 +161,11 @@ class JsonlSession:
                     thought_so_far.append(thought)
                     if (context := current_run()) is not None:
                         await context.reasoned(thought)
-            if kind in dialect.say_on:
+            if matches(event, kind, dialect.say_on, dialect.subtype_key):
                 said += texts_at(event, dialect.say_at)
             if dialect.session_id_at and (found := read_at(event, dialect.session_id_at)):
                 self._session_id = str(found)
-            if kind in dialect.done_on:
+            if matches(event, kind, dialect.done_on, dialect.subtype_key):
                 return self._finished(event, said, thought_so_far)
         # The stream ended without the event that says a turn ended: the child died, or it does not
         # announce completion. What it said is still what it said.
@@ -176,11 +176,16 @@ class JsonlSession:
     def _finished(self, event: Any, said: list[str], thought: list[str]) -> Turn:
         dialect = self._dialect
         final = read_at(event, dialect.done_at)
+        failed = bool(read_at(event, dialect.failed_at))
+        text = final if isinstance(final, str) else "".join(said)
+        if failed and not text:
+            why = read_at(event, dialect.failed_text_at)
+            text = why if isinstance(why, str) else ""
         return Turn(
-            text=final if isinstance(final, str) else "".join(said),
+            text=text,
             reasoning="".join(thought),
             stop_reason=str(read_at(event, dialect.stop_reason_at) or ""),
-            failed=bool(read_at(event, dialect.failed_at)),
+            failed=failed,
             usage=Usage(
                 input_tokens=_as_int(read_at(event, dialect.input_tokens_at)),
                 output_tokens=_as_int(read_at(event, dialect.output_tokens_at)),
@@ -203,6 +208,19 @@ class JsonlSession:
 
             end_the_group(process)
             await process.wait()
+
+
+def matches(event: Any, kind: Any, entries: tuple[str, ...], subtype_key: str) -> bool:
+    """Whether this line is one of `entries`: `type` alone, or `type/subtype` with the dialect's
+    `subtype_key` read off the event. A `type/subtype` entry with no key to read matches nothing."""
+    for entry in entries:
+        if "/" in entry:
+            wanted, sub = entry.split("/", 1)
+            if kind == wanted and subtype_key and read_at(event, subtype_key) == sub:
+                return True
+        elif kind == entry:
+            return True
+    return False
 
 
 def _as_int(value: Any) -> int | None:

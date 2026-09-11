@@ -8,6 +8,11 @@
           "title": "Allow Arg",
           "type": "string"
         },
+        "allow_override": {
+          "default": "",
+          "title": "Allow Override",
+          "type": "string"
+        },
         "allow_tool_prefix": {
           "default": "",
           "title": "Allow Tool Prefix",
@@ -49,6 +54,11 @@
           "title": "Failed At",
           "type": "string"
         },
+        "failed_text_at": {
+          "default": "",
+          "title": "Failed Text At",
+          "type": "string"
+        },
         "input_tokens_at": {
           "default": "",
           "title": "Input Tokens At",
@@ -57,6 +67,11 @@
         "mcp_config_arg": {
           "default": "",
           "title": "Mcp Config Arg",
+          "type": "string"
+        },
+        "mcp_config_shape": {
+          "default": "json",
+          "title": "Mcp Config Shape",
           "type": "string"
         },
         "mcp_strict_args": {
@@ -111,6 +126,11 @@
         "stop_reason_at": {
           "default": "",
           "title": "Stop Reason At",
+          "type": "string"
+        },
+        "subtype_key": {
+          "default": "",
+          "title": "Subtype Key",
           "type": "string"
         },
         "think_at": {

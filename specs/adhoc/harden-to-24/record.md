@@ -43,3 +43,4 @@ sees nothing to answer; the parked child is released with the run.
 
 - 2026-09-11 — opened; BUG-020 first.
 - 2026-09-11 — **BUG-020 closed** (D57): the runtime lets a component ask for itself; the agent uses it; the wire carries `keep`/`resumed`; BUG-019's row closed.
+- 2026-09-12 — **Codex measured signed in**: the sub-type on every item, usage, the override spelling, the pre-permit, the failure shape; `codex.toml` says what is measured and what one thing still is not (a reasoning item). The end-to-end proof through the relay skips on the owner's free-tier quota, which these measurements exhausted; it is a live test now. ENH-005 filed (no strict MCP mode).

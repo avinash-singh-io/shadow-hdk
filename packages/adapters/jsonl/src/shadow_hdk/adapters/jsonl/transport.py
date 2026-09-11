@@ -53,6 +53,28 @@ def mcp_config_for(tools: tuple[ToolSource, ...]) -> str:
     return json.dumps({"mcpServers": servers})
 
 
+def _toml(value: Any) -> str:
+    """A TOML literal for one override value — a string, a list of strings, or a flat table."""
+    if isinstance(value, str):
+        return json.dumps(value)  # TOML basic strings share JSON's escapes
+    if isinstance(value, list):
+        return "[" + ",".join(_toml(v) for v in value) + "]"
+    if isinstance(value, dict):
+        return "{" + ",".join(f"{k}={_toml(v)}" for k, v in value.items()) + "}"
+    return json.dumps(value)
+
+
+def mcp_overrides_for(flag: str, tools: tuple[ToolSource, ...]) -> list[str]:
+    """The same servers as `mcp_config_for`, spelled as repeated `<flag> key=value` overrides for a
+    CLI that takes its configuration that way (Codex: `-c mcp_servers.<name>.command=…`)."""
+    servers = json.loads(mcp_config_for(tools))["mcpServers"]
+    argv: list[str] = []
+    for name, server in servers.items():
+        for field in ("command", "args", "env"):
+            argv += [flag, f"mcp_servers.{name}.{field}={_toml(server[field])}"]
+    return argv
+
+
 def server_names(tools: tuple[ToolSource, ...]) -> set[str]:
     """What the injected servers are called — the names the CLI will prefix its tool ids with."""
     return {f"shadow-hdk-{i}" if i else "shadow-hdk" for i in range(len(tools))}
@@ -69,11 +91,17 @@ def argv_for(provider: Provider, tools: tuple[ToolSource, ...]) -> list[str]:
             f"{provider.called} has no way to be handed tools, so nothing this run offers it could "
             "be governed; refusing rather than starting it ungoverned (D42)"
         )
-    argv += [dialect.mcp_config_arg, mcp_config_for(tools)]
+    if dialect.mcp_config_shape == "overrides":
+        argv += mcp_overrides_for(dialect.mcp_config_arg, tools)
+    else:
+        argv += [dialect.mcp_config_arg, mcp_config_for(tools)]
     argv += list(dialect.mcp_strict_args)
     if dialect.allow_arg:
         prefix = dialect.allow_tool_prefix
         argv += [dialect.allow_arg, *sorted(prefix + n for n in server_names(tools))]
+    if dialect.allow_override and dialect.mcp_config_arg:
+        for name in sorted(server_names(tools)):
+            argv += [dialect.mcp_config_arg, dialect.allow_override.format(name=name)]
     if dialect.disallow_arg and dialect.disallow:
         argv += [dialect.disallow_arg, *dialect.disallow]
     return argv
