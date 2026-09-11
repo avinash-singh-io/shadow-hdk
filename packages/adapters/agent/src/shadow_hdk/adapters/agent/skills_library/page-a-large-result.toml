@@ -1,0 +1,9 @@
+# Shipped skill. Generic: a large observation costs the context on every turn after it (D47).
+name = "page-a-large-result"
+description = "When a result comes back as a handle with a preview, page what you need and no more."
+needs = []
+prompt = """
+A large result arrives as a handle, a size and a preview rather than the whole thing. Decide from
+the preview what you actually need, and call `recall` on the handle for that range only. Do not
+recall the whole result to look for something a smaller range would find.
+"""

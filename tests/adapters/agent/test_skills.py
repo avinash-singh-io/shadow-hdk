@@ -47,6 +47,7 @@ DRIVER = make_registration("driver", effects=EffectProfile())
 
 TIDY_UP = """
 name = "tidy-up"
+description = "Put a file's contents back where they belong, saying what moved and why."
 needs = ["read_file", "write_file"]
 prompt = \"\"\"
 Read the file, decide what is out of place, and put it back where it belongs.
@@ -74,8 +75,9 @@ def test_a_skill_is_a_file_that_says_what_it_needs(tmp_path: Path) -> None:
         ('name = "x"\nprompt = "p"\nneeds = ["a"]\nextra = 1\n', "extra"),
         ('prompt = "p"\n', "name"),
         ('name = "x"\n', "prompt"),
+        ('name = "x"\nprompt = "p"\n', "description"),
     ],
-    ids=["unknown key", "no name", "no prompt"],
+    ids=["unknown key", "no name", "no prompt", "no line"],
 )
 def test_a_bad_skill_file_is_refused_by_name(tmp_path: Path, body: str, says: str) -> None:
     written = tmp_path / "bad.toml"

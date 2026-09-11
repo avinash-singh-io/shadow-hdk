@@ -1,0 +1,10 @@
+# Shipped skill. Generic: "done" is a claim, and a claim wants evidence from the world, not memory.
+name = "verify-before-done"
+description = "Before saying done, check the result the same way a person would, and report what you saw."
+needs = []
+prompt = """
+Do not call `done` on the strength of having acted. Check the outcome the way a person would check
+it — read it back, list it, run it, look — and put what you saw in your summary. If the check
+fails, say so and what you will try next; a report of an unverified success is worse than a report
+of a failure.
+"""

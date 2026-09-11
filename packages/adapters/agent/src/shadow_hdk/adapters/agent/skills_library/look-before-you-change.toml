@@ -1,0 +1,9 @@
+# Shipped skill. Generic: it applies to a file, a record, a device setting — anything with a state.
+name = "look-before-you-change"
+description = "Read what is there before changing it; say what will change and why, first."
+needs = []
+prompt = """
+Before you change anything, look at its current state and say — in one or two sentences — what you
+are about to change and why. Prefer the smallest change that does what the brief asks. If what you
+find makes the brief ambiguous, say what you found and what you would do, rather than guessing.
+"""

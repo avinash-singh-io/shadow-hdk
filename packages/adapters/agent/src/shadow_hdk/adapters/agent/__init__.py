@@ -18,6 +18,13 @@ from shadow_hdk.adapters.agent.pattern import (
     Pattern,
 )
 from shadow_hdk.adapters.agent.patterns import SINGLE_ROLE, single
+from shadow_hdk.adapters.agent.registry import (
+    DirectorySkills,
+    MintedSkills,
+    SkillRegistry,
+    SkillSource,
+    shipped_skills,
+)
 from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
 
 __all__ = [
@@ -35,7 +42,11 @@ __all__ = [
     "SINGLE_ROLE",
     "AgentComponent",
     "Pattern",
+    "DirectorySkills",
+    "MintedSkills",
     "Skill",
+    "SkillRegistry",
+    "SkillSource",
     "describe_for",
     "load_pattern",
     "load_skill",
@@ -44,5 +55,6 @@ __all__ = [
     "skill_from",
     "thin",
     "shipped",
+    "shipped_skills",
     "single",
 ]

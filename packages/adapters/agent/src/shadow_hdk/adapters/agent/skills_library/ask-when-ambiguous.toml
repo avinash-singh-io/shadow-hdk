@@ -1,0 +1,9 @@
+# Shipped skill. Generic: a question costs a turn; a wrong guess costs the work.
+name = "ask-when-ambiguous"
+description = "When the brief could mean two different things, ask once, with the options, before acting."
+needs = []
+prompt = """
+If the brief could reasonably be read two ways and the readings lead to different work, do not pick
+one. Say the two readings in one line each and ask which is meant. Ask once; if no answer is
+possible, take the reading that changes the least and say that you did.
+"""

@@ -13,6 +13,13 @@ out (`09` §4). A skill is simply the first thing that can say what it wants in 
 
 A skill is *not* a permission. `needs` is a declaration of dependency, and naming a component grants
 nothing — permission is still effects, judged per step (`09` §2). The check can only ever say no.
+
+**A skill in a registry says what it is for, and where it came from** (Phase 24, D54). The
+`description` is the one line the model chooses by — a body alone is a prompt, not an entry — so a
+file without one is refused, while a `Skill` a host constructs in code and hands to one agent may
+leave it empty. `source` is provenance: `file` for one loaded here, `minted` for one a model wrote
+mid-run, whatever a host names its own; a procedure a team reviewed and a procedure a model made up
+are different kinds of claim and the record must tell them apart.
 """
 
 from __future__ import annotations
@@ -25,8 +32,8 @@ from typing import Any
 
 from shadow_hdk.kernel.components import Registration
 
-KEYS = frozenset({"name", "prompt", "needs"})
-REQUIRED = ("name", "prompt")
+KEYS = frozenset({"name", "description", "prompt", "needs"})
+REQUIRED = ("name", "prompt", "description")
 
 
 @dataclass(frozen=True)
@@ -36,9 +43,13 @@ class Skill:
     name: str
     prompt: str
     needs: frozenset[str] = frozenset()
+    description: str = ""
+    """One line: what this is for. What the model sees until it chooses the skill (D54)."""
+    source: str = "handed"
+    """Where it came from — `file`, `minted`, `shipped`, or a host's own name for its source."""
 
 
-def skill_from(data: dict[str, Any], *, where: str) -> Skill:
+def skill_from(data: dict[str, Any], *, where: str, source: str = "file") -> Skill:
     unknown = set(data) - KEYS
     if unknown:
         raise ValueError(
@@ -51,16 +62,18 @@ def skill_from(data: dict[str, Any], *, where: str) -> Skill:
         name=str(data["name"]),
         prompt=str(data["prompt"]).strip(),
         needs=frozenset(data.get("needs", ())),
+        description=" ".join(str(data["description"]).split()),
+        source=source,
     )
 
 
-def load_skill(path: str | Path) -> Skill:
+def load_skill(path: str | Path, *, source: str = "file") -> Skill:
     where = str(path)
     try:
         data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as broken:
         raise ValueError(f"{where}: not readable as TOML — {broken}") from broken
-    return skill_from(data, where=where)
+    return skill_from(data, where=where, source=source)
 
 
 def missing_for(skill: Skill, visible: Iterable[Registration]) -> frozenset[str]:
