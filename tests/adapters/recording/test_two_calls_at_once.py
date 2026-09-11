@@ -295,3 +295,133 @@ async def test_an_answer_to_a_connection_that_is_gone_does_not_end_the_conversat
     assert not served.is_error and '"wiped": true' in served.content[0].text
     failed = [e for e in events if e.kind == "observed" and e.observation.kind == "failed"]
     assert not failed, f"the step holding the conversation failed: {failed[0].observation}"
+
+
+async def test_a_broken_connection_is_that_connections_problem_not_the_conversations() -> None:
+    """The shape that actually took the studio down, named at last by the record:
+    *BrokenResourceError*, four task groups deep. The CLI killed its relay at the moment the
+    person's answer arrived; the registry was writing the result into the dying socket, the write
+    raised, and the listener's task group carried the failure up into the step holding the
+    conversation.
+
+    Made deterministic: a raw client with a tiny receive buffer asks for a result too big to fit,
+    never reads, and hangs up while the server is still writing. The listener must go on serving:
+    a new client connects and is answered.
+    """
+    import socket as sockets
+    import sys
+    from pathlib import Path
+
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
+    questions = Questions()
+    initialize = (
+        b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",'
+        b'"capabilities":{},"clientInfo":{"name":"raw","version":"0"}}}\n'
+        b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n'
+    )
+    big = "x" * 400_000  # `look` echoes its inputs: the result will not fit a small buffer
+    call = (
+        '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"look","arguments":'
+        '{"topic":"' + big + '"}}}\n'
+    ).encode()
+
+    async def drive(context: RunContext) -> Any:
+        holder = RecordingServer(context)
+        async with (
+            holder.served() as server,
+            serve_over_socket(server, refused=holder.refuse) as (port, token),
+        ):
+            async with asyncio.timeout(40):
+                raw = sockets.create_connection(("127.0.0.1", port), timeout=5)
+                raw.setsockopt(sockets.SOL_SOCKET, sockets.SO_RCVBUF, 4096)
+                raw.sendall(token.encode() + b"\n" + initialize)
+                await asyncio.sleep(0.3)
+                raw.sendall(call)
+                await asyncio.sleep(1.0)  # the server is now blocked writing the result
+                raw.close()  # ...into a socket that just went away
+                await asyncio.sleep(1.0)
+                # The listener must still be there for the next client.
+                parameters = StdioServerParameters(
+                    command=relay, args=[], env={PORT_VARIABLE: str(port), TOKEN_VARIABLE: token}
+                )
+                async with (
+                    stdio_client(parameters) as (incoming, outgoing),
+                    ClientSession(incoming, outgoing) as session,
+                ):
+                    await session.initialize()
+                    after = asyncio.ensure_future(session.call_tool("wipe", {}))
+                    next_question = await asyncio.wait_for(questions.next(), 10)
+                    questions.answer(next_question.handle, Allow())
+                    return await after
+
+    served, events = await with_a_run(
+        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+    )
+    assert not served.is_error and '"wiped": true' in served.content[0].text
+    failed = [e for e in events if e.kind == "observed" and e.observation.kind == "failed"]
+    assert not failed, f"the step holding the conversation failed: {failed[0].observation}"
+
+
+def test_only_the_wire_going_away_is_swallowed() -> None:
+    """The containment must not become a place for bugs to hide: a group with anything that is
+    not a connection dying still propagates."""
+    import anyio
+    from shadow_hdk.adapters.recording.socket import _all_connection_shaped
+
+    gone = BaseExceptionGroup("g", [anyio.BrokenResourceError(), ConnectionResetError()])
+    nested = BaseExceptionGroup("g", [BaseExceptionGroup("h", [anyio.ClosedResourceError()])])
+    a_bug = BaseExceptionGroup("g", [anyio.BrokenResourceError(), RuntimeError("a bug")])
+    assert _all_connection_shaped(gone)
+    assert _all_connection_shaped(nested)
+    assert not _all_connection_shaped(a_bug)
+
+
+@pytest.mark.timeout(120)
+async def test_the_relay_waits_as_long_as_a_person_takes() -> None:
+    """The relay's socket had a thirty-second timeout left on it from `create_connection`
+    (BUG-028): a question a person took longer than that to answer killed the relay, and the CLI
+    took that for its MCP server dying. Proven at the socket: a relay left silent for longer than
+    its old timeout is still there and still carries the answer.
+
+    Thirty-one seconds of real waiting, because the claim is about a clock.
+    """
+    import sys
+    from pathlib import Path
+
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
+    questions = Questions()
+
+    async def drive(context: RunContext) -> Any:
+        holder = RecordingServer(context)
+        async with (
+            holder.served() as server,
+            serve_over_socket(server, refused=holder.refuse) as (port, token),
+        ):
+            parameters = StdioServerParameters(
+                command=relay, args=[], env={PORT_VARIABLE: str(port), TOKEN_VARIABLE: token}
+            )
+            async with (
+                stdio_client(parameters) as (incoming, outgoing),
+                ClientSession(incoming, outgoing) as session,
+            ):
+                await session.initialize()
+                async with asyncio.timeout(90):
+                    slow = asyncio.ensure_future(session.call_tool("wipe", {}))
+                    pending = await asyncio.wait_for(questions.next(), 10)
+                    await asyncio.sleep(31)  # longer than the timeout the relay used to carry
+                    questions.answer(pending.handle, Allow())
+                    return await slow
+
+    served, _ = await with_a_run(
+        drive, governance=AsksAboutWrites(), questions=questions, steps=40, wall_seconds=600
+    )
+    assert not served.is_error, served.content[0].text
+    assert '"wiped": true' in served.content[0].text

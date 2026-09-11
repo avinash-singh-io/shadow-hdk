@@ -91,11 +91,11 @@ install_hint = "install Claude Code, then `claude auth login` to attach your sub
 # `is_error` is read rather than the exit code, and that is not fastidiousness: a turn whose OAuth
 # session had expired answered `is_error: true` inside a result whose own subtype still said
 # `success`. Believing the subtype would have reported a failed turn as a finished one.
-# **A question a person answers in their own time must not be raced by the CLI's clock.** Measured
-# 2026-09-12 in the studio: a tool call the policy asked about was left open for a minute while
-# the person looked at it; Claude Code timed the MCP call out, killed the relay, started another,
-# asked again — and the second time gave up, leaving the turn hung with no server at all. The
+# **A question a person answers in their own time must not be raced by the CLI's clock.** The
 # tool-call timeout is an environment variable (milliseconds); a day is "as long as it takes".
+# Measured 2026-09-12: the minute after which Claude Code restarted its MCP server was *not* this
+# clock — it was the relay's own socket timeout (BUG-028) — but the CLI's default is an opinion
+# a person's decision should not be subject to either.
 [[set_env]]
 name = "MCP_TOOL_TIMEOUT"
 value = "86400000"

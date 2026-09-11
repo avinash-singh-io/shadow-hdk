@@ -84,7 +84,16 @@ async def serve_over_socket(
                 if refused is not None:
                     refused()
                 return
-            await serve_over_pipes(server, stream, stream)
+            try:
+                await serve_over_pipes(server, stream, stream)
+            except BaseExceptionGroup as group:
+                # **A connection's death is that connection's problem** (BUG-027). A CLI kills its
+                # relay while the registry is writing to it — measured in the studio, at the
+                # moment a person's answer arrived — and the broken pipe raised out of the pipes'
+                # task group, through this listener's, into the step holding the conversation,
+                # which ended. Anything that is not the wire going away still propagates.
+                if not _all_connection_shaped(group):
+                    raise
 
     # **The listener is closed by leaving its own block, never by hand.** `serve()` parks in
     # `accept()`; closing the listener out from under it raises `ClosedResourceError` *through the
@@ -97,6 +106,26 @@ async def serve_over_socket(
             yield port, token
         finally:
             group.cancel_scope.cancel()
+
+
+CONNECTION_GONE: tuple[type[BaseException], ...] = (
+    anyio.BrokenResourceError,
+    anyio.ClosedResourceError,
+    anyio.EndOfStream,
+    ConnectionError,
+    OSError,
+)
+
+
+def _all_connection_shaped(group: BaseExceptionGroup[BaseException]) -> bool:
+    """Every leaf is the wire going away — nothing else hides in the group."""
+    for exc in group.exceptions:
+        if isinstance(exc, BaseExceptionGroup):
+            if not _all_connection_shaped(exc):
+                return False
+        elif not isinstance(exc, CONNECTION_GONE):
+            return False
+    return True
 
 
 def relay() -> int:
@@ -119,6 +148,12 @@ def relay() -> int:
     except OSError as unreachable:
         print(f"the registry on port {raw} is not there: {unreachable}", file=sys.stderr)
         return 3
+    # **The connect timeout must not become a read timeout** (BUG-028). `create_connection`
+    # leaves its timeout on the socket, so `recv` raised after thirty seconds of silence — which
+    # is what a tool call looks like while a person decides whether to allow it. The relay died,
+    # the CLI saw its MCP server go, restarted it, asked again, and gave up. A relay waits as
+    # long as the registry does.
+    upstream.settimeout(None)
     # The token, then a newline, then nothing until MCP starts — the server reads one line.
     upstream.sendall(token.encode() + b"\n")
 

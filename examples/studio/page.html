@@ -141,6 +141,9 @@ function toolPart(e) {
   scrollDown(); return d;
 }
 function fillPart(step) {
+  // A step that closed as "asked" with no tool part of its own is the question card already
+  // shown — the live-ask path raises it on the conversation's step, which never gets a part.
+  if (!parts[toolKey(step.run_id, step.step)] && (step.outcome === 'asked' || !step.component)) return;
   const d = parts[toolKey(step.run_id, step.step)] || toolPart({run_id: step.run_id, step: step.step, component: step.component, inputs: {}});
   const outcome = step.outcome || 'running';
   d.className = 'part tool ' + outcome;
@@ -171,6 +174,8 @@ function addQuestion(q) {
   d.dataset.q = (q.component ? q.component + ' ' + summarise(q.component, q.inputs) + ' — ' : '') + q.question;
   d.querySelector('.yes').onclick = () => answer(q.handle, true);
   d.querySelector('.no').onclick = () => answer(q.handle, false);
+  // A question on a live step (D58) is asked on the step holding the conversation; a parked
+  // one names the tool's own step. Hang the card under the part if there is one, else in the turn.
   const on = parts[toolKey(q.run_id, q.step)];
   if (on) on.insertAdjacentElement('afterend', d); else currentTurn().appendChild(d);
   questions[q.handle] = d; scrollDown();
