@@ -26,48 +26,50 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-10
+## Where this stands — 2026-09-11
 
-**Phases 0–19 are done, merged and released.** The owner approved the merge on 2026-09-10: the
-stack fast-forwarded onto `staging` and then `main`, and **v0.13.0** is tagged and released — the
-first release this repository has had. The suite is **940 tests**, mypy strict over **133 source files**, all seventeen
-distributions at **0.13.0**, all MIT.
+**Phases 0–20 are done.** 0–19 are merged and released (**v0.13.1**); Phase 20 — providers — is
+complete on its branch at contract **0.14.0**: 1,084 tests, mypy strict over 177 files, eighteen
+distributions, all MIT. A subscription-backed coding agent was driven end to end: it wrote a file
+through the run's own workspace component, ran it in the run's own sandbox, and both landed on the
+event stream as governed child runs.
+
+**Doing that found the most serious defect this runtime has had**, and it is worth stating in the
+plan because it re-ordered the plan. Three adapters, in three packages that cannot import each
+other, declared `reads/writes: {workspace}` for operations that reach the whole machine — a plain
+subprocess honours nothing but its working directory. Governance judged those declarations and
+approved, correctly, a lie. The enforcement was never wrong; the input was. It is fixed three times
+and guarded once: `test_every_narrow_scope_is_enforced.py` makes *a narrow scope must name what
+makes it true* a build failure rather than a habit.
+
+**The lesson generalises, and it is the reason the next phases look the way they do.** Confinement
+is a property of the **environment** an agent runs in, not of individual tools — the model every
+mature agent already uses (a mode: read-only, workspace-write, full; enforced once, true for every
+operation). Three separate tool adapters each holding an opinion about the same boundary was the
+architecture that produced the bug.
+
+**What was surveyed, late.** Before Phase 21 a proper survey was done of what already exists — it
+should have preceded Phase 3 and did not. The finding: the *loop* here is the one thing nobody else
+has (governance by effects with a partial order, leases carved to children, a runtime with no write
+path, subscription providers, physical devices, embeddable in-process), and nearly everything
+around it is commodity that mature projects do better. So the line is drawn: **build the loop,
+consume the rest**. Sandboxing is the first thing consumed.
 
 | | phases | state |
 |---|---|---|
-| done | 0 – 16 | every task ticked; each left the gate green (11's live backend proofs await a Linux host; 13's policy is `[~]` for ADR-1) |
-| done | 17 — the audit's P0s | all four closed: the lease reset at every pause (D33), an assistant message never carried its tool calls, resume over the wire always raised (D34), and the gate itself silently skipped three packages |
-| done | 18 — the audit's P1s | **COMPLETE, groups 1–5 of 5.** BUG-008, BUG-009 (D35, D36), BUG-015 (D37), BUG-010 (D38, contract 0.12.0), BUG-011, BUG-012, TD-003, TD-009 |
-| done | the P2s | all closed. What is left is the owner's, or waits on hardware this machine does not have |
-| `[~]` | OPC-UA, ROS 2 (epic 0007) | need `asyncua` and a server, and a ROS distribution — not on this machine; shaped by `adapters/mqtt` |
+| done | 0 – 19 | merged and released |
+| done | 20 — providers | two seams (D39); a provider is a file (D40); asked never read (D41); the socket (D42); the loop stays theirs (D43); the relay (D44) |
+| next | 21 — the visible agent | what the agent is thinking and doing, on the stream, for any client to render |
+| next | 22 — the environment | one concept with a mode; three adapters become one; containment consumed |
+| next | 23 — a host, in-process and in any language | the line at which the runtime is consumable |
+| `[~]` | OPC-UA, ROS 2 (epic 0007) | need a server and a ROS distribution |
 
-**Decisions settled so far:** D1–D14 (`specs/epics/0001-the-bare-harness.md`), D15 cancellation
-(phase 6), D16 held children (phase 7), D17 patterns and skills as files, D18 compaction as a
-meta-tool (phase 8), D19 the graph state holds JSON, D20 the `Spent` event, D21 the context a
-crossed component gets (phase 9), D22 the port set is open, D23 a rule selects by name, D24 the
-check runs on the rules (phase 10), D25 containment is proven at construction (phase 11), D26 a
-ground is data and the engine its only interpreter (phase 12), D27 a driver signs what it declares
-(phase 13), D28 telemetry carries the shape and never payloads (phase 14), D29 the world is a scope
-and a device a component, D30 posture is on the record and in front of governance, D31 one device
-contract and three roles (phase 15), D32 the envelope is the payload (phase 16), D33 what a run has
-spent rides in the checkpoint, D34 a wire session owns a checkpointer (phase 17), D35 a step owns
-the process tree it starts, D36 containment is proven by what is denied, D37 a parent that parks
-comes back holding its children, D38 a parked step resumes where it parked (phase 18).
+**Decisions settled so far:** D1–D38 as before; D39 inference and agency are two seams, D40 a
+provider is data, D41 the harness asks and never reads a credential, D42 every effect routes through
+the run's registry whoever asked, D43 the loop stays the provider's, D44 the registry is offered on a
+loopback socket through a relay (phase 20).
 
-**Closed by the owner 2026-09-10:** the licence is **MIT** (O3), and the six-port question is
-settled as **D22 — the port set is open**, six being a count rather than a constraint (O4).
-
-**Still with the owner:** ADR-1 and ADR-2. The merge and the tag are done — **v0.13.0**, released
-2026-09-10. Thirteen
-contract changes have each moved every package under D9, so the number the packages carry is the
-true one and this plan's founding `v0.1.0` was stale.
-
-**The latency budget holds, and for a while it did not.** CI ran for the first time on 2026-09-10
-and found the runtime costing **1.36 ms of overhead per step** against D11's ≤ 1 ms. The cause was
-`contracts.py` rebuilding a `TypeAdapter` on every call — 57% of the whole per-step cost — and
-caching it restored **0.594 ms/step**. The gate that missed it keeps its 3× slack deliberately: a
-runner is 2.1× this machine and the drift was 2.4×, so a stopwatch cannot separate them. A count of
-adapters can, and does.
+**Still with the owner:** ADR-1 and ADR-2, and landing Phase 20.
 
 ## Timeline
 
@@ -93,6 +95,33 @@ adapters can, and does.
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
 | 19 | The P2s | **DONE** · `phase-19-the-p2s` | 18 | BUG-016 the adapter cache; BUG-013 a derivation answers rather than raises; BUG-014 a crash costs the record nothing; TD-004 every port held to its contract; TD-005 growth bounded or argued; TD-006 a stop signal is not an ordinary exception (contract 0.13.0); TD-007 plumbing, its policy the owner's; TD-008 the documents, kept honest by an invariant |
 | 20 | Providers | **DONE** · `phase-20-providers` | 4, 5 | two seams — bring your own key, or your own subscription; a provider is a file; the socket closes around a child's effects |
+| 21 | The visible agent | next | 20 | `Reasoned`, the twelfth event kind; a projection of the stream any client renders as agent steps, over SSE and in-process; deferred tool schemas; large-result offloading |
+| 22 | The environment | planned | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
+| 23 | A host, in-process and in any language | planned | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
+| 24 | The skill registry | planned | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
+| 25 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
+| 26 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
+
+## What comes next — the consumable line
+
+**The harness is generic.** Nothing below is about coding. An *environment* is wherever effects
+land — a filesystem and a shell for one agent, a browser for another, the physical world for a
+third (D29). *Skills* are a registry of things an agent can do, predefined or minted during a run
+and proposed for keeping. *The visible agent* is any model's reasoning on any run. The first host
+happens to be a Python application embedding the runtime in-process; the wire (D21) makes the same
+runtime reachable from any language, and Phase 23 holds the two to parity.
+
+**The line is drawn at Phase 23.** Past it the runtime is consumable and grows by adapters and
+files; the phases after it are capability, not readiness.
+
+| Phase | Name | Deps | What it makes true |
+|---|---|---|---|
+| **21** | **The visible agent** | 20 | A twelfth event kind, `Reasoned`: what the model thought, on the stream beside what it did — the same record a person reads as *agent steps*. A **projection** of the event stream shaped for a client to render (steps, nested sub-agents, spend, refusals, questions), served over SSE by the wire and available in-process as an async iterator. **Deferred tool schemas**: a registry of two hundred tools costs a name and a line each until one is chosen. **Large-result offloading**: an observation over a threshold lands in the environment as a file and the stream carries a handle and a preview. These three are what a benchmarked competitor credits for a 30–75% cost advantage over a managed loop; they are cheap here. |
+| **22** | **The environment** | 21 | `workspace`, `sandbox_subprocess` and `contained` become **one concept with a mode** — `read-only`, `workspace-write`, `full` — enforced by the environment, true for every operation in it, and the effect profile derived from environment × mode × operation once (BUG-018's class, closed by shape rather than by invariant). `LocalEnvironment` on the OS sandbox (seatbelt on macOS; Landlock on Linux) — the model the mature coding agents use. `SandboxEnvironment` **consuming** an existing sandbox platform behind the `IsolationBackend` seam with the root mounted in, isolation proven by what is denied (D36). The hand-rolled gVisor and Firecracker wrappers are deleted. Widening — *may I read elsewhere?* — is an `Ask`. |
+| **23** | **A host, in-process and in any language** | 21, 22 | The runtime consumed by a real host: its own governance, sink and checkpointer handed in; the visible-agent projection rendered by its UI; a subscription provider or a key, its choice. The **wire held to parity** with in-process — every event kind, the projection, resume, and the registry offered outward — so a host in another language is not a second-class one. Socket authentication (D44's debt). The live proof runnable on demand. This is the consumable line. |
+| 24 | The skill registry | 23 | Skills as a **registry** rather than a directory: predefined, minted during a run, and *proposed for keeping* through the sink — which is what makes self-evolution a governed act rather than a side effect. Progressive disclosure: a skill costs a name and a line until it is chosen. Promotion is a host decision. |
+| 25 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
+| 26 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
 
 ## Epics
 
@@ -106,6 +135,13 @@ adapters can, and does.
 | 0006 derivation | 12 |
 | 0007 the environment | 15, 16 |
 | — the audit | 17, 18, 19 |
+| 0009 bring your own provider | 20 |
+| 0010 the visible agent | 21 |
+| 0011 the environment | 22 |
+| 0012 a host, in any language | 23 |
+| 0013 the skill registry | 24 |
+| 0014 context engineering | 25 |
+| 0015 collaboration | 26 |
 
 Only 0001 is created at founding; each later epic is brainstormed once when reached, its decisions
 already settled by `09` where `09` speaks.
@@ -115,3 +151,4 @@ already settled by `09` where `09` speaks.
 2. `deps` order the phases; nothing else does, and no adopter's schedule does
 3. Defer scope, not quality — red tests first, contracts round-trip, the benchmark runs
 4. A new capability is an adapter or a pattern file; a runtime branch on a name is a defect
+5. **Build the loop; consume the rest.** Before an adapter is written, what already exists is surveyed and the survey is recorded. The loop — governance by effects, leases, the sink, the record — is the only thing this repository exists to build; a sandbox, a browser, a memory, a protocol is something it exists to *govern*, and is consumed behind a port. The survey that should have preceded Phase 3 was done before Phase 21, and it re-ordered the plan.
