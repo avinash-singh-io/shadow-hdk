@@ -26,11 +26,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pytest
 from examples.coder.workshop import LOOKING, OPEN, a_lease
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
 from shadow_hdk.adapters.recording import RecordingServer
 
-from shadow_hdk.adapters.environment import LocalEnvironment
+from shadow_hdk.adapters.environment import LocalEnvironment, local_sandbox
 from shadow_hdk.kernel import Completed, Composition, EffectProfile, Invoke, Observation
 from shadow_hdk.runtime import Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
@@ -126,6 +127,9 @@ async def test_the_open_policy_does_offer_it(tmp_path: Path) -> None:
     assert seen["wrote"].is_error is False
 
 
+@pytest.mark.skipif(
+    local_sandbox() is None, reason="read-only needs an OS sandbox to be enforceable"
+)
 async def test_read_only_does_not_offer_a_write_and_the_environment_itself_refuses_one(
     tmp_path: Path,
 ) -> None:
