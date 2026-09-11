@@ -9,7 +9,9 @@ license-files = ["LICENSE"]
 dependencies = ["shadow-hdk-kernel==0.15.0", "shadow-hdk==0.15.0"]
 
 [project.optional-dependencies]
-opensandbox = ["opensandbox>=0.1.16,<0.2"]
+opensandbox = [
+    "opensandbox>=0.1.16,<0.2",
+]
 
 [build-system]
 requires = ["hatchling>=1.25"]
