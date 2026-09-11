@@ -162,8 +162,11 @@ files; the phases after it are capability, not readiness.
 | 0011 the environment | 22 |
 | 0012 a host, in any language | 23 |
 | 0013 the skill registry | 24 |
-| 0014 context engineering | 25 |
-| 0015 collaboration | 26 |
+| 0014 the host's controls | 25 |
+| 0015 any language | 26 |
+| 0016 batteries and the facade | 27 |
+| 0017 context engineering | 28 |
+| 0018 collaboration | 29 |
 
 Only 0001 is created at founding; each later epic is brainstormed once when reached, its decisions
 already settled by `09` where `09` speaks.
