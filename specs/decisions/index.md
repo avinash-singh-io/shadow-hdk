@@ -65,6 +65,9 @@ rather than remembered.
 | D45 | thinking is on the record, beside what it led to | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
 | D46 | the stream folds into steps, once, and the fold crosses the wire folded | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
 | D47 | a large result is held by the agent, never written by the runtime | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
+| D48 | an environment is where effects land, and it has a mode | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
+| D49 | local execution is confined by the operating system, and proven first | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
+| D50 | an isolated environment sits behind a Box, proven by two denials | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
 
 ## Also here
 

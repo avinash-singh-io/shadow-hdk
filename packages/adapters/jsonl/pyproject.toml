@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-jsonl"
-version = "0.15.0"
+version = "0.16.0"
 description = "A coding CLI that answers in line-delimited JSON, driven as a governed agent provider."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.15.0", "shadow-hdk==0.15.0"]
+dependencies = ["shadow-hdk-kernel==0.16.0", "shadow-hdk==0.16.0"]
 
 [project.entry-points."shadow_hdk.transports"]
 jsonl = "shadow_hdk.adapters.jsonl.transport:open_agent"

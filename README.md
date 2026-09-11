@@ -8,7 +8,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Eighteen distributions at `0.14.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
+**Seventeen distributions at `0.16.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -328,6 +328,23 @@ The trade, stated plainly: when a subscription drives, **its** loop runs, not ou
 and compositions do not apply (D43). You cannot buy an agent and also own its loop. If you need our
 loop, that is what `ModelPort` is for.
 
+### Where effects land — the environment
+
+One environment with a mode, and the confinement is the operating system's (D48, D49):
+
+```python
+from shadow_hdk.adapters.environment import LocalEnvironment
+
+env = await LocalEnvironment.open(Path("./work"), mode="workspace-write")
+# proven before it exists: a write outside ./work is denied, a socket is denied, a write inside
+# works — by sandbox-exec on macOS, bubblewrap on Linux. Every operation's effect profile is
+# derived once from what that proof found. A mode this machine cannot enforce is refused, never
+# quietly widened; `full` always works and declares everything.
+```
+
+`SandboxEnvironment` is the same six operations in a box somebody else built — OpenSandbox first —
+proven by two denials (D50).
+
 ### Running the examples
 
 ```bash
@@ -358,7 +375,7 @@ with **zero lines of any application's code**. `examples/real.py` does the same 
 
 ## Layout
 
-Eighteen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
+Seventeen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
 takes only what it uses.
 
 ```
@@ -393,7 +410,7 @@ has already drifted. They live in `tests/invariants/`:
 | the gate covers every package | a package quietly outside lint, types or tests — this repository shipped nine type errors that way once |
 | a wheel carries what it needs | a distribution that installs but cannot import |
 | every port is held to its contract | a new port implementation with no contract suite and no recorded reason |
-| the decisions index is true | the map of D1–D43 drifting from the decisions |
+| the decisions index is true | the map of D1–D50 drifting from the decisions |
 | the documents describe this tree | a document naming a path that does not exist, or a listing that no longer matches the directory it describes |
 
 The last one is why this file names only paths that are really here.
@@ -414,7 +431,7 @@ All four must exit zero. CI runs them on every push.
 
 ## Status
 
-Phases 0–20 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–22 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

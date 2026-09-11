@@ -59,8 +59,8 @@ consume the rest**. Sandboxing is the first thing consumed.
 |---|---|---|
 | done | 0 – 19 | merged and released |
 | done | 20 — providers | two seams (D39); a provider is a file (D40); asked never read (D41); the socket (D42); the loop stays theirs (D43); the relay (D44) |
-| next | 21 — the visible agent | what the agent is thinking and doing, on the stream, for any client to render |
-| next | 22 — the environment | one concept with a mode; three adapters become one; containment consumed |
+| done | 21 — the visible agent | `Reasoned` (D45); steps folded once, crossing the wire folded (D46); a large result held, never written (D47) |
+| done | 22 — the environment | one concept with a mode (D48); local on the OS sandbox, proven (D49); isolated behind a Box, two denials (D50); three adapters deleted |
 | next | 23 — a host, in-process and in any language | the line at which the runtime is consumable |
 | `[~]` | OPC-UA, ROS 2 (epic 0007) | need a server and a ROS distribution |
 
@@ -96,7 +96,7 @@ loopback socket through a relay (phase 20).
 | 19 | The P2s | **DONE** · `phase-19-the-p2s` | 18 | BUG-016 the adapter cache; BUG-013 a derivation answers rather than raises; BUG-014 a crash costs the record nothing; TD-004 every port held to its contract; TD-005 growth bounded or argued; TD-006 a stop signal is not an ordinary exception (contract 0.13.0); TD-007 plumbing, its policy the owner's; TD-008 the documents, kept honest by an invariant |
 | 20 | Providers | **DONE** · `phase-20-providers` | 4, 5 | two seams — bring your own key, or your own subscription; a provider is a file; the socket closes around a child's effects |
 | 21 | The visible agent | next | 20 | `Reasoned`, the twelfth event kind; a projection of the stream any client renders as agent steps, over SSE and in-process; deferred tool schemas; large-result offloading |
-| 22 | The environment | planned | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
+| 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
 | 23 | A host, in-process and in any language | planned | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
 | 24 | The skill registry | planned | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
 | 25 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |

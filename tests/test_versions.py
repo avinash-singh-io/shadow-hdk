@@ -18,8 +18,14 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.15.0"
-"""0.15.0 because the stream grew a **twelfth** kind, `Reasoned` — what the model thought, on the
+EXPECTED = "0.16.0"
+"""0.16.0 because three distributions are **gone** — `adapters-workspace`,
+`adapters-sandbox-subprocess` and `adapters-contained` — and one, `adapters-environment`, stands
+where they were (D48–D50). No
+kernel type changed; a host that depended on any of the three has to change its imports, and
+pre-1.0 that is a minor.
+
+0.15.0 because the stream grew a **twelfth** kind, `Reasoned` — what the model thought, on the
 record beside what it did (D45) — and `ModelResponse`, `ModelChunk` and `Turn` grew a `reasoning`
 field to carry it there, each defaulting empty so an adapter that never heard of it produces a
 response that reads as *did not say* rather than failing to construct. Both cross the wire.

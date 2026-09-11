@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-11 (Phase 21)
+> **Last Updated**: 2026-09-11 (Phase 22)
 > **Current Phase**: **Phase 19 COMPLETE — every P0, P1 and P2 the audit filed is closed.** The
 > exception is ENH-003, deliberately deferred to the first OPC-UA or ROS adapter, which needs a
 > server or a ROS distribution that is not on this machine.
@@ -88,7 +88,8 @@ merged and released**: 949 tests, mypy strict over 147 files, seventeen distribu
 | 18 | The P1s | Complete, merged | **v0.12.0** |
 | 19 | The P2s, and the documents | Complete, merged | **v0.13.0** |
 | 20 | Providers — your key, or your subscription | Complete, merged | **v0.14.0** |
-| 21 | The visible agent | Complete | **v0.15.0** |
+| 21 | The visible agent | Complete, merged | **v0.15.0** |
+| 22 | The environment | Complete | **v0.16.0** |
 
 ## Ad-hoc / Patch Releases
 

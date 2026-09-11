@@ -3,7 +3,7 @@ type: Phase
 phase: 22
 name: the-environment
 epic: 0011-the-environment
-status: in-progress
+status: complete
 topics: [environment, mode, confinement, seatbelt, bubblewrap, opensandbox, d36, bug-018]
 deps: [phase-21-the-visible-agent]
 ---
