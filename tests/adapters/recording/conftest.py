@@ -76,6 +76,7 @@ async def with_a_run[T](
     extra: Sequence[Registration] = (),
     steps: int = 20,
     questions: Any = None,
+    wall_seconds: int = 600,
 ) -> tuple[T, list[Event]]:
     """Run `what` inside a step, giving back its answer **and the parent's event stream**."""
     box: list[Any] = []
@@ -102,7 +103,7 @@ async def with_a_run[T](
             Composition((Invoke("s1", DRIVER.id),)),
             ports,
             options=RunOptions(
-                lease=Lease(Ceiling(steps, 600, 10_000), Floor(0)), questions=questions
+                lease=Lease(Ceiling(steps, wall_seconds, 10_000), Floor(0)), questions=questions
             ),
         )
     ]

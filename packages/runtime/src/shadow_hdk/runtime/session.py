@@ -140,7 +140,20 @@ class LeaseMeter:
         cannot both be promised the same budget — and it must be released by `settle` when the child
         ends, or an agent running twelve turns would drain its parent with money nobody used.
         """
-        child_lease, _ = self.remaining().carve(child)
+        left = self.remaining()
+        # **Wall-clock is a clock, not a budget** (BUG-022). `remaining()` truncates it to whole
+        # seconds, and a caller that read it and reserved a moment later crossed a boundary in
+        # between — asking for one second more than was left, and refused as exceeding the
+        # parent's ceiling. Measured in the studio, on the first question a person answered there.
+        # A child can never *run* past its parent's clock whatever it asked, so the reservation
+        # clamps to what is left; steps and money stay strict, because asking for more of those
+        # than remain is a real error.
+        child = Ceiling(
+            max_steps=child.max_steps,
+            max_wall_seconds=min(child.max_wall_seconds, left.ceiling.max_wall_seconds),
+            max_cost_cents=child.max_cost_cents,
+        )
+        child_lease, _ = left.carve(child)
         self._carved_steps += child.max_steps
         self._carved_cost += child.max_cost_cents or 0
         return child_lease

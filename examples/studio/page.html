@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>shadow-hdk studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b35; --fg:#e6e8ee; --dim:#8b93a3; --think:#7dd3fc; --ok:#86efac; --bad:#fca5a5; --ask:#fde68a; --accent:#a78bfa; }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
+  header { display:flex; gap:16px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header b { color:var(--accent) } header span { color:var(--dim) } header code { color:var(--fg); background:#0b0d11; padding:2px 6px; border-radius:4px }
+  main { display:grid; grid-template-columns: 1.1fr 1.4fr 0.8fr; min-height:0 }
+  section { display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--line) } section:last-child { border-right:0 }
+  h2 { margin:0; padding:8px 14px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:var(--panel) }
+  .scroll { overflow:auto; padding:12px 14px; flex:1 }
+  .msg { margin:0 0 12px; padding:10px 12px; border-radius:10px; background:var(--panel); white-space:pre-wrap; word-wrap:break-word }
+  .msg.you { border-left:3px solid var(--accent) } .msg.agent { border-left:3px solid var(--ok) } .msg.failed { border-left-color:var(--bad) }
+  .msg small { display:block; color:var(--dim); margin-bottom:4px }
+  form { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line); background:var(--panel) }
+  input, button, textarea { font:inherit } textarea { flex:1; background:#0b0d11; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; resize:none; height:44px }
+  button { background:var(--accent); color:#0b0d11; border:0; border-radius:8px; padding:0 14px; font-weight:600; cursor:pointer } button:disabled { opacity:.5; cursor:default }
+  .step { padding:6px 8px; border-radius:8px; margin:0 0 6px; background:var(--panel); border:1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px }
+  .step .head { display:flex; gap:8px; align-items:baseline } .step .who { font-weight:600 } .step .cost { color:var(--dim); margin-left:auto }
+  .step .out { color:var(--dim); white-space:pre-wrap; margin-top:4px; max-height:120px; overflow:auto }
+  .step.nested { margin-left:18px }
+  .think { color:var(--think); font-style:italic; margin:6px 0 6px 4px; white-space:pre-wrap }
+  .think::before { content:"∴ "; }
+  .ok { color:var(--ok) } .bad { color:var(--bad) } .ask { color:var(--ask) }
+  .question { border:1px solid var(--ask); background:#2a2410; border-radius:10px; padding:10px 12px; margin:0 0 10px }
+  .question .q { color:var(--ask); margin-bottom:8px } .question button { margin-right:8px; padding:6px 12px } .question .no { background:var(--bad) }
+  .files li { list-style:none; padding:4px 0; cursor:pointer; color:var(--fg) } .files li:hover { color:var(--accent) } .files ul { padding:0; margin:0 }
+  .files li span { color:var(--dim); float:right }
+  pre.file { background:#0b0d11; padding:10px; border-radius:8px; white-space:pre-wrap; word-wrap:break-word; border:1px solid var(--line); max-height:45vh; overflow:auto }
+  .empty { color:var(--dim); font-style:italic }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--dim); margin-right:6px } .dot.busy { background:var(--ask); animation:pulse 1s infinite } @keyframes pulse { 50% { opacity:.3 } }
+</style>
+</head>
+<body>
+<header>
+  <b>shadow-hdk</b> <span>studio</span>
+  <span><i class="dot" id="dot"></i><span id="provider">connecting…</span></span>
+  <span>mode <code id="mode">…</code></span>
+  <span>workspace <code id="root">…</code></span>
+</header>
+<main>
+  <section>
+    <h2>Conversation</h2>
+    <div class="scroll" id="chat"><p class="empty">Say something to the agent. Its file and shell tools are this run's, governed by the policy; what it does lands in the middle pane as it happens.</p></div>
+    <form id="say"><textarea id="text" placeholder="e.g. write a small python script that prints the first 10 primes, run it, and show me the output" ></textarea><button id="send">Send</button></form>
+  </section>
+  <section>
+    <h2>Agent steps — the record, as it happens</h2>
+    <div class="scroll" id="steps"><p class="empty">Nothing yet.</p></div>
+  </section>
+  <section>
+    <h2>Workspace files</h2>
+    <div class="scroll files"><ul id="files"></ul><pre class="file" id="file" hidden></pre></div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const chat = $('chat'), steps = $('steps'), files = $('files'), fileBox = $('file');
+let stepsEmpty = true, chatEmpty = true;
+function clearEmpty(el, flag) { if (flag) el.innerHTML = ''; }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function scrollDown(el) { el.scrollTop = el.scrollHeight; }
+const MARK = {completed:'✓', failed:'✗', refused:'✕', asked:'?', running:'…'};
+const CLS = {completed:'ok', failed:'bad', refused:'bad', asked:'ask'};
+const topRun = {id: null};
+const questionsOpen = {};
+
+function addMsg(kind, text, extra) {
+  clearEmpty(chat, chatEmpty); chatEmpty = false;
+  const d = document.createElement('div'); d.className = 'msg ' + kind + (extra && extra.failed ? ' failed' : '');
+  d.innerHTML = '<small>' + (kind === 'you' ? 'you' : 'agent') + '</small>' + esc(text);
+  chat.appendChild(d); scrollDown(chat);
+}
+function addThought(text, nested) {
+  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
+  const d = document.createElement('div'); d.className = 'think' + (nested ? ' nested' : ''); d.textContent = text.trim();
+  steps.appendChild(d); scrollDown(steps);
+}
+function addStep(step, nested) {
+  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
+  const d = document.createElement('div'); d.className = 'step' + (nested ? ' nested' : '');
+  const who = step.component || step.step;
+  const outcome = step.outcome || 'running';
+  let out = '';
+  if (step.observation && step.observation.kind === 'completed') out = JSON.stringify(step.observation.output);
+  else if (step.observation && step.observation.kind === 'failed') out = step.observation.error;
+  else if (step.observation && step.observation.kind === 'refused') out = step.observation.reason;
+  if (step.reason) out = step.reason;
+  const cost = step.usage && step.usage.cost_cents != null ? step.usage.cost_cents + '¢' : (step.usage && step.usage.output_tokens != null ? step.usage.output_tokens + ' tok' : '');
+  d.innerHTML = '<div class="head"><span class="' + (CLS[outcome]||'') + '">' + (MARK[outcome]||'·') + '</span><span class="who">' + esc(who) + '</span><span class="cost">' + esc(cost) + '</span></div>' + (out ? '<div class="out">' + esc(out.slice(0, 2000)) + '</div>' : '');
+  steps.appendChild(d); scrollDown(steps);
+}
+function addQuestion(q) {
+  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
+  const d = document.createElement('div'); d.className = 'question'; d.id = 'q-' + q.handle;
+  d.innerHTML = '<div class="q">? ' + esc(q.question) + '</div><button class="yes">Allow</button><button class="no">Refuse</button>';
+  d.querySelector('.yes').onclick = () => answer(q.handle, true, d);
+  d.querySelector('.no').onclick = () => answer(q.handle, false, d);
+  steps.appendChild(d); scrollDown(steps); questionsOpen[q.handle] = d;
+}
+async function answer(handle, allow, d) {
+  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow, reason: allow ? '' : 'the person refused'})});
+  d.innerHTML = '<div class="q">' + (allow ? '✓ allowed' : '✕ refused') + '</div>';
+}
+function onLine(line) {
+  if (line.kind === 'you') addMsg('you', line.text);
+  else if (line.kind === 'agent') { addMsg('agent', line.text, line); refreshFiles(); setBusy(false); }
+  else if (line.kind === 'question') addQuestion(line);
+  else if (line.kind === 'answered') { const d = questionsOpen[line.handle]; if (d) d.innerHTML = '<div class="q">' + (line.allow ? '✓ allowed' : '✕ refused') + '</div>'; }
+  else if (line.kind === 'event') {
+    const e = line.event;
+    if (topRun.id === null && e.kind === 'started') topRun.id = e.run_id;
+    if (e.kind === 'reasoned') addThought(e.text, e.run_id !== topRun.id);
+    if (e.kind === 'invoked' && e.component !== 'converse') refreshFiles();
+    if (e.kind === 'refused' || e.kind === 'ended') { if (e.kind === 'ended' && e.run_id === topRun.id) addStep({step:'run', outcome:'completed', observation:{kind:'completed', output:'ended: ' + e.reason}}); }
+  }
+  else if (line.kind === 'step') {
+    const s = line.step;
+    if (s.step === 'converse') return;   // the step holding the conversation: its questions are shown on the tool's step, its end below
+    addStep(s, !!s.parent || s.run_id !== topRun.id);
+  }
+}
+function setBusy(b) { $('dot').className = 'dot' + (b ? ' busy' : ''); $('send').disabled = b; }
+async function refreshFiles() {
+  const r = await fetch('/files'); const j = await r.json();
+  files.innerHTML = j.files.length ? j.files.map(f => '<li data-path="' + esc(f.path) + '">' + esc(f.path) + '<span>' + f.bytes + ' B</span></li>').join('') : '<li class="empty">(empty)</li>';
+  files.querySelectorAll('li[data-path]').forEach(li => li.onclick = async () => {
+    const r = await fetch('/file?path=' + encodeURIComponent(li.dataset.path)); const j = await r.json();
+    fileBox.hidden = false; fileBox.textContent = j.content || j.error;
+  });
+}
+async function status() {
+  const r = await fetch('/status'); const j = await r.json();
+  $('provider').textContent = j.provider || '…'; $('mode').textContent = j.mode; $('root').textContent = j.root;
+  setBusy(j.busy);
+}
+$('say').onsubmit = async ev => {
+  ev.preventDefault(); const text = $('text').value.trim(); if (!text) return;
+  $('text').value = ''; setBusy(true);
+  const r = await fetch('/say', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({text})});
+  if (!r.ok) { const j = await r.json(); addMsg('agent', j.error, {failed:true}); setBusy(false); }
+};
+$('text').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('say').requestSubmit(); } });
+const es = new EventSource('/stream');
+es.onmessage = ev => onLine(JSON.parse(ev.data));
+status(); refreshFiles(); setInterval(status, 5000);
+</script>
+</body>
+</html>

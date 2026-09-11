@@ -134,6 +134,7 @@ async def a_conversation(
             )
             session = await opened.open(tools=(relay_source(port, token),), workspace=str(root))
             held["session"] = session
+            held["provider"] = f"{available.provider.called} {available.version or ''}".strip()
             held["ready"].set_result(None)
             await held["finished"]
             await session.close()
@@ -198,6 +199,11 @@ class Talker:
     async def turn(self, prompt: str) -> Any:
         self._held["turns"] = self._held.get("turns", 0) + 1
         return await self._held["session"].turn(prompt)
+
+    @property
+    def provider(self) -> str:
+        """Which provider is doing the reasoning, as detected — for a host that shows it."""
+        return str(self._held.get("provider", ""))
 
 
 __all__ = ["NoProvider", "Talker", "a_conversation", "ready_provider", "relay_source"]

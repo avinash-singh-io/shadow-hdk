@@ -85,6 +85,34 @@ async def test_a_refusal_tells_the_child_it_was_refused() -> None:
     assert "no observation" not in result.content[0].text
 
 
+async def test_a_person_who_takes_their_time_does_not_cost_the_call_its_lease() -> None:
+    """Measured in the studio, on the first question a person ever answered there: the nested
+    run was resumed with the ceiling it had asked for at the start, which after a second of
+    thinking was more wall-clock than the parent had left — *a child lease cannot exceed its
+    parent's ceiling* — and the provider was told the call had failed. The child is held and
+    sent the answer now, with a ceiling clamped to what is left."""
+    questions = Questions()
+
+    async def the_host_thinks_first() -> None:
+        pending = await asyncio.wait_for(questions.next(), 10)
+        await asyncio.sleep(1.2)
+        questions.answer(pending.handle, Allow())
+
+    async def drive(context: RunContext) -> Any:
+        host = asyncio.create_task(the_host_thinks_first())
+        try:
+            return await _wipe_through(context)
+        finally:
+            await host
+
+    result, _ = await with_a_run(
+        drive, governance=AsksAboutWrites(), questions=questions, wall_seconds=3
+    )
+
+    assert not result.is_error, result.content[0].text
+    assert '"wiped": true' in result.content[0].text
+
+
 async def test_with_nobody_to_ask_the_call_is_refused_and_says_so() -> None:
     result, events = await with_a_run(_wipe_through, governance=AsksAboutWrites())
 

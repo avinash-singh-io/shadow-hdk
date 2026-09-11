@@ -32,7 +32,7 @@ from shadow_hdk.kernel.events import Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Refused
-from shadow_hdk.runtime import RunContext, resume, run
+from shadow_hdk.runtime import RunContext
 
 
 class RecordingServer:
@@ -111,50 +111,31 @@ class RecordingServer:
         if remaining.max_steps <= 0:
             return _error("the run has no steps left")
 
-        # Its own id and a checkpointer of its own, so that if the policy asks, the nested run can
-        # be resumed with the answer — `resume` needs both, and `spawn_options_now` mints neither.
-        from langgraph.checkpoint.memory import InMemorySaver
-
-        options = await self._context.spawn_options_now(
-            Ceiling(
-                max_steps=min(2, remaining.max_steps),
-                max_wall_seconds=remaining.max_wall_seconds,
-                max_cost_cents=remaining.max_cost_cents,
-            ),
-            run_id=self._context.ports.clock.new_id(),
-            checkpointer=InMemorySaver(),
+        # **Through the runtime's own children, never a local `run()`** (D51). A child spawned this
+        # way is held when it parks, and `send` resumes it with a ceiling clamped to what the
+        # parent still has — a raw `resume` re-reserved the ceiling asked for at the start, which
+        # after a person had taken their time to answer was more wall-clock than the parent had
+        # left, and failed as *a child lease cannot exceed its parent's ceiling* (measured, in the
+        # studio, on the first question a person ever answered there).
+        ceiling = Ceiling(
+            max_steps=min(2, remaining.max_steps),
+            max_wall_seconds=remaining.max_wall_seconds,
+            max_cost_cents=remaining.max_cost_cents,
         )
-        observation, question = await self._drive(
-            run(composition, self._context.ports, options=options), step
-        )
+        handle, events = await self._context.children.spawn(composition, ceiling)
+        observation, question = _outcome_of(events, step)
         while observation is None and question is not None:
             # **The policy asked, and the child is waiting on this very call** (BUG-021, D58). The
             # nested run parked; this step cannot — it is what keeps the provider alive — so the
-            # question is put to the host live and the nested run resumed with the answer. A run
-            # with nobody to ask is told so, and the answer is a refusal.
+            # question is put to the host live and the held child sent the answer. A run with
+            # nobody to ask is told so, and the answer is a refusal.
             answer = await self._context.ask(question)
-            observation, question = await self._drive(
-                resume(composition, answer, self._context.ports, options=options), step
+            if not await self._context.children.is_held(handle):
+                break
+            observation, question = _outcome_of(
+                await self._context.children.send(handle, answer), step
             )
         return _as_result(observation)
-
-    async def _drive(self, events: Any, step: str) -> tuple[Observation | None, str | None]:
-        """Run the nested run out; say what the step observed, or what it asked."""
-        observation: Observation | None = None
-        question: str | None = None
-        async for event in events:
-            if isinstance(event, Observed) and event.step == step:
-                observation = event.observation
-            elif isinstance(event, RefusedEvent) and event.step == step:
-                # **A refusal emits one event, not two** — the decision taken when the governed step
-                # was written: the refusal *is* the record of what happened to that step, and a
-                # second `Observed` saying the same thing is how two narrations come to disagree.
-                # So a reader that watches only for `Observed` misses every refusal, which is what
-                # the first version of this did.
-                observation = Refused(event.reason)
-            elif isinstance(event, AskedEvent) and event.step == step:
-                question = event.question
-        return observation, question
 
     # ------------------------------------------------------------------ the wire
 
@@ -184,6 +165,25 @@ class RecordingServer:
         server = Server(self.name)
         self.attach(server)
         yield server
+
+
+def _outcome_of(events: list[Any], step: str) -> tuple[Observation | None, str | None]:
+    """What the child's step observed, or what it asked."""
+    observation: Observation | None = None
+    question: str | None = None
+    for event in events:
+        if isinstance(event, Observed) and event.step == step:
+            observation = event.observation
+        elif isinstance(event, RefusedEvent) and event.step == step:
+            # **A refusal emits one event, not two** — the decision taken when the governed step
+            # was written: the refusal *is* the record of what happened to that step, and a second
+            # `Observed` saying the same thing is how two narrations come to disagree. So a reader
+            # that watches only for `Observed` misses every refusal, which is what the first
+            # version of this did.
+            observation = Refused(event.reason)
+        elif isinstance(event, AskedEvent) and event.step == step:
+            question = event.question
+    return observation, question
 
 
 def _as_result(observation: Observation | None) -> types.CallToolResult:
