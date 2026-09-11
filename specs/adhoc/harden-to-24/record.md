@@ -48,6 +48,68 @@ sees nothing to answer; the parked child is released with the run.
 - 2026-09-12 — **`examples/studio/`**: the visual host — conversation, the record as agent steps with Allow/Refuse on a live question, the workspace's files. Driven in the browser on the owner's subscription: Claude Code wrote `primes.py` (asked, allowed), ran it (asked, allowed), reported the primes; the file opened in the page. **BUG-022 found and closed** on the first question answered there (the wall-clock carve at a second boundary).
 - 2026-09-12 — closed: D57/D58 on the record, 0.19.0, landed.
 
+## Verification Evidence
+
+Fresh, 2026-09-12, this session, on `main` at `0f63065`.
+
+**The four zeros:**
+
+```
+ruff=0
+format=0
+Success: no issues found in 210 source files
+1185 passed, 2 skipped, 12 deselected, 86 warnings in 72.52s (0:01:12)
+```
+
+**BUG-020 reproduced first (RED), the agent-level test against the unfixed adapter:**
+
+```
+E       AssertionError: the question must be the top run's to answer
+E       assert 'id-0001' == 'host'
+```
+
+— the `Asked` event was the child run's; the top run never parked. After D57: 6 passed
+(park at the top; allow runs the tool and the model hears it; refuse is told; the transcript
+survives the park; two levels down; a plan that asks twice parks twice). Seven mutants killed.
+
+**BUG-021 reproduced first (RED), the recording test against the unfixed server:**
+
+```
+ImportError: cannot import name 'Questions' from 'shadow_hdk.runtime'
+```
+
+then, with the handle in place and the server unfixed, the CLI was told
+`the call produced no observation`. After D58: 4 passed. Five mutants killed. **Live, the coder
+on the owner's subscription in `full` mode:**
+
+```
+? mode 'open' asks before this: it writes more than usual
+allow? [y/N]   · write_file
+    → Completed(output={'path': 'hello.txt', 'bytes': 6}, kind='completed')
+agent › Created `hello.txt` containing `hello`.
+```
+
+**BUG-022 reproduced first (RED), with a `FixedClock` straddling a second boundary:**
+
+```
+E           ValueError: a child lease cannot exceed its parent's ceiling
+1 failed, 1 passed
+```
+
+After the clamp: 2 passed; the recording suite 30 passed.
+
+**The studio, in the browser, on the owner's subscription (`full` mode):** Claude Code called
+`write_file` → the page showed *? mode 'open' asks before this* with Allow/Refuse → Allow →
+`✓ write_file {"path":"primes.py","bytes":364}` and `primes.py` in the files pane → it called
+`run_shell` → asked → Allow → `✓ run_shell {"exit_code":0,"stdout":"2\n3\n5\n7\n11\n13\n17\n19\n23\n29\n"}` →
+the agent reported the primes; the file opened in the page.
+
+**Codex, the live relay proof (skips truthfully):**
+
+```
+SKIPPED [1] tests/test_the_coder_on_codex.py:31: codex is out of quota: You've hit your usage limit. Upgrade to Plus to continue using Codex (https://ch
+```
+
 ## Decisions taken in this round
 
 ### [DECISION] 2026-09-12 — D57: a component may ask for itself, and the run parks on it
