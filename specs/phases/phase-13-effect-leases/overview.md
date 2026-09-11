@@ -3,7 +3,7 @@ type: Phase
 phase: 13
 name: effect-leases
 epic: 0005-the-body
-status: not-started
+status: complete
 topics: [effects, leases, drivers, signatures, revocation, receipts, supply-chain, d27, r9, adr-1]
 deps: [phase-12-derivation]
 ---

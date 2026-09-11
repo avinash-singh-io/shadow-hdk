@@ -3,7 +3,7 @@ type: Phase
 phase: 14
 name: telemetry
 epic: 0005-the-body
-status: not-started
+status: complete
 topics: [telemetry, opentelemetry, observer, sink, durability, d28]
 deps: [phase-13-effect-leases]
 ---

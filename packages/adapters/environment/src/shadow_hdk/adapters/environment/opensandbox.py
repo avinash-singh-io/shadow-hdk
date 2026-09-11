@@ -60,6 +60,9 @@ class OpenSandboxBox:
         await self._sandbox.files.write_file(f"{MOUNT}/{path}", content)
         return len(content.encode("utf-8"))
 
+    async def delete(self, path: str) -> None:
+        await self._sandbox.files.delete_files([f"{MOUNT}/{path}"])
+
     async def list(self, path: str) -> list[str]:
         entries = await self._sandbox.files.list_directory(f"{MOUNT}/{path}")
         return sorted(str(getattr(e, "name", e)) for e in entries)

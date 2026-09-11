@@ -124,7 +124,7 @@ The port set is open (D22). The first six are what the runtime itself calls; the
 | Port | You supply | Shipped adapters |
 |---|---|---|
 | `GovernancePort` | one function: `judge(effects, context) -> Allow \| Ask \| Refuse` | `basic` (allow-all), `modes` (modes and effect rules as data) |
-| `ComponentPort` | `registrations()` and `invoke(id, inputs)` | `basic`, `mcp`, `workspace`, `sandbox_subprocess`, `contained`, `acp`, `agent`, `derivation`, `devices`, `mqtt` |
+| `ComponentPort` | `registrations()` and `invoke(id, inputs)` | `basic`, `mcp`, `environment`, `acp`, `agent`, `derivation`, `devices`, `mqtt` |
 | `ModelPort` | `complete(request)`, optionally `stream` | `langchain` — every provider LangChain integrates |
 | `SinkPort` | `propose(proposal)` | `basic` — stdout, a file that survives a crash, a callback |
 | `ObserverPort` | `on(event)` | `basic`, `otel` |

@@ -3,7 +3,7 @@ type: Phase
 phase: 8
 name: patterns-skills-replay
 epic: 0003-composition-at-scale
-status: not-started
+status: complete
 topics: [patterns, skills, replay, compaction, describe, d13, d17, toml]
 deps: [phase-7-sub-agents]
 ---

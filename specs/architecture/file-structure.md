@@ -40,13 +40,10 @@ shadow-hdk/
         library/                     the shipped patterns, as TOML a team can read and edit    Phase 8
       langchain/                     one ModelPort over every LangChain provider; stream       Phase 1
       mcp/                           MCP servers as components                                 Phase 1
-      workspace/                     files within a root                                       Phase 3
-      sandbox_subprocess/            run code with limits                                      Phase 3
       acp/                           an agent over ACP — OpenCode, anything Zed-compatible      Phase 4
       jsonl/                         a CLI answering in line-delimited JSON — Claude Code, Codex  Phase 20
       recording/                     our registry as an MCP server                             Phase 5
       modes/                         rules as rows; the narrowing check                        Phase 1 / 10
-      contained/                     gVisor and Firecracker, each proving containment          Phase 11
       environment/                   where effects land, with a mode; local on the OS sandbox   Phase 22
       derivation/                    total expressions over typed tables                       Phase 12
       otel/                          the event stream exported                                 Phase 14

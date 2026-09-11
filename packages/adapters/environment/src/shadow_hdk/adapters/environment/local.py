@@ -184,6 +184,9 @@ class LocalEnvironment(Environment):
         target.write_bytes(data)
         return len(data)
 
+    async def _delete(self, path: str) -> None:
+        self.inside(path).unlink()
+
     async def _list(self, path: str) -> list[str]:
         where = self.inside(path)
         return sorted(f"{p.name}/" if p.is_dir() else p.name for p in where.iterdir())

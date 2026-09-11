@@ -3,7 +3,7 @@ type: Phase
 phase: 16
 name: mqtt
 epic: 0007-the-environment
-status: not-started
+status: complete
 topics: [environment, mqtt, devices, broker, d32]
 deps: [phase-15-environment-contract]
 ---

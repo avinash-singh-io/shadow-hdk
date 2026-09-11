@@ -13,7 +13,6 @@ members = [
     "shadow-hdk-adapters-acp",
     "shadow-hdk-adapters-agent",
     "shadow-hdk-adapters-basic",
-    "shadow-hdk-adapters-contained",
     "shadow-hdk-adapters-derivation",
     "shadow-hdk-adapters-devices",
     "shadow-hdk-adapters-environment",
@@ -24,8 +23,6 @@ members = [
     "shadow-hdk-adapters-mqtt",
     "shadow-hdk-adapters-otel",
     "shadow-hdk-adapters-recording",
-    "shadow-hdk-adapters-sandbox-subprocess",
-    "shadow-hdk-adapters-workspace",
     "shadow-hdk-kernel",
     "shadow-hdk-providers",
     "shadow-hdk-wire",
@@ -1386,21 +1383,6 @@ requires-dist = [
 ]
 
 [[package]]
-name = "shadow-hdk-adapters-contained"
-version = "0.15.0"
-source = { editable = "packages/adapters/contained" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
 name = "shadow-hdk-adapters-derivation"
 version = "0.15.0"
 source = { editable = "packages/adapters/derivation" }
@@ -1585,36 +1567,6 @@ requires-dist = [
 ]
 
 [[package]]
-name = "shadow-hdk-adapters-sandbox-subprocess"
-version = "0.15.0"
-source = { editable = "packages/adapters/sandbox_subprocess" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-workspace"
-version = "0.15.0"
-source = { editable = "packages/adapters/workspace" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
 name = "shadow-hdk-kernel"
 version = "0.15.0"
 source = { editable = "packages/kernel" }
@@ -1671,7 +1623,6 @@ dependencies = [
     { name = "shadow-hdk-adapters-acp" },
     { name = "shadow-hdk-adapters-agent" },
     { name = "shadow-hdk-adapters-basic" },
-    { name = "shadow-hdk-adapters-contained" },
     { name = "shadow-hdk-adapters-derivation" },
     { name = "shadow-hdk-adapters-devices" },
     { name = "shadow-hdk-adapters-jsonl" },
@@ -1681,8 +1632,6 @@ dependencies = [
     { name = "shadow-hdk-adapters-mqtt" },
     { name = "shadow-hdk-adapters-otel" },
     { name = "shadow-hdk-adapters-recording" },
-    { name = "shadow-hdk-adapters-sandbox-subprocess" },
-    { name = "shadow-hdk-adapters-workspace" },
     { name = "shadow-hdk-kernel" },
     { name = "shadow-hdk-providers" },
     { name = "shadow-hdk-wire", extra = ["serve"] },
@@ -1708,7 +1657,6 @@ requires-dist = [
     { name = "shadow-hdk-adapters-acp", editable = "packages/adapters/acp" },
     { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
     { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
-    { name = "shadow-hdk-adapters-contained", editable = "packages/adapters/contained" },
     { name = "shadow-hdk-adapters-derivation", editable = "packages/adapters/derivation" },
     { name = "shadow-hdk-adapters-devices", editable = "packages/adapters/devices" },
     { name = "shadow-hdk-adapters-jsonl", editable = "packages/adapters/jsonl" },
@@ -1718,8 +1666,6 @@ requires-dist = [
     { name = "shadow-hdk-adapters-mqtt", editable = "packages/adapters/mqtt" },
     { name = "shadow-hdk-adapters-otel", editable = "packages/adapters/otel" },
     { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
-    { name = "shadow-hdk-adapters-sandbox-subprocess", editable = "packages/adapters/sandbox_subprocess" },
-    { name = "shadow-hdk-adapters-workspace", editable = "packages/adapters/workspace" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
     { name = "shadow-hdk-providers", editable = "packages/providers" },
     { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },

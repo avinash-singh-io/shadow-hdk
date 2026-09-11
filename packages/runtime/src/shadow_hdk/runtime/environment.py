@@ -46,7 +46,7 @@ from shadow_hdk.kernel.observations import Failed, Observation, Refused
 from shadow_hdk.kernel.ports import ComponentPort
 
 Mode = Literal["read-only", "workspace-write", "full"]
-Operation = Literal["read", "write", "list", "run"]
+Operation = Literal["read", "write", "delete", "list", "run"]
 
 WORKSPACE = ScopeSet.of("workspace")
 EVERYTHING = ScopeSet(everything=True)
@@ -109,6 +109,8 @@ def effects_of(isolation: Isolation, mode: Mode, operation: Operation) -> Effect
             return EffectProfile(reads=reads, contained=contained)
         case "write":
             return EffectProfile(reads=reads, writes=writes, reversible=True, contained=contained)
+        case "delete":
+            return EffectProfile(reads=reads, writes=writes, reversible=False, contained=contained)
         case "run":
             return EffectProfile(
                 reads=reads,
@@ -133,6 +135,7 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
         {"path": _PATH, "content": {"type": "string"}},
         ["path", "content"],
     ),
+    ("delete_file", "delete", "Delete a file.", {"path": _PATH}, ["path"]),
     (
         "run_shell",
         "run",
@@ -148,7 +151,7 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
         ["source"],
     ),
 )
-"""The five operations every environment offers, whatever it is made of."""
+"""The six operations every environment offers, whatever it is made of."""
 
 
 class Environment(ComponentPort):
@@ -184,6 +187,9 @@ class Environment(ComponentPort):
     async def _write(self, path: str, content: str) -> int:
         raise NotImplementedError
 
+    async def _delete(self, path: str) -> None:
+        raise NotImplementedError
+
     async def _list(self, path: str) -> list[str]:
         raise NotImplementedError
 
@@ -216,7 +222,7 @@ class Environment(ComponentPort):
                 ),
             )
             for name, operation, description, properties, required in OPERATIONS
-            if not (self.mode == "read-only" and operation == "write")
+            if not (self.mode == "read-only" and operation in ("write", "delete"))
         ]
 
     async def invoke(self, registration: RegistrationId, inputs: JsonValue) -> Observation:
@@ -234,6 +240,11 @@ class Environment(ComponentPort):
                         str(arguments.get("path", "")), str(arguments.get("content", ""))
                     )
                     return _completed({"path": str(arguments.get("path", "")), "bytes": written})
+                case "delete_file":
+                    if self.mode == "read-only":
+                        return Refused("this environment is read-only; a delete is not offered")
+                    await self._delete(str(arguments.get("path", "")))
+                    return _completed({"deleted": str(arguments.get("path", ""))})
                 case "run_shell":
                     command = arguments.get("command")
                     if not isinstance(command, str):
@@ -246,7 +257,10 @@ class Environment(ComponentPort):
                     return await self._run(["python3", "-c", source])
         except OutsideTheRoot as outside:
             return Refused(str(outside))
-        except OSError as broken:
+        except (OSError, ValueError) as broken:
+            # `ValueError` is what a NUL byte in a path raises; a path is data the model made up,
+            # and a traceback for it would be D7's "a component raising is a failure" turned on
+            # its head.
             return Failed(f"{type(broken).__name__}: {broken}")
         return Failed(f"no component registered as {registration!r}")
 

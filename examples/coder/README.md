@@ -25,37 +25,50 @@ instead. So when it decides to write a file, this happens:
 
 Those are **steps on our graph** — child runs of the conversation, each one judged on its effects by
 the governance port before it happened, charged to the lease, and on the event stream. The agent
-never touched the disk; `WorkspaceComponents` did, inside a root it cannot leave, and
-`SubprocessSandbox` ran the code on a leash with a timeout and a capped output.
+never touched the disk; the `LocalEnvironment` did — inside a root the OS sandbox will not let a
+command leave, on a leash with a timeout and a capped output.
 
 That is D42 in one screen: **it reasons, we govern.**
 
-## Try breaking it
+## The mode is the whole example
 
 ```bash
-uv run python -m examples.coder ./my-workspace --confined
+uv run python -m examples.coder ./my-workspace                          # workspace-write
+uv run python -m examples.coder ./my-workspace --mode=read-only
+uv run python -m examples.coder ./my-workspace --mode=full
 ```
 
-Now ask it to write a script *and run it*. It writes the file and cannot run it — and the shell
-tools are not even in the list it was handed, because `RecordingServer` builds that list from
-`visible()`, which is governed. A well-behaved agent never tries. One that asks anyway gets:
+There is **one environment with a mode** (D48), and the confinement is the operating system's,
+not a comment's. In `workspace-write` — the default — every command the agent runs is inside the
+OS sandbox (`sandbox-exec` on macOS, bubblewrap on Linux): a write outside this directory is
+*Operation not permitted*, a socket is denied, and both were **proven before the environment
+existed** by trying them and watching them fail (D49). What the environment declares to the policy
+is what that proof found.
+
+Ask it, in `workspace-write`, to write a script that touches your home directory and run it. The
+script runs; the write fails at the operating system; the record shows the command and its
+non-zero exit. Ask the same in `read-only` and the shell tools are not even in the list it was
+handed — `RecordingServer` builds that list from `visible()`, which is governed — and a write is
+refused by the environment itself before any policy is consulted:
 
 ```
-  ✕ refused: mode 'confined' does not permit this
+  ✕ refused: this environment is read-only; a write is not offered
 ```
 
-The policy has never heard of `run_shell`. It refused **a set of effects** — something that writes
-outside the workspace — which is why it would refuse a tool nobody has written yet, on exactly the
-same grounds.
+## What `full` actually grants, and why it says so
 
-## What `building` actually grants, and why it says so
+`--mode=full` is an ordinary subprocess on an ordinary host, and the banner tells you every time
+that **it reaches your whole machine, not just the workspace.** The environment declares
+`writes: everything` for it, because that is the truth, and the `open` policy admits it out loud.
 
-Running code is permitted in the default mode, and the banner tells you every time that on an
-ordinary host **that reaches your whole machine, not just the workspace.**
+On a machine with no OS sandbox, `workspace-write` **refuses to start** rather than quietly
+becoming `full`:
 
-That is not pessimism, it is arithmetic. `write_file` is genuinely confined — `WorkspaceComponents`
-refuses a path that resolves outside its root, and refuses a hard link that reaches out of one. A
-subprocess is not: it honours `cwd` and nothing else, so `cd ..` works and an absolute path works.
+```
+mode 'workspace-write' needs writes confined to the root, the network denied, and a proven
+denial (D36) rather than a claim, and this environment cannot provide it — this machine has no
+OS sandbox (sandbox-exec on macOS, bwrap on Linux)
+```
 
 This was wrong until BUG-018, and the example is how it was found. Asked to build a landing page,
 the agent ran `ls` and `cat` and came back with this repository's `specs/status.md`, a listing of the

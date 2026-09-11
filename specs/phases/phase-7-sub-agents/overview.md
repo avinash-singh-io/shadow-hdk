@@ -3,7 +3,7 @@ type: Phase
 phase: 7
 name: sub-agents
 epic: 0003-composition-at-scale
-status: not-started
+status: complete
 topics: [sub-agents, spawn, send, release, held, branch-cancel, await, pending, d16]
 deps: [phase-6-the-compiler-complete]
 ---

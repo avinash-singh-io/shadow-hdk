@@ -3,7 +3,7 @@ type: Phase
 phase: 4
 name: the-acp-bridge
 epic: 0002-the-workspace-and-driving-another-agent
-status: not-started
+status: complete
 topics: [acp, bridge, subscription, governance, permission, usage, cost]
 deps: [phase-3-workspace-and-code]
 ---

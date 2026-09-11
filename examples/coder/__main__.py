@@ -15,6 +15,8 @@ from pathlib import Path
 
 from examples.coder.session import NoProvider, a_conversation
 from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, Refused, Spent
+from shadow_hdk.runtime.environment import CannotEnforce
+from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
 DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
 
@@ -49,24 +51,27 @@ def show(event: Event) -> None:
 
 async def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("-")]
-    confined = "--confined" in sys.argv
+    mode: EnvironmentMode = "workspace-write"
+    for flag in sys.argv[1:]:
+        if flag.startswith("--mode="):
+            mode = flag.split("=", 1)[1]  # type: ignore[assignment]
     root = Path(argv[0] if argv else "./coder-workspace").resolve()
     try:
-        async with a_conversation(root, confined=confined, on_event=show) as talk:
+        async with a_conversation(root, mode=mode, on_event=show) as talk:
             print(f"{BOLD}Workspace:{OFF} {root}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
-            if confined:
+            if mode == "workspace-write":
                 print(
-                    f"{DIM}Mode {BOLD}confined{OFF}{DIM}: files only. Ask it to run something and "
-                    f"watch the policy refuse.{OFF}"
+                    f"[32mMode {BOLD}workspace-write{OFF}[32m: commands run inside the OS "
+                    f"sandbox — a write outside this directory and any socket are denied, proven "
+                    f"before this started.{OFF}"
                 )
+            elif mode == "read-only":
+                print(f"{DIM}Mode {BOLD}read-only{OFF}{DIM}: nothing is written or run.{OFF}")
             else:
-                # Said plainly, every time. A demonstration that quietly granted the machine and
-                # called it a workspace would be the exact failure BUG-018 was.
                 print(
-                    f"\033[33mMode {BOLD}building{OFF}\033[33m: running code is permitted, and on "
-                    f"an ordinary host that reaches this whole machine — not just the workspace. "
-                    f"Pass --confined to refuse it.{OFF}"
+                    f"[33mMode {BOLD}full{OFF}[33m: commands reach this whole machine, and "
+                    f"the environment says so. Pass --mode=workspace-write to confine them.{OFF}"
                 )
             print(f"{DIM}Ctrl-D or 'exit' to finish.{OFF}\n")
             while True:
@@ -86,6 +91,11 @@ async def main() -> int:
     except NoProvider as nothing:
         print(f"{nothing}", file=sys.stderr)
         return 2
+    except CannotEnforce as cannot:
+        # The environment refused to exist rather than quietly widen (D48). The right thing for a
+        # person to see, verbatim: it names what is missing and what to pass instead.
+        print(f"\033[31m{cannot}{OFF}", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":

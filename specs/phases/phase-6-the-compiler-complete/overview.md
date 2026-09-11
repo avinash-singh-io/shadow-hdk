@@ -3,7 +3,7 @@ type: Phase
 phase: 6
 name: the-compiler-complete
 epic: 0003-composition-at-scale
-status: not-started
+status: complete
 topics: [compiler, subgraphs, checkpoints, resume, cancellation, langgraph, d15]
 deps: [phase-0-the-runtime]
 ---

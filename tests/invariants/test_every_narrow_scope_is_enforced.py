@@ -29,23 +29,10 @@ ADAPTERS = ROOT / "packages" / "adapters"
 RUNTIME = ROOT / "packages" / "runtime" / "src" / "shadow_hdk" / "runtime"
 
 ENFORCED_BY: dict[str, tuple[str, str]] = {
-    "workspace": (
-        "every path is resolved and must be relative to the root; hard links are refused",
-        "tests/adapters/workspace/test_a_hard_link_is_not_confined.py",
-    ),
-    "sandbox_subprocess": (
-        "narrow only when `contained=True`; an uncontained subprocess declares everything",
-        "tests/adapters/sandbox_subprocess/test_it_declares_what_it_can_really_do.py",
-    ),
     "acp": (
         "our fs doors resolve inside the workspace; the child's own tools declare everything "
         "unless the deployment is contained",
         "tests/adapters/acp/test_the_childs_own_tools_are_judged_honestly.py",
-    ),
-    "contained": (
-        "containment is proven at construction by what is denied (D36), or the sandbox refuses "
-        "to exist",
-        "tests/adapters/contained/test_contained.py",
     ),
     "devices": (
         "the device contract: a sensor reads the world and an actuator writes it; neither has a "
@@ -151,9 +138,11 @@ def test_nothing_is_listed_that_no_longer_narrows() -> None:
 def test_the_walk_finds_the_adapters() -> None:
     found = narrowing_adapters(ADAPTERS, RUNTIME)
 
-    assert len(found) >= 4, f"the walk found only {sorted(found)}"
-    assert "runtime:environment" in found, "the runtime's derivation is not in the walk"
-    assert "sandbox_subprocess" in found, "the adapter BUG-018 was found in is not in the walk"
+    # Three, since Phase 22: the derivation moved into the runtime and three adapters that each
+    # narrowed a scope of their own became one that narrows none. Fewer places to be wrong is the
+    # phase's success, and this guard is against an *empty* walk, not a short one.
+    assert len(found) >= 3, f"the walk found only {sorted(found)}"
+    assert "runtime:environment" in found, "where BUG-018's class now lives is not in the walk"
 
 
 def test_the_rules_catch_what_they_look_for(tmp_path: Path) -> None:

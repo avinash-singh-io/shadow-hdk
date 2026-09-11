@@ -162,30 +162,45 @@ A product with its own domain verbs — two dozen ways to write to its record, s
 implementations propose, and a sink that is the host's gate. **The runtime never learns what a claim
 is**, and that is the point of the example rather than the verbs themselves.
 
-## The workspace and code adapters — the agent writes things
+## The environment — where the agent's effects land (Phase 22, D48–D50)
+
+Three adapters used to hold three opinions about one boundary — a workspace that checked every
+path, a subprocess sandbox that checked nothing, a proven box for a third kind of run — and a mode
+permitting workspace writes was told three different truths about what a write reaches. One was
+false (BUG-018). They are **one environment with a mode** now:
 
 ```python
-WorkspaceComponents(root: Path)      # read_file · write_file · list_dir · delete_file
-#   write_file: EffectProfile(writes=ScopeSet.of("workspace"), reversible=True)
-#     (corrected 2026-09-10, BUG-008: the code does not set `contained`, and a spec that says it
-#      does invites a rule to be written against a field nobody sets)
-#   every path resolved and refused outside root — the adapter's own invariant, not governance's
+Mode = "read-only" | "workspace-write" | "full"
 
-SubprocessSandbox(root, *, timeout_s, memory_mb, network=False, contained: bool)
-#   memory_mb caps the child's address space with `prlimit` **on Linux**; macOS has no `prlimit`
-#   and refuses `RLIMIT_AS`, so there it is not a limit. `runtime.leash.MEMORY_LIMIT_ENFORCED`
-#   says which. (Corrected 2026-09-10, BUG-009: it was documented and did not exist at all.)
-#   A leashed program runs in its own process group and the group is killed when the leash
-#   returns, so nothing it started outlives the step (D35). `HOME` is not in its environment.
-#   run_python · run_shell — EffectProfile(writes={workspace}, reaches=network,
-#                                          reversible=False, contained=contained, costs=False)
+LocalEnvironment.open(root, mode=...)                  # this machine, inside the OS sandbox
+SandboxEnvironment.open(backend, root, mode=...)       # a box somebody else built, root mounted
+#   six operations, every environment: read_file · write_file · delete_file · list_dir ·
+#                                      run_shell · run_python
+#   every profile from ONE derivation — runtime.environment.effects_of(isolation, mode, operation)
+#     `Isolation` is what is TRUE (writes confined, reads confined, network denied, proven) — set by
+#     a watched denial (D36) or an honest no, never by a wrapper's claim
+#     `Mode` is what is WANTED; a mode the isolation cannot make true is refused at construction
+#     (CannotEnforce) rather than quietly widened
+#   read-only:        writes = ∅;      write_file and delete_file are not offered at all
+#   workspace-write:  writes = {workspace} iff confined and proven, else refused
+#   full:             everything, said out loud — an ordinary host reaches the machine
 ```
 
-A deployment that is not contained registers the sandbox with `contained=False`; a mode whose ceiling
-requires `contained` then **refuses** it, and the component is not even visible to the model. So "may
-the agent run code here" is a deployment fact expressed once, not a branch in the loop. Writing a
-markdown file, rendering an HTML page, or generating a script is the workspace component; running the
-script is the sandbox.
+`LocalEnvironment` wraps every command in `sandbox-exec` (macOS) or bubblewrap (Linux) — Codex's
+model, consumed rather than rebuilt — and **proves it before it exists**: a write outside the root
+must fail, a socket must fail, a write inside must succeed. What it declares is what the proof
+found. Measured 2026-09-11 on macOS 26: *Operation not permitted*, denied, runs. Where no OS
+sandbox exists, a confined mode refuses naming the fix; `full` always constructs.
+
+`SandboxEnvironment` takes an `IsolationBackend` that can open a `Box` — run, read, write, delete,
+list, close — and proves the box with **two** denials (D50): a socket, as Phase 11 did, and a write
+outside the mount, which is the boundary BUG-018 was about. The first backend is OpenSandbox
+(Docker locally; gVisor, Kata, Firecracker on a cluster; needs a server, and says so). E2B and
+Daytona are the same seam, one adapter each.
+
+Every command runs on the runtime's leash inside the box — a timeout, a capped output, the
+operator's environment withheld, the process tree killed with the step (D35). Widening — *may I
+read elsewhere?* — is an `Ask`, not a tool.
 
 ## Contract suites — what every adapter must pass
 

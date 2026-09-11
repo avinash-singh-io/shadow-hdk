@@ -3,7 +3,7 @@ type: Phase
 phase: 18
 name: the-p1s
 epic: 0008-what-the-audit-found
-status: not-started
+status: complete
 topics: [audit, workspace, leash, containment, resume, d35, d36]
 deps: [phase-17-the-audit]
 ---

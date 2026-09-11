@@ -21,7 +21,7 @@ from typing import Any
 
 from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
 
-from examples.coder.workshop import BUILDING, CONFINED, a_lease, workshop
+from examples.coder.workshop import a_lease, workshop
 from shadow_hdk.kernel import (
     Binding,
     Completed,
@@ -37,6 +37,7 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.providers import detect, environment_for, open_with, search_dirs, shipped
 from shadow_hdk.runtime import RunOptions, current_run, run
+from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.testing import InMemoryComponents, make_registration
 
 RELAY = "shadow-hdk-registry"
@@ -90,7 +91,7 @@ async def a_conversation(
     root: Path,
     *,
     want: str | None = None,
-    confined: bool = False,
+    mode: EnvironmentMode = "workspace-write",
     on_event: Callable[[Event], None] | None = None,
 ) -> AsyncIterator[Any]:
     """A resident provider whose only tools are this run's, inside a live run.
@@ -128,7 +129,7 @@ async def a_conversation(
     held["ready"] = asyncio.get_running_loop().create_future()
     held["finished"] = asyncio.get_running_loop().create_future()
 
-    ports = workshop(root, mode=CONFINED if confined else BUILDING)
+    ports = await workshop(root, mode=mode)
     # `replace`, not `__class__(**__dict__)`: the latter copies a frozen dataclass by side-stepping
     # its own constructor, so every argument arrives untyped and nothing can see that the component
     # tuple went to `components` rather than to `governance`. It type-checks by accident, which is

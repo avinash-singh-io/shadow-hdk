@@ -3,7 +3,7 @@ type: Phase
 phase: 15
 name: environment-contract
 epic: 0007-the-environment
-status: not-started
+status: complete
 topics: [environment, devices, posture, world, sensors, actuators, witness, d29, d30, d31]
 deps: [phase-14-telemetry]
 ---

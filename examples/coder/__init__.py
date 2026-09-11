@@ -5,8 +5,8 @@ Your subscription pays for the thinking. **Our tools do the acting**, and that i
 * the model is Claude Code, driven through its own line-delimited JSON mode, using the subscription
   already on this machine — no API key, and no credential this program ever sees;
 * its native file and shell tools are **refused**, and the run's own registry is handed to it
-  instead, so a file it writes goes through `WorkspaceComponents` and a command it runs goes through
-  `SubprocessSandbox`;
+  instead, so a file it writes and a command it runs both go through one `LocalEnvironment` with a
+  mode, confined by the operating system;
 * every one of those calls arrives as a step on our graph — judged on its effects by the governance
   port, charged to the lease, and on the event stream;
 * nothing is written anywhere this program did not choose, because the runtime has no write path.

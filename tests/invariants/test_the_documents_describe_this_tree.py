@@ -36,11 +36,16 @@ BACKTICKED = re.compile(r"`([^`\s]+)`")
 
 
 def documents() -> list[Path]:
-    """Every spec document, `CLAUDE.md` and `README.md` — but not the changelog.
+    """Every spec document, `CLAUDE.md` and `README.md` — but not the changelog, and not the
+    records of work that is finished.
 
     A changelog is a record of what happened, and one of its entries names a file another agent
     later deleted. Rewriting history to keep a path alive would be worse than a dead link in a line
-    that was true when it was written.
+    that was true when it was written. **The same argument covers a completed phase's records and
+    the ad-hoc records**: Phase 22 deleted three adapters that Phase 3 built, and Phase 3's
+    overview naming them is a true statement about 2026-09-10, not a promise about today. A phase
+    still `in-progress` is held to the tree, because its documents are describing what is being
+    built now.
 
     **The README is in this net for the same reason the specs are, and more urgently.** It is the
     first file anybody opens and the last one anybody re-reads, so it rots faster than anything it
@@ -49,10 +54,26 @@ def documents() -> list[Path]:
     can check a stale *number*; naming a path that is not there is the part a rule can catch.
     """
     return [
-        *(d for d in sorted(SPECS.rglob("*.md")) if "changelog" not in d.parts),
+        *(
+            d
+            for d in sorted(SPECS.rglob("*.md"))
+            if "changelog" not in d.parts and not _is_history(d)
+        ),
         ROOT / "CLAUDE.md",
         ROOT / "README.md",
     ]
+
+
+def _is_history(document: Path) -> bool:
+    """An ad-hoc record, or a document inside a phase whose overview says it is complete."""
+    parts = document.relative_to(SPECS).parts
+    if parts and parts[0] == "adhoc":
+        return True
+    if len(parts) >= 2 and parts[0] == "phases":
+        overview = SPECS / "phases" / parts[1] / "overview.md"
+        if overview.exists() and "status: complete" in overview.read_text(encoding="utf-8"):
+            return True
+    return False
 
 
 def dead_paths(docs: list[Path], root: Path) -> list[str]:
@@ -182,3 +203,24 @@ def test_the_walk_reads_the_documents() -> None:
     assert len(documents()) >= 20
     assert any(d.name == "file-structure.md" for d in documents())
     assert any(d.name == "README.md" for d in documents()), "the front door is outside the net"
+
+
+def test_a_completed_phase_says_so_in_its_own_frontmatter() -> None:
+    """Found in Phase 22: twenty-one landed phases still said `status: not-started` — scaffolded
+    and never updated — so a rule that reads a phase's status to decide whether its documents are
+    history could not tell Phase 3 from tomorrow's. `specs/status.md`'s Completed Phases table is
+    the record; each phase it lists must agree in its own file."""
+    import re
+
+    status = (SPECS / "status.md").read_text(encoding="utf-8")
+    table = status[status.index("## Completed Phases") : status.index("## Ad-hoc / Patch Releases")]
+    listed = {int(n) for n in re.findall(r"^\| (\d+) \| ", table, re.M)}
+    assert listed, "the Completed Phases table is empty"
+    disagree = []
+    for phase in sorted(SPECS.glob("phases/phase-*/overview.md")):
+        found = re.match(r"phase-(\d+)-", phase.parent.name)
+        assert found is not None, phase
+        number = int(found.group(1))
+        if number in listed and "status: complete" not in phase.read_text(encoding="utf-8"):
+            disagree.append(phase.parent.name)
+    assert not disagree, f"listed complete in status.md, not in their own frontmatter: {disagree}"

@@ -70,6 +70,9 @@ class SandboxEnvironment(Environment):
     async def _write(self, path: str, content: str) -> int:
         return await self._box.write(path, content)
 
+    async def _delete(self, path: str) -> None:
+        await self._box.delete(path)
+
     async def _list(self, path: str) -> list[str]:
         return await self._box.list(path)
 

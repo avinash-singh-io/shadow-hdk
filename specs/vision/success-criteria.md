@@ -27,7 +27,7 @@ type: Vision
 | Real components | the demo runs a real MCP server through Ollama (Phase 1) | `examples/bare.py` output committed as evidence |
 | Modes for any product | two-mode, granular and full-auto sets expressed as data with the same adapter (Phase 1) | `tests/adapters/modes` |
 | The spike answered | J1 on the board with evidence (Phase 2) | `intent-ecosystem/lanes/board.md` |
-| The agent writes code and files | a markdown file and a runnable script produced through components; code refused where uncontained (Phase 3) | `tests/adapters/workspace`, `tests/adapters/sandbox_subprocess` |
+| The agent writes code and files | a markdown file and a runnable script produced through components; code refused where uncontained (Phase 3) | `tests/adapters/environment` |
 | Your subscription answers the turn | Codex or Claude Code driven over ACP; every tool call an observation (Phases 4–5) | `tests/adapters/acp`, `tests/adapters/recording` |
 | Every adapter passes its contract suite | 100 % | `tests/adapters/contract` |
 | A host drives it over the wire | `serve` and `--stdio` pass the same suite as in-process (Phase 9) | `tests/wire` |

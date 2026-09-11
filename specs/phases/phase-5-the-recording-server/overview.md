@@ -3,7 +3,7 @@ type: Phase
 phase: 5
 name: the-recording-server
 epic: 0002-the-workspace-and-driving-another-agent
-status: not-started
+status: complete
 topics: [mcp, recording, posture, observed, controlled, provenance, bridge]
 deps: [phase-4-the-acp-bridge]
 ---

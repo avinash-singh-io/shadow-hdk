@@ -3,7 +3,7 @@ type: Phase
 phase: 21
 name: the-visible-agent
 epic: 0010-the-visible-agent
-status: in-progress
+status: complete
 topics: [events, reasoning, projection, sse, deferred-tools, offloading, context]
 deps: [phase-20-providers]
 ---

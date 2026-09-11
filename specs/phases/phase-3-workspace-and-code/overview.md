@@ -3,7 +3,7 @@ type: Phase
 phase: 3
 name: workspace-and-code
 epic: 0002-the-workspace-and-driving-another-agent
-status: not-started
+status: complete
 topics: [workspace, filesystem, sandbox, subprocess, contained, artifacts]
 deps: [phase-2-the-spike]
 ---

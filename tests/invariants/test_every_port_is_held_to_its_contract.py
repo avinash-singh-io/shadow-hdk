@@ -43,7 +43,6 @@ CONTRACTED: dict[str, str] = {
     "AllowAll": "tests/adapters/basic/test_basic.py",
     "CallableComponents": "tests/adapters/basic/test_basic.py",
     "CallbackSink": "tests/adapters/basic/test_basic.py",
-    "ContainedSandbox": "tests/adapters/contained/test_contained_is_a_component.py",
     "Controlled": "tests/adapters/basic/test_controlled.py",
     "DerivationComponents": "tests/adapters/derivation/test_derivation_is_a_component.py",
     "DeviceComponents": "tests/adapters/devices/test_devices_are_components.py",
@@ -57,9 +56,7 @@ CONTRACTED: dict[str, str] = {
     "RuleGovernance": "tests/adapters/modes/test_rules.py",
     "StdoutObserver": "tests/adapters/basic/test_basic.py",
     "StdoutSink": "tests/adapters/basic/test_basic.py",
-    "SubprocessSandbox": "tests/adapters/sandbox_subprocess/test_sandbox.py",
     "SystemClock": "tests/adapters/basic/test_basic.py",
-    "WorkspaceComponents": "tests/adapters/workspace/test_workspace.py",
     # the runtime's own testing doubles, which hosts import and therefore depend on
     "CallbackObserver": "tests/adapters/contract/test_the_doubles.py",
     "FixedClock": "tests/adapters/contract/test_the_doubles.py",

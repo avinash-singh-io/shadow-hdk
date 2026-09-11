@@ -3,7 +3,7 @@ type: Phase
 phase: 2
 name: the-spike
 epic: 0001-the-bare-harness
-status: not-started
+status: complete
 topics: [acp, spike, j1, usage, permission, refusal]
 deps: [phase-1-real-adapters]
 ---

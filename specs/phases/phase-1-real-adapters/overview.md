@@ -3,7 +3,7 @@ type: Phase
 phase: 1
 name: real-adapters
 epic: 0001-the-bare-harness
-status: not-started
+status: complete
 topics: [adapters, langchain, ollama, huggingface, mcp, modes, streaming, ports]
 deps: [phase-0-the-runtime]
 ---

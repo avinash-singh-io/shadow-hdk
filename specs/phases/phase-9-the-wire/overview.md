@@ -3,7 +3,7 @@ type: Phase
 phase: 9
 name: the-wire
 epic: 0003-composition-at-scale
-status: not-started
+status: complete
 topics: [wire, jsonrpc, sse, stdio, serve, schemas, d19, d20, td-001, v0.1.0]
 deps: [phase-8-patterns-skills-replay]
 ---

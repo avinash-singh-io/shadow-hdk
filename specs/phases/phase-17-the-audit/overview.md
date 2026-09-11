@@ -3,7 +3,7 @@ type: Phase
 phase: 17
 name: the-audit
 epic: 0008-what-the-audit-found
-status: not-started
+status: complete
 topics: [audit, leases, resume, durability, transcript, wire, d33]
 deps: [phase-16-mqtt]
 ---

@@ -65,6 +65,9 @@ class FakeBox:
         self.files[path] = content
         return len(content.encode())
 
+    async def delete(self, path: str) -> None:
+        del self.files[path]
+
     async def list(self, path: str) -> list[str]:
         return sorted(self.files)
 

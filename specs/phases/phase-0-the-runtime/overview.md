@@ -3,7 +3,7 @@ type: Phase
 phase: 0
 name: the-runtime
 epic: 0001-the-bare-harness
-status: not-started
+status: complete
 topics: [runtime, langgraph, composition, governance, leases, events, agent, patterns]
 ---
 

@@ -3,7 +3,7 @@ type: Phase
 phase: 19
 name: the-p2s
 epic: 0008-what-the-audit-found
-status: in-progress
+status: complete
 topics: [audit, latency, derivation, sink, contracts, growth, d11]
 deps: [phase-18-the-p1s]
 ---

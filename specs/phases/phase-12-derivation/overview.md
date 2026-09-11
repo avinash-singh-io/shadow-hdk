@@ -3,7 +3,7 @@ type: Phase
 phase: 12
 name: derivation
 epic: 0006-derivation
-status: not-started
+status: complete
 topics: [derivation, grounds, fixed-point, decimal, units, indeterminate, total, d26, r8]
 deps: [phase-11-contained-sandboxes]
 ---

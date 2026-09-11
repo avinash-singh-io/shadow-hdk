@@ -3,7 +3,7 @@ type: Phase
 phase: 10
 name: effect-rules
 epic: 0004-governance-as-rows
-status: not-started
+status: complete
 topics: [governance, effect-rules, rows, intersection, narrowing, mode-files, d23, d24, r5, j4]
 deps: [phase-9-the-wire]
 ---

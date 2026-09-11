@@ -3,7 +3,7 @@ type: Phase
 phase: 11
 name: contained-sandboxes
 epic: 0005-the-body
-status: not-started
+status: complete
 topics: [sandbox, contained, gvisor, firecracker, isolation, proof, d25, r9]
 deps: [phase-10-effect-rules]
 ---
