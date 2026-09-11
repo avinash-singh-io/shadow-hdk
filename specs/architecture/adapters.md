@@ -21,7 +21,7 @@ type: Architecture
 | `workspace` | component | 3 | files within a root; `writes: {workspace}` |
 | `sandbox_subprocess` | component | 3 | run code with limits; `contained` only where the deployment says so |
 | `acp` | model + component | 4 | Codex or Claude Code driven over Zed's Agent Client Protocol |
-| `recording` | component | 5 | an MCP server exposing our registry to a child agent; every call an observation |
+| `recording` | component | 5 · 20 · 23 | an MCP server exposing our registry to a child agent; every call an observation. Served over a loopback socket through a relay console script (D44), and **nothing reaches it without the token the serve minted** — first line, constant time, refusals counted and never logged (D52) |
 | `effect_rules` | governance | 10 | rules as rows over profiles, composed by intersection, with the narrowing check |
 | `sandbox_gvisor`, `sandbox_firecracker` | component | 11 | contained execution |
 | `derivation` | component | 12 | total expressions over typed tables |

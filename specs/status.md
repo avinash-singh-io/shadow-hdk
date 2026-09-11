@@ -4,46 +4,29 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-11 (Phase 22)
-> **Current Phase**: **Phase 19 COMPLETE — every P0, P1 and P2 the audit filed is closed.** The
-> exception is ENH-003, deliberately deferred to the first OPC-UA or ROS adapter, which needs a
-> server or a ROS distribution that is not on this machine.
+> **Last Updated**: 2026-09-11 (Phase 23)
+> **Current Phase**: **Phase 23 COMPLETE — a host, in-process and in any language.** The agent
+> runs where the record is whichever side of the wire it is on (D51), the registry socket is
+> authenticated (D52), a provider's child dies with the process that held it (D53, BUG-019), and a
+> host-shaped example hands in its own policy, ledger, checkpointer and view and runs a brief
+> through a scripted brain, a key, or the subscription signed in on this machine — measured live.
+> The live proofs run on demand and never on a push. Codex is measured as far as a signed-out
+> install allows; the rest is owner-gated. **BUG-020** is open (P1): an Ask inside an agent's tool
+> call never reaches the host.
 >
-> Phase 19 closed **BUG-016** (57% of the runtime's per-step overhead was Pydantic rebuilding the
-> same schema; 1.36 → **0.594 ms/step**), **BUG-013** (the derivation engine total, canonical and
-> NFC-normalised), **BUG-014** (the record survives a crash), **TD-004** (every port held to its
-> contract), **TD-005** (what grows with traffic bounded, what does not argued), **TD-006** (six
-> leaks, one cause: `RuntimeStop` was an `Exception`, so every adapter's `except Exception`
-> swallowed a lease, a cancellation and a port failure alike — **contract 0.13.0**), **TD-007's
-> plumbing**, and **TD-008** (the documents, kept honest by an invariant).
+> Phases 20–22 before it: providers by key or subscription (v0.14.0), the visible agent — `Reasoned`
+> and the `Step` projection (v0.15.0), the environment with a mode (v0.16.0). Phase 19 closed every
+> P0, P1 and P2 the audit filed; its story is in its own history.
 >
-> **Ten of the audit's own claims were wrong and are corrected on the record** — understated,
-> misplaced, already fixed, or not reproducible. Every row was reproduced before it was touched, and
-> that changed the fix in about a third of them.
+> **CI is green** and runs on every push.
 >
-> **CI is green** and runs on every push. It had never run on any of 141 commits until this phase
-> widened a trigger that only fired on branches nothing has ever landed on.
+> 1,127 tests; mypy strict over 194 files; seventeen distributions at **0.17.0**, all MIT.
 >
-> 949 tests; mypy strict over 147 files; seventeen distributions at **0.13.0**, all MIT.
->
-> **LANDED AND RELEASED, 2026-09-10.** The owner approved the merge end to end. The linear stack
-> fast-forwarded onto `staging` and then onto `main` — no merge commit, because `main` was a strict
-> ancestor — and `main`, `staging` and `phase-19-the-p2s` are all at `81d4b6a`. **v0.13.0 is tagged
-> and released.** CI is green on `main`. This is the first release this repository has had.
->
-> **Nothing further is buildable here.** What remains open is **ADR-1** (which gates TD-007's other
-> half — whether an irreversible step must produce an `Acted` whichever port it came through) and
-> **ADR-2**. The merge and the tag are done. Recorded deferrals: unit
-> cancellation in the derivation engine, a twelfth event kind for an unreachable port, ENH-002 (a
-> TLS broker), ENH-003 (a second protocol adapter), and Phase 11's live gVisor and Firecracker
-> proofs (a Linux host).
-> **Latest Release**: **v0.14.0**, released 2026-09-11 — Phase 20, providers: bring your own key or
-> your own subscription; the socket; BUG-018 fixed three times and guarded once. Contract change
-> (`AgentPort`, `Provider`), so a *Pins* row. Before it, **v0.13.1**, released 2026-09-11 — a patch. BUG-017 (the wire listener left
-> quietly), the README rewritten from its Phase 0 state, and three stale tables in this file
-> corrected. **No contract change, so no *Pins* row** (D9): every package moves to 0.13.1
-> together because they are pinned to each other by equality, not because anything a host
-> depends on moved. All MIT
+> **Latest Release**: **v0.17.0**, released 2026-09-11 — Phase 23, a host: wire parity as an
+> invariant, the authenticated socket, BUG-019 closed, the host example, the on-demand live job.
+> Contract change (`Step.parent`, `serve_over_socket` → `(port, token)`, `run_steps(nested=)`), so a
+> *Pins* row. Before it v0.16.0 (Phase 22, the environment), v0.15.0 (Phase 21, the visible agent),
+> v0.14.0 (Phase 20, providers), v0.13.1 (a patch). All MIT
 > **Health**: On Track
 
 ## Summary
@@ -55,8 +38,8 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **All twenty phases are built,
-merged and released**: 949 tests, mypy strict over 147 files, seventeen distributions at 0.13.0.
+that adopter, and it lives in the shared roadmap rather than here. **Twenty-four phases are built,
+merged and released**: 1,127 tests, mypy strict over 194 files, seventeen distributions at 0.17.0.
 
 ## Completed Phases
 
@@ -89,7 +72,8 @@ merged and released**: 949 tests, mypy strict over 147 files, seventeen distribu
 | 19 | The P2s, and the documents | Complete, merged | **v0.13.0** |
 | 20 | Providers — your key, or your subscription | Complete, merged | **v0.14.0** |
 | 21 | The visible agent | Complete, merged | **v0.15.0** |
-| 22 | The environment | Complete | **v0.16.0** |
+| 22 | The environment | Complete, merged | **v0.16.0** |
+| 23 | A host, in-process and in any language | Complete | **v0.17.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -101,7 +85,7 @@ merged and released**: 949 tests, mypy strict over 147 files, seventeen distribu
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | — | — | Phases 0–19 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
+| _(none)_ | — | — | Phases 0–23 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
 
 ## Upcoming Phases
 

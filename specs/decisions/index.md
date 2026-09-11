@@ -68,6 +68,9 @@ rather than remembered.
 | D48 | an environment is where effects land, and it has a mode | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
 | D49 | local execution is confined by the operating system, and proven first | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
 | D50 | an isolated environment sits behind a Box, proven by two denials | [`phases/phase-22-the-environment/history.md`](/phases/phase-22-the-environment/history.md) |
+| D51 | the agent runs where the record is, whichever side of the wire that is | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
+| D52 | nothing reaches a run's registry without the token it minted | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
+| D53 | a provider's child dies with the process that held it, whatever ended it | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
 
 ## Also here
 

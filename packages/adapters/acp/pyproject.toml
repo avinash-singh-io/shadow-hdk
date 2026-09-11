@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-acp"
-version = "0.16.0"
+version = "0.17.0"
 description = "Another agent — Codex, Claude Code, anything speaking Zed's Agent Client Protocol — driven as a governed component."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.16.0", "shadow-hdk==0.16.0", "agent-client-protocol>=0.12,<1"]
+dependencies = ["shadow-hdk-kernel==0.17.0", "shadow-hdk==0.17.0", "agent-client-protocol>=0.12,<1"]
 
 [project.entry-points."shadow_hdk.transports"]
 acp = "shadow_hdk.adapters.acp.transport:open_agent"

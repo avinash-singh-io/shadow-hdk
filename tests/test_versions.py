@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.16.0"
-"""0.16.0 because three distributions are **gone** — `adapters-workspace`,
+EXPECTED = "0.17.0"
+"""0.17.0 because a host's view of a run changed shape in two places and a host that served the
+registry over a socket has to change one line. `Step` grew `parent` and `run_steps` grew
+`nested=` (D51's example found that a host waiting for the orchestrator's step rendered nothing
+for the whole run); `serve_over_socket` yields `(port, token)` and the relay wants the token in
+its environment (D52) — a caller holding the old `port` breaks at unpacking, which is the right
+place to break. `Step.json` is republished; the wire's `STEP` carries the new field.
+
+0.16.0 because three distributions are **gone** — `adapters-workspace`,
 `adapters-sandbox-subprocess` and `adapters-contained` — and one, `adapters-environment`, stands
 where they were (D48–D50). No
 kernel type changed; a host that depended on any of the three has to change its imports, and

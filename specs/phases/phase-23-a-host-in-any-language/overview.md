@@ -3,7 +3,7 @@ type: Phase
 phase: 23
 name: a-host-in-any-language
 epic: 0012-a-host-in-any-language
-status: in-progress
+status: complete
 topics: [host, wire, parity, socket, authentication, live-proof, codex, bug-019]
 deps: [phase-21-the-visible-agent, phase-22-the-environment]
 ---

@@ -56,3 +56,12 @@ host ──► runtime   resume(run_id, answer)       answer: a judgement, or {s
   is generated from them and is a *client*, never a port of the runtime (`09` §3b).
 - **The same suite runs both ways.** The wire passes the in-process runtime suite through a loopback
   transport, or the wire is not done.
+- **Parity is an invariant, not a promise** (Phase 23, D51). Every `RunContext` method either
+  crosses — `visible`, `floor_met_now`, `spawn_options_now`, `reasoned` with its step, the
+  children's `spawn`/`send`/`release`/`is_held` through `WireChildren` — or is named in the parity
+  test's `NOT_CROSSING` table with a reason; and every kernel event kind, `Reasoned` and the `Step`
+  projection included, is in the published schemas. The agent adapter spawns the plans its model
+  authors *through the runtime*, so a sub-agent runs where the record is, whichever side the agent
+  is on; the pattern's ceiling crosses as data and is applied there as a second gate (`Narrowed`).
+- **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
+  environment, sent as the first line before MCP; the run token above is still the wire's own debt.

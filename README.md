@@ -350,6 +350,7 @@ proven by two denials (D50).
 ```bash
 uv run python examples/bare.py            # the harness on its own, with no product and no network
 uv run python -m examples.coder ./work    # a coding agent on your subscription, governed by us
+uv run python -m examples.host "brief"    # a host: its own policy, ledger, store and view handed in
 ```
 
 [`examples/coder`](examples/coder/README.md) is the one to read if you want to see all of this at
@@ -370,6 +371,23 @@ does not permit this` — from a policy that has never heard of `write_file`.
 `examples/bare.py` is the test that defines done: a composition running against a component that
 arrived from outside, a model and a sub-agent, governed by allow-all, everything written to stdout —
 with **zero lines of any application's code**. `examples/real.py` does the same over real adapters.
+
+[`examples/host`](examples/host/__init__.py) is the shape every product takes: a program that hands
+the runtime **its own** `GovernancePort` (a judgement over effects — reads anywhere, writes in the
+workspace, a write outside is a *question*, the network refused), its own `SinkPort` (a ledger of
+proposals), a LangGraph checkpointer on a file, and its own view of the projection — every step as
+it closes, what was thought before it, what it cost — then runs a brief through whichever brain it
+has: a scripted model (free), a model **by key** (`--brain=key`, any provider LangChain integrates)
+or the CLI signed in on this machine (`--brain=subscription`). A question the host cannot answer
+now parks the run in the store, and the next call resumes it. Measured live on Claude Code:
+
+```
+∴ I need to list the workspace files and write them into INDEX.md, so I'll load the schemas …
+  ✓ list_dir → Completed(output=['a.txt'], kind='completed')
+∴ Since there's only a.txt present and INDEX.md doesn't exist yet, I'll just list a.txt …
+  ✓ write_file → Completed(output={'path': 'INDEX.md', 'bytes': 6}, kind='completed')
+✓ resident → Completed(output={'text': "The workspace contained one file, `a.txt`. …
+```
 
 ---
 
@@ -427,11 +445,14 @@ uv run mypy
 uv run pytest
 ```
 
-All four must exit zero. CI runs them on every push.
+All four must exit zero. CI runs them on every push. The **live** proofs — real providers, real
+money or a subscription seat — are opt-in and never run on a push: locally with
+`uv run pytest -m live -rs` (a provider that is absent or signed out *skips*, and `-rs` says why),
+or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–22 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–23 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

@@ -28,11 +28,12 @@ it.
 
 ## Where this stands — 2026-09-11
 
-**Phases 0–20 are done.** 0–19 are merged and released (**v0.13.1**); Phase 20 — providers — is
-complete on its branch at contract **0.14.0**: 1,084 tests, mypy strict over 177 files, eighteen
-distributions, all MIT. A subscription-backed coding agent was driven end to end: it wrote a file
-through the run's own workspace component, ran it in the run's own sandbox, and both landed on the
-event stream as governed child runs.
+**Phases 0–23 are done**, merged and released; the latest is **v0.17.0** (Phase 23): 1,127 tests,
+mypy strict over 194 files, seventeen distributions, all MIT. The consumable line is reached: a
+host hands in its own governance, record, checkpointer and view and runs a brief through a key or
+the subscription signed in on its machine, in-process or over the wire at parity; a
+subscription-backed agent reasons on the record, acts through the run's own environment inside the
+OS sandbox, and its process dies with the host's.
 
 **Doing that found the most serious defect this runtime has had**, and it is worth stating in the
 plan because it re-ordered the plan. Three adapters, in three packages that cannot import each
@@ -61,13 +62,16 @@ consume the rest**. Sandboxing is the first thing consumed.
 | done | 20 — providers | two seams (D39); a provider is a file (D40); asked never read (D41); the socket (D42); the loop stays theirs (D43); the relay (D44) |
 | done | 21 — the visible agent | `Reasoned` (D45); steps folded once, crossing the wire folded (D46); a large result held, never written (D47) |
 | done | 22 — the environment | one concept with a mode (D48); local on the OS sandbox, proven (D49); isolated behind a Box, two denials (D50); three adapters deleted |
-| next | 23 — a host, in-process and in any language | the line at which the runtime is consumable |
+| done | 23 — a host, in-process and in any language | the agent runs where the record is (D51); the socket authenticated (D52); a child dies with its process (D53); a host example; parity held by invariants — **the consumable line, reached** |
+| next | 24 — the skill registry | skills predefined, minted, proposed for keeping; progressive disclosure shares Phase 21's mechanism |
 | `[~]` | OPC-UA, ROS 2 (epic 0007) | need a server and a ROS distribution |
 
 **Decisions settled so far:** D1–D38 as before; D39 inference and agency are two seams, D40 a
 provider is data, D41 the harness asks and never reads a credential, D42 every effect routes through
 the run's registry whoever asked, D43 the loop stays the provider's, D44 the registry is offered on a
-loopback socket through a relay (phase 20).
+loopback socket through a relay (phase 20); D45–D47 the visible agent (phase 21); D48–D50 the
+environment (phase 22); D51 the agent runs where the record is, D52 the socket is authenticated,
+D53 a child dies with its process (phase 23).
 
 **Still with the owner:** ADR-1 and ADR-2, and landing Phase 20.
 
@@ -95,10 +99,10 @@ loopback socket through a relay (phase 20).
 | 18 | The audit's P1s | **DONE** · `phase-18-the-p1s` | 17 | the workspace confined against hard links; a step owns its process tree (D35); containment proven by what is denied (D36); a parent keeps its children across a park (D37); a parked step resumes where it parked and the human's answer decides (D38); the ACP purse charges the step and a deaf child is killed; five agent promises kept; packaging pinned and typed; **CI made to run at all** |
 | 19 | The P2s | **DONE** · `phase-19-the-p2s` | 18 | BUG-016 the adapter cache; BUG-013 a derivation answers rather than raises; BUG-014 a crash costs the record nothing; TD-004 every port held to its contract; TD-005 growth bounded or argued; TD-006 a stop signal is not an ordinary exception (contract 0.13.0); TD-007 plumbing, its policy the owner's; TD-008 the documents, kept honest by an invariant |
 | 20 | Providers | **DONE** · `phase-20-providers` | 4, 5 | two seams — bring your own key, or your own subscription; a provider is a file; the socket closes around a child's effects |
-| 21 | The visible agent | next | 20 | `Reasoned`, the twelfth event kind; a projection of the stream any client renders as agent steps, over SSE and in-process; deferred tool schemas; large-result offloading |
+| 21 | The visible agent | **DONE** · `phase-21-the-visible-agent` | 20 | `Reasoned`, the twelfth event kind; a projection of the stream any client renders as agent steps, over SSE and in-process; deferred tool schemas; large-result offloading |
 | 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
-| 23 | A host, in-process and in any language | planned | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
-| 24 | The skill registry | planned | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
+| 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
+| 24 | The skill registry | next | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
 | 25 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 26 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 
