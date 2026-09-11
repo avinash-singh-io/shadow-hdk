@@ -141,18 +141,21 @@ def test_the_marginal_provider_costs_a_file() -> None:
     )
 
 
-def test_a_provider_nobody_here_could_measure_says_so() -> None:
-    """Codex is not installed on the machine this library was written on, so its record is
-    transcribed from the reference implementation rather than observed.
+def test_a_record_says_which_of_its_fields_were_measured_and_which_transcribed() -> None:
+    """Codex was installed locally and read off signed out (Phase 23): its probes and its session
+    id are measured; the signed-in shapes are still transcribed from the reference implementation,
+    because a signed-in Codex is a person's login and not this lane's to hold.
 
     Transcribed and measured are different kinds of claim, and a file that hid the difference would
-    invite somebody to trust a field nobody has run. The header says which it is; this makes the
-    saying non-optional.
+    invite somebody to trust a field nobody has run. The header says which is which; this makes the
+    saying non-optional. (Written first as *nothing here is measured*; the premise moved.)
     """
     text = (LIBRARY / "codex.toml").read_text(encoding="utf-8")
 
-    assert "Not measured here" in text
-    assert "open-design" in text, "a transcribed record must name what it was transcribed from"
+    assert "Partly measured" in text
+    assert "Still transcribed" in text, "the header must say what has not been run"
+    assert "open-design" in text, "a transcribed field must name what it was transcribed from"
+    assert "0.154.0" in text, "a measurement names the version it was made against"
 
 
 def test_opencode_carries_what_was_measured_of_it() -> None:

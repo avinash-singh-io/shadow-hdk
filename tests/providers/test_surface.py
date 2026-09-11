@@ -84,6 +84,36 @@ async def test_a_present_and_signed_in_provider_is_ready(tmp_path: Path) -> None
     assert found[0].binary is not None
 
 
+async def test_the_binary_override_in_the_process_environment_is_honoured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`bin_env_key` is the documented way to point the harness at an install off the PATH — a
+    local one in a scratch directory, say. `detect()` builds the probe's environment from the
+    record's `backfill_env`, and the override was not in it, so it was dropped on the floor and
+    the provider reported `absent` with the binary right there. Found measuring Codex, installed
+    locally and never globally."""
+    elsewhere = a_cli(
+        tmp_path / "elsewhere",
+        "here",
+        'if [ "$1" = "auth" ]; then echo "Logged in"; else echo "1.2.3"; fi',
+    )
+    provider = Provider(
+        id="here",
+        kind="agent",
+        bin="here",
+        bin_env_key="HERE_BIN",
+        version_probe=("--version",),
+        auth_probe=("auth",),
+        auth_failure_patterns=("not logged in",),
+    )
+    monkeypatch.setenv("HERE_BIN", str(elsewhere))
+
+    found = await detect([provider], path=[str(tmp_path / "not-on-path")], extra_dirs=[])
+
+    assert found[0].status == "ready", found[0]
+    assert found[0].binary == elsewhere
+
+
 async def test_a_present_but_signed_out_provider_says_which(tmp_path: Path) -> None:
     """The distinction that matters to a person: installed is not the same as usable."""
     a_cli(

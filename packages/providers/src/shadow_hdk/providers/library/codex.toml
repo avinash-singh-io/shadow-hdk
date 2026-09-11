@@ -1,18 +1,27 @@
 # Codex CLI, over its line-delimited JSON exec mode.
 #
-# **Not measured here.** Codex is not installed on the machine this file was written on, so unlike
-# `claude-code.toml` and `opencode.toml` nothing below was observed. It is transcribed from the
-# reference implementation's own provider definition (nexu-io/open-design,
+# **Partly measured.** On 2026-09-11 `@openai/codex` 0.154.0 was installed *locally* (into a scratch
+# directory, never globally — the harness detects and reports, it does not install; D41) and read
+# off, signed out. What that run settled, against a real binary:
+#
+#   - `codex --version` prints `codex-cli 0.154.0`; the version probe reads it
+#   - `codex login status` prints `Not logged in` and exits 1 when signed out; `detect()` reports
+#     `not-signed-in` with that line as the message, through `CODEX_BIN` (which `detect()` did not
+#     honour until this measurement — it does now)
+#   - `codex exec --json --skip-git-repo-check` reads the prompt from stdin, and its first two lines
+#     are `{"type":"thread.started","thread_id":"…"}` and `{"type":"turn.started"}` — so
+#     `session_id_at` is right — before it fails `401 Unauthorized` on `wss://api.openai.com`
+#   - tools are configured with `-c mcp_servers.<name>…` (`-c` takes a dotted TOML override)
+#
+# **Still transcribed**, because every one of them needs a signed-in Codex, which is a person's
+# OpenAI login and not this lane's to hold: the shape of `item.completed`, where the final text
+# and the usage live, and what `error` looks like mid-turn. They are copied from the reference
+# implementation's own provider definition (nexu-io/open-design,
 # `apps/daemon/src/runtimes/defs/codex.ts`), which *is* measured evidence — by them, not by us.
+# The first signed-in turn should correct whatever is wrong in the `[dialect]` block below, and the
+# corrections belong in this file rather than in a code path.
 #
-# The distinction matters and is the reason this comment exists rather than a silent file: a field
-# that has been read off a running CLI and a field that has been copied from somebody else's
-# codebase are different kinds of claim. The first turn anyone runs against a real Codex should
-# correct whatever is wrong here, and the corrections belong in this file rather than in a code path.
-#
-# What is transcribed:
-#   - `codex exec --json --skip-git-repo-check` is the line-delimited JSON mode
-#   - `codex login status` is the authentication probe
+# What else is transcribed:
 #   - `CODEX_HOME` must be named explicitly; the collector refuses a home-directory fallback so it
 #     can never attribute one install's sessions to another
 #   - a turn is one process, threaded to the last by `exec resume <id>`
@@ -38,7 +47,8 @@ backfill_env = ["HOME", "PATH", "SHELL", "LANG", "TERM", "USER", "LOGNAME", "COD
 
 install_hint = "npm i -g @openai/codex, then `codex login` to attach your subscription"
 
-# **Unverified.** Every name in this block is transcribed rather than observed; see the header.
+# `session_id_at` is measured; the rest of this block is transcribed rather than observed — see
+# the header.
 [dialect]
 resident = false
 prompt_shape = "text"

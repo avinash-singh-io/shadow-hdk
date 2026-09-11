@@ -1,0 +1,33 @@
+name: live
+# The live proofs, on demand (Phase 23). Nothing here runs on a push: every test in this job calls a
+# real provider, and a provider costs money or a subscription seat. Run it deliberately:
+#
+#     gh workflow run live.yml                      # the whole `live` selection
+#     gh workflow run live.yml -f select=tests/test_real_harness.py
+#
+# A test whose provider is absent, not signed in or has no key **skips** — it never fails for want
+# of a machine's secrets — so a green run means "what could run, passed", and `-rs` prints why the
+# rest did not. The one key this job can hold is `INTENT_HF_TOKEN` (HuggingFace's OpenAI-compatible
+# router; any provider LangChain integrates works the same way). A CLI by subscription — Claude
+# Code, OpenCode, Codex — is signed in on a person's machine, not a runner's, so those proofs
+# skip here and are run locally: `uv run pytest -m live -rs`.
+on:
+  workflow_dispatch:
+    inputs:
+      select:
+        description: "what to run (a path or node id); the live marker is applied regardless"
+        required: false
+        default: "tests"
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --all-packages
+      - name: the live selection, skips explained
+        env:
+          INTENT_HF_TOKEN: ${{ secrets.INTENT_HF_TOKEN }}
+        run: uv run pytest -m live -rs -q ${{ inputs.select }}

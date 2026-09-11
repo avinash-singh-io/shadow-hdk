@@ -83,6 +83,13 @@ def environment_for(
         if (value := ambient.get(name)) is not None:
             made[name] = value
 
+    # The provider's own override — `CLAUDE_BIN`, `CODEX_BIN` — is part of its environment whether
+    # or not the record listed it: it is the documented way to name an install off the PATH, and a
+    # probe built without it reported the provider absent with the binary right there.
+    key = provider.bin_env_key
+    if key and key not in made and (named := ambient.get(key)) is not None:
+        made[key] = named
+
     if search:
         made["PATH"] = spawn_path(made.get("PATH", ""), search)
     return made
