@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, Refused, Spent
+from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, RefusedEvent, Spent
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
@@ -56,7 +56,9 @@ def show(event: Event) -> None:
         print(f"{DIM}  · {event.component}{OFF}", flush=True)
     elif isinstance(event, Observed) and event.step != "converse":
         print(f"{DIM}    → {str(event.observation)[:150]}{OFF}", flush=True)
-    elif isinstance(event, Refused):
+    elif isinstance(event, RefusedEvent):
+        # The *event*, not the observation of the same name — the first cut checked the
+        # observation and no refusal was ever shown.
         print(f"\033[31m  ✕ refused: {event.reason}{OFF}", flush=True)
     elif isinstance(event, Spent):
         print(f"{DIM}    ({event.usage}){OFF}", flush=True)

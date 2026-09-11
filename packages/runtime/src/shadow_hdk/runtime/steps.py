@@ -61,6 +61,9 @@ class Step:
     usage: Usage | None = None
     at: str | None = None
     children: tuple[Step, ...] = ()
+    parent: tuple[RunId, StepId] | None = None
+    """The step whose run spawned this one, for a client hanging steps where they belong as they
+    close (`run_steps(nested=True)`); `None` at the top."""
 
 
 @dataclass
@@ -77,6 +80,7 @@ class _Open:
     usage: Usage | None = None
     at: str | None = None
     children: list[Step] = field(default_factory=list)
+    parent: tuple[RunId, StepId] | None = None
 
     def frozen(self) -> Step:
         return Step(
@@ -90,6 +94,7 @@ class _Open:
             usage=self.usage,
             at=self.at,
             children=tuple(self.children),
+            parent=self.parent,
         )
 
 
@@ -115,6 +120,8 @@ class Fold:
         self.parent_of: dict[RunId, tuple[RunId, StepId]] = {}
         self.finished: list[Step] = []
         self.order: list[tuple[RunId, StepId]] = []
+        self.closed_now: list[Step] = []
+        """Every step the last `feed` closed, nested or not — what a live host renders."""
 
     def _step(self, run_id: RunId, step: StepId) -> _Open:
         key = (run_id, step)
@@ -125,8 +132,10 @@ class Fold:
         return self.open[key]
 
     def feed(self, event: Event) -> list[Step]:
-        """Fold one event; return any top-level steps that just closed."""
+        """Fold one event; return any top-level steps that just closed. `closed_now` holds every
+        step that closed, a nested one included."""
         closed: list[Step] = []
+        self.closed_now = []
         match event:
             case Reasoned():
                 self._step(event.run_id, event.step).reasoning.append(event.text)
@@ -173,8 +182,11 @@ class Fold:
                     return
 
     def _close(self, run_id: RunId, step: StepId) -> list[Step]:
-        done = self.open.pop((run_id, step)).frozen()
+        opened = self.open.pop((run_id, step))
+        opened.parent = self.parent_of.get(run_id)
+        done = opened.frozen()
         self.order.remove((run_id, step))
+        self.closed_now.append(done)
         if (parent := self.parent_of.get(run_id)) is not None:
             parent_run, parent_step = parent
             if (parent_run, parent_step) in self.open:
@@ -197,15 +209,20 @@ def steps(events: Iterable[Event]) -> list[Step]:
     return fold.drain()
 
 
-async def run_steps(events: AsyncIterator[Event]) -> AsyncIterator[Step]:
+async def run_steps(events: AsyncIterator[Event], *, nested: bool = False) -> AsyncIterator[Step]:
     """The same fold over a live stream, yielding each top-level step as it closes.
 
     Takes the event iterator `run(...)` returns, so a host that wants both the record and the
     steps tees the one stream rather than running twice.
+
+    `nested=True` yields **every** step as it closes, a sub-agent's before the step that spawned
+    it, each with `parent` set — because an orchestrator's own step closes last, and a host that
+    waited for it rendered nothing for the whole run.
     """
     fold = Fold()
     async for event in events:
-        for done in fold.feed(event):
+        top = fold.feed(event)
+        for done in fold.closed_now if nested else top:
             yield done
 
 

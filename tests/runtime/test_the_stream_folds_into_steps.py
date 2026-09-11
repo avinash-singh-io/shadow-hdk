@@ -16,6 +16,8 @@ child was spawned. Depth is unbounded and nothing about it is special.
 
 from __future__ import annotations
 
+from typing import Any
+
 from shadow_hdk.kernel import (
     Ceiling,
     Completed,
@@ -132,3 +134,36 @@ def test_a_step_is_data_a_client_can_serialise() -> None:
 
     assert isinstance(lead, Step)
     assert round_trip(lead, Step) == lead
+
+
+async def _replayed(events: list[Event]) -> Any:
+    for event in events:
+        yield event
+
+
+async def test_a_host_can_watch_every_step_close_as_it_closes() -> None:
+    """`run_steps` yields a top-level step when it closes — and an orchestrator's step closes at
+    the very end, after every sub-agent's step it nested. A host rendering "agent steps" live saw
+    nothing for the whole run. `nested=True` yields **every** step as it closes, the child's before
+    the parent's, each naming its parent so a client can hang it where it belongs."""
+    from shadow_hdk.runtime.steps import run_steps
+
+    seen = [step async for step in run_steps(_replayed(a_stream()), nested=True)]
+
+    assert [(s.run_id, s.step) for s in seen] == [
+        ("child", "look"),
+        ("parent", "lead"),
+        ("parent", "wipe"),
+        ("parent", "publish"),
+    ]
+    assert seen[0].parent == ("parent", "lead")
+    assert [s.parent for s in seen[1:]] == [None, None, None]
+    # The parent, when it closes, still carries the child — the tree is intact for a late reader.
+    assert seen[1].children[0].step == "look"
+
+    default = [step async for step in run_steps(_replayed(a_stream()))]
+    assert [(s.run_id, s.step) for s in default] == [
+        ("parent", "lead"),
+        ("parent", "wipe"),
+        ("parent", "publish"),
+    ], "the default changed"
