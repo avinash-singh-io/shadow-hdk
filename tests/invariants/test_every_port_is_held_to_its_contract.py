@@ -54,6 +54,7 @@ CONTRACTED: dict[str, str] = {
     "ModeGovernance": "tests/adapters/modes/test_modes.py",
     "OpenTelemetryObserver": "tests/adapters/otel/test_otel_is_an_observer.py",
     "RuleGovernance": "tests/adapters/modes/test_rules.py",
+    "SkillComponents": "tests/adapters/agent/test_the_skill_registry_is_a_component.py",
     "StdoutObserver": "tests/adapters/basic/test_basic.py",
     "StdoutSink": "tests/adapters/basic/test_basic.py",
     "SystemClock": "tests/adapters/basic/test_basic.py",

@@ -24,11 +24,7 @@ SPAWN = "spawn"
 RECALL = "recall"
 SEND = "send"
 RELEASE = "release"
-USE_SKILL = "use_skill"
-MINT_SKILL = "mint_skill"
-META_TOOLS = frozenset(
-    {COMPOSE, PROPOSE, DONE, DESCRIBE, COMPACT, SPAWN, SEND, RELEASE, USE_SKILL, MINT_SKILL}
-)
+META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE, DESCRIBE, COMPACT, SPAWN, SEND, RELEASE})
 
 MAILBOX = "mailbox"
 """What a helper parks on, by convention (D16). This adapter cannot import `adapters/basic`, so the

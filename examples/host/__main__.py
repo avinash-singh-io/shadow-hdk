@@ -77,6 +77,16 @@ async def main() -> int:
         print(f"\033[31m{cannot}{OFF}", file=sys.stderr)
         return 3
     print()
+    if brain.skills is not None:
+        on_offer = ", ".join(f"{k.name} ({k.source})" for k in await brain.skills.all())
+        print(f"{DIM}Skills on offer this run: {on_offer}{OFF}")
+    minted = [
+        str(p.payload["name"])
+        for p in outcome.ledger.proposals
+        if p.kind == "skill" and isinstance(p.payload, dict)
+    ]
+    if minted:
+        print(f"{DIM}Minted and proposed for keeping: {', '.join(minted)}{OFF}")
     if outcome.question:
         print(f"{DIM}parked on: {outcome.question}\nrun id: {outcome.run_id}{OFF}")
         return 4

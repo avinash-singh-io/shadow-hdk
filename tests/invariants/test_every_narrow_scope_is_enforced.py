@@ -29,6 +29,12 @@ ADAPTERS = ROOT / "packages" / "adapters"
 RUNTIME = ROOT / "packages" / "runtime" / "src" / "shadow_hdk" / "runtime"
 
 ENFORCED_BY: dict[str, tuple[str, str]] = {
+    "agent": (
+        "`mint_skill` declares `writes: {record}` and nothing else, and what it does is *propose* "
+        "through the sink — the runtime has no write path, so there is no way for it to reach "
+        "outside the record; `use_skill` declares nothing and changes nothing in the world",
+        "tests/adapters/agent/test_a_skill_is_chosen_minted_and_kept.py",
+    ),
     "acp": (
         "our fs doors resolve inside the workspace; the child's own tools declare everything "
         "unless the deployment is contained",

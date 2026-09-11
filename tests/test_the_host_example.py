@@ -213,3 +213,38 @@ async def test_inside_the_workspace_a_write_is_confined_and_nobody_is_asked(tmp_
     assert outcome.ended == "completed"
     assert asked == [], "a confined write is inside the workspace; the policy had nothing to ask"
     assert (tmp_path / "ws" / "NOTES.md").exists()
+
+
+# ------------------------------------------------------- skills: chosen, minted, kept by the host
+
+
+async def test_the_worker_chooses_a_shipped_skill_and_mints_one_the_ledger_keeps(
+    tmp_path: Path,
+) -> None:
+    """Self-evolution as a governed act: the worker mints a procedure, the sink receives it as a
+    proposal, and the *host* — its ledger — decides to keep it. The runtime kept nothing."""
+    first = await host(
+        "take notes",
+        root=tmp_path / "ws",
+        brain=scripted("take notes"),
+        store=tmp_path / "runs.sqlite",
+        mode="full",
+        on_line=lambda _l: None,
+        answer=lambda _q: Allow(),
+    )
+    # Choosing a skill is a step on the record, like any other act (D55).
+    chosen = [
+        e
+        for e in first.events
+        if e.kind == "invoked" and getattr(e, "component", "") == "use_skill"
+    ]
+    assert [getattr(e, "inputs", None) for e in chosen] == [{"name": "look-before-you-change"}]
+    minted = [p.payload for p in first.ledger.proposals if p.kind == "skill"]
+    assert [p["name"] for p in minted if isinstance(p, dict)] == ["notes-first"]
+
+    # The next run is handed the ledger as a source; the minted skill is back, labelled kept.
+    again = scripted("take notes", kept=first.ledger)
+    assert again.skills is not None
+    names = {s.name: s.source for s in await again.skills.all()}
+    assert names["notes-first"] == "kept"
+    assert names["look-before-you-change"] == "shipped"

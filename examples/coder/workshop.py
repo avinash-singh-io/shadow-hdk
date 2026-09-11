@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from shadow_hdk.adapters.agent import SkillComponents, SkillRegistry, shipped_skills
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
 
@@ -26,6 +27,9 @@ from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
 EVERYTHING = ScopeSet(everything=True)
 WORKSPACE = ScopeSet.of("workspace")
+OURS = ScopeSet.of("workspace", "record")
+"""The root, and the run's own record — a minted skill proposed through the sink writes the latter,
+and this example's sink is stdout. A mode that permits neither is `read-only`."""
 
 CONFINED = Mode(
     "confined",
@@ -38,7 +42,7 @@ CONFINED = Mode(
     # `reaches=False` in `workspace-write`, which fits inside this.
     ceiling=EffectProfile(
         reads=EVERYTHING,
-        writes=WORKSPACE,
+        writes=OURS,
         reaches=True,
         reversible=False,
         contained=True,
@@ -89,9 +93,15 @@ async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> 
         root, mode=mode, timeout_s=60.0, output_limit=32_000, at="2026-09-11T00:00:00+00:00"
     )
     policy = POLICY_FOR[mode]
+    # The shipped skills, offered as a component (D55): the provider chooses one through the same
+    # socket its file tools go through, and the choice is a step on the record. Choosing is pure,
+    # so every mode offers it; minting writes the record, so `read-only` hides it — by effect.
+    skills = SkillComponents(
+        SkillRegistry((shipped_skills(),)), minting=True, at="2026-09-11T00:00:00+00:00"
+    )
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
-        components=(environment,),
+        components=(environment, skills),
         governance=ModeGovernance({policy.name: policy}, default=policy.name),
         sink=StdoutSink(),
         clock=SystemClock(),
