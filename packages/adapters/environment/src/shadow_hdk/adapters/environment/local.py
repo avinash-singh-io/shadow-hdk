@@ -69,15 +69,31 @@ def _seatbelt_profile(root: Path, mode: Mode) -> str:
     derived profile says `reads: everything` for exactly that reason. `/private/var/folders` and
     `/private/tmp` are *not* allowed — a temp file a command wants goes under the root, which is
     where the leash already points `TMPDIR`.
+
+    **Devices are not files** (BUG-023). `git` opens `/dev/null` read-write at startup and died
+    inside the profile with *could not open '/dev/null'*; so did `echo x > /dev/null`. A write to
+    the null device, the zero and randomness devices, or the program's own terminal changes
+    nothing in the world, so every mode allows them — including `read-only`, which exists so an
+    agent can run `git status`. What is denied is what the proof checks: a write outside the root.
     """
-    lines = ["(version 1)", "(allow default)", "(deny network*)", "(deny file-write*)"]
+    lines = [
+        "(version 1)",
+        "(allow default)",
+        "(deny network*)",
+        "(deny file-write*)",
+        '(allow file-write* (literal "/dev/null") (literal "/dev/zero") (literal "/dev/random")'
+        ' (literal "/dev/urandom") (literal "/dev/tty") (regex #"^/dev/ttys[0-9]+$")'
+        ' (regex #"^/dev/fd/[0-9]+$"))',
+    ]
     if mode == "workspace-write":
         lines.append(f'(allow file-write* (subpath "{root}"))')
     return "\n".join(lines)
 
 
 def _bubblewrap_args(binary: str, root: Path, mode: Mode) -> list[str]:
-    args = [binary, "--ro-bind", "/", "/", "--unshare-net", "--die-with-parent"]
+    # `--dev /dev`: a fresh devtmpfs with null, zero, random, tty and pts — devices are not files
+    # (BUG-023), and a read-only bind of `/` would otherwise be the whole of `/dev` too.
+    args = [binary, "--ro-bind", "/", "/", "--dev", "/dev", "--unshare-net", "--die-with-parent"]
     if mode == "workspace-write":
         args += ["--bind", str(root), str(root)]
     return args
