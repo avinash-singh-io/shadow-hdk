@@ -110,6 +110,12 @@ class RecordingServer:
         remaining = (await self._context.remaining_now()).ceiling
         if remaining.max_steps <= 0:
             return _error("the run has no steps left")
+        # **Reserve what this call can cost, not everything that is left** (BUG-024). A call used to
+        # take the parent's whole remaining budget, so a second call arriving while the first was
+        # still running was carved from nothing and born `lease_exhausted` — and the coding CLIs
+        # issue their tool calls in parallel. A component whose effects say it does not cost money
+        # reserves none; one that does reserves what remains, which is the honest worst case.
+        costs = await self._costs(name)
 
         # **Through the runtime's own children, never a local `run()`** (D51). A child spawned this
         # way is held when it parks, and `send` resumes it with a ceiling clamped to what the
@@ -120,22 +126,30 @@ class RecordingServer:
         ceiling = Ceiling(
             max_steps=min(2, remaining.max_steps),
             max_wall_seconds=remaining.max_wall_seconds,
-            max_cost_cents=remaining.max_cost_cents,
+            max_cost_cents=remaining.max_cost_cents if costs else 0,
         )
         handle, events = await self._context.children.spawn(composition, ceiling)
         observation, question = _outcome_of(events, step)
         while observation is None and question is not None:
+            # What the person is asked to consent to is the call itself (BUG-026).
             # **The policy asked, and the child is waiting on this very call** (BUG-021, D58). The
             # nested run parked; this step cannot — it is what keeps the provider alive — so the
             # question is put to the host live and the held child sent the answer. A run with
             # nobody to ask is told so, and the answer is a refusal.
-            answer = await self._context.ask(question)
+            answer = await self._context.ask(question, about=(name, dict(arguments or {})))
             if not await self._context.children.is_held(handle):
                 break
             observation, question = _outcome_of(
                 await self._context.children.send(handle, answer), step
             )
         return _as_result(observation)
+
+    async def _costs(self, name: str) -> bool:
+        """Whether the component the child is calling spends money, by its own effect profile."""
+        for registration in await self._context.visible():
+            if registration.id == name:
+                return bool(registration.component.effects.costs)
+        return True  # unknown is the worst case
 
     # ------------------------------------------------------------------ the wire
 

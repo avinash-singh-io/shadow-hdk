@@ -104,17 +104,25 @@ class LeaseMeter:
         self._cost_known = not int(spent.get("unpriced", 0))
         self._carried_seconds = float(spent.get("elapsed_seconds", 0.0))
 
-    def check(self) -> EndReason | None:
-        """Called before every step. `None` means go ahead."""
+    def check(self, *, costs: bool = True) -> EndReason | None:
+        """Called before every step. `None` means go ahead.
+
+        `costs=False` is a step whose component's effect profile says it spends no money (BUG-024).
+        A step that *may* cost needs room left under the ceiling before it runs, since its price
+        is known only afterwards; one that cannot cost is refused only when the run is already
+        **over** its ceiling — so a file read under a budget of nothing is still a file read, and a
+        component that declared itself free and charged anyway still stops the run once the money
+        it reported is actually gone.
+        """
         ceiling = self._lease.ceiling
         if self._steps + self._carved_steps >= ceiling.max_steps:
             return "lease_exhausted"
         if self.elapsed_seconds() >= ceiling.max_wall_seconds:
             return "lease_exhausted"
-        if ceiling.max_cost_cents is not None and (
-            self._cost + self._carved_cost >= ceiling.max_cost_cents
-        ):
-            return "lease_exhausted"
+        if ceiling.max_cost_cents is not None:
+            spent = self._cost + self._carved_cost
+            if spent > ceiling.max_cost_cents or (costs and spent >= ceiling.max_cost_cents):
+                return "lease_exhausted"
         return None
 
     def floor_met(self) -> bool:

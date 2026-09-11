@@ -101,7 +101,9 @@ class StepExecutor:
         # First, before the lease: a cancelled run should not spend the step it was about to be
         # refused for, and the reason on the record should be the host's, not the budget's (D15).
         self.session.cancellation.check()
-        if reason := self.session.meter.check():
+        # Steps and the clock first, whatever the component; money once the component is known,
+        # because a component that cannot spend is not refused for having nothing to spend.
+        if reason := self.session.meter.check(costs=False):
             raise LeaseExhausted(reason)
 
         await self._refresh()
@@ -112,6 +114,8 @@ class StepExecutor:
             return await self._observe(
                 step, Failed(f"no component registered as {step.component!r}")
             )
+        if registration.component.effects.costs and (reason := self.session.meter.check()):
+            raise LeaseExhausted(reason)
 
         try:
             inputs = resolve_inputs(step.inputs, state["handles"])
@@ -130,7 +134,7 @@ class StepExecutor:
                 await self._emit(lambda **k: RefusedEvent(step=step.id, reason=reason, **k))
                 return Refused(reason)
             case Ask(question=question):
-                answer = await self._ask(step, question)
+                answer = await self._ask(step, question, about=(registration.id, inputs))
                 if not isinstance(answer, Allow):
                     return await self._observe(
                         step, Refused(getattr(answer, "reason", "not allowed"))
@@ -172,7 +176,7 @@ class StepExecutor:
         # there rather than here anyway — `visible()` and `propose()` run *inside* a component, and
         # every component adapter has its own `except Exception` that would have swallowed it first.
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
-            observation = Failed(f"{type(exc).__name__}: {exc}")
+            observation = Failed(_described(exc))
         finally:
             if self._context is not None:
                 self._context.resumed_done(step.id)
@@ -182,7 +186,13 @@ class StepExecutor:
             # parks on it exactly as if governance had asked, carrying what the component kept so
             # the next leg can pick up where it stopped. Raises to park; never returns here.
             kept = self._context.take_kept(step.id) if self._context is not None else None
-            await self._ask(step, observation.question, kept=kept, by="component")
+            await self._ask(
+                step,
+                observation.question,
+                kept=kept,
+                by="component",
+                about=(observation.component, observation.inputs),
+            )
             raise RuntimeError("interrupt() returned on the parking path")  # pragma: no cover
         usage = _usage_of(observation)
         self.session.meter.charge_cost(usage)
@@ -242,6 +252,7 @@ class StepExecutor:
         *,
         kept: JsonValue | None = None,
         by: str = "governance",
+        about: tuple[str | None, JsonValue | None] = (None, None),
     ) -> Any:
         """Park the step. Whoever implements governance decides what asking means; the runtime
         only stops, and LangGraph's checkpoint is what lets the process end here and come back.
@@ -269,11 +280,19 @@ class StepExecutor:
             payload["by"] = by
             payload["kept"] = kept
             payload["holding"] = self.holding()
+        component, inputs = about
         try:
             return interrupt(payload)
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
             await self._emit(
-                lambda **k: AskedEvent(step=step.id, question=question, handle=handle, **k)
+                lambda **k: AskedEvent(
+                    step=step.id,
+                    question=question,
+                    handle=handle,
+                    component=component,
+                    inputs=inputs,
+                    **k,
+                )
             )
             raise
 
@@ -331,6 +350,16 @@ class StepExecutor:
             lambda **k: Observed(step=step.id, observation=observation, posture=posture, **k)
         )
         return observation
+
+
+def _described(exc: BaseException) -> str:
+    """A failure's text, with an exception group's members named — *unhandled errors in a
+    TaskGroup (1 sub-exception)* says nothing a reader can act on (measured in the studio)."""
+    text = f"{type(exc).__name__}: {exc}"
+    if isinstance(exc, BaseExceptionGroup):
+        inner = "; ".join(_described(e) for e in exc.exceptions)
+        text = f"{text} [{inner}]"
+    return text
 
 
 def _as_judgement(answer: Any) -> Judgement | None:
