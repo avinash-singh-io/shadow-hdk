@@ -80,7 +80,9 @@ class JsonlSession:
         return argv
 
     async def _start(self) -> asyncio.subprocess.Process:
-        return await asyncio.create_subprocess_exec(
+        from shadow_hdk.runtime.processes import hold
+
+        process = await asyncio.create_subprocess_exec(
             *self._argv(),
             cwd=str(self._workspace) if self._workspace else None,
             env=self._env,
@@ -91,6 +93,8 @@ class JsonlSession:
             # spawns compilers, language servers and test runners.
             start_new_session=True,
         )
+        hold(process)  # and it dies with this process, whatever ends it (D53, BUG-019)
+        return process
 
     def _written(self, prompt: str) -> bytes:
         """How this CLI wants to be told. A fact about it, so it comes off the record."""

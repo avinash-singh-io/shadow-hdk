@@ -7,16 +7,95 @@ child that ignores the signal wedged the caller forever (BUG-011).
 
 It lives here rather than in either of them because an adapter may not import another adapter
 (the stands-alone invariant), and a rule with two implementations is a rule with one bug.
+
+**And the process that started them (D53, BUG-019).** `close()` ends a session's group — when it
+is reached. A person leaving a REPL with Ctrl-C, a `sys.exit`, a `SIGTERM` from a supervisor, an
+exception nobody caught: none of those promise to reach it, and two `claude -p` children were
+found alive ten hours after their sessions had ended, each holding a subscription seat. So every
+session leader the runtime starts is `hold`-ed here, and the interpreter's own ending — by
+whichever door — ends them all. `atexit` covers the normal exits and every propagated exception,
+`KeyboardInterrupt` included; a `SIGTERM` or `SIGHUP` with the default disposition would skip
+`atexit`, so those get a handler **only when the host has installed none** — a host with its own
+handler keeps it, and is expected to exit through it.
 """
 
 from __future__ import annotations
 
 import asyncio
+import atexit
 import contextlib
 import os
 import signal
+import threading
 
-__all__ = ["end_the_group", "stop_or_kill"]
+__all__ = ["end_the_group", "end_everything_held", "held_now", "hold", "let_go", "stop_or_kill"]
+
+
+class _Leader:
+    """Anything with a `pid` that was started with `start_new_session`."""
+
+    pid: int | None
+
+
+_held: set[int] = set()
+_installed = False
+_lock = threading.Lock()
+
+
+def hold(process: _Leader) -> None:
+    """Keep this session leader's pid until it is let go, and make sure the interpreter's ending
+    ends it. Idempotent; the finaliser is installed on the first call."""
+    global _installed
+    if process.pid is None:  # pragma: no cover — a process that never started
+        return
+    with _lock:
+        _held.add(process.pid)
+        if not _installed:
+            _installed = True
+            atexit.register(end_everything_held)
+            for number in (signal.SIGTERM, signal.SIGHUP):
+                _chain_if_default(number)
+
+
+def let_go(process: _Leader) -> None:
+    """The caller has ended it (or it ended). A pid let go of is never killed at exit — by then it
+    may be somebody else's."""
+    if process.pid is not None:
+        with _lock:
+            _held.discard(process.pid)
+
+
+def held_now() -> frozenset[int]:
+    with _lock:
+        return frozenset(_held)
+
+
+def end_everything_held() -> None:
+    """Kill every held group. Called at exit; safe to call any time."""
+    with _lock:
+        pids = set(_held)
+        _held.clear()
+    for pid in pids:
+        with contextlib.suppress(ProcessLookupError, PermissionError, OSError):
+            os.killpg(pid, signal.SIGKILL)
+
+
+def _chain_if_default(number: signal.Signals) -> None:
+    """Handle `number` only where nothing does: the default disposition ends the process without
+    running `atexit`. The handler ends what is held, restores the default and re-raises the signal,
+    so the exit status a supervisor sees is the one it sent."""
+    if threading.current_thread() is not threading.main_thread():  # pragma: no cover
+        return  # signal handlers may only be installed from the main thread; atexit still holds
+    with contextlib.suppress(ValueError, OSError):
+        if signal.getsignal(number) is not signal.SIG_DFL:
+            return
+
+        def then_go(received: int, _frame: object) -> None:
+            end_everything_held()
+            signal.signal(received, signal.SIG_DFL)
+            os.kill(os.getpid(), received)
+
+        signal.signal(number, then_go)
 
 
 def end_the_group(process: asyncio.subprocess.Process) -> None:
@@ -34,6 +113,7 @@ def end_the_group(process: asyncio.subprocess.Process) -> None:
         return
     with contextlib.suppress(ProcessLookupError, PermissionError, OSError):
         os.killpg(process.pid, signal.SIGKILL)
+    let_go(process)
 
 
 async def stop_or_kill(process: asyncio.subprocess.Process, *, grace_s: float) -> bool:

@@ -38,7 +38,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort, ToolSource, Turn, Usage
 from shadow_hdk.runtime import current_run
-from shadow_hdk.runtime.processes import stop_or_kill
+from shadow_hdk.runtime.processes import hold, stop_or_kill
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -149,6 +149,7 @@ class AcpAgent(ComponentPort):
             # and survive the child that started them.
             start_new_session=True,
         )
+        hold(self._process)  # and it dies with this process, whatever ends it (D53, BUG-019)
         # Named from the agent's side: `input_stream` is what goes *into* it — the writer.
         self._agent = acp.connect_to_agent(self.client, self._process.stdin, self._process.stdout)
         await asyncio.wait_for(self._agent.initialize(protocol_version=1), self._timeout_s)

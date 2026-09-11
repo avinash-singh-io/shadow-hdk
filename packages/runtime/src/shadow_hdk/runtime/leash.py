@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
-from shadow_hdk.runtime.processes import end_the_group
+from shadow_hdk.runtime.processes import end_the_group, hold
 
 KEPT_ENV = ("PATH", "LANG", "LC_ALL")
 """The environment a leashed program sees. Everything else — every secret the host process holds —
@@ -118,6 +118,7 @@ async def run_leashed(
             stderr=asyncio.subprocess.PIPE,
             start_new_session=True,  # its own group, so the whole tree can be ended at once (D35)
         )
+        hold(process)  # and it dies with us, whatever ends us (D53)
     except OSError as broken:
         return Failed(f"{type(broken).__name__}: {broken}")
     if memory_mb is not None and process.pid is not None:
@@ -283,6 +284,7 @@ async def start_leashed(
         stderr=asyncio.subprocess.PIPE,
         start_new_session=True,
     )
+    hold(process)  # dies with us, whatever ends us (D53)
     if memory_mb is not None and process.pid is not None:
         _limit_memory(process.pid, memory_mb)
     return HeldProcess(process, timeout_s=timeout_s, limit=output_limit)

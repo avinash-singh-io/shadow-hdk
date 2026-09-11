@@ -24,6 +24,21 @@ DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
 _conversation: list[str] = []
 
 
+def ask(prompt: str) -> str | None:
+    """One line from the person, or `None` when they have left — by Ctrl-D **or Ctrl-C**.
+
+    Ctrl-C is the ordinary way out of a REPL, and a `KeyboardInterrupt` that escapes here unwinds
+    past the `async with` holding the provider open — which is how BUG-019 left two `claude -p`
+    processes alive for ten hours. The runtime now ends them at exit whatever happens (D53); this
+    is the ordinary path, so `close()` is reached and the session ends on the record.
+    """
+    try:
+        return input(prompt).strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+
+
 def show(event: Event) -> None:
     """What the run did, as it does it. This is the whole demonstration.
 
@@ -75,12 +90,8 @@ async def main() -> int:
                 )
             print(f"{DIM}Ctrl-D or 'exit' to finish.{OFF}\n")
             while True:
-                try:
-                    said = input(f"{BOLD}you ›{OFF} ").strip()
-                except EOFError:
-                    print()
-                    return 0
-                if said in ("exit", "quit"):
+                said = ask(f"{BOLD}you ›{OFF} ")
+                if said is None or said in ("exit", "quit"):
                     return 0
                 if not said:
                     continue
