@@ -115,7 +115,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
 | 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
 | 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
-| 25 | The host's controls | planned | 24 | activity beside the record; the conversation as a primitive with turns on the record; modes = policy + behaviour + presentation, switchable by a dial; questions both ways, with "add a rule" |
+| 25 | The host's controls | planned | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule" |
 | 26 | Any language | planned | 25 | `serve` over stdio and HTTP; every host handle crosses the wire; TypeScript generated from the schemas; the studio on the wire only |
 | 27 | Batteries and the facade | planned | 25 | web search and fetch consumed; `harness.toml` and `Harness.load()`; the optimiser port specified |
 | 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |

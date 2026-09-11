@@ -173,6 +173,36 @@ inside one long-lived `converse` step — which is the right place for it anyway
 socket served for the conversation's lifetime, not per step). The host-facing vocabulary becomes
 **Conversation · Turn · Step · Activity** — four nouns, one of them ours.
 
+### 1.9 The container is the harness's to offer, and the words are the industry's
+
+**Thread as a component.** Every product has a durable container — thread (Codex, OpenAI,
+LangGraph) or session (ACP, Claude Code) — with resume, fork, list, rollback. It is foundational,
+so the harness provides it the way it provides everything: a `Thread` primitive over a
+`ThreadStore` port with a sqlite adapter shipped. A product with its own sessions implements the
+port over its own tables, or does not use `Thread` and drives turns directly; the runtime never
+requires it. Composable: pick it or skip it.
+
+**Terminology.** Where the industry has a term, we use it; where the thing is ours — governance by
+effects, the lease, the sink, provenance, posture — we keep the word and document the mapping.
+Invented names go. Applied in Phase 25 as one contract change:
+
+| Industry term | Ours today | Decision |
+|---|---|---|
+| Thread (Codex, OpenAI, LangGraph) / Session (ACP, Claude) | `a_conversation` in an example | **`Thread`**; "session" only for a live provider connection, as MCP and Claude use it |
+| Turn | not on the record | **`Turn`** — a step of the thread's run |
+| Item, delta (Codex; OpenAI Responses API) | `Step` projection; no deltas | **`Item`** is what a host renders; `Step` stays the kernel's plan unit (a standard word too); **`delta`** for streaming |
+| Approval request (Codex `requestApproval`, ACP `request_permission`) | `Asked`, `Questions` | **`ApprovalRequest`**, answered `approve` · `deny` · `approve-and-add-rule` |
+| User input request (Codex `requestUserInput`, ACP elicitation) | — | **`InputRequest`** — the agent's own question to the person |
+| `session/set_mode`, `set_config_option` (ACP) | "Dials" (proposed) | **`set_mode` / `set_option` on the Thread**; "Dials" dropped |
+| reasoning, usage (Responses API) | `Reasoned`, `Spent` | renamed **`reasoning`**, **`usage`** |
+| run, step, refused, completed | `Run`, `Step`, `Refused`, `Ended` | already standard — kept |
+| budget, limits | `Lease` (ceiling, floor) | **kept**: a reservation carved for children is ours; the facade and TOML say `budget` |
+| effect profile, sink, provenance, posture | ours | kept — nothing in the industry names these; they are the uniqueness |
+
+**Where the approval is answered** is the product's choice — a host in the server process or a
+client over the wire — and both hold the same handle. The harness delivers the request and takes
+the answer; it does not decide who sits there.
+
 ## 2. Principles this adds
 
 Principles 1–5 stand. Using the harness for a day produced three more, each already violated once:
@@ -298,12 +328,46 @@ through the wire in 26, once the handles cross; in 25 it consumes the primitives
 
 | # | Name | deps | Delivers |
 |---|---|---|---|
-| 25 | **The host's controls** | 24 | Activity (3.1); Conversation (3.2); Modes = policy + behaviour (3.3); Dials (3.4); Questions both directions with rules (3.5); the studio consuming them — collapsed step runs, streamed thinking and text, a mode selector, a question item |
+| 25 | **The host's controls** | 24 | The terminology (1.9) as the first contract change; Activity (3.1); `Thread` and `Turn` (3.2, 1.9); Modes = policy + behaviour (3.3); `set_mode`/`set_option` (3.4); approval and input requests with rules (3.5); the studio consuming them — collapsed item runs, streamed thinking and text, a mode selector, an input-request item |
 | 26 | **Any language** | 25 | `serve` with stdio; handles over the wire; generated TypeScript; the studio rewritten on the wire only; parity invariant over handles |
 | 27 | **Batteries and the facade** | 25 | web search/fetch consumed; `harness.toml` + `Harness.load`; the coder and host examples reduced to the facade; the DSPy optimiser port *specified*, not built |
 
 Context engineering and collaboration (today's 25/26) move to 28/29; nothing in them depends on
 being earlier. The roadmap says so.
+
+## 4a. Simple to use, deep by choice — how the architecture makes both true
+
+The principle: **the simple surface is composition of the same parts, never a second engine.**
+Six layers, each built only on the one below; a product enters at any layer and goes one deeper
+only when it needs to.
+
+```
+ 6  Server      shadow-hdk serve harness.toml                 ← any language, same file
+ 5  Facade      Harness.load("harness.toml"); thread.turn(...)     ← three lines
+ 4  Profiles    harness.toml · modes/*.md · providers/*.toml       ← data, no code
+ 3  Adapters    seatbelt · OpenSandbox · MCP · LangChain · jsonl/ACP · sqlite · OTel · wigolo
+ 2  Runtime     the loop: governance by effects, leases, the record, threads/turns, approvals, activity
+ 1  Ports       Model · Component · Governance · Sink · Observer · Clock · Agent · Isolation · ThreadStore
+ 0  Contracts   events, effects, behaviours, modes — one set of JSON schemas
+```
+
+The ladder a product climbs — each rung is the previous plus one knob:
+
+1. **Data only.** `harness.toml` and `Harness.load()`: environment mode, a mode list, a provider,
+   tools, skills. Nothing to write.
+2. **Override one thing in code.** `Harness.load(..., governance=MyPolicy())` — one port swapped,
+   the rest default.
+3. **Compose the ports yourself.** `Ports(...)`, as the examples do today.
+4. **Write an adapter.** A new sandbox, tool source or provider: a file behind a port; the loop is
+   untouched.
+5. **Bring your own store, approval UI, mode list.** Implement a port — or do not use the
+   component.
+
+Two guarantees keep "easy" and "deep" one system rather than two, and both are invariants:
+**the facade uses only public port APIs** (nothing is reachable at rung 1 that is not at rung 3),
+and **every key in `harness.toml` maps to a port or a profile** (no behaviour hidden in the
+loader). This is how Django's settings, Rails' conventions and Kubernetes' manifests stay both
+simple and deep.
 
 ## 5. What is not proposed
 
