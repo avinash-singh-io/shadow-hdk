@@ -34,6 +34,15 @@ PROPOSE = "sink.propose"
 CONTEXT_PROPOSE = "context.propose"
 CONTEXT_REMAINING = "context.remaining"
 CONTEXT_REASONED = "context.reasoned"
+CONTEXT_VISIBLE = "context.visible"
+CONTEXT_FLOOR_MET = "context.floor_met"
+CONTEXT_SPAWN = "context.children.spawn"
+CONTEXT_SEND = "context.children.send"
+CONTEXT_RELEASE = "context.children.release"
+CONTEXT_IS_HELD = "context.children.is_held"
+"""What a component running on the host asks the run for (D51). Each belongs to the run — the
+registry, the meter, the children — and crosses back rather than being answered locally, because
+there is one of each and it is on the runtime's side."""
 
 # runtime → host, one way
 EVENT = "event"

@@ -19,9 +19,11 @@ from typing import Any
 import anyio
 
 from shadow_hdk.kernel.components import Registration
+from shadow_hdk.kernel.composition import Composition
 from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import Context, Judgement, ModelRequest, ModelResponse
 from shadow_hdk.runtime import Ports, RunOptions
@@ -30,9 +32,15 @@ from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     COMPLETE,
+    CONTEXT_FLOOR_MET,
+    CONTEXT_IS_HELD,
     CONTEXT_PROPOSE,
     CONTEXT_REASONED,
+    CONTEXT_RELEASE,
     CONTEXT_REMAINING,
+    CONTEXT_SEND,
+    CONTEXT_SPAWN,
+    CONTEXT_VISIBLE,
     EVENT,
     INITIALIZE,
     INVOKE,
@@ -85,6 +93,12 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_PROPOSE, self._context_propose)
         self.peer.serves(CONTEXT_REMAINING, self._context_remaining)
         self.peer.serves(CONTEXT_REASONED, self._context_reasoned)
+        self.peer.serves(CONTEXT_VISIBLE, self._context_visible)
+        self.peer.serves(CONTEXT_FLOOR_MET, self._context_floor_met)
+        self.peer.serves(CONTEXT_SPAWN, self._context_spawn)
+        self.peer.serves(CONTEXT_SEND, self._context_send)
+        self.peer.serves(CONTEXT_RELEASE, self._context_release)
+        self.peer.serves(CONTEXT_IS_HELD, self._context_is_held)
 
     def ports(self) -> Ports:
         from shadow_hdk.runtime.clock import SystemClock
@@ -108,6 +122,47 @@ class RuntimeSide:
             raise RuntimeError("nothing is running, so there is no record to think on")
         await self.live.reasoned(str(params.get("text", "")), step=params.get("step"))
         return None
+
+    async def _context_visible(self, _params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is no registry to read")
+        return {
+            "registrations": [json.loads(dump(r, Registration)) for r in await self.live.visible()]
+        }
+
+    async def _context_floor_met(self, _params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is no floor to meet")
+        return {"floor_met": await self.live.floor_met_now()}
+
+    async def _context_spawn(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is nothing to spawn from")
+        within = params.get("within")
+        handle, events = await self.live.children.spawn(
+            load(json.dumps(params["composition"]), Composition),
+            load(json.dumps(params["ceiling"]), Ceiling),
+            within=load(json.dumps(within), EffectProfile) if within is not None else None,
+            within_name=str(params.get("within_name") or ""),
+        )
+        return {"handle": handle, "events": [json.loads(dump(e, Event)) for e in events]}
+
+    async def _context_send(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running")
+        events = await self.live.children.send(str(params["handle"]), params.get("message"))
+        return {"events": [json.loads(dump(e, Event)) for e in events]}
+
+    async def _context_release(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running")
+        events = await self.live.children.release(str(params["handle"]))
+        return {"events": [json.loads(dump(e, Event)) for e in events]}
+
+    async def _context_is_held(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running")
+        return {"held": await self.live.children.is_held(str(params["handle"]))}
 
     async def _context_remaining(self, _params: dict[str, Any]) -> Any:
         if self.live is None:

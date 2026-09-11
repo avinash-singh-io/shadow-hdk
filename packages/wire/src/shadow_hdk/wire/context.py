@@ -21,14 +21,31 @@ author.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any
 
+from pydantic import JsonValue
+
+from shadow_hdk.kernel.components import Registration
+from shadow_hdk.kernel.composition import Composition
 from shadow_hdk.kernel.contracts import dump, load
-from shadow_hdk.kernel.leases import Lease
+from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
-from shadow_hdk.runtime import Ports, RunContext
+from shadow_hdk.runtime import Ports, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
-from shadow_hdk.wire.protocol import CONTEXT_PROPOSE, CONTEXT_REASONED, CONTEXT_REMAINING
+from shadow_hdk.wire.protocol import (
+    CONTEXT_FLOOR_MET,
+    CONTEXT_IS_HELD,
+    CONTEXT_PROPOSE,
+    CONTEXT_REASONED,
+    CONTEXT_RELEASE,
+    CONTEXT_REMAINING,
+    CONTEXT_SEND,
+    CONTEXT_SPAWN,
+    CONTEXT_VISIBLE,
+)
 
 
 class WireRunContext(RunContext):
@@ -87,19 +104,90 @@ class WireRunContext(RunContext):
             "it belongs to the run, which is in another process"
         )
 
-    async def visible(self) -> Any:
-        return self._across("visible()")
+    async def visible(self) -> Sequence[Registration]:
+        """The registry's visible registrations, asked of the runtime that holds the registry
+        (D51). A catalogue built on the host from this is built from what the run says is
+        visible — governed — and not from what the host happens to have."""
+        answered = await self._peer.call(CONTEXT_VISIBLE, {})
+        return [load(json.dumps(r), Registration) for r in answered["registrations"]]
+
+    async def floor_met_now(self) -> bool:
+        answered = await self._peer.call(CONTEXT_FLOOR_MET, {})
+        return bool(answered["floor_met"])
+
+    def floor_met(self) -> bool:
+        raise WireOnlyAsync(
+            "floor_met() is synchronous in-process and cannot be over a wire; "
+            "await context.floor_met_now() instead"
+        )
+
+    async def spawn_options_now(self, ceiling: Ceiling, **overrides: Any) -> RunOptions:
+        """Plain options for a **host-local** nested run. The runtime's checkpointer and
+        cancellation cannot cross, so a composition the agent authors runs on the host with these
+        and its events stay on the host's side of the record — D51 names this as the one residual
+        of parity, and what closes it."""
+        from shadow_hdk.kernel.leases import Floor, Lease
+
+        return RunOptions(lease=Lease(ceiling, Floor(0)), **overrides)
+
+    def spawn_options(self, *_args: Any, **_kw: Any) -> Any:
+        raise WireOnlyAsync(
+            "spawn_options() is synchronous in-process and cannot be over a wire; "
+            "await context.spawn_options_now() instead"
+        )
 
     @property
     def children(self) -> Any:
-        return self._across("children")
+        return WireChildren(self._peer)
 
-    def spawn_options(self, *_args: Any, **_kw: Any) -> Any:
-        return self._across("spawn_options()")
 
-    def floor_met(self) -> bool:
-        answered = self._across("floor_met()")
-        return bool(answered)
+class WireChildren:
+    """A run's children, driven from the host: spawn, send, release and is_held cross back (D51).
+
+    The child run lives in the runtime, is held by the runtime across a park (D37), and the
+    component it invokes crosses to the host like any other. What comes back is the handle and the
+    child's events, which the runtime also put on the parent's stream — one record, one author.
+    """
+
+    def __init__(self, peer: Peer) -> None:
+        self._peer = peer
+
+    async def spawn(
+        self,
+        composition: Composition,
+        ceiling: Ceiling,
+        *,
+        checkpointer: Any = None,
+        within: EffectProfile | None = None,
+        within_name: str = "",
+    ) -> tuple[str, list[Event]]:
+        answered = await self._peer.call(
+            CONTEXT_SPAWN,
+            {
+                "composition": json.loads(dump(composition, Composition)),
+                "ceiling": json.loads(dump(ceiling, Ceiling)),
+                # The pattern's ceiling, as data: applied on the runtime's side as a second gate.
+                "within": json.loads(dump(within, EffectProfile)) if within is not None else None,
+                "within_name": within_name,
+            },
+        )
+        return str(answered["handle"]), _events(answered["events"])
+
+    async def send(self, handle: str, message: JsonValue) -> list[Event]:
+        answered = await self._peer.call(CONTEXT_SEND, {"handle": handle, "message": message})
+        return _events(answered["events"])
+
+    async def release(self, handle: str) -> list[Event]:
+        answered = await self._peer.call(CONTEXT_RELEASE, {"handle": handle})
+        return _events(answered["events"])
+
+    async def is_held(self, handle: str) -> bool:
+        answered = await self._peer.call(CONTEXT_IS_HELD, {"handle": handle})
+        return bool(answered["held"])
+
+
+def _events(raw: Any) -> list[Event]:
+    return [load(json.dumps(e), Event) for e in raw]
 
 
 class NotAcrossTheWire(NotImplementedError):

@@ -99,7 +99,7 @@ class RecordingServer:
                 ),
             )
         )
-        remaining = self._context.remaining().ceiling
+        remaining = (await self._context.remaining_now()).ceiling
         if remaining.max_steps <= 0:
             return _error("the run has no steps left")
 
@@ -107,7 +107,7 @@ class RecordingServer:
         async for event in run(
             composition,
             self._context.ports,
-            options=self._context.spawn_options(
+            options=await self._context.spawn_options_now(
                 Ceiling(
                     max_steps=min(2, remaining.max_steps),
                     max_wall_seconds=remaining.max_wall_seconds,

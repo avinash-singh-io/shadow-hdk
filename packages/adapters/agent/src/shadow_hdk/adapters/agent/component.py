@@ -12,7 +12,6 @@ What the model may do is the *pattern's* decision, not this class's: `single` of
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import replace
 
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin, thinned
 from shadow_hdk.adapters.agent.meta import BY_NAME
@@ -53,16 +52,12 @@ from shadow_hdk.kernel.observations import (
 )
 from shadow_hdk.kernel.ports import (
     ComponentPort,
-    Context,
-    GovernancePort,
-    Judgement,
     Message,
     ModelRequest,
-    Refuse,
     ToolCall,
     Usage,
 )
-from shadow_hdk.runtime import Ports, RunContext, current_run, run
+from shadow_hdk.runtime import RunContext, current_run
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -207,7 +202,7 @@ class _Turnwise:
                 await self.helper(call)
             done = next((c for c in response.tool_calls if c.name == DONE), None)
             if done is not None:
-                verdict = self.done(done)
+                verdict = await self.done(done)
                 if verdict is not None:
                     return verdict
                 continue
@@ -278,21 +273,6 @@ class _Turnwise:
             return True
         return registration.component.effects.narrows(self.pattern.ceiling)
 
-    def _ports_for_this_role(self) -> Ports:
-        """The run's ports, with the pattern's ceiling in front of the deployment's policy.
-
-        A second gate, never a replacement: the deployment is asked first and its refusal stands,
-        so a pattern file can only ever narrow. A pattern that could widen the house would make
-        every pattern file a security decision, and pattern files are meant to be readable by the
-        team that writes them.
-        """
-        if self.pattern.ceiling is None:
-            return self.ctx.ports
-        return replace(
-            self.ctx.ports,
-            governance=_Bounded(self.ctx.ports.governance, self.pattern),
-        )
-
     async def propose(self, call: ToolCall) -> None:
         arguments = call.arguments if isinstance(call.arguments, dict) else {}
         await self.ctx.propose(
@@ -341,7 +321,7 @@ class _Turnwise:
             )
             self.helpers[f"@{len(self.helpers) + 1}"] = handle
             name = f"@{len(self.helpers)}"
-            if handle not in self.ctx.children.held:
+            if not await self.ctx.children.is_held(handle):
                 return f"{name} finished rather than waiting: {_last_observation(events)}"
             return f"{name} is held and waiting. Send it something, or release it."
         handle = self.helpers[str(arguments.get("handle", ""))]
@@ -429,15 +409,15 @@ class _Turnwise:
         length = max(1, int(arguments.get("length", 4_000) or 4_000))
         self.messages.append(Message("tool", whole[start : start + length], tool_call_id=call.id))
 
-    def done(self, call: ToolCall) -> Observation | None:
+    async def done(self, call: ToolCall) -> Observation | None:
         """`None` means *not yet* — the floor is not met and this is the one nudge it gets."""
-        if not self.ctx.floor_met() and not self.nudged:
+        if not await self.ctx.floor_met_now() and not self.nudged:
             self.nudged = True
             self.messages.append(Message("tool", self.pattern.nudge, tool_call_id=call.id))
             return None
         arguments = call.arguments if isinstance(call.arguments, dict) else {}
         summary = str(arguments.get("summary", ""))
-        reason = "done" if self.ctx.floor_met() else "gave_up"
+        reason = "done" if await self.ctx.floor_met_now() else "gave_up"
         return self.finished(reason, text=summary)
 
     def compose(self, calls: tuple[ToolCall, ...]) -> Composition | None:
@@ -468,18 +448,21 @@ class _Turnwise:
         # next, so the parent's remaining is the honest ceiling; its own still bounds the lot.
         ceiling = (await self.ctx.remaining_now()).ceiling
         observed: dict[str, Observation] = {}
-        async for event in run(
-            composition, self._ports_for_this_role(), options=self.ctx.spawn_options(ceiling)
-        ):
+        # **Through the runtime, never a local `run()`** (D51). A composition the agent authors is
+        # a child run: spawned where the record is, with the pattern's ceiling crossing as data and
+        # applied there as a second gate. A host-side nested run — what this did until Phase 23 —
+        # put the child's events on a stream nobody reads when the agent is on the far side of a
+        # wire, and was the one thing that kept the agent from running there at all.
+        _handle, events = await self.ctx.children.spawn(
+            composition, ceiling, within=self.pattern.ceiling, within_name=self.pattern.name
+        )
+        for event in events:
             if event.kind == "observed":
                 observed[event.step] = event.observation
             elif event.kind == "refused":
                 # **A refusal emits one event, not two** — the decision taken when the governed step
                 # was written, and the same trap the RecordingServer fell into in Phase 5. Watching
-                # only for `observed` left a refused call answered with "that step did not run": no
-                # reason, and indistinguishable from a step that never happened. A survey of other
-                # agent systems found this to be the single most commonly filed bug in approval
-                # implementations, so it is worth the four lines and the paragraph.
+                # only for `observed` left a refused call answered with "that step did not run".
                 observed[event.step] = Refused(event.reason)
         for call in calls:
             if call.name == COMPOSE:
@@ -528,27 +511,6 @@ class _Turnwise:
                 },
             }
         )
-
-
-class _Bounded:
-    """The deployment's policy, then the role's ceiling. Both have to say yes.
-
-    Order matters for the *reason*, not the outcome. The deployment is asked first so that when the
-    house refuses, the house's own words are what a person reads — a team debugging its pattern
-    should not be sent to the pattern file over a rule it does not control.
-    """
-
-    def __init__(self, inner: GovernancePort, pattern: Pattern) -> None:
-        self._inner, self._pattern = inner, pattern
-
-    async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
-        judgement = await self._inner.judge(effects, context)
-        if isinstance(judgement, Refuse):
-            return judgement
-        ceiling = self._pattern.ceiling
-        if ceiling is not None and not effects.narrows(ceiling):
-            return Refuse(f"the pattern {self._pattern.name!r} does not permit this")
-        return judgement
 
 
 # ---------------------------------------------------------------- small helpers

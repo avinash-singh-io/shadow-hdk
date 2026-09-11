@@ -19,14 +19,16 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import Composition
+from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Ended, Event
 from shadow_hdk.kernel.leases import Ceiling
+from shadow_hdk.kernel.ports import Context, GovernancePort, Judgement, Refuse
 from shadow_hdk.runtime.cancel import Cancellation
 
 if TYPE_CHECKING:
@@ -53,6 +55,29 @@ class HeldChild:
     checkpointer: Any
     cancellation: Cancellation
     shares_the_checkpointer: bool = False
+
+
+class Narrowed:
+    """The deployment's policy, then a role's ceiling. Both have to say yes (D51).
+
+    Order matters for the *reason*, not the outcome. The deployment is asked first so that when the
+    house refuses, the house's own words are what a person reads — a team debugging its pattern
+    should not be sent to the pattern file over a rule it does not control.
+
+    Lives in the runtime, below every adapter, so a child spawned across a wire can be narrowed by
+    a ceiling that crossed as data. It was the agent adapter's `_Bounded` before Phase 23.
+    """
+
+    def __init__(self, inner: GovernancePort, ceiling: EffectProfile, name: str) -> None:
+        self._inner, self._ceiling, self._name = inner, ceiling, name
+
+    async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
+        judgement = await self._inner.judge(effects, context)
+        if isinstance(judgement, Refuse):
+            return judgement
+        if not effects.narrows(self._ceiling):
+            return Refuse(f"the pattern {self._name!r} does not permit this")
+        return judgement
 
 
 class Children:
@@ -141,13 +166,24 @@ class Children:
             )
 
     async def spawn(
-        self, composition: Composition, ceiling: Ceiling, *, checkpointer: Any = None
+        self,
+        composition: Composition,
+        ceiling: Ceiling,
+        *,
+        checkpointer: Any = None,
+        within: EffectProfile | None = None,
+        within_name: str = "",
     ) -> tuple[str, list[Event]]:
         """Start a child and let it run. If it parks rather than ending, this parent holds it.
 
         The checkpointer defaults to one of ours, which makes a held child live exactly as long as
         this process. A host that wants a child to outlive a restart passes its own — the same
         checkpointer it would hand `run()`, and the same one Phase 6 proved on a file.
+
+        `within` is a **second gate that only narrows** (D51): a pattern's ceiling, applied to the
+        child's governance after the deployment's own policy has said yes. It is data — an effect
+        profile and a name for the refusal — so a parent on the other side of a wire can send it,
+        and the child runs here, on the record, rather than on the host with its events lost.
         """
         from shadow_hdk.runtime.loop import run
 
@@ -162,7 +198,10 @@ class Children:
         options = self._context.spawn_options(
             ceiling, run_id=handle, checkpointer=saver, cancellation=cancellation
         )
-        events = [event async for event in run(composition, self._context.ports, options=options)]
+        ports = self._context.ports
+        if within is not None:
+            ports = replace(ports, governance=Narrowed(ports.governance, within, within_name))
+        events = [event async for event in run(composition, ports, options=options)]
         if not any(isinstance(event, Ended) for event in events):
             self._held[handle] = HeldChild(
                 handle=handle,
@@ -175,6 +214,10 @@ class Children:
             )
             await self._context.announce_held(handle, _steps_in(events))
         return handle, events
+
+    async def is_held(self, handle: str) -> bool:
+        """Whether this parent is still holding a child — a query, so it can cross a wire (D51)."""
+        return handle in self._held
 
     async def send(self, handle: str, message: JsonValue) -> list[Event]:
         """Wake a held child with a message. It answers where it slept, not from the beginning."""

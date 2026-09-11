@@ -117,7 +117,7 @@ async def _command(actuator: Actuator, argv: JsonValue) -> Observation:
     context = current_run()
     if context is None:
         return Failed("an actuator acts only inside a run: there is no lease and no key")
-    if why := exhausted(context.remaining()):
+    if why := exhausted(await context.remaining_now()):
         return Refused(why)
     key = context.idempotency_key()
     ack = await actuator.command(argv, key=key)

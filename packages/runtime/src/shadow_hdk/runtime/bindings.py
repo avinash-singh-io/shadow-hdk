@@ -204,6 +204,17 @@ class RunContext:
     def floor_met(self) -> bool:
         return self._session.meter.floor_met()
 
+    async def floor_met_now(self) -> bool:
+        """`floor_met()`, awaitable — the form an adapter uses if it means to run over a wire too
+        (D51). In-process the meter is here; across a wire the question crosses."""
+        return self.floor_met()
+
+    async def spawn_options_now(self, ceiling: Ceiling, **overrides: Any) -> RunOptions:
+        """`spawn_options()`, awaitable. Across a wire the runtime's checkpointer and cancellation
+        cannot travel, so the crossed form answers with plain options for a host-local nested run —
+        see D51 for what that leaves on the host's side of the record."""
+        return self.spawn_options(ceiling, **overrides)
+
     def spawn_options(self, ceiling: Ceiling, **overrides: Any) -> RunOptions:
         """A child's options. The ceiling is a *request*: the drive carves it from what this run has
         left, so a child can never be promised more than its parent still holds — whoever asked."""

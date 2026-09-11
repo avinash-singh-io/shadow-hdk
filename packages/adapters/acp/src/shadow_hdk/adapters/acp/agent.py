@@ -208,7 +208,7 @@ class AcpAgent(ComponentPort):
                     session_id=self._session,
                     prompt=[schema.TextContentBlock(type="text", text=prompt)],
                 ),
-                self._clock(),
+                (await self._clock()),
             )
         self.client.spend.add_tokens(getattr(answered, "usage", None))
         charge = self.client.spend.take()
@@ -252,13 +252,13 @@ class AcpAgent(ComponentPort):
                         session_id=self._session,
                         prompt=[schema.TextContentBlock(type="text", text=brief)],
                     ),
-                    self._clock(),
+                    (await self._clock()),
                 )
         except TimeoutError:
             # A child that will not stop is stopped. Killing it is the point: leaving a wedged
             # process behind would make the next step inherit somebody else's problem.
             await self.stop()
-            return Failed(f"the child agent did not finish within {self._clock():g}s")
+            return Failed(f"the child agent did not finish within {(await self._clock()):g}s")
         except Exception as broken:  # noqa: BLE001 — a child is untrusted like any component (D7)
             return Failed(f"{type(broken).__name__}: {broken}")
 
@@ -271,7 +271,7 @@ class AcpAgent(ComponentPort):
             }
         )
 
-    def _clock(self) -> float:
+    async def _clock(self) -> float:
         """`min(what this adapter was told, what the lease has left)`.
 
         An adapter constructed with a generous timeout cannot outlive the run that invoked it.
@@ -279,7 +279,7 @@ class AcpAgent(ComponentPort):
         context = current_run()
         if context is None:
             return self._timeout_s
-        return min(self._timeout_s, float(context.remaining().ceiling.max_wall_seconds))
+        return min(self._timeout_s, float((await context.remaining_now()).ceiling.max_wall_seconds))
 
     def _usage(self, reported: Any) -> dict[str, JsonValue]:
         """In the shape `_usage_of` reads, so the parent's meter charges without knowing ACP.
