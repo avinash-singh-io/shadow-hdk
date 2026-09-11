@@ -28,7 +28,7 @@ from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.runtime import Ports, RunContext
 from shadow_hdk.wire.peer import Peer
-from shadow_hdk.wire.protocol import CONTEXT_PROPOSE, CONTEXT_REMAINING
+from shadow_hdk.wire.protocol import CONTEXT_PROPOSE, CONTEXT_REASONED, CONTEXT_REMAINING
 
 
 class WireRunContext(RunContext):
@@ -61,6 +61,12 @@ class WireRunContext(RunContext):
             CONTEXT_PROPOSE,
             {"proposal": json.loads(dump(proposal, Proposal))},
         )
+
+    async def reasoned(self, text: str) -> None:
+        """Crosses back for the same reason `propose` does: there is one record with one author,
+        and a thought emitted host-side would land on a stream nobody reads."""
+        if text:
+            await self._peer.call(CONTEXT_REASONED, {"text": text, "step": self._step})
 
     def remaining(self) -> Lease:
         raise WireOnlyAsync(

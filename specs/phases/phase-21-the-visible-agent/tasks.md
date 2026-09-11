@@ -16,10 +16,10 @@ phase: 21
 - [x] every package to 0.15.0; `EXPECTED` and its reason
 
 ## Group 2 — the projection
-- [ ] `Step` and `steps(events)` — a pure fold, tested on a recorded stream
-- [ ] nesting by run id: a child's steps fold under its parent's `Spawned`
-- [ ] `run_steps(...)` live
-- [ ] the wire: `/runs/{id}/steps` over SSE; the schema published
+- [x] `Step` and `steps(events)` — a pure fold, tested on a recorded stream
+- [x] nesting by run id: a child's steps fold under its parent's `Spawned`
+- [x] `run_steps(...)` live
+- [x] the wire: a `step` notification beside `event` on the existing SSE session (one path, not two); the schema published
 
 ## Group 3 — deferred schemas
 - [ ] the pattern field; `describe` fetches on first use

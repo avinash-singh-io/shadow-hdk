@@ -33,9 +33,13 @@ PROPOSE = "sink.propose"
 # host → runtime, from inside a component the host is running on the runtime's behalf
 CONTEXT_PROPOSE = "context.propose"
 CONTEXT_REMAINING = "context.remaining"
+CONTEXT_REASONED = "context.reasoned"
 
 # runtime → host, one way
 EVENT = "event"
+STEP = "step"
+"""The projection, folded runtime-side, one notification per closed step (D46) — so a host in
+another language renders agent steps without porting the fold."""
 
 HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAINING})
 RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})

@@ -25,11 +25,13 @@ from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import Context, Judgement, ModelRequest, ModelResponse
 from shadow_hdk.runtime import Ports, RunOptions
+from shadow_hdk.runtime.steps import Fold, Step, as_json
 from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     COMPLETE,
     CONTEXT_PROPOSE,
+    CONTEXT_REASONED,
     CONTEXT_REMAINING,
     EVENT,
     INITIALIZE,
@@ -40,6 +42,7 @@ from shadow_hdk.wire.protocol import (
     REGISTRATIONS,
     RESUME,
     RUN,
+    STEP,
     Agreed,
     VersionMismatch,
     WireError,
@@ -81,6 +84,7 @@ class RuntimeSide:
         self.peer.serves(RESUME, self._resume)
         self.peer.serves(CONTEXT_PROPOSE, self._context_propose)
         self.peer.serves(CONTEXT_REMAINING, self._context_remaining)
+        self.peer.serves(CONTEXT_REASONED, self._context_reasoned)
 
     def ports(self) -> Ports:
         from shadow_hdk.runtime.clock import SystemClock
@@ -97,6 +101,12 @@ class RuntimeSide:
         if self.live is None:
             raise RuntimeError("nothing is running, so there is nothing to propose to")
         await self.live.propose(load(json.dumps(params["proposal"]), Proposal))
+        return None
+
+    async def _context_reasoned(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is no record to think on")
+        await self.live.reasoned(str(params.get("text", "")), step=params.get("step"))
         return None
 
     async def _context_remaining(self, _params: dict[str, Any]) -> Any:
@@ -154,9 +164,16 @@ class RuntimeSide:
             else run_once(composition, ports, options=options)
         )
         count = 0
+        # **One fold, both sides of the wire** (D46). The events cross as they always did; the
+        # steps cross already folded, so a host in another language renders them without porting
+        # the fold — and parity with in-process is by construction, because this is the same
+        # `Fold` that `steps()` and `run_steps()` use.
+        fold = Fold()
         async for event in stream:
             count += 1
             await self.peer.notify(EVENT, {"event": json.loads(dump(event, Event))})
+            for done in fold.feed(event):
+                await self.peer.notify(STEP, {"step": as_json(done)})
         return {"events": count}
 
 
@@ -167,6 +184,8 @@ class HostSide:
         self.peer = Peer(channel, name="host")
         self.ports = ports
         self.events: list[Event] = []
+        self.steps: list[Step] = []
+        """The projection, as the runtime folded it — one entry per closed top-level step."""
         self.child_pid: int | None = None
         self.session_id: str | None = None
         """Set when the runtime is listening and this host connected to it."""
@@ -179,6 +198,7 @@ class HostSide:
         self.peer.serves(INVOKE, self._invoke)
         self.peer.serves(PROPOSE, self._propose)
         self.peer.hears(EVENT, self._event)
+        self.peer.hears(STEP, self._step)
 
     async def initialize(self, *, protocol_version: str = PROTOCOL_VERSION) -> Agreed:
         from shadow_hdk.wire.peer import RemoteError
@@ -260,7 +280,12 @@ class HostSide:
             known = {r.id for r in await port.registrations()}
             if wanted in known:
                 token = _CURRENT.set(
-                    WireRunContext(self.peer, self.ports, str(params.get("run_id", "")), wanted)
+                    WireRunContext(
+                        self.peer,
+                        self.ports,
+                        str(params.get("run_id", "")),
+                        str(params.get("step") or wanted),
+                    )
                 )
                 try:
                     observation = await port.invoke(wanted, params.get("inputs"))
@@ -278,6 +303,9 @@ class HostSide:
         self.events.append(event)
         if self.watching is not None:
             self.watching(event)
+
+    async def _step(self, params: dict[str, Any]) -> None:
+        self.steps.append(load(json.dumps(params["step"]), Step))
 
 
 @asynccontextmanager

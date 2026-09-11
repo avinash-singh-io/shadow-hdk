@@ -1,6 +1,6 @@
 """The schemas a client is generated from, and a test that they are not stale.
 
-`wire.md`: *schemas are published from `shadow_hdk.kernel.contracts.all_schemas()`; a TypeScript
+`wire.md`: *schemas are published from `shadow_hdk.kernel.contracts.published()`; a TypeScript
 client is generated from them and is a **client**, never a port of the runtime (`09` §3b).*
 
 Publishing them as files is the easy half. The half that matters is that a file on disk and the code
@@ -18,24 +18,24 @@ from pathlib import Path
 
 import pytest
 
-from shadow_hdk.kernel.contracts import all_schemas
+from shadow_hdk.wire.schemas import published
 
 PUBLISHED = Path(__file__).resolve().parents[2] / "schemas"
 
 
 def test_every_contract_is_published() -> None:
     on_disk = {path.stem for path in PUBLISHED.glob("*.json")} - {"index"}
-    assert on_disk == set(all_schemas()), (
+    assert on_disk == set(published()), (
         "the published schemas and the code disagree about which contracts exist; "
         "run `uv run python -m shadow_hdk.wire.schemas` to republish"
     )
 
 
-@pytest.mark.parametrize("name", sorted(all_schemas()))
+@pytest.mark.parametrize("name", sorted(published()))
 def test_a_published_schema_matches_the_code_that_made_it(name: str) -> None:
     """The whole point. A generated client is only as true as the schema it came from."""
-    published = json.loads((PUBLISHED / f"{name}.json").read_text(encoding="utf-8"))
-    assert published == all_schemas()[name], (
+    on_disk = json.loads((PUBLISHED / f"{name}.json").read_text(encoding="utf-8"))
+    assert on_disk == published()[name], (
         f"{name}.json is stale; run `uv run python -m shadow_hdk.wire.schemas`"
     )
 
@@ -46,7 +46,7 @@ def test_the_index_names_the_protocol_it_belongs_to() -> None:
 
     index = json.loads((PUBLISHED / "index.json").read_text(encoding="utf-8"))
     assert index["protocol_version"] == PROTOCOL_VERSION
-    assert sorted(index["contracts"]) == sorted(all_schemas())
+    assert sorted(index["contracts"]) == sorted(published())
 
 
 TWELVE = (
@@ -73,7 +73,7 @@ def test_the_event_schema_carries_every_kind(kind: str) -> None:
     schema missing one would silently drop whichever arm it had never heard of — which for `refused`
     or `spent` means losing the record of a governance decision or of what a run cost.
     """
-    assert f'"{kind}"' in json.dumps(all_schemas()["Event"])
+    assert f'"{kind}"' in json.dumps(published()["Event"])
 
 
 def test_the_event_schema_carries_no_kind_nobody_declared() -> None:
@@ -108,4 +108,4 @@ def test_publishing_fresh_produces_exactly_what_is_checked_in(tmp_path: Path) ->
         "a fresh publish and the checked-in files disagree about which files exist"
     )
     assert fresh == checked_in, "a fresh publish differs from what is checked in"
-    assert len(written) == len(all_schemas()) + 1, "publish did not report every file it wrote"
+    assert len(written) == len(published()) + 1, "publish did not report every file it wrote"

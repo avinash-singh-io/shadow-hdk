@@ -12,7 +12,8 @@
     "Observation",
     "Proposal",
     "Provider",
-    "Registration"
+    "Registration",
+    "Step"
   ],
   "protocol_version": "1"
 }

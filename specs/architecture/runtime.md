@@ -154,6 +154,7 @@ classDiagram
 | `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
 | `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
+| `steps.py` | the event stream folded into agent steps — one pure fold, in-process and over the wire (D46) |
 | `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006) |
 | `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
 | `testing/` | `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock` (D8) |

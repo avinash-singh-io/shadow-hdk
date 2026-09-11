@@ -40,6 +40,10 @@ def _run_id_of(context: Any) -> str:
     return str(context.run_id) if context is not None else ""
 
 
+def _step_of(context: Any) -> str:
+    return str(context.step or "") if context is not None else ""
+
+
 def _as_json(value: object, as_type: Any) -> JsonValue:
     parsed: JsonValue = json.loads(dump(value, as_type))
     return parsed
@@ -132,6 +136,10 @@ class RemoteComponents:
                 "registration": registration,
                 "inputs": inputs,
                 "run_id": _run_id_of(self._live()),
+                # The **step**, not the registration: a thought the component puts on the record
+                # has to fold under the step that was thinking, and the registration id is the
+                # tool's name rather than the step's (Phase 21, found by the projection).
+                "step": _step_of(self._live()),
             },
         )
         observation: Observation = load(json.dumps(answered), Observation)

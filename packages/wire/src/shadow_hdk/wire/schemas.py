@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
-from shadow_hdk.kernel.contracts import all_schemas
+from shadow_hdk.kernel.contracts import adapter_for, all_schemas
+from shadow_hdk.runtime.steps import Step
 from shadow_hdk.wire.protocol import PROTOCOL_VERSION
 
 HERE = Path(__file__).resolve()
@@ -27,12 +29,25 @@ DEFAULT = HERE.parents[5] / "schemas"
 """The repository's `schemas/` directory, five levels up from this file inside the package tree."""
 
 
+def published() -> dict[str, dict[str, Any]]:
+    """Everything the wire publishes: the kernel's contracts, plus what crosses only as a wire
+    notification.
+
+    The projection is a runtime type rather than a kernel contract — it is derived from the
+    events, not a thing a host hands in — but it crosses as a `step` notification (D46) and a
+    client in another language needs its shape as much as any kernel type's.
+    """
+    contracts: dict[str, dict[str, Any]] = dict(all_schemas())
+    contracts["Step"] = adapter_for(Step).json_schema()
+    return contracts
+
+
 def publish(into: Path | None = None) -> list[Path]:
     """Write one file per contract, plus an index naming the protocol they belong to."""
     where = into or DEFAULT
     where.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
-    contracts = all_schemas()
+    contracts = published()
     for name, schema in sorted(contracts.items()):
         path = where / f"{name}.json"
         path.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8")

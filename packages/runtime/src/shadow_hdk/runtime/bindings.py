@@ -178,6 +178,16 @@ class RunContext:
     def remaining(self) -> Lease:
         return self._session.meter.remaining()
 
+    async def remaining_now(self) -> Lease:
+        """`remaining()`, awaitable — the form an adapter uses if it means to run over a wire too.
+
+        In-process the meter is here and the answer is immediate; across a wire the meter is on
+        the other side and the question has to cross. An adapter that calls the synchronous form
+        works in-process and raises the moment its ports invert, which is how `AgentComponent`
+        turned out to be unable to run over the wire at all (Phase 21, found by a test).
+        """
+        return self.remaining()
+
     @property
     def step(self) -> str | None:
         """The step being executed, or `None` outside one — while the catalogue is read, say."""
@@ -264,18 +274,23 @@ class RunContext:
             raise PortFailure("sink", exc) from exc
         await self._emitter.emit(lambda **k: Proposed(proposal=proposal, **k))
 
-    async def reasoned(self, text: str) -> None:
+    async def reasoned(self, text: str, *, step: str | None = None) -> None:
         """Put thinking on the record, beside what it led to (D45).
 
         The step is the one executing — the agent's own, so a projection folds the thought under
         the step that was thinking rather than the tool it then reached for. Empty text emits
         nothing: a kind that appears when there is nothing to say is one readers learn to skip.
+
+        `step` is for a caller that knows better than the contextvar: a thought that crossed a
+        wire is answered on the peer's task, where nothing is executing, and the host-side context
+        that sent it is the one that knows which step was thinking.
         """
         from shadow_hdk.kernel.events import Reasoned
 
         if not text:
             return
-        await self._emitter.emit(lambda **k: Reasoned(step=self.step or "", text=text, **k))
+        where = step if step is not None else (self.step or "")
+        await self._emitter.emit(lambda **k: Reasoned(step=where, text=text, **k))
 
 
 _CURRENT: ContextVar[RunContext | None] = ContextVar("shadow_hdk_current_run", default=None)

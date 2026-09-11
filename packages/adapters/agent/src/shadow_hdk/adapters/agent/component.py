@@ -160,7 +160,7 @@ class _Turnwise:
                 )
         self.messages = [Message("system", self._role(skill)), Message("user", brief)]
         for turn in range(self.pattern.max_turns):
-            if self.ctx.remaining().ceiling.max_steps <= 0:
+            if (await self.ctx.remaining_now()).ceiling.max_steps <= 0:
                 return self.finished("lease_exhausted")
             self.turns = turn + 1
             # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
@@ -326,7 +326,9 @@ class _Turnwise:
                     Await("inbox", MAILBOX),
                 )
             )
-            handle, events = await self.ctx.children.spawn(child, self.ctx.remaining().ceiling)
+            handle, events = await self.ctx.children.spawn(
+                child, (await self.ctx.remaining_now()).ceiling
+            )
             self.helpers[f"@{len(self.helpers) + 1}"] = handle
             name = f"@{len(self.helpers)}"
             if handle not in self.ctx.children.held:
@@ -415,7 +417,7 @@ class _Turnwise:
         # steps for its own turns and got two, then died `lease_exhausted` — silently, because a
         # lease ending a run is not an error. Turns are sequential and each settles before the
         # next, so the parent's remaining is the honest ceiling; its own still bounds the lot.
-        ceiling = self.ctx.remaining().ceiling
+        ceiling = (await self.ctx.remaining_now()).ceiling
         observed: dict[str, Observation] = {}
         async for event in run(
             composition, self._ports_for_this_role(), options=self.ctx.spawn_options(ceiling)

@@ -1,0 +1,317 @@
+{
+  "$defs": {
+    "Acted": {
+      "description": "The receipt of a world-effect (`08` \u00a7249: `ActReceipt`). *The only place anything happens\noutside the log* \u2014 so every one of them is attributed and re-checkable.\n\n`foreign_id` is what the world called it; `idempotency_key` is what we called it, so a retry\ncan be told from a second act; `exit` is how it ended in the world's own vocabulary; `grounds`\nis what it was performed under \u2014 the argv, the lease remaining, the warrant \u2014 so an auditor can\nask not only *what happened* but *on whose authority at that moment*.",
+      "properties": {
+        "exit": {
+          "title": "Exit",
+          "type": "string"
+        },
+        "foreign_id": {
+          "title": "Foreign Id",
+          "type": "string"
+        },
+        "grounds": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "idempotency_key": {
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "kind": {
+          "const": "acted",
+          "default": "acted",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "foreign_id",
+        "idempotency_key",
+        "exit"
+      ],
+      "title": "Acted",
+      "type": "object"
+    },
+    "Asked": {
+      "description": "The step paused; whoever implements governance decides what asking means.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "asked",
+          "default": "asked",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "Asked",
+      "type": "object"
+    },
+    "Completed": {
+      "properties": {
+        "kind": {
+          "const": "completed",
+          "default": "completed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        }
+      },
+      "title": "Completed",
+      "type": "object"
+    },
+    "Failed": {
+      "properties": {
+        "error": {
+          "title": "Error",
+          "type": "string"
+        },
+        "kind": {
+          "const": "failed",
+          "default": "failed",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "Failed",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Pending": {
+      "description": "The answer arrives later, under this handle.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "pending",
+          "default": "pending",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "title": "Pending",
+      "type": "object"
+    },
+    "Refused": {
+      "properties": {
+        "kind": {
+          "const": "refused",
+          "default": "refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Refused",
+      "type": "object"
+    },
+    "Step": {
+      "description": "One thing the agent did, with what it thought first and what it cost.\n\n`children` are the steps of every run spawned while this step was executing, in order, each\nwith children of its own. `observation` is the whole observation \u2014 a projection is not the\nplace to summarise; the offloading rule (Group 4) is where size is handled, before it gets here.",
+      "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        },
+        "children": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "component": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Component"
+        },
+        "observation": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "acted": "#/$defs/Acted",
+                  "asked": "#/$defs/Asked",
+                  "completed": "#/$defs/Completed",
+                  "failed": "#/$defs/Failed",
+                  "pending": "#/$defs/Pending",
+                  "refused": "#/$defs/Refused"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Completed"
+                },
+                {
+                  "$ref": "#/$defs/Refused"
+                },
+                {
+                  "$ref": "#/$defs/Asked"
+                },
+                {
+                  "$ref": "#/$defs/Failed"
+                },
+                {
+                  "$ref": "#/$defs/Pending"
+                },
+                {
+                  "$ref": "#/$defs/Acted"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observation"
+        },
+        "outcome": {
+          "default": "running",
+          "enum": [
+            "running",
+            "completed",
+            "refused",
+            "asked",
+            "failed",
+            "pending",
+            "acted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "reasoning": {
+          "default": "",
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Usage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "run_id",
+        "step"
+      ],
+      "title": "Step",
+      "type": "object"
+    },
+    "Usage": {
+      "description": "What the call cost. A model adapter that cannot say reports ``None`` for the field it does\nnot know \u2014 *unknown*, never zero (10 \u00a75 R2).",
+      "properties": {
+        "cost_cents": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Cents"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "$ref": "#/$defs/Step"
+}
