@@ -113,8 +113,14 @@ async def test_an_unlabelled_tool_call_is_the_worst_case_and_is_refused() -> Non
 async def test_a_question_nobody_can_answer_is_a_refusal_that_says_so() -> None:
     """A child holding an open request cannot wait for a person: our `Ask` is an `interrupt()` that
     ends the parent's step, and the child's call would be abandoned mid-flight. So the honest answer
-    is no, the question is recorded, and a host wanting a person in the loop pre-authorises."""
-    client = BridgeClient()
+    is no, the question is recorded, and a host wanting a person in the loop pre-authorises.
+
+    `contained=True` here is the arrangement, not the claim (BUG-018): the ASKING mode's ceiling
+    permits workspace writes and asks above reads. An **uncontained** child's `edit` writes
+    anywhere and so exceeds the ceiling — refused outright, never reaching the question. This test
+    used to pass because the profile lied about that; now the edit has to be genuinely inside the
+    workspace for the question to arise at all."""
+    client = BridgeClient(contained=True)
     answer = await inside_a_run(
         lambda: client.request_permission(
             "s", a_call("edit"), options("allow_once", "reject_once")

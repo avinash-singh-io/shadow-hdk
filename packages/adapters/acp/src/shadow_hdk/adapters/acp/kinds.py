@@ -39,17 +39,25 @@ def effects_for(kind: str | None, *, contained: bool, network: bool = False) -> 
     we cannot read off a label — it could be harmless or it could be the child talking itself out of
     a restriction — so it takes the worst case until somebody has a reason to say otherwise.
     """
+    # **These are the child's own tools, and the child enforces nothing.** A `read` or `edit` it
+    # performs itself touches the disk from its own process, honouring nothing but its working
+    # directory — so `{workspace}` is a claim about somebody else's behaviour and is false unless
+    # containment makes it true. The same word on *our* doors (`reading_a_file`, `writing_a_file`)
+    # is honest, because `_inside()` refuses a path outside the root and the narrow thing is what
+    # actually happens. Two paths, two truths; judging one on the other's profile was BUG-018's
+    # third instance.
+    files = WORKSPACE if contained else EVERYTHING
     match kind:
         case "read" | "search":
-            return READS
+            return EffectProfile(reads=files, contained=contained)
         case "think":
             return NOTHING
         case "edit" | "move":
-            return EDITS
+            return EffectProfile(reads=files, writes=files, reversible=True, contained=contained)
         case "delete":
-            return DESTROYS
+            return EffectProfile(reads=files, writes=files, reversible=False, contained=contained)
         case "fetch":
-            return FETCHES
+            return EffectProfile(reads=files, reaches=True, costs=True, contained=contained)
         case "execute":
             # Everything, unless containment makes the narrower claim true (BUG-018). Running a
             # command on an ordinary host reaches the whole machine: `cd ..` works, an absolute

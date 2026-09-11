@@ -14,6 +14,7 @@ from shadow_hdk.adapters.acp import effects_for
 from shadow_hdk.kernel import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
 
 WORKSPACE = ScopeSet.of("workspace")
+EVERYTHING = ScopeSet(everything=True)
 
 
 def profile(kind: str | None, *, contained: bool = False, network: bool = False) -> EffectProfile:
@@ -22,8 +23,13 @@ def profile(kind: str | None, *, contained: bool = False, network: bool = False)
 
 @pytest.mark.parametrize("kind", ["read", "search"])
 def test_looking_only_reads(kind: str) -> None:
+    """Reads and nothing else — and *what* it reads follows containment (BUG-018). This asserted
+    `{workspace}` for an uncontained child, which was the claim rather than the behaviour: the
+    child's own read tool touches the disk from its own process. Rewritten from the corrected
+    premise."""
     found = profile(kind)
-    assert found.reads == WORKSPACE
+    assert found.reads == EVERYTHING
+    assert profile(kind, contained=True).reads == WORKSPACE
     assert found.writes == ScopeSet()
     assert found.reversible
 
@@ -36,15 +42,18 @@ def test_thinking_touches_nothing() -> None:
 
 @pytest.mark.parametrize("kind", ["edit", "move"])
 def test_changing_a_file_is_reversible(kind: str) -> None:
+    """Reversible; *where* it writes follows containment (BUG-018, see `test_looking_only_reads`)."""
     found = profile(kind)
-    assert found.writes == WORKSPACE
+    assert found.writes == EVERYTHING
+    assert profile(kind, contained=True).writes == WORKSPACE
     assert found.reversible is True
 
 
 def test_deleting_is_not_reversible() -> None:
     """The same distinction the workspace adapter makes: change and destroy are different
     permissions, and one field carries it."""
-    assert profile("delete").writes == WORKSPACE
+    assert profile("delete").writes == EVERYTHING, "uncontained: the child deletes anywhere"
+    assert profile("delete", contained=True).writes == WORKSPACE
     assert profile("delete").reversible is False
 
 
