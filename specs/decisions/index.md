@@ -71,6 +71,9 @@ rather than remembered.
 | D51 | the agent runs where the record is, whichever side of the wire that is | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
 | D52 | nothing reaches a run's registry without the token it minted | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
 | D53 | a provider's child dies with the process that held it, whatever ended it | [`phases/phase-23-a-host-in-any-language/history.md`](/phases/phase-23-a-host-in-any-language/history.md) |
+| D54 | a skill is a registry entry that says what it is for and where it came from | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
+| D55 | the registry is a component, so choosing is a step on the record and reaches every host | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
+| D56 | minting proposes; keeping is the host's | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
 
 ## Also here
 

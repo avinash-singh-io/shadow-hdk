@@ -4,29 +4,25 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-11 (Phase 23)
-> **Current Phase**: **Phase 23 COMPLETE — a host, in-process and in any language.** The agent
-> runs where the record is whichever side of the wire it is on (D51), the registry socket is
-> authenticated (D52), a provider's child dies with the process that held it (D53, BUG-019), and a
-> host-shaped example hands in its own policy, ledger, checkpointer and view and runs a brief
-> through a scripted brain, a key, or the subscription signed in on this machine — measured live.
-> The live proofs run on demand and never on a push. Codex is measured as far as a signed-out
-> install allows; the rest is owner-gated. **BUG-020** is open (P1): an Ask inside an agent's tool
-> call never reaches the host.
+> **Last Updated**: 2026-09-11 (Phase 24)
+> **Current Phase**: **Phase 24 COMPLETE — the skill registry.** Skills are a registry rather
+> than a directory: shipped, minted during a run, and proposed for keeping through the sink (D54,
+> D56). The registry is offered as a component, so choosing a skill is a governed step on the
+> record and reaches an in-process agent, an agent over the wire, and a CLI by subscription alike
+> (D55) — measured live: Claude Code chose a shipped skill over the registry socket and followed
+> it. This is the last phase of the owner's four; Phases 25 and 26 are the owner's to open.
 >
-> Phases 20–22 before it: providers by key or subscription (v0.14.0), the visible agent — `Reasoned`
-> and the `Step` projection (v0.15.0), the environment with a mode (v0.16.0). Phase 19 closed every
-> P0, P1 and P2 the audit filed; its story is in its own history.
+> Phase 23 before it reached the consumable line (v0.17.0). **BUG-020** remains open (P1): an
+> Ask inside an agent's tool call never reaches the host.
 >
 > **CI is green** and runs on every push.
 >
-> 1,127 tests; mypy strict over 194 files; seventeen distributions at **0.17.0**, all MIT.
+> 1,153 tests; mypy strict over 198 files; seventeen distributions at **0.18.0**, all MIT.
 >
-> **Latest Release**: **v0.17.0**, released 2026-09-11 — Phase 23, a host: wire parity as an
-> invariant, the authenticated socket, BUG-019 closed, the host example, the on-demand live job.
-> Contract change (`Step.parent`, `serve_over_socket` → `(port, token)`, `run_steps(nested=)`), so a
-> *Pins* row. Before it v0.16.0 (Phase 22, the environment), v0.15.0 (Phase 21, the visible agent),
-> v0.14.0 (Phase 20, providers), v0.13.1 (a patch). All MIT
+> **Latest Release**: **v0.18.0**, released 2026-09-11 — Phase 24, the skill registry: `Skill`
+> gains `description` and `source`; `SkillRegistry`, `SkillComponents`, `kept_from`; four shipped
+> skills. Contract change, so a *Pins* row. Before it v0.17.0 (Phase 23, a host — the consumable
+> line), v0.16.0 (Phase 22), v0.15.0 (Phase 21), v0.14.0 (Phase 20), v0.13.1 (a patch). All MIT
 > **Health**: On Track
 
 ## Summary
@@ -38,8 +34,8 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Twenty-four phases are built,
-merged and released**: 1,127 tests, mypy strict over 194 files, seventeen distributions at 0.17.0.
+that adopter, and it lives in the shared roadmap rather than here. **Twenty-five phases are built,
+merged and released**: 1,153 tests, mypy strict over 198 files, seventeen distributions at 0.18.0.
 
 ## Completed Phases
 
@@ -73,7 +69,8 @@ merged and released**: 1,127 tests, mypy strict over 194 files, seventeen distri
 | 20 | Providers — your key, or your subscription | Complete, merged | **v0.14.0** |
 | 21 | The visible agent | Complete, merged | **v0.15.0** |
 | 22 | The environment | Complete, merged | **v0.16.0** |
-| 23 | A host, in-process and in any language | Complete | **v0.17.0** |
+| 23 | A host, in-process and in any language | Complete, merged | **v0.17.0** |
+| 24 | The skill registry | Complete | **v0.18.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -85,7 +82,7 @@ merged and released**: 1,127 tests, mypy strict over 194 files, seventeen distri
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | — | — | Phases 0–23 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
+| _(none)_ | — | — | Phases 0–24 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
 
 ## Upcoming Phases
 

@@ -18,8 +18,14 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.17.0"
-"""0.17.0 because a host's view of a run changed shape in two places and a host that served the
+EXPECTED = "0.18.0"
+"""0.18.0 because the agent adapter's public surface grew: `Skill` has `description` and `source`
+(D54) and `load_skill` refuses a file without a line, which a host's skill files may lack;
+`SkillRegistry`, `SkillSource`, `DirectorySkills`, `MintedSkills`, `SkillComponents`, `kept_from`
+and `shipped_skills` are new (D55, D56). No kernel type changed and `AgentComponent` is as it was,
+so a host that never held a `Skill` changes nothing; one with skill files adds a line to each.
+
+0.17.0 because a host's view of a run changed shape in two places and a host that served the
 registry over a socket has to change one line. `Step` grew `parent` and `run_steps` grew
 `nested=` (D51's example found that a host waiting for the orchestrator's step rendered nothing
 for the whole run); `serve_over_socket` yields `(port, token)` and the relay wants the token in

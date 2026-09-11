@@ -28,8 +28,8 @@ it.
 
 ## Where this stands — 2026-09-11
 
-**Phases 0–23 are done**, merged and released; the latest is **v0.17.0** (Phase 23): 1,127 tests,
-mypy strict over 194 files, seventeen distributions, all MIT. The consumable line is reached: a
+**Phases 0–24 are done**, merged and released; the latest is **v0.18.0** (Phase 24): 1,153 tests,
+mypy strict over 198 files, seventeen distributions, all MIT. The consumable line is reached: a
 host hands in its own governance, record, checkpointer and view and runs a brief through a key or
 the subscription signed in on its machine, in-process or over the wire at parity; a
 subscription-backed agent reasons on the record, acts through the run's own environment inside the
@@ -63,7 +63,8 @@ consume the rest**. Sandboxing is the first thing consumed.
 | done | 21 — the visible agent | `Reasoned` (D45); steps folded once, crossing the wire folded (D46); a large result held, never written (D47) |
 | done | 22 — the environment | one concept with a mode (D48); local on the OS sandbox, proven (D49); isolated behind a Box, two denials (D50); three adapters deleted |
 | done | 23 — a host, in-process and in any language | the agent runs where the record is (D51); the socket authenticated (D52); a child dies with its process (D53); a host example; parity held by invariants — **the consumable line, reached** |
-| next | 24 — the skill registry | skills predefined, minted, proposed for keeping; progressive disclosure shares Phase 21's mechanism |
+| done | 24 — the skill registry | a skill says what it is for and where it came from (D54); the registry is a component, so choosing is on the record and reaches every host (D55); minting proposes, keeping is the host's (D56) |
+| the owner's | 25 — context engineering · 26 — collaboration | not started; the four phases the owner asked for end here |
 | `[~]` | OPC-UA, ROS 2 (epic 0007) | need a server and a ROS distribution |
 
 **Decisions settled so far:** D1–D38 as before; D39 inference and agency are two seams, D40 a
@@ -71,7 +72,8 @@ provider is data, D41 the harness asks and never reads a credential, D42 every e
 the run's registry whoever asked, D43 the loop stays the provider's, D44 the registry is offered on a
 loopback socket through a relay (phase 20); D45–D47 the visible agent (phase 21); D48–D50 the
 environment (phase 22); D51 the agent runs where the record is, D52 the socket is authenticated,
-D53 a child dies with its process (phase 23).
+D53 a child dies with its process (phase 23); D54 a skill says what it is for, D55 the registry is
+a component, D56 minting proposes and keeping is the host's (phase 24).
 
 **Still with the owner:** ADR-1 and ADR-2, and landing Phase 20.
 
@@ -102,7 +104,7 @@ D53 a child dies with its process (phase 23).
 | 21 | The visible agent | **DONE** · `phase-21-the-visible-agent` | 20 | `Reasoned`, the twelfth event kind; a projection of the stream any client renders as agent steps, over SSE and in-process; deferred tool schemas; large-result offloading |
 | 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
 | 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
-| 24 | The skill registry | next | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
+| 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
 | 25 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 26 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 

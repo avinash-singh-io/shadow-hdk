@@ -83,6 +83,18 @@ class AgentComponent(ComponentPort):
 *"you have not tried N things yet"* — and accepts the second answer. A model trained to be agreeable
 gives up early; the floor is the honest counter, and one nudge is the whole of it.
 
+**Skills are a registry, offered as a component** (Phase 24, D54–D56). `SkillRegistry` is a union
+of sources — `DirectorySkills` (shipped, or a team's directory of TOML), the host's own kept ones,
+and `minted`, the run's own — later shadowing earlier by name, on the record. A skill says what it
+is for (one line) and where it came from. `SkillComponents(registry, minting=)` registers
+`use_skill` — pure; the names and lines ride its description; choosing runs D17's check against
+`visible()` and the body arrives as the tool's answer — and `mint_skill`, which writes `{record}`:
+it adds to `minted` and *proposes* `kind="skill"` through the sink. The runtime keeps nothing;
+`kept_from(proposal)` is the host's half. Because it is a component, choosing and minting are steps
+on the record and reach an in-process agent, an agent over the wire, and a CLI by subscription
+through the registry socket alike — measured: a subscription provider chose a shipped skill and
+followed it. The `skill=` on `AgentComponent` (a fixed procedure for a role) stays.
+
 ## The model adapter — one adapter, every provider
 
 ```python

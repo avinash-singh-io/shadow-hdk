@@ -379,7 +379,11 @@ proposals), a LangGraph checkpointer on a file, and its own view of the projecti
 it closes, what was thought before it, what it cost — then runs a brief through whichever brain it
 has: a scripted model (free), a model **by key** (`--brain=key`, any provider LangChain integrates)
 or the CLI signed in on this machine (`--brain=subscription`). A question the host cannot answer
-now parks the run in the store, and the next call resumes it. Measured live on Claude Code:
+now parks the run in the store, and the next call resumes it. **Skills are a registry** the host
+offers as a component: shipped ones (four, none about code), the host's kept ones, and what the
+run mints — a name and a line each until chosen; choosing is a step on the record; a minted skill
+is proposed through the sink and the host decides whether to keep it. Measured live on Claude
+Code:
 
 ```
 ∴ I need to list the workspace files and write them into INDEX.md, so I'll load the schemas …
@@ -452,7 +456,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–23 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–24 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

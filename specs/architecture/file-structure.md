@@ -38,6 +38,7 @@ shadow-hdk/
       basic/                         allow-all · stdout · callback · system clock · callable   Phase 0
       agent/                         the model loop as a component; Pattern; single            Phase 0
         library/                     the shipped patterns, as TOML a team can read and edit    Phase 8
+        skills_library/              the shipped skills — generic procedures, none about code   Phase 24
       langchain/                     one ModelPort over every LangChain provider; stream       Phase 1
       mcp/                           MCP servers as components                                 Phase 1
       acp/                           an agent over ACP — OpenCode, anything Zed-compatible      Phase 4

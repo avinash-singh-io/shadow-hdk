@@ -3,7 +3,7 @@ type: Phase
 phase: 24
 name: the-skill-registry
 epic: 0013-the-skill-registry
-status: in-progress
+status: complete
 topics: [skills, registry, progressive-disclosure, self-evolution, sink, d17]
 deps: [phase-23-a-host-in-any-language]
 ---
@@ -31,9 +31,11 @@ a kept skill and hands its kept skills back as a source next run. Self-evolution
 with a record, and promotion is the host's decision, never the runtime's.
 
 **Progressive disclosure, one mechanism.** A skill costs the model a name and a line until it is
-chosen — the same thinning Phase 21 built for a large catalogue of tools (D13's `describe`), used
-for a second kind of thing rather than built twice. `describe` answers for a skill's name as it
-does for a tool's; `use_skill` is the act of choosing, and it is where the D17 check runs.
+chosen — the same thinning Phase 21 built for a large catalogue of tools (D13), used for a second
+kind of thing rather than built twice. The registry is offered as a **component**: `use_skill`
+carries the names and lines on its own description, and choosing is a governed step on the record
+— reachable in-process, over the wire, and by a CLI through the registry socket alike (D55). It is
+where the D17 check runs.
 
 ## What this phase makes true
 
