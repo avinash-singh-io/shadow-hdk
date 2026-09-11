@@ -19,7 +19,12 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
+from shadow_hdk.adapters.recording import (
+    PORT_VARIABLE,
+    TOKEN_VARIABLE,
+    RecordingServer,
+    serve_over_socket,
+)
 
 from examples.coder.workshop import a_lease, workshop
 from shadow_hdk.kernel import (
@@ -75,15 +80,19 @@ async def ready_provider(want: str | None = None) -> Any:
     raise NoProvider("no provider on this machine is ready:\n" + "\n".join(lines))
 
 
-def relay_source(port: int) -> ToolSource:
-    """Where the provider's tools are — and under D42 they are ours.
+def relay_source(port: int, token: str) -> ToolSource:
+    """Where the provider's tools are — and under D42 they are ours; under D52, only with the token.
 
     The relay must be on the path the *child* will search, not merely on ours: it is launched by the
     CLI, in the environment we hand the CLI, and a `PATH` that resolved it here and not there is the
     asymmetry the resolution module exists to prevent.
     """
     found = shutil.which(RELAY)
-    return ToolSource(kind="mcp", address=found or RELAY, env=((PORT_VARIABLE, str(port)),))
+    return ToolSource(
+        kind="mcp",
+        address=found or RELAY,
+        env=((PORT_VARIABLE, str(port)), (TOKEN_VARIABLE, token)),
+    )
 
 
 @asynccontextmanager
@@ -107,9 +116,10 @@ async def a_conversation(
         context = current_run()
         assert context is not None
         held_back = {CONVERSE.component.interface.name}
+        holder = RecordingServer(context, withhold=held_back)
         async with (
-            RecordingServer(context, withhold=held_back).served() as server,
-            serve_over_socket(server) as port,
+            holder.served() as server,
+            serve_over_socket(server, refused=holder.refuse) as (port, token),
         ):
             opened = await open_with(
                 available.provider,
@@ -117,7 +127,7 @@ async def a_conversation(
                 env=environment_for(available.provider, base={}, search=search_dirs()),
                 workspace=root,
             )
-            session = await opened.open(tools=(relay_source(port),), workspace=str(root))
+            session = await opened.open(tools=(relay_source(port, token),), workspace=str(root))
             held["session"] = session
             held["ready"].set_result(None)
             await held["finished"]

@@ -21,7 +21,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
+from shadow_hdk.adapters.recording import (
+    PORT_VARIABLE,
+    TOKEN_VARIABLE,
+    RecordingServer,
+    serve_over_socket,
+)
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -37,9 +42,11 @@ RELAY = [str(Path(sys.executable).parent / "shadow-hdk-registry")]
 async def with_a_child_over_a_socket() -> tuple[dict[str, Any], list[Event]]:
     async def drive(context: RunContext) -> dict[str, Any]:
         holder = RecordingServer(context)
-        async with holder.served() as server, serve_over_socket(server) as port:
+        async with holder.served() as server, serve_over_socket(server) as (port, token):
             parameters = StdioServerParameters(
-                command=RELAY[0], args=RELAY[1:], env={PORT_VARIABLE: str(port)}
+                command=RELAY[0],
+                args=RELAY[1:],
+                env={PORT_VARIABLE: str(port), TOKEN_VARIABLE: token},
             )
             async with (
                 stdio_client(parameters) as (incoming, outgoing),
@@ -87,7 +94,12 @@ async def test_the_relay_refuses_plainly_when_there_is_nothing_to_reach() -> Non
     import subprocess
 
     finished = subprocess.run(
-        RELAY, env={PORT_VARIABLE: "1"}, capture_output=True, text=True, timeout=60, check=False
+        RELAY,
+        env={PORT_VARIABLE: "1", TOKEN_VARIABLE: "a-token-with-nothing-behind-it"},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
     )
 
     assert finished.returncode != 0

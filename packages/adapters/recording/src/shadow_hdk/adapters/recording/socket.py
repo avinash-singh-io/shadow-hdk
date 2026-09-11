@@ -14,19 +14,22 @@ already listening on and copy bytes both ways. The child believes it started an 
 server it reached is the run's own registry, in this process, with the lease and the record intact.
 That is what closes D42's socket around a provider that owns its own loop.
 
-The port is loopback and ephemeral, and it is the caller's job to keep the address to itself: any
-process on this machine that guesses the port reaches the registry. That is the same trust boundary
-`served_over_http` already argues about, and the same answer — a session-scoped token belongs here
-when `wire.md`'s run token is built.
+**The port is loopback and ephemeral, and that was never enough** (D52). Any process on the
+machine that guessed the port could act inside somebody else's run. So a token is minted per serve
+with `secrets`, travels to the relay in its environment, and is sent as the **first line** before
+any MCP traffic. The server reads exactly one line, compares in constant time, and serves or
+closes — a JSON-RPC frame arriving where the token should be is a refusal, not a handshake. The
+token lives for one serve and dies with it; it appears on no event and in no log.
 """
 
 from __future__ import annotations
 
 import os
+import secrets
 import socket
 import sys
 import threading
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -38,19 +41,49 @@ PORT_VARIABLE = "SHADOW_HDK_REGISTRY_PORT"
 """Where the relay is told which port to reach. An environment variable rather than an argument,
 because a CLI's MCP configuration may control the argv and not much else."""
 
+TOKEN_VARIABLE = "SHADOW_HDK_REGISTRY_TOKEN"
+"""Where the relay is told the token (D52). The environment, like the port — and never argv, which
+`ps` shows to every user on the machine."""
+
+
+def mint() -> str:
+    """One token, for one serve."""
+    return secrets.token_urlsafe(32)
+
 
 @asynccontextmanager
-async def serve_over_socket(server: Any, *, host: str = "127.0.0.1") -> AsyncIterator[int]:
-    """Listen on an ephemeral loopback port and serve `server` to whoever connects.
+async def serve_over_socket(
+    server: Any, *, host: str = "127.0.0.1", refused: Callable[[], None] | None = None
+) -> AsyncIterator[tuple[int, str]]:
+    """Listen on an ephemeral loopback port and serve `server` to whoever presents the token.
 
-    Yields the port. Loopback only, and not negotiable here: a registry bound to a routable
-    interface is a way for anyone on the network to act inside somebody else's run.
+    Yields `(port, token)`. Loopback only, and not negotiable here: a registry bound to a routable
+    interface is a way for anyone on the network to act inside somebody else's run. The token is
+    the second half of the same argument (D52). `refused` is called once per connection turned
+    away — the holder counts; this module keeps nothing about what was presented.
     """
     listener = await anyio.create_tcp_listener(local_host=host, local_port=0)
     port = int(listener.extra(SocketAttribute.local_address)[1])
+    token = mint()
+    expected = token.encode()
 
     async def serve_one(stream: Any) -> None:
         async with stream:
+            # **One line, then MCP — or nothing.** The relay sends the token and a newline before
+            # its first frame. Read up to the newline and no further, so the first MCP frame is
+            # left intact for the transport; a frame arriving here instead of a token is refused,
+            # because it means somebody skipped the handshake.
+            presented = b""
+            while b"\n" not in presented and len(presented) < 512:
+                chunk = await stream.receive(1)
+                if not chunk:
+                    break
+                presented += chunk
+            line = presented.split(b"\n", 1)[0]
+            if not secrets.compare_digest(line, expected):
+                if refused is not None:
+                    refused()
+                return
             await serve_over_pipes(server, stream, stream)
 
     # **The listener is closed by leaving its own block, never by hand.** `serve()` parks in
@@ -61,7 +94,7 @@ async def serve_over_socket(server: Any, *, host: str = "127.0.0.1") -> AsyncIte
     async with listener, anyio.create_task_group() as group:
         group.start_soon(listener.serve, serve_one)
         try:
-            yield port
+            yield port, token
         finally:
             group.cancel_scope.cancel()
 
@@ -77,11 +110,17 @@ def relay() -> int:
     if not raw or not raw.isdigit():
         print(f"{PORT_VARIABLE} is not set to a port; nothing to relay to", file=sys.stderr)
         return 2
+    token = os.environ.get(TOKEN_VARIABLE, "")
+    if not token:
+        print(f"{TOKEN_VARIABLE} is not set; the registry will refuse this relay", file=sys.stderr)
+        return 4
     try:
         upstream = socket.create_connection(("127.0.0.1", int(raw)), timeout=30)
     except OSError as unreachable:
         print(f"the registry on port {raw} is not there: {unreachable}", file=sys.stderr)
         return 3
+    # The token, then a newline, then nothing until MCP starts — the server reads one line.
+    upstream.sendall(token.encode() + b"\n")
 
     def pump(read_from: Any, write_to: Any) -> None:
         try:
@@ -107,4 +146,4 @@ if __name__ == "__main__":  # pragma: no cover — it is the child, and the chil
     raise SystemExit(relay())
 
 
-__all__ = ["PORT_VARIABLE", "relay", "serve_over_socket"]
+__all__ = ["PORT_VARIABLE", "TOKEN_VARIABLE", "mint", "relay", "serve_over_socket"]

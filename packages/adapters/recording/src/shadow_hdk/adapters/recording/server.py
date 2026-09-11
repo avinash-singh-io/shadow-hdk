@@ -47,6 +47,9 @@ class RecordingServer:
         self._context = context
         self.name = name
         self.calls = 0
+        self.refused_connections = 0
+        """Connections that presented the wrong token, or none (D52). A count, never a credential:
+        what was presented is not kept. Hand `refuse` to `serve_over_socket` to keep it."""
         self._withheld = frozenset(withhold)
         """Components the parent keeps to itself.
 
@@ -56,6 +59,10 @@ class RecordingServer:
         conversation it is already inside. Withholding is the parent's call and needs no policy
         change to express.
         """
+
+    def refuse(self) -> None:
+        """One more connection turned away at the door."""
+        self.refused_connections += 1
 
     # ------------------------------------------------------------------ what it offers
 
