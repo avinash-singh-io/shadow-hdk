@@ -27,9 +27,13 @@ from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
 EVERYTHING = ScopeSet(everything=True)
 WORKSPACE = ScopeSet.of("workspace")
-OURS = ScopeSet.of("workspace", "record")
-"""The root, and the run's own record — a minted skill proposed through the sink writes the latter,
-and this example's sink is stdout. A mode that permits neither is `read-only`."""
+PROVIDER = ScopeSet.of("provider-state")
+"""The provider's own bookkeeping — its session files under its home. Holding a conversation
+writes that much whatever the mode, and no mode is about that."""
+OURS = ScopeSet.of("workspace", "record", "provider-state")
+"""The root, the run's own record — a minted skill proposed through the sink writes the latter,
+and this example's sink is stdout — and the provider's own state. A mode that permits only the
+last is `read-only`."""
 
 CONFINED = Mode(
     "confined",
@@ -75,9 +79,20 @@ OPEN = Mode(
 """Everything, said out loud — and every write asked about. What `--mode full` gets."""
 
 LOOKING = Mode(
-    "looking", EffectProfile(reads=EVERYTHING, reaches=True, contained=False, costs=True)
+    "looking",
+    # `reversible=False`: a conversation cannot be un-had — money is spent and the provider's
+    # state moves. Nothing in the root can be written, so nothing in the root is irreversible.
+    EffectProfile(
+        reads=EVERYTHING,
+        writes=PROVIDER,
+        reaches=True,
+        reversible=False,
+        contained=False,
+        costs=True,
+    ),
 )
-"""Nothing may be written or run — what `--mode read-only` gets."""
+"""Nothing in the root may be written or run — what `--mode read-only` gets. The conversation
+itself is permitted: the provider keeps its own state, and that is all it writes."""
 
 POLICY_FOR: dict[EnvironmentMode, Mode] = {
     "read-only": LOOKING,

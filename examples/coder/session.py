@@ -49,9 +49,15 @@ RELAY = "shadow-hdk-registry"
 
 CONVERSE = make_registration(
     "converse",
+    # What holding the conversation *itself* writes: the provider's own state — a session
+    # transcript under its home, never the root, because its file tools are withheld and every
+    # write to the root goes through this run's environment and is judged there. Declaring
+    # `workspace` here made `read-only` refuse the conversation before it began (measured
+    # 2026-09-12: *the run ended before the conversation started*), when what read-only means is
+    # that the *tools* may not write.
     effects=EffectProfile(
         reads=ScopeSet(everything=True),
-        writes=ScopeSet.of("workspace"),
+        writes=ScopeSet.of("provider-state"),
         reaches=True,
         reversible=False,
         costs=True,

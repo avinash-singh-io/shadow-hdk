@@ -121,7 +121,7 @@ function summarise(component, inputs) {
     return c;
   }
   if (inputs.path !== undefined) return inputs.path + (inputs.content !== undefined ? '  (' + inputs.content.length + ' chars)' : '');
-  if (inputs.source) return inputs.source.split('\n')[0] + (inputs.source.includes('\n') ? ' …' : '');
+  if (inputs.source) { const ls = inputs.source.split('\n').filter(l => l.trim()); return (ls[0] || '').slice(0, 120) + (ls.length > 1 ? ' …' : ''); }
   if (inputs.query) return inputs.query;
   return JSON.stringify(inputs).slice(0, 200);
 }
