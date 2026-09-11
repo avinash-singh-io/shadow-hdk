@@ -304,24 +304,48 @@ class RunContext:
 
     # ------------------------------------------------------------------ asking for itself (D57)
 
-    async def ask(self, question: str, *, step: str | None = None) -> Any:
+    async def ask(
+        self,
+        question: str,
+        *,
+        step: str | None = None,
+        about: tuple[str | None, JsonValue | None] = (None, None),
+    ) -> Any:
         """Ask the host and wait for the answer, without parking (D58). `Asked` goes on the record
         first, so a reader sees the question where it was raised. With no `Questions` handle the
-        answer is a `Refuse` that says nobody was there — consent nobody gave is not consent."""
+        answer is a `Refuse` that says nobody was there — consent nobody gave is not consent.
+
+        `about` is the component and inputs the question concerns (BUG-026): what the person is
+        being asked to consent to, on the event and on the pending question alike."""
         from shadow_hdk.kernel.events import Asked as AskedEvent
         from shadow_hdk.kernel.ports import Refuse
         from shadow_hdk.runtime.questions import Pending
 
         where = step if step is not None else (self.step or "")
         handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
+        component, inputs = about
         await self._emitter.emit(
-            lambda **k: AskedEvent(step=where, question=question, handle=handle, **k)
+            lambda **k: AskedEvent(
+                step=where,
+                question=question,
+                handle=handle,
+                component=component,
+                inputs=inputs,
+                **k,
+            )
         )
         questions = self._session.questions
         if questions is None:
             return Refuse("nobody was there to ask: the run has no Questions handle")
         return await questions.ask(
-            Pending(handle=handle, run_id=self.run_id, step=where, question=question)
+            Pending(
+                handle=handle,
+                run_id=self.run_id,
+                step=where,
+                question=question,
+                component=component,
+                inputs=inputs,
+            )
         )
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:

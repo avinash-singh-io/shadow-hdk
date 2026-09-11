@@ -492,7 +492,10 @@ class _Turnwise:
         if question is not None and await self.ctx.children.is_held(handle):
             await self.ctx.keep(self._snapshot(handle, composition, calls))
             return Asked(
-                question=getattr(question, "question", "may this continue?"), handle=handle
+                question=getattr(question, "question", "may this continue?"),
+                handle=handle,
+                component=getattr(question, "component", None),
+                inputs=getattr(question, "inputs", None),
             )
         observed: dict[str, Observation] = {}
         for event in events:

@@ -99,6 +99,11 @@ class Asked:
     step: StepId
     question: str
     handle: Handle
+    component: str | None = None
+    """What the question is about: the component the step would invoke, and its inputs — so the
+    person answering can see what they are consenting to. A step is judged before it is invoked,
+    so without these the question named a step id and a policy's sentence and nothing else."""
+    inputs: JsonValue | None = None
     kind: Literal["asked"] = "asked"
 
 

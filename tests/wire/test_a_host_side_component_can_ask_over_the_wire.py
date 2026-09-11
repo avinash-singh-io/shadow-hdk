@@ -94,7 +94,7 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
     async def asks_live(_inputs: JsonValue) -> Observation:
         context = current_run()
         assert context is not None
-        answer = await context.ask("live?")
+        answer = await context.ask("live?", about=("run_shell", {"command": "rm -rf build"}))
         return Completed({"answer": answer.kind})
 
     ports = Ports(
@@ -112,8 +112,11 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
     async with loopback(ports) as (host, runtime):
         await host.initialize()
 
+        seen: list[Any] = []
+
         async def answer_it() -> None:
             pending = await asyncio.wait_for(runtime_questions(runtime).next(), 20)
+            seen.append(pending)
             runtime_questions(runtime).answer(pending.handle, {"kind": "refuse", "reason": "no"})
 
         # The handle lives runtime-side: the test reaches it there, as a host process would.
@@ -125,7 +128,11 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
 
     done = [e for e in after if e.kind == "observed" and e.step == "s1"]
     assert done[-1].observation == Completed({"answer": "refuse"})
-    assert [e.question for e in after if isinstance(e, AskedEvent)] == ["live?"]
+    asked = [e for e in after if isinstance(e, AskedEvent)]
+    assert [e.question for e in asked] == ["live?"]
+    # What the question is about crosses too (BUG-026): on the pending question and on the record.
+    assert (seen[0].component, seen[0].inputs) == ("run_shell", {"command": "rm -rf build"})
+    assert (asked[0].component, asked[0].inputs) == ("run_shell", {"command": "rm -rf build"})
 
 
 def runtime_questions(runtime: Any) -> Any:

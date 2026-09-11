@@ -26,6 +26,9 @@ class Pending:
     run_id: str
     step: str
     question: str
+    component: str | None = None
+    """What it is about — the component and inputs the step would run with (BUG-026)."""
+    inputs: Any = None
 
 
 class Questions:
@@ -35,6 +38,7 @@ class Questions:
         self._waiting: dict[str, asyncio.Future[Any]] = {}
         self._pending: dict[str, Pending] = {}
         self._arrivals: asyncio.Queue[Pending] = asyncio.Queue()
+        self._withdrawals: asyncio.Queue[Pending] = asyncio.Queue()
 
     def pending(self) -> tuple[Pending, ...]:
         """Every question nobody has answered yet, oldest first."""
@@ -43,6 +47,12 @@ class Questions:
     async def next(self) -> Pending:
         """Wait for the next question to arrive."""
         return await self._arrivals.get()
+
+    async def next_withdrawn(self) -> Pending:
+        """Wait for the next question nobody will answer any more: the asker stopped waiting — a
+        CLI that timed the call out, a run that was cancelled. A host showing the question takes
+        its buttons away; an answer sent after this is `False`, not a mistake."""
+        return await self._withdrawals.get()
 
     def answer(self, handle: str, judgement: Any) -> bool:
         """Answer one question. `False` if nothing was waiting under that handle."""
@@ -64,7 +74,10 @@ class Questions:
             return await waiting
         finally:
             self._waiting.pop(pending.handle, None)
-            self._pending.pop(pending.handle, None)
+            answered = waiting.done() and not waiting.cancelled()
+            if self._pending.pop(pending.handle, None) is not None and not answered:
+                # Nobody answered and the asker is gone: say so to whoever is showing it.
+                self._withdrawals.put_nowait(pending)
 
 
 __all__ = ["Pending", "Questions"]

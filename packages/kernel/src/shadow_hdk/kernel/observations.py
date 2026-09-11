@@ -29,10 +29,15 @@ class Refused:
 
 @dataclass(frozen=True)
 class Asked:
-    """The step paused; whoever implements governance decides what asking means."""
+    """The step paused; whoever implements governance decides what asking means.
+
+    `component` and `inputs` say what the question is about (BUG-026) — an agent surfacing a
+    child's question passes on what that child was about to do, so the person sees it."""
 
     question: str
     handle: Handle
+    component: str | None = None
+    inputs: JsonValue | None = None
     kind: Literal["asked"] = "asked"
 
 

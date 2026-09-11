@@ -152,7 +152,11 @@ class RuntimeSide:
     async def _context_ask(self, params: dict[str, Any]) -> Any:
         if self.live is None:
             raise RuntimeError("nothing is running, so there is nobody to ask")
-        answer = await self.live.ask(str(params.get("question", "")), step=params.get("step"))
+        answer = await self.live.ask(
+            str(params.get("question", "")),
+            step=params.get("step"),
+            about=(params.get("component"), params.get("inputs")),
+        )
         if isinstance(answer, Allow | Ask | Refuse):
             answer = json.loads(dump(answer, Judgement))
         return {"answer": answer}

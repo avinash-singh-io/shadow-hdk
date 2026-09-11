@@ -35,11 +35,34 @@
       "type": "object"
     },
     "Asked": {
-      "description": "The step paused; whoever implements governance decides what asking means.",
+      "description": "The step paused; whoever implements governance decides what asking means.\n\n`component` and `inputs` say what the question is about (BUG-026) \u2014 an agent surfacing a\nchild's question passes on what that child was about to do, so the person sees it.",
       "properties": {
+        "component": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Component"
+        },
         "handle": {
           "title": "Handle",
           "type": "string"
+        },
+        "inputs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "kind": {
           "const": "asked",

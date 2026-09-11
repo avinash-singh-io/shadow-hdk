@@ -127,3 +127,27 @@ async def test_a_child_run_inherits_the_parents_handle() -> None:
     await host
     child_done = [e for e in events if e.kind == "observed" and e.step == "s1"]
     assert child_done[-1].observation == Completed({"answer": "refuse", "reason": "no"})
+
+
+async def test_a_question_the_asker_stopped_waiting_for_is_withdrawn() -> None:
+    """A CLI times a call out; the question it raised must not sit on the host's screen with
+    buttons that answer nothing."""
+    import asyncio
+
+    from shadow_hdk.runtime import Questions
+    from shadow_hdk.runtime.questions import Pending
+
+    questions = Questions()
+    pending = Pending(handle="h", run_id="r", step="s", question="?")
+    asking = asyncio.create_task(questions.ask(pending))
+    await asyncio.sleep(0)
+    assert questions.pending() == (pending,)
+
+    asking.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asking
+
+    withdrawn = await asyncio.wait_for(questions.next_withdrawn(), 1)
+    assert withdrawn.handle == "h"
+    assert questions.pending() == ()
+    assert questions.answer("h", None) is False

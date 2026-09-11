@@ -128,11 +128,25 @@ class WireRunContext(RunContext):
         answered = await self._peer.call(CONTEXT_FLOOR_MET, {})
         return bool(answered["floor_met"])
 
-    async def ask(self, question: str, *, step: str | None = None) -> Any:
+    async def ask(
+        self,
+        question: str,
+        *,
+        step: str | None = None,
+        about: tuple[str | None, JsonValue | None] = (None, None),
+    ) -> Any:
         """A live question crosses and waits: the host's `Questions` handle is on the runtime's
-        side, where the record is (D58). The judgement comes back as JSON."""
+        side, where the record is (D58). The judgement comes back as JSON. What the question is
+        about crosses with it (BUG-026)."""
+        component, inputs = about
         answered = await self._peer.call(
-            CONTEXT_ASK, {"question": question, "step": step or self._step}
+            CONTEXT_ASK,
+            {
+                "question": question,
+                "step": step or self._step,
+                "component": component,
+                "inputs": inputs,
+            },
         )
         return _as_answer(answered.get("answer"))
 
