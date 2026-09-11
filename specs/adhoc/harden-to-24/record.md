@@ -1,0 +1,44 @@
+---
+type: Ad-hoc Record
+---
+
+# Ad-hoc Work Record: harden-to-24
+
+> **Type**: hardening round — everything open up to Phase 24, and a visual host
+> **Created**: 2026-09-11
+> **Branch**: `harden-to-24`
+> **Backlog**: BUG-020 (P1), BUG-019 (row), Codex signed-in measurement; ENH-002/003 stay deferred
+> **Status**: in progress
+
+The owner's directive: no new phase; resolve everything open up to Phase 24 that a host like
+Intent Studio needs, make Codex work (the owner signs in), and add a host with a page — the
+conversation, the agent's steps and reasoning as they happen, its acts in the sandbox and on
+files, and an Allow/Refuse when the policy asks — so all of it can be *seen*.
+
+## What is in the round
+
+1. **BUG-020 — an Ask inside an agent's tool call reaches the host.** Design D57: a component
+   may answer `Asked(question, handle)` and the run parks on it exactly as if governance had
+   asked; on resume the component is invoked again with the answer and what it `kept` before
+   parking, both riding the interrupt payload the checkpointer already holds. The agent adapter
+   uses it: a held child that asked becomes the agent's own question; on resume the agent restores
+   its transcript, sends the judgement into the held child, and continues its turn. Nested agents
+   get it for free — each level uses the same mechanism. Crosses the wire (`keep`, `resumed`).
+2. **Codex** — signed-in shapes measured on the owner's login; `codex.toml` fully measured; the
+   coder and the host run on it.
+3. **BUG-019's row** closed (fixed in v0.17.0).
+4. **A visual host** — `examples/studio/`: the wire's own HTTP server plus a page.
+5. ENH-002 (a TLS broker) and ENH-003 (a second protocol adapter) are device-world and not
+   buildable here; they stay deferred and say so.
+
+## Current Behavior (BUG-020, measured)
+
+An agent's tool call is a child run (D51). When the policy answers `Ask` for it, the child parks,
+`carry_out` sees no `observed` for the call, and the model is told *"that step did not run"* — the
+scripted worker went on to `propose` and `done` claiming it had written a file it never wrote,
+and the run ended `completed`. The parent run never parks; a host watching for `Asked` at the top
+sees nothing to answer; the parked child is released with the run.
+
+## Log
+
+- 2026-09-11 — opened; BUG-020 first.
