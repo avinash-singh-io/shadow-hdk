@@ -67,6 +67,36 @@ ENH-006 a scratch directory in read-only; ENH-007 nothing on screen while a long
 composed, and no `Reasoned` at all unless the model chooses to think; ENH-008 the CLI's refused
 attempts on its own tools are invisible on the record.
 
+## Verification Evidence
+
+Fresh, 2026-09-12, this session, on `feat/studio-inline-and-scenarios` at `cbe5892` (now `main`).
+
+**The four zeros:**
+
+```
+ruff=0
+fmt=0
+Success: no issues found in 213 source files
+1201 passed, 2 skipped, 12 deselected, 85 warnings in 129.80s (0:02:09)
+```
+
+**CI:** green on the branch head, on `staging` and on `main`, all at `cbe5892`.
+
+**Red first, then green, then mutants:**
+
+- BUG-023 — `test_devices_are_not_files.py` RED with `/bin/sh: /dev/null: Operation not permitted`; green after the profile change; the outside-the-root write still denied.
+- BUG-024 — `test_two_calls_at_once.py::test_two_allowed_calls_at_once_both_run` RED with `the call produced no observation` for the second call; the backwards-answer test hung on the same cause; both green after the reservation rule and the meter change.
+- BUG-027 — `…::test_a_broken_connection_is_that_connections_problem…` RED with `anyio.BrokenResourceError` from `ConnectionResetError: [Errno 54]` — the studio's exact failure — green after containment; `test_only_the_wire_going_away_is_swallowed` holds that a `RuntimeError` in the group still propagates.
+- BUG-028 — `…::test_the_relay_waits_as_long_as_a_person_takes` (31 s real): green with the fix, **1 failed in 31.81s** with `settimeout(None)` removed.
+- BUG-026 — `test_a_question_says_what_it_is_about.py` RED with `'Asked' object has no attribute 'component'`; green on both paths; the wire test asserts `about` crosses.
+- BUG-029 — reproduced with `a_conversation(root, mode="read-only")`: `refused converse mode 'looking' does not permit this`; opens after the change.
+
+**Live, on the owner's subscription, through the studio (page text captured in the session):**
+
+- Scenario 3, after BUG-023: `c3dcf47 fix(cart): collapse the two drifted bulk-discount rules into one` — the agent's commit, inside the sandbox.
+- Scenario 4, after BUG-026/027/028: the first question waited 45 s and the relay held; `pip install pandas` refused; `report.md` written; *13 tool calls, 13 questions · 86¢*.
+- Scenario 5, after BUG-029: read-only opened; `.gitignore` denied at two doors and reported not created.
+
 ## Log
 
 - 2026-09-12 — page rebuilt inline; scenarios 1–5 driven; seven bugs found and closed; 0.20.0.
