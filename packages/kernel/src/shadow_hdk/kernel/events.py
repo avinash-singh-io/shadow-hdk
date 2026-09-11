@@ -151,6 +151,27 @@ class Held:
     kind: Literal["held"] = "held"
 
 
+@dataclass(frozen=True)
+class Reasoned:
+    """What the model thought, on the record beside what it did (D45).
+
+    The stream recorded what an agent did — invoked, observed, refused, asked, spent — and threw
+    away what it thought. A model's reasoning is the one thing on a run a person most wants to
+    read, and it was the one thing not there.
+
+    Same rule `Spent` set: emitted only when there is something to say. A model that reports no
+    reasoning emits none. `text` is the model's own words, unedited — the record is not the place
+    to summarise.
+    """
+
+    run_id: RunId
+    seq: int
+    at: str
+    step: StepId
+    text: str
+    kind: Literal["reasoned"] = "reasoned"
+
+
 EndReason = Literal["completed", "lease_exhausted", "gave_up", "cancelled", "failed"]
 
 
@@ -178,6 +199,7 @@ Event = Annotated[
     | Spawned
     | Held
     | Spent
+    | Reasoned
     | Ended,
     Field(discriminator="kind"),
 ]

@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.14.0"
-"""0.14.0 because the kernel grew a **second provider seam** and the record that describes one
+EXPECTED = "0.15.0"
+"""0.15.0 because the stream grew a **twelfth** kind, `Reasoned` — what the model thought, on the
+record beside what it did (D45) — and `ModelResponse`, `ModelChunk` and `Turn` grew a `reasoning`
+field to carry it there, each defaulting empty so an adapter that never heard of it produces a
+response that reads as *did not say* rather than failing to construct. Both cross the wire.
+
+0.14.0 because the kernel grew a **second provider seam** and the record that describes one
 (D39, D40). `AgentPort` and `AgentSession` are what a provider owning its own loop satisfies —
 messages do not go in and tool calls do not come back, because those leave through the injected
 registry (D42) — and `Provider` is the published contract a host reads its provider library into.

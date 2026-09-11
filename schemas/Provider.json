@@ -113,6 +113,19 @@
           "title": "Stop Reason At",
           "type": "string"
         },
+        "think_at": {
+          "default": "",
+          "title": "Think At",
+          "type": "string"
+        },
+        "think_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Think On",
+          "type": "array"
+        },
         "type_key": {
           "default": "type",
           "title": "Type Key",

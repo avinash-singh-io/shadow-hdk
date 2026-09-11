@@ -180,6 +180,9 @@ class _Turnwise:
                 self.turns -= 1
                 return self.finished("provider_failed", text=f"{type(broken).__name__}: {broken}")
             self.charge(response.usage)
+            # **Why before what** (D45): the thought goes on the record ahead of the calls it led
+            # to, so a reader — or a projection — sees the reasoning above the invocation.
+            await self.ctx.reasoned(response.reasoning)
             if not response.tool_calls:
                 self.messages.append(Message("assistant", response.text))
                 return self.finished("answered", text=response.text)

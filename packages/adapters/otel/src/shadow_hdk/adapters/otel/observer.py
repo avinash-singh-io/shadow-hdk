@@ -58,6 +58,7 @@ class OpenTelemetryObserver(ObserverPort):
             "spawned",
             "spent",
             "held",
+            "reasoned",
             "ended",
         }
     )
@@ -126,6 +127,12 @@ class OpenTelemetryObserver(ObserverPort):
                     "spawned",
                     {"shadow_hdk.child_run_id": event.child_run_id, **_lease(event.lease)},
                     at,
+                )
+            case "reasoned":
+                # Length, never the text (D28): a trace carries the *shape* of a run, and a
+                # model's reasoning is a payload — often the most sensitive one on the record.
+                self._run(event.run_id, at).add_event(
+                    "reasoned", {"shadow_hdk.step": event.step, "shadow_hdk.chars": len(event.text)}, at
                 )
             case "spent":
                 self._innermost(event.run_id, at, step=event.step).set_attributes(

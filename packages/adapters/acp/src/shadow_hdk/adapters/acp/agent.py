@@ -214,6 +214,7 @@ class AcpAgent(ComponentPort):
         charge = self.client.spend.take()
         return Turn(
             text="".join(self.client.said[said_before:]),
+            reasoning=self.client.take_thought(),
             usage=Usage(
                 input_tokens=charge.input_tokens or None,
                 output_tokens=charge.output_tokens or None,

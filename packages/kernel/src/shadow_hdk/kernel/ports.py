@@ -79,6 +79,9 @@ class ModelResponse:
     text: str = ""
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage | None = None
+    reasoning: str = ""
+    """What the model thought before it answered, where the provider exposes it (D45). Empty is
+    *did not reason* or *did not say*, and no adapter that never heard of the field breaks."""
 
 
 @dataclass(frozen=True)
@@ -94,6 +97,8 @@ class ModelChunk:
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage | None = None
     done: bool = False
+    reasoning: str = ""
+    """A delta of thinking, like `text` — the pieces concatenate, never accumulate."""
 
 
 @runtime_checkable
@@ -223,6 +228,8 @@ class Turn:
     text: str = ""
     usage: Usage | None = None
     stop_reason: str = ""
+    reasoning: str = ""
+    """What the provider's agent thought, where its transport exposes it (D45)."""
     failed: bool = False
     """The provider said this turn did not work.
 

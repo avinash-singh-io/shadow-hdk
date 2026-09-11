@@ -99,6 +99,11 @@ class Dialect:
     done_at: str = ""
     """What ends a turn, and where its final text is."""
 
+    think_on: tuple[str, ...] = ()
+    think_at: str = ""
+    """The event types carrying the model's thinking, and where it is inside them (D45). Empty is
+    the conservative default — a provider file that did not say where thinking is, has none."""
+
     failed_at: str = ""
     """A boolean saying the turn failed. Read rather than inferred from an exit code: these CLIs
     exit non-zero for reasons that are not failures and zero for failures that are."""

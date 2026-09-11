@@ -182,8 +182,17 @@ class BridgeClient(acp.Client):
         self.refusals: list[str] = []
         self.updates: list[Any] = []
         self.said: list[str] = []
+        self.thought: list[str] = []
+        self._thought_taken = 0
         self.overheard: list[Proposal] = []
         self._run: Any = None
+
+    def take_thought(self) -> str:
+        """What this turn thought, and clear it — the purse's shape, for the purse's reason: a
+        session accumulates and a turn does not."""
+        taken = "".join(self.thought[self._thought_taken :])
+        self._thought_taken = len(self.thought)
+        return taken
 
     # ------------------------------------------------------------------ governance
 
@@ -446,6 +455,16 @@ class BridgeClient(acp.Client):
             text = getattr(getattr(update, "content", None), "text", None)
             if isinstance(text, str):
                 self.said.append(text)
+        elif kind == "agent_thought_chunk":
+            # **Why before what** (D45): on the record as it arrives, because the calls it led to
+            # are landing through this bridge's doors as they happen. Kept apart from `said` —
+            # a thought reported as speech would put words in the child's mouth.
+            text = getattr(getattr(update, "content", None), "text", None)
+            if isinstance(text, str):
+                self.thought.append(text)
+                context = self._run or current_run()
+                if context is not None:
+                    await context.reasoned(text)
 
     async def ext_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         """An extension nobody vouched for. `ASSUME_WORST` and, by default, no."""

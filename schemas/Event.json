@@ -752,6 +752,46 @@
       "title": "Provenance",
       "type": "object"
     },
+    "Reasoned": {
+      "description": "What the model thought, on the record beside what it did (D45).\n\nThe stream recorded what an agent did \u2014 invoked, observed, refused, asked, spent \u2014 and threw\naway what it thought. A model's reasoning is the one thing on a run a person most wants to\nread, and it was the one thing not there.\n\nSame rule `Spent` set: emitted only when there is something to say. A model that reports no\nreasoning emits none. `text` is the model's own words, unedited \u2014 the record is not the place\nto summarise.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "reasoned",
+          "default": "reasoned",
+          "title": "Kind",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "text"
+      ],
+      "title": "Reasoned",
+      "type": "object"
+    },
     "Sequence": {
       "properties": {
         "id": {
@@ -1168,6 +1208,7 @@
       "invoked": "#/$defs/Invoked",
       "observed": "#/$defs/Observed",
       "proposed": "#/$defs/Proposed",
+      "reasoned": "#/$defs/Reasoned",
       "refused": "#/$defs/shadow_hdk__kernel__events__Refused",
       "spawned": "#/$defs/Spawned",
       "spent": "#/$defs/Spent",
@@ -1205,6 +1246,9 @@
     },
     {
       "$ref": "#/$defs/Spent"
+    },
+    {
+      "$ref": "#/$defs/Reasoned"
     },
     {
       "$ref": "#/$defs/Ended"

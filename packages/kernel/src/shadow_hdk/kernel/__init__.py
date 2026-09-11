@@ -42,6 +42,7 @@ from shadow_hdk.kernel.events import (
     Invoked,
     Observed,
     Proposed,
+    Reasoned,
     RunId,
     Spawned,
     Spent,
@@ -93,6 +94,7 @@ from shadow_hdk.kernel.providers import (
 )
 
 __all__ = [
+    "Reasoned",
     "Dialect",
     "TurnChunk",
     "Turn",

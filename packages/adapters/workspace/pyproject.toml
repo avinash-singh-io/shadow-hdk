@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-workspace"
-version = "0.14.0"
+version = "0.15.0"
 description = "A filesystem the agent can write to, confined to a root it cannot leave."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.14.0", "shadow-hdk==0.14.0"]
+dependencies = ["shadow-hdk-kernel==0.15.0", "shadow-hdk==0.15.0"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

@@ -62,6 +62,7 @@ rather than remembered.
 | D42 | the socket — every effect routes through the run's registry | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 | D43 | the loop stays theirs, and that is the price on the label | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 | D44 | the registry is connected to, never launched | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
+| D45 | thinking is on the record, beside what it led to | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
 
 ## Also here
 

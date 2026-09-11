@@ -367,7 +367,9 @@ async def test_a_tracer_that_raises_does_not_fail_the_run_and_is_counted() -> No
 
 
 def test_every_event_kind_is_accounted_for() -> None:
-    """A twelfth kind must say what the trace does with it, or this fails."""
+    """A new kind must say what the trace does with it, or this fails. The twelfth, `Reasoned`,
+    arrived in Phase 21 and this said so before anything else did: it carries length, never text
+    (D28)."""
     import dataclasses
 
     from shadow_hdk.kernel import events as module
@@ -378,7 +380,7 @@ def test_every_event_kind_is_accounted_for() -> None:
         if isinstance(cls, type) and dataclasses.is_dataclass(cls) and hasattr(cls, "kind")
     }
     assert kinds == OpenTelemetryObserver.HANDLED
-    assert len(kinds) == 11
+    assert len(kinds) == 12
 
 
 async def test_a_run_that_fails_mid_step_ends_the_step_span() -> None:

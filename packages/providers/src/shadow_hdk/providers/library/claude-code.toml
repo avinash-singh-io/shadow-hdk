@@ -90,6 +90,11 @@ resident = true
 prompt_shape = "stream-json-user"
 say_on = ["assistant"]
 say_at = "message.content[].text"
+# Thinking arrives as content blocks beside the text — the API's own shape, passed through:
+#   {"type": "thinking", "thinking": "..."}
+# Present when the model was asked to think; absent otherwise, which reads as *did not say*.
+think_on = ["assistant"]
+think_at = "message.content[].thinking"
 done_on = ["result"]
 done_at = "result"
 failed_at = "is_error"

@@ -49,7 +49,7 @@ def test_the_index_names_the_protocol_it_belongs_to() -> None:
     assert sorted(index["contracts"]) == sorted(all_schemas())
 
 
-ELEVEN = (
+TWELVE = (
     "started",
     "composed",
     "invoked",
@@ -60,11 +60,12 @@ ELEVEN = (
     "spawned",
     "held",
     "spent",
+    "reasoned",
     "ended",
 )
 
 
-@pytest.mark.parametrize("kind", ELEVEN)
+@pytest.mark.parametrize("kind", TWELVE)
 def test_the_event_schema_carries_every_kind(kind: str) -> None:
     """The contract a client is most likely to match exhaustively on.
 
@@ -86,7 +87,7 @@ def test_the_event_schema_carries_no_kind_nobody_declared() -> None:
         getattr(arm, "__dataclass_fields__", {})["kind"].default
         for arm in get_args(get_args(EventUnion)[0])
     }
-    assert declared == set(ELEVEN), declared
+    assert declared == set(TWELVE), declared
 
 
 def test_publishing_fresh_produces_exactly_what_is_checked_in(tmp_path: Path) -> None:

@@ -100,6 +100,7 @@ class LangChainModel(ModelPort):
             text=_text_of(answer),
             tool_calls=_calls_of(answer),
             usage=self._priced(found) if found is not None else None,
+            reasoning=_reasoning_of(answer),
         )
 
     def _priced(self, usage: Usage) -> Usage:
@@ -160,6 +161,32 @@ def _text_of(message: BaseMessage) -> str:
         for part in content
         if isinstance(part, dict) and part.get("type") == "text"
     )
+
+
+def _reasoning_of(message: BaseMessage) -> str:
+    """What the model thought, where the provider exposes it (D45).
+
+    Providers disagree about *where* and agree that it exists: Anthropic answers in blocks, one of
+    them `thinking`; OpenAI-compatible reasoning models put `reasoning_content` in the extras; a
+    few put a plain `reasoning` string there. All are read. None found is an empty string — *did
+    not say* — never a fallback to the answer, which would put the model's words on the record
+    twice, once mislabelled as thought.
+    """
+    content = message.content
+    if not isinstance(content, str):
+        blocks = "".join(
+            str(part.get("thinking", ""))
+            for part in content
+            if isinstance(part, dict) and part.get("type") == "thinking"
+        )
+        if blocks:
+            return blocks
+    extras = getattr(message, "additional_kwargs", None) or {}
+    for key in ("reasoning_content", "reasoning"):
+        found = extras.get(key)
+        if isinstance(found, str) and found:
+            return found
+    return ""
 
 
 def _calls_for(calls: tuple[ToolCall, ...]) -> list[dict[str, Any]]:

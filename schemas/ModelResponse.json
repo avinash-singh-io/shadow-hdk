@@ -68,6 +68,11 @@
     }
   },
   "properties": {
+    "reasoning": {
+      "default": "",
+      "title": "Reasoning",
+      "type": "string"
+    },
     "text": {
       "default": "",
       "title": "Text",

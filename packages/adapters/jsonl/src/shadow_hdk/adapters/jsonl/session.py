@@ -25,6 +25,7 @@ from typing import Any
 
 from shadow_hdk.adapters.jsonl.paths import read_at, texts_at
 from shadow_hdk.kernel import Dialect, Provider, ToolSource, Turn, Usage
+from shadow_hdk.runtime import current_run
 
 DEFAULT_TIMEOUT_S = 600.0
 
@@ -135,6 +136,7 @@ class JsonlSession:
     async def _read_until_done(self, process: asyncio.subprocess.Process) -> Turn:
         assert process.stdout is not None
         said: list[str] = []
+        thought_so_far: list[str] = []
         dialect = self._dialect
         while line := await process.stdout.readline():
             try:
@@ -145,21 +147,34 @@ class JsonlSession:
             if not isinstance(event, dict):
                 continue
             kind = event.get(dialect.type_key)
+            if kind in dialect.think_on:
+                # **Why before what** (D45). The tool calls this thinking led to are already
+                # landing on the record through the socket as they happen; a thought held back
+                # until the turn ended would read as hindsight. So each one goes on the record as
+                # it arrives — when there is a run to put it on — and the whole comes back on the
+                # turn for a caller holding that instead.
+                for thought in texts_at(event, dialect.think_at):
+                    thought_so_far.append(thought)
+                    if (context := current_run()) is not None:
+                        await context.reasoned(thought)
             if kind in dialect.say_on:
                 said += texts_at(event, dialect.say_at)
             if dialect.session_id_at and (found := read_at(event, dialect.session_id_at)):
                 self._session_id = str(found)
             if kind in dialect.done_on:
-                return self._finished(event, said)
+                return self._finished(event, said, thought_so_far)
         # The stream ended without the event that says a turn ended: the child died, or it does not
         # announce completion. What it said is still what it said.
-        return Turn(text="".join(said), failed=bool(said) is False)
+        return Turn(
+            text="".join(said), failed=bool(said) is False, reasoning="".join(thought_so_far)
+        )
 
-    def _finished(self, event: Any, said: list[str]) -> Turn:
+    def _finished(self, event: Any, said: list[str], thought: list[str]) -> Turn:
         dialect = self._dialect
         final = read_at(event, dialect.done_at)
         return Turn(
             text=final if isinstance(final, str) else "".join(said),
+            reasoning="".join(thought),
             stop_reason=str(read_at(event, dialect.stop_reason_at) or ""),
             failed=bool(read_at(event, dialect.failed_at)),
             usage=Usage(

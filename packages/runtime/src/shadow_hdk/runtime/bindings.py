@@ -264,6 +264,19 @@ class RunContext:
             raise PortFailure("sink", exc) from exc
         await self._emitter.emit(lambda **k: Proposed(proposal=proposal, **k))
 
+    async def reasoned(self, text: str) -> None:
+        """Put thinking on the record, beside what it led to (D45).
+
+        The step is the one executing — the agent's own, so a projection folds the thought under
+        the step that was thinking rather than the tool it then reached for. Empty text emits
+        nothing: a kind that appears when there is nothing to say is one readers learn to skip.
+        """
+        from shadow_hdk.kernel.events import Reasoned
+
+        if not text:
+            return
+        await self._emitter.emit(lambda **k: Reasoned(step=self.step or "", text=text, **k))
+
 
 _CURRENT: ContextVar[RunContext | None] = ContextVar("shadow_hdk_current_run", default=None)
 _STEP: ContextVar[str | None] = ContextVar("shadow_hdk_current_step", default=None)
