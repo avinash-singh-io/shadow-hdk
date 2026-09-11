@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.19.0"
-"""0.19.0 because the runtime's contract with a component grew two ways to ask (D57, D58):
+EXPECTED = "0.20.0"
+"""0.20.0 because the kernel's `Asked` — the event and the observation — grew `component` and
+`inputs` (D59): what a question is about, so the person answering can see what they are
+consenting to. `Questions.next_withdrawn` and `RunContext.ask(about=)` came with it, and the
+wire's `context.ask` carries both. Additions all; a host reading `Asked` as before still can.
+
+0.19.0 because the runtime's contract with a component grew two ways to ask (D57, D58):
 `RunContext.keep`/`resumed` and a produced `Asked` observation that parks the run; `RunContext.ask`
 and `Questions` on `RunOptions` for a live question. `Dialect` grew `subtype_key`,
 `mcp_config_shape`, `allow_override` and `failed_text_at` (Codex, measured). Nothing a host held

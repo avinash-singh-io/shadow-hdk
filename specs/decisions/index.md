@@ -76,6 +76,8 @@ rather than remembered.
 | D56 | minting proposes; keeping is the host's | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
 | D57 | a component may ask for itself, and the run parks on it | [`adhoc/harden-to-24/record.md`](/adhoc/harden-to-24/record.md) |
 | D58 | a step that cannot park asks the host live | [`adhoc/harden-to-24/record.md`](/adhoc/harden-to-24/record.md) |
+| D59 | a question says what it is about | [`adhoc/studio-scenarios/record.md`](/adhoc/studio-scenarios/record.md) |
+| D60 | a connection's death is that connection's problem | [`adhoc/studio-scenarios/record.md`](/adhoc/studio-scenarios/record.md) |
 
 ## Also here
 

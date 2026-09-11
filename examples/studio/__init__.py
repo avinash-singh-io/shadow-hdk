@@ -1,5 +1,7 @@
-"""A host with a page: the conversation, the agent's steps as they happen, its acts in the sandbox
-and on files, and a button when the policy asks.
+"""A host with a page: the conversation with the agent's trace **inline** — what it thought, what
+it did and what came back, folded under each tool call in the order it happened; a question card
+with Allow/Refuse where the policy asked, naming the tool and its arguments — and the environment
+beside it: the root's files, the changed ones marked.
 
     uv run python -m examples.studio [workspace] [--provider=claude-code|codex|opencode]
                                      [--mode=workspace-write|full|read-only] [--port=8765]
@@ -7,8 +9,10 @@ and on files, and a button when the policy asks.
 Then open http://127.0.0.1:8765. Everything on the page is the run's own record: the events the
 runtime emits, folded into steps (D46) the same way any client would fold them, the `Reasoned`
 lines ahead of the acts they led to (D45), the environment's answers as they land, and the
-policy's questions answered live while the provider waits (D58). Nothing here is drawn from
-anything but the stream — the page is a reader of the record, which is the point of having one.
+policy's questions answered live while the provider waits (D58), saying what they are about (D59).
+Nothing here is drawn from anything but the stream — the page is a reader of the record, which is
+the point of having one. The shape is the one every serious agent UI converges on: an assistant
+turn is a sequence of parts inside the conversation; the side panel is for what changed.
 
 It binds to loopback only. It is an example, not a product: no accounts, one conversation.
 """

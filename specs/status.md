@@ -4,26 +4,29 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (hardening to Phase 24)
-> **Current Phase**: **none — hardening to Phase 24, released as v0.19.0.** No new phase by the
-> owner's instruction; everything open up to Phase 24 that a host needs was closed. **BUG-020**
-> (D57): an Ask inside an agent's tool call parks the run and reaches the host; **BUG-021** (D58):
-> a subscription CLI's tool call the policy asks about is answered live while the CLI waits;
-> **BUG-022**: the wall-clock carve at a second boundary. Codex measured signed in (the relay
-> proof waits on quota). `examples/studio/` — a host with a page — driven in the browser on the
-> owner's subscription: write, ask, allow, run, ask, allow, report.
+> **Last Updated**: 2026-09-12 (the studio driven like a person would)
+> **Current Phase**: **none — used, not built, and released as v0.20.0.** The studio's page shows
+> the trace inline in the conversation, the environment beside it; five real tasks were driven
+> through it on the owner's subscription (a CLI with tests, a playable Snake game, a refactor with
+> a commit, a CSV report with `pip install` refused by the person, a read-only session) and
+> **seven bugs were found live, reproduced under tests and closed**: `/dev/null` in the sandbox
+> (BUG-023), parallel tool calls born exhausted (BUG-024), an exception group that named nothing
+> (BUG-025), a question that named nothing (**D59**, BUG-026), a dead connection ending the
+> conversation and the relay's thirty-second timeout (**D60**, BUG-027/028), read-only refusing
+> the conversation (BUG-029). Three enhancements filed (ENH-006/007/008).
 >
 > Phases 21–24 are the four the owner asked for (v0.15.0–v0.18.0); 25 and 26 are the owner's to
 > open. Open and deferred: ENH-002 (a TLS broker), ENH-003 (a second protocol adapter), ENH-005
-> (Codex has no strict MCP mode — upstream).
+> (Codex has no strict MCP mode — upstream), ENH-006 (a scratch in read-only), ENH-007 (nothing on
+> screen while a long tool call is composed), ENH-008 (the CLI's own refused tools are invisible).
 >
 > **CI is green** and runs on every push.
 >
-> 1,185 tests; mypy strict over 205 files; seventeen distributions at **0.19.0**, all MIT.
+> 1,201 tests; mypy strict over 213 files; seventeen distributions at **0.20.0**, all MIT.
 >
-> **Latest Release**: **v0.19.0**, released 2026-09-12 — hardening to Phase 24: two ways for a
-> component to ask (D57 park, D58 live), `Questions`, Codex measured, the studio. Contract change,
-> so a *Pins* row. Before it v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
+> **Latest Release**: **v0.20.0**, released 2026-09-12 — the studio inline; seven bugs found by
+> using it (D59, D60). Contract change (`Asked` says what it is about), so a *Pins* row. Before it
+> v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
 > the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
 > **Health**: On Track
 
@@ -37,7 +40,7 @@ components and records through the sink. Three packages — kernel, runtime, ada
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Twenty-five phases are built,
-merged and released**: 1,185 tests, mypy strict over 205 files, seventeen distributions at 0.19.0.
+merged and released**: 1,201 tests, mypy strict over 213 files, seventeen distributions at 0.20.0.
 
 ## Completed Phases
 
@@ -78,6 +81,7 @@ merged and released**: 1,185 tests, mypy strict over 205 files, seventeen distri
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.20.0 | 2026-09-12 | hardening | the studio inline; five scenarios; BUG-023–029 closed (D59, D60) |
 | v0.19.0 | 2026-09-12 | hardening | BUG-020/021/022 closed (D57, D58); Codex measured; the studio |
 
 ## Active Phase
