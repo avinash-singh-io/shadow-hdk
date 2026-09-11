@@ -115,8 +115,8 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 22 | The environment | **DONE** · `phase-22-the-environment` | 21 | one concept with a mode, enforced by the environment; local on the OS sandbox; isolation consumed, not built; three adapters become one |
 | 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
 | 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
-| 25 | The host's controls | planned | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule" |
-| 26 | Any language | planned | 25 | `serve` over stdio and HTTP; every host handle crosses the wire; TypeScript generated from the schemas; the studio on the wire only |
+| 25 | The host's controls | planned | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule"; the `Store` port — every registry live, no restart |
+| 26 | Any language | planned | 25 | `serve` over stdio and HTTP; every host handle crosses the wire; the store's CRUD as methods; TypeScript generated from the schemas; the studio on the wire only |
 | 27 | Batteries and the facade | planned | 25 | web search and fetch consumed; `harness.toml` and `Harness.load()`; the optimiser port specified |
 | 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 29 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
@@ -178,3 +178,4 @@ already settled by `09` where `09` speaks.
 7. **A host holds handles, not code.** What a person does *during* a run — answer, cancel, turn a dial, steer — is a handle the host keeps, and every handle crosses the wire, so a host in any language holds the same ones.
 8. **A product's vocabulary is the product's.** The registry's name, the labels on activity, the wording of a question, the names of modes: data the host supplies with defaults, never a string a product would have to fork to change.
 9. **Simple by default, deep by choice.** A harness is a file and three lines; the same file drives `serve` for a host in another language; every port stays open for a product that composes by hand.
+10. **Data changes live; code changes restart.** Modes, behaviours, rules, skills, tools, providers, budgets, vocabulary are registries with a store source, changed by CRUD at runtime and read at the next step; only contracts, the loop, ports, adapters and transports are code, and only code needs a restart.

@@ -224,6 +224,11 @@ And one about adoption:
 9. **Simple by default, deep by choice.** A harness is a file (`harness.toml`: environment, modes,
    provider, tools, skills) and three lines; the same file drives `shadow-hdk serve` for a host
    in another language. Every port stays open for a product that wants to compose by hand.
+10. **Data changes live; code changes restart.** Everything a product would keep in a database —
+   modes, behaviours, rules, skills, which tools are on, providers, budgets, the vocabulary — is a
+   **registry with a store source**, changed by CRUD at runtime and read at the next step or turn,
+   never by editing a file, redeploying or restarting. Only the substrate — contracts, the loop,
+   ports, adapters, transports — is code, and only code needs a restart. §3.10 says which is which.
 
 ## 3. The design, primitive by primitive
 
@@ -321,6 +326,44 @@ what it always was.
   streams).
 - The studio consumes the wire like any other host would — nothing local.
 
+### 3.9 Terminology in code
+
+The table in §1.9, applied: `Thread`, `Turn`, `Item`, `delta`, `ApprovalRequest`,
+`InputRequest`, `set_mode`/`set_option`, `reasoning`, `usage`. `Lease` stays; the facade and the
+TOML say `budget`. One contract change, first thing in Phase 25.
+
+### 3.10 Live or substrate — what changes without a restart (principle 10)
+
+The mechanism is one the tree already has: a registry is a **union of sources** (D54's shape —
+shipped · file · minted · kept · the host's own) and the runtime **refreshes registries at step
+boundaries** (`registry.refresh()` has done this for components since Phase 5). Two additions make
+every configurable thing live: a **`Store` port** (CRUD plus change notification; sqlite shipped,
+a product's database behind it) as one more source for every registry, and the refresh discipline
+extended from components to all of them.
+
+| Thing | Live (CRUD, next step/turn) or substrate (code, restart) | How |
+|---|---|---|
+| Modes — policy + behaviour + presentation | **live** | `ModeRegistry`: shipped · files (`modes/*.md`) · store; a thread's current mode is `set_mode` |
+| Behaviours — role, model, effort, temperature, tools offered | **live** | part of the mode registry, or their own; a change reopens the provider session with the new profile, resuming the thread |
+| Policy rules — allow / ask / deny, "approve and add a rule" | **live** | `RuleRegistry` feeding governance; a rule added from an approval is a store write through the sink |
+| Skills | **live** (Phase 24) | already a registry of sources; the store is one more |
+| Which tools are on; MCP servers registered | **live** | the component registry gains a store source; a server registered at runtime connects at the next refresh |
+| Providers — which CLI or key a thread uses; provider *definitions* (TOML) | **live** | `Provider` is data (D40); a store row is a provider like a file is; detection is a probe, not a restart |
+| Budgets (lease defaults per mode or thread) | **live** | data on the mode; a running thread's lease is what it was granted |
+| Vocabulary — registry name, activity labels, question wording, mode names | **live** | data with defaults (principle 8) |
+| Environment mode of a thread | **live per thread** | chosen at open; changing it mid-thread reopens the environment (a proof runs again) |
+| Threads — create, resume, fork, rollback, list, archive | **live** | `ThreadStore` |
+| Kernel contracts (event kinds, effect profile fields, schemas) | **substrate** | code; a minor version of every package (D9) |
+| The loop (governance, leases, the record, activity) | **substrate** | code |
+| Ports — adding one | **substrate** | code |
+| Adapters — a new sandbox backend, transport, model, store *implementation* | **substrate** to add; **live** to enable | code to write; a store row to switch on once installed |
+| Transports and the server (stdio, HTTP, WebSocket) | **substrate** | code |
+
+Two invariants hold the line: **every registry has a store source** (a test walks the registries)
+and **nothing in the live column is read from a file the runtime cannot also read from a store**.
+Over the wire (Phase 26) the store's CRUD is exposed as methods — `modes/list`, `modes/create`,
+`skills/…`, `rules/…` — so a product's admin UI is a client like any other.
+
 ## 4. Phases — accepted by the owner 2026-09-12
 
 Bigger than a hardening round; three phases, each releasable, in `deps` order. The studio goes
@@ -328,8 +371,8 @@ through the wire in 26, once the handles cross; in 25 it consumes the primitives
 
 | # | Name | deps | Delivers |
 |---|---|---|---|
-| 25 | **The host's controls** | 24 | The terminology (1.9) as the first contract change; Activity (3.1); `Thread` and `Turn` (3.2, 1.9); Modes = policy + behaviour (3.3); `set_mode`/`set_option` (3.4); approval and input requests with rules (3.5); the studio consuming them — collapsed item runs, streamed thinking and text, a mode selector, an input-request item |
-| 26 | **Any language** | 25 | `serve` with stdio; handles over the wire; generated TypeScript; the studio rewritten on the wire only; parity invariant over handles |
+| 25 | **The host's controls** | 24 | The terminology (1.9, 3.9) as the first contract change; Activity (3.1); `Thread` and `Turn` (3.2, 1.9); Modes = policy + behaviour (3.3); `set_mode`/`set_option` (3.4); approval and input requests with rules (3.5); **the `Store` port and every registry live (3.10)**; the studio consuming them — collapsed item runs, streamed thinking and text, a mode selector, an input-request item |
+| 26 | **Any language** | 25 | `serve` with stdio; handles over the wire; **the store's CRUD as methods**; generated TypeScript; the studio rewritten on the wire only; parity invariant over handles |
 | 27 | **Batteries and the facade** | 25 | web search/fetch consumed; `harness.toml` + `Harness.load`; the coder and host examples reduced to the facade; the DSPy optimiser port *specified*, not built |
 
 Context engineering and collaboration (today's 25/26) move to 28/29; nothing in them depends on
