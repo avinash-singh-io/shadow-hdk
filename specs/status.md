@@ -37,7 +37,9 @@ type: Status
 > cancellation in the derivation engine, a twelfth event kind for an unreachable port, ENH-002 (a
 > TLS broker), ENH-003 (a second protocol adapter), and Phase 11's live gVisor and Firecracker
 > proofs (a Linux host).
-> **Latest Release**: **v0.13.1**, released 2026-09-11 — a patch. BUG-017 (the wire listener left
+> **Latest Release**: **v0.14.0**, released 2026-09-11 — Phase 20, providers: bring your own key or
+> your own subscription; the socket; BUG-018 fixed three times and guarded once. Contract change
+> (`AgentPort`, `Provider`), so a *Pins* row. Before it, **v0.13.1**, released 2026-09-11 — a patch. BUG-017 (the wire listener left
 > quietly), the README rewritten from its Phase 0 state, and three stale tables in this file
 > corrected. **No contract change, so no *Pins* row** (D9): every package moves to 0.13.1
 > together because they are pinned to each other by equality, not because anything a host
@@ -85,7 +87,7 @@ merged and released**: 949 tests, mypy strict over 147 files, seventeen distribu
 | 17 | The audit — every P0 | Complete, merged | **v0.10.0** |
 | 18 | The P1s | Complete, merged | **v0.12.0** |
 | 19 | The P2s, and the documents | Complete, merged | **v0.13.0** |
-| 20 | Providers — your key, or your subscription | Complete | **v0.14.0** |
+| 20 | Providers — your key, or your subscription | Complete, merged | **v0.14.0** |
 
 ## Ad-hoc / Patch Releases
 

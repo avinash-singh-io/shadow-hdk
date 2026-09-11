@@ -3,7 +3,7 @@ type: Phase
 phase: 20
 name: providers
 epic: 0009-bring-your-own-provider
-status: in-progress
+status: complete
 topics: [providers, model-port, agent-port, subscription, byok, detection, injection]
 deps: [phase-19-the-p2s]
 ---
