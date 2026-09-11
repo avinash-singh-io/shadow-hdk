@@ -68,6 +68,7 @@ async def _drive(
     payload: Any,
     checkpointer: Any,
     resuming: dict[str, str],
+    kept: dict[str, Any] | None = None,
 ) -> None:
     token = _CURRENT.set(context)
     try:
@@ -81,7 +82,7 @@ async def _drive(
                 await parent.announce_child(session.run_id, session.meter.lease)
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
-        executor = StepExecutor(session, emitter, ports, registry, context, resuming)
+        executor = StepExecutor(session, emitter, ports, registry, context, resuming, kept)
         config = {
             "configurable": {"thread_id": session.run_id},
             "recursion_limit": session.meter.lease.ceiling.max_steps * RECURSION_HEADROOM,
@@ -155,6 +156,11 @@ async def _carried(
     held = values.get("children")
     if isinstance(held, dict):
         carried_children.update(held)
+    # A child held by the step that parked rides the interrupt, not the state (D57).
+    for _identity, value in _pending(found):
+        holding = value.get("holding")
+        if isinstance(holding, dict):
+            carried_children.update(holding)
     spent = values.get("spent")
     carried = {**no_spend(), **spent} if isinstance(spent, dict) else no_spend()
     # The state's mark was written when the last node returned; a step that parked emitted its
@@ -248,13 +254,26 @@ async def _stream(
         # Each parked step resumes **where it parked** (D38): it does not judge again, and an
         # `Await` does not call its component a second time.
         resuming = {
-            str(value["step"]): ("ask" if "question" in value else "await")
+            str(value["step"]): (
+                "component"
+                if value.get("by") == "component"
+                else "ask"
+                if "question" in value
+                else "await"
+            )
             for _identity, value in parked
             if isinstance(value.get("step"), str)
+        }
+        # What a component that asked for itself kept before parking (D57), by step.
+        kept = {
+            str(value["step"]): value.get("kept")
+            for _identity, value in parked
+            if value.get("by") == "component" and isinstance(value.get("step"), str)
         }
         payload = Command(resume=_answers(parked, payload.answer))
     else:
         resuming = {}
+        kept = {}
     driving = asyncio.create_task(
         _drive(
             composition,
@@ -267,6 +286,7 @@ async def _stream(
             payload,
             checkpointer,
             resuming,
+            kept,
         )
     )
     try:

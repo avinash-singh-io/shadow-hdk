@@ -36,6 +36,7 @@ from shadow_hdk.kernel.events import Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.events import Spent as SpentEvent
 from shadow_hdk.kernel.observations import (
+    Asked,
     Completed,
     Failed,
     Observation,
@@ -69,6 +70,7 @@ class StepExecutor:
         registry: Registry,
         context: Any = None,
         resuming: dict[str, str] | None = None,
+        kept: dict[str, Any] | None = None,
     ) -> None:
         self.session = session
         self.registry = registry
@@ -78,6 +80,8 @@ class StepExecutor:
         self._resuming = dict(resuming or {})
         """Steps this leg is resuming, and what each parked on (D38). Consumed on first use: a
         step resumes once, and anything after that is an ordinary step."""
+        self._kept = dict(kept or {})
+        """What a step that asked for itself kept before parking (D57), by step id."""
 
     def holding(self) -> dict[str, Any]:
         """What this run is holding, for the state to carry (D37). Empty when it holds nothing,
@@ -150,7 +154,11 @@ class StepExecutor:
         the absence of work.
 
         Every path that actually runs a component comes through here, including the resumed one, so
-        a step is charged exactly once whether it parked or not.
+        a step is charged exactly once whether it parked or not. A component that asked for itself
+        (D57) is invoked twice for one step and charged here both times — and still counted once,
+        because the first leg's charge never reaches the checkpoint: the node interrupted before it
+        returned, and `resume()` restores the meter from what the checkpoint holds. Measured: a
+        second leg that skipped the charge reported one step for two.
         """
         self.session.meter.charge()
         await self._emit(
@@ -165,6 +173,17 @@ class StepExecutor:
         # every component adapter has its own `except Exception` that would have swallowed it first.
         except Exception as exc:  # noqa: BLE001 — D7: a component is untrusted
             observation = Failed(f"{type(exc).__name__}: {exc}")
+        finally:
+            if self._context is not None:
+                self._context.resumed_done(step.id)
+        if isinstance(observation, Asked):
+            # **The component asked for itself** (D57): a question that is not the policy's and not
+            # the component's own to answer — an agent whose tool call was asked about. The run
+            # parks on it exactly as if governance had asked, carrying what the component kept so
+            # the next leg can pick up where it stopped. Raises to park; never returns here.
+            kept = self._context.take_kept(step.id) if self._context is not None else None
+            await self._ask(step, observation.question, kept=kept, by="component")
+            raise RuntimeError("interrupt() returned on the parking path")  # pragma: no cover
         usage = _usage_of(observation)
         self.session.meter.charge_cost(usage)
         if usage is not None:
@@ -198,6 +217,13 @@ class StepExecutor:
             return await self._observe(
                 step, Completed(delivered), registration.component.provenance.posture
             )
+        if parked_on == "component":
+            # Not judged again — the policy said yes before the component asked. The component
+            # finds the answer and what it kept (D57).
+            answer = await self._ask(step, "resumed")
+            if self._context is not None:
+                self._context.resuming(step.id, answer, self._kept.get(step.id))
+            return await self._carry_out(step, port, registration, inputs)
         answered = _as_judgement(await self._ask(step, "resumed"))
         if not isinstance(answered, Allow):
             return await self._observe(
@@ -209,7 +235,14 @@ class StepExecutor:
 
     # ------------------------------------------------------------------ the seams
 
-    async def _ask(self, step: Invoke | Await, question: str) -> Any:
+    async def _ask(
+        self,
+        step: Invoke | Await,
+        question: str,
+        *,
+        kept: JsonValue | None = None,
+        by: str = "governance",
+    ) -> Any:
         """Park the step. Whoever implements governance decides what asking means; the runtime
         only stops, and LangGraph's checkpoint is what lets the process end here and come back.
 
@@ -223,12 +256,19 @@ class StepExecutor:
         # when the last node *returned*, and this path still emits `Asked` after that — so the
         # number to come back on is one past what this emitter is about to stamp. The property
         # that guards it is a test that no seq is reused across a park, for an ask and a wait.
-        payload = {
+        payload: dict[str, Any] = {
             "run_id": self.session.run_id,
             "step": step.id,
             "question": question,
             "resume_seq": self._emitter.seq + 1,
         }
+        if by == "component":
+            # Who asked, what they kept — and what this run is holding (D37): a child spawned and
+            # parked *in this same step* is not in the state's `children` channel yet, because the
+            # node never returned. It rides the interrupt, like everything else this leg would lose.
+            payload["by"] = by
+            payload["kept"] = kept
+            payload["holding"] = self.holding()
         try:
             return interrupt(payload)
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"

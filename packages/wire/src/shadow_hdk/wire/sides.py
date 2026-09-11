@@ -25,7 +25,15 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Proposal
-from shadow_hdk.kernel.ports import Context, Judgement, ModelRequest, ModelResponse
+from shadow_hdk.kernel.ports import (
+    Allow,
+    Ask,
+    Context,
+    Judgement,
+    ModelRequest,
+    ModelResponse,
+    Refuse,
+)
 from shadow_hdk.runtime import Ports, RunOptions
 from shadow_hdk.runtime.steps import Fold, Step, as_json
 from shadow_hdk.wire.channel import Channel, channel_pair
@@ -34,10 +42,12 @@ from shadow_hdk.wire.protocol import (
     COMPLETE,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
+    CONTEXT_KEEP,
     CONTEXT_PROPOSE,
     CONTEXT_REASONED,
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
+    CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
     CONTEXT_VISIBLE,
@@ -99,6 +109,8 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_SEND, self._context_send)
         self.peer.serves(CONTEXT_RELEASE, self._context_release)
         self.peer.serves(CONTEXT_IS_HELD, self._context_is_held)
+        self.peer.serves(CONTEXT_KEEP, self._context_keep)
+        self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
 
     def ports(self) -> Ports:
         from shadow_hdk.runtime.clock import SystemClock
@@ -129,6 +141,23 @@ class RuntimeSide:
         return {
             "registrations": [json.loads(dump(r, Registration)) for r in await self.live.visible()]
         }
+
+    async def _context_keep(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is nothing to keep this for")
+        await self.live.keep(params.get("value"), step=params.get("step"))
+        return None
+
+    async def _context_resumed(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so nothing was resumed")
+        back = await self.live.resumed(step=params.get("step"))
+        if back is None:
+            return {"resumed": False}
+        answer = back.answer
+        if isinstance(answer, Allow | Ask | Refuse):
+            answer = json.loads(dump(answer, Judgement))
+        return {"resumed": True, "answer": answer, "kept": back.kept}
 
     async def _context_floor_met(self, _params: dict[str, Any]) -> Any:
         if self.live is None:

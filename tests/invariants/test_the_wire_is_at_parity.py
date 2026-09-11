@@ -42,6 +42,9 @@ NOT_CROSSING: dict[str, str] = {
     "reserve": "runtime-internal: the meter reserves for a child, runtime-side on a crossed spawn",
     "settle": "runtime-internal: the meter settles what a child did not use",
     "unreachable": "a runtime-side fact; a crossed component meets it as a refusal",
+    "take_kept": "runtime-internal: the executor collects what a component kept before it parks",
+    "resuming": "runtime-internal: the executor hands a resumed step its answer and what it kept",
+    "resumed_done": "runtime-internal: the executor clears that after the invoke",
 }
 """Method → why it does not cross. Every entry is a claim; an entry for a method that has since
 been made to cross is refused by the third test below."""

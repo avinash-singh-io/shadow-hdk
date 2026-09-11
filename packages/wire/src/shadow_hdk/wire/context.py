@@ -33,19 +33,31 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
-from shadow_hdk.runtime import Ports, RunContext, RunOptions
+from shadow_hdk.runtime import Ports, Resumed, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
+    CONTEXT_KEEP,
     CONTEXT_PROPOSE,
     CONTEXT_REASONED,
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
+    CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
     CONTEXT_VISIBLE,
 )
+
+
+def _as_answer(raw: Any) -> Any:
+    """A judgement arrives as JSON and is loaded back; anything else is what the host said."""
+    from shadow_hdk.kernel.contracts import load
+    from shadow_hdk.kernel.ports import Judgement
+
+    if isinstance(raw, dict) and raw.get("kind") in ("allow", "ask", "refuse"):
+        return load(json.dumps(raw), Judgement)
+    return raw
 
 
 class WireRunContext(RunContext):
@@ -114,6 +126,17 @@ class WireRunContext(RunContext):
     async def floor_met_now(self) -> bool:
         answered = await self._peer.call(CONTEXT_FLOOR_MET, {})
         return bool(answered["floor_met"])
+
+    async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
+        """Crosses for the same reason `reasoned` does (D57): the interrupt that will carry this
+        is raised runtime-side, where the record and the checkpointer are."""
+        await self._peer.call(CONTEXT_KEEP, {"value": value, "step": step or self._step})
+
+    async def resumed(self, *, step: str | None = None) -> Resumed | None:
+        answered = await self._peer.call(CONTEXT_RESUMED, {"step": step or self._step})
+        if not answered.get("resumed"):
+            return None
+        return Resumed(answer=_as_answer(answered.get("answer")), kept=answered.get("kept"))
 
     def floor_met(self) -> bool:
         raise WireOnlyAsync(

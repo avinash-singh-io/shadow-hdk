@@ -86,6 +86,15 @@ class RunOptions:
     """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
 
 
+@dataclass(frozen=True)
+class Resumed:
+    """What a component that asked finds when it is invoked again (D57): the answer, and what it
+    kept before parking. `None` from `resumed()` means *first leg* — nothing was asked yet."""
+
+    answer: Any
+    kept: JsonValue | None = None
+
+
 class RunContext:
     """What a component sees of the run it is inside. Returned by `current_run()`."""
 
@@ -98,6 +107,8 @@ class RunContext:
         checkpointer: Any = None,
     ) -> None:
         self._session = session
+        self._kept: dict[str, JsonValue] = {}
+        self._resumed: dict[str, Resumed] = {}
         self._emitter = emitter
         self._ports = ports
         self._registry = registry
@@ -284,6 +295,37 @@ class RunContext:
         except Exception as exc:
             raise PortFailure("sink", exc) from exc
         await self._emitter.emit(lambda **k: Proposed(proposal=proposal, **k))
+
+    # ------------------------------------------------------------------ asking for itself (D57)
+
+    async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
+        """What this step wants back if it parks. Read by the executor when the component answers
+        `Asked`, carried in the interrupt the checkpointer holds, and returned by `resumed()` on
+        the next leg. Nothing durable lives in the runtime: the host's checkpointer has it.
+
+        `step` is for a caller that crossed a wire, where nothing executes on the peer's task."""
+        where = step if step is not None else self.step
+        if where is None:
+            raise RuntimeError("no step is executing, so there is nothing to keep this for")
+        self._kept[where] = value
+
+    async def resumed(self, *, step: str | None = None) -> Resumed | None:
+        """The answer this step parked for, and what it kept — or `None` on a first leg."""
+        where = step if step is not None else self.step
+        if where is None:
+            return None
+        return self._resumed.get(where)
+
+    def take_kept(self, step: str) -> JsonValue | None:
+        """The executor's: what the step kept during this invoke, consumed."""
+        return self._kept.pop(step, None)
+
+    def resuming(self, step: str, answer: Any, kept: JsonValue | None) -> None:
+        """The executor's: what the next invoke of `step` will find in `resumed()`."""
+        self._resumed[step] = Resumed(answer=answer, kept=kept)
+
+    def resumed_done(self, step: str) -> None:
+        self._resumed.pop(step, None)
 
     async def reasoned(self, text: str, *, step: str | None = None) -> None:
         """Put thinking on the record, beside what it led to (D45).

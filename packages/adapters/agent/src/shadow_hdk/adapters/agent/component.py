@@ -12,6 +12,7 @@ What the model may do is the *pattern's* decision, not this class's: `single` of
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin, thinned
 from shadow_hdk.adapters.agent.meta import BY_NAME
@@ -44,6 +45,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import (
     Acted,
+    Asked,
     Completed,
     Failed,
     Observation,
@@ -157,7 +159,17 @@ class _Turnwise:
                     ),
                 )
         self.messages = [Message("system", self._role(skill)), Message("user", brief)]
-        for turn in range(self.pattern.max_turns):
+        # **Picking up where it parked** (D57, BUG-020). A tool call the policy asked about parked
+        # this step with the transcript kept; the host has answered. The transcript comes back,
+        # the answer goes into the held child, and the turn the model was on continues — it is not
+        # asked again for what it already said.
+        back = await self.ctx.resumed()
+        if back is not None and isinstance(back.kept, dict):
+            self._restore(back.kept)
+            parked_again = await self._answer_the_child(back.kept, back.answer)
+            if parked_again is not None:
+                return parked_again
+        for turn in range(self.turns, self.pattern.max_turns):
             if (await self.ctx.remaining_now()).ceiling.max_steps <= 0:
                 return self.finished("lease_exhausted")
             self.turns = turn + 1
@@ -210,7 +222,9 @@ class _Turnwise:
             composition = self.compose(response.tool_calls)
             if composition is None:
                 continue
-            await self.carry_out(composition, response.tool_calls)
+            parked = await self.carry_out(composition, response.tool_calls)
+            if parked is not None:
+                return parked
         return self.finished("out_of_turns")
 
     # ------------------------------------------------------------------ the moves
@@ -440,22 +454,47 @@ class _Turnwise:
         steps = tuple(_invoke(call) for call in work)
         return Composition(steps if len(steps) == 1 else (FanOut("fan", steps),))
 
-    async def carry_out(self, composition: Composition, calls: tuple[ToolCall, ...]) -> None:
+    async def carry_out(
+        self, composition: Composition, calls: tuple[ToolCall, ...]
+    ) -> Observation | None:
         # **Whatever is left, not a guess.** The first version carved `len(steps) + 1`, which is
         # right for tool calls and wrong the moment a step is itself an agent: a sub-agent needs
         # steps for its own turns and got two, then died `lease_exhausted` — silently, because a
         # lease ending a run is not an error. Turns are sequential and each settles before the
         # next, so the parent's remaining is the honest ceiling; its own still bounds the lot.
         ceiling = (await self.ctx.remaining_now()).ceiling
-        observed: dict[str, Observation] = {}
         # **Through the runtime, never a local `run()`** (D51). A composition the agent authors is
         # a child run: spawned where the record is, with the pattern's ceiling crossing as data and
         # applied there as a second gate. A host-side nested run — what this did until Phase 23 —
         # put the child's events on a stream nobody reads when the agent is on the far side of a
         # wire, and was the one thing that kept the agent from running there at all.
-        _handle, events = await self.ctx.children.spawn(
+        handle, events = await self.ctx.children.spawn(
             composition, ceiling, within=self.pattern.ceiling, within_name=self.pattern.name
         )
+        return await self._absorb(handle, events, composition, calls)
+
+    async def _absorb(
+        self,
+        handle: str,
+        events: list[Event],
+        composition: Composition,
+        calls: tuple[ToolCall, ...],
+    ) -> Observation | None:
+        """What the child's events mean for the transcript — or, if the child parked on a question,
+        the question, which becomes this agent's own (D57, BUG-020).
+
+        A parked child used to be silent here: no `observed` for its call, so the model was told
+        *that step did not run* and carried on — claiming, in the measured case, to have written a
+        file it never wrote. Now the transcript is kept and the step answers `Asked`; the run parks
+        at the top, where a host can see it.
+        """
+        question = next((e for e in events if e.kind == "asked" and e.run_id == handle), None)
+        if question is not None and await self.ctx.children.is_held(handle):
+            await self.ctx.keep(self._snapshot(handle, composition, calls))
+            return Asked(
+                question=getattr(question, "question", "may this continue?"), handle=handle
+            )
+        observed: dict[str, Observation] = {}
         for event in events:
             if event.kind == "observed":
                 observed[event.step] = event.observation
@@ -479,6 +518,51 @@ class _Turnwise:
                 continue
             observation = observed.get(call.id)
             self.messages.append(Message("tool", self.offered(observation), tool_call_id=call.id))
+        return None
+
+    # ------------------------------------------------------------------ parking (D57)
+
+    def _snapshot(
+        self, handle: str, composition: Composition, calls: tuple[ToolCall, ...]
+    ) -> dict[str, JsonValue]:
+        """Everything this invocation would lose if the process ended here. Kernel types go through
+        the contracts, so what comes back is what was kept."""
+        import json
+
+        return {
+            "handle": handle,
+            "composition": json.loads(dump(composition, Composition)),
+            "calls": [json.loads(dump(c, ToolCall)) for c in calls],
+            "messages": [json.loads(dump(m, Message)) for m in self.messages],
+            "held": dict(self.held),
+            "helpers": dict(self.helpers),
+            "spent": json.loads(dump(self.spent, Usage)),
+            "nudged": self.nudged,
+            "proposed": self.proposed,
+            "turns": self.turns,
+        }
+
+    def _restore(self, kept: dict[str, Any]) -> None:
+        import json
+
+        self.messages = [load(json.dumps(m), Message) for m in kept.get("messages", [])]
+        self.held = dict(kept.get("held", {}))
+        self.helpers = dict(kept.get("helpers", {}))
+        self.spent = load(json.dumps(kept.get("spent", {})), Usage)
+        self.nudged = bool(kept.get("nudged", False))
+        self.proposed = int(kept.get("proposed", 0))
+        self.turns = int(kept.get("turns", 0))
+
+    async def _answer_the_child(self, kept: dict[str, Any], answer: Any) -> Observation | None:
+        """The host's answer goes into the held child, and what comes back is absorbed the way a
+        fresh spawn's events are — so a child that parks *again* parks this step again."""
+        import json
+
+        handle = str(kept["handle"])
+        composition = load(json.dumps(kept["composition"]), Composition)
+        calls = tuple(load(json.dumps(c), ToolCall) for c in kept.get("calls", []))
+        events = await self.ctx.children.send(handle, answer)
+        return await self._absorb(handle, events, composition, calls)
 
     # ------------------------------------------------------------------ bookkeeping
 

@@ -42,3 +42,4 @@ sees nothing to answer; the parked child is released with the run.
 ## Log
 
 - 2026-09-11 — opened; BUG-020 first.
+- 2026-09-11 — **BUG-020 closed** (D57): the runtime lets a component ask for itself; the agent uses it; the wire carries `keep`/`resumed`; BUG-019's row closed.
