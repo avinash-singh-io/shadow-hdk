@@ -74,6 +74,8 @@ rather than remembered.
 | D54 | a skill is a registry entry that says what it is for and where it came from | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
 | D55 | the registry is a component, so choosing is a step on the record and reaches every host | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
 | D56 | minting proposes; keeping is the host's | [`phases/phase-24-the-skill-registry/history.md`](/phases/phase-24-the-skill-registry/history.md) |
+| D57 | a component may ask for itself, and the run parks on it | [`adhoc/harden-to-24/record.md`](/adhoc/harden-to-24/record.md) |
+| D58 | a step that cannot park asks the host live | [`adhoc/harden-to-24/record.md`](/adhoc/harden-to-24/record.md) |
 
 ## Also here
 

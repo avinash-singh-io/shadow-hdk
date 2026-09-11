@@ -351,6 +351,7 @@ proven by two denials (D50).
 uv run python examples/bare.py            # the harness on its own, with no product and no network
 uv run python -m examples.coder ./work    # a coding agent on your subscription, governed by us
 uv run python -m examples.host "brief"    # a host: its own policy, ledger, store and view handed in
+uv run python -m examples.studio ./work   # the same, with a page: steps, questions, files — live
 ```
 
 [`examples/coder`](examples/coder/README.md) is the one to read if you want to see all of this at
@@ -367,6 +368,12 @@ as a step on our graph:
 
 Swap the mode from `BUILDING` to `LOOKING` and ask again, and you get `✕ refused: mode 'looking'
 does not permit this` — from a policy that has never heard of `write_file`.
+
+[`examples/studio`](examples/studio/__init__.py) is the one to *watch*: a page over the same
+conversation, showing the record as it happens — every step, the reasoning ahead of it, the
+environment's answers, an **Allow / Refuse** box when the policy asks (answered while the provider
+waits on the call, D58), and the workspace's files as they change. Run it in `--mode=full` to see
+the questions; in `workspace-write` the sandbox confines writes and nothing needs asking.
 
 `examples/bare.py` is the test that defines done: a composition running against a component that
 arrived from outside, a model and a sub-agent, governed by allow-all, everything written to stdout —

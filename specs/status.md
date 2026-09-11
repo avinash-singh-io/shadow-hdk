@@ -4,25 +4,27 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-11 (Phase 24)
-> **Current Phase**: **Phase 24 COMPLETE — the skill registry.** Skills are a registry rather
-> than a directory: shipped, minted during a run, and proposed for keeping through the sink (D54,
-> D56). The registry is offered as a component, so choosing a skill is a governed step on the
-> record and reaches an in-process agent, an agent over the wire, and a CLI by subscription alike
-> (D55) — measured live: Claude Code chose a shipped skill over the registry socket and followed
-> it. This is the last phase of the owner's four; Phases 25 and 26 are the owner's to open.
+> **Last Updated**: 2026-09-12 (hardening to Phase 24)
+> **Current Phase**: **none — hardening to Phase 24, released as v0.19.0.** No new phase by the
+> owner's instruction; everything open up to Phase 24 that a host needs was closed. **BUG-020**
+> (D57): an Ask inside an agent's tool call parks the run and reaches the host; **BUG-021** (D58):
+> a subscription CLI's tool call the policy asks about is answered live while the CLI waits;
+> **BUG-022**: the wall-clock carve at a second boundary. Codex measured signed in (the relay
+> proof waits on quota). `examples/studio/` — a host with a page — driven in the browser on the
+> owner's subscription: write, ask, allow, run, ask, allow, report.
 >
-> Phase 23 before it reached the consumable line (v0.17.0). **BUG-020** remains open (P1): an
-> Ask inside an agent's tool call never reaches the host.
+> Phases 21–24 are the four the owner asked for (v0.15.0–v0.18.0); 25 and 26 are the owner's to
+> open. Open and deferred: ENH-002 (a TLS broker), ENH-003 (a second protocol adapter), ENH-005
+> (Codex has no strict MCP mode — upstream).
 >
 > **CI is green** and runs on every push.
 >
-> 1,153 tests; mypy strict over 198 files; seventeen distributions at **0.18.0**, all MIT.
+> 1,185 tests; mypy strict over 205 files; seventeen distributions at **0.19.0**, all MIT.
 >
-> **Latest Release**: **v0.18.0**, released 2026-09-11 — Phase 24, the skill registry: `Skill`
-> gains `description` and `source`; `SkillRegistry`, `SkillComponents`, `kept_from`; four shipped
-> skills. Contract change, so a *Pins* row. Before it v0.17.0 (Phase 23, a host — the consumable
-> line), v0.16.0 (Phase 22), v0.15.0 (Phase 21), v0.14.0 (Phase 20), v0.13.1 (a patch). All MIT
+> **Latest Release**: **v0.19.0**, released 2026-09-12 — hardening to Phase 24: two ways for a
+> component to ask (D57 park, D58 live), `Questions`, Codex measured, the studio. Contract change,
+> so a *Pins* row. Before it v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
+> the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
 > **Health**: On Track
 
 ## Summary
@@ -35,7 +37,7 @@ components and records through the sink. Three packages — kernel, runtime, ada
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Twenty-five phases are built,
-merged and released**: 1,153 tests, mypy strict over 198 files, seventeen distributions at 0.18.0.
+merged and released**: 1,185 tests, mypy strict over 205 files, seventeen distributions at 0.19.0.
 
 ## Completed Phases
 
@@ -70,13 +72,13 @@ merged and released**: 1,153 tests, mypy strict over 198 files, seventeen distri
 | 21 | The visible agent | Complete, merged | **v0.15.0** |
 | 22 | The environment | Complete, merged | **v0.16.0** |
 | 23 | A host, in-process and in any language | Complete, merged | **v0.17.0** |
-| 24 | The skill registry | Complete | **v0.18.0** |
+| 24 | The skill registry | Complete, merged | **v0.18.0** |
 
 ## Ad-hoc / Patch Releases
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
-| _(none yet)_ | | | |
+| v0.19.0 | 2026-09-12 | hardening | BUG-020/021/022 closed (D57, D58); Codex measured; the studio |
 
 ## Active Phase
 

@@ -63,5 +63,6 @@ host ──► runtime   resume(run_id, answer)       answer: a judgement, or {s
   projection included, is in the published schemas. The agent adapter spawns the plans its model
   authors *through the runtime*, so a sub-agent runs where the record is, whichever side the agent
   is on; the pattern's ceiling crosses as data and is applied there as a second gate (`Narrowed`).
+- **Questions cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Questions` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
   environment, sent as the first line before MCP; the run token above is still the wire's own debt.

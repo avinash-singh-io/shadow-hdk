@@ -8,7 +8,7 @@ type: Ad-hoc Record
 > **Created**: 2026-09-11
 > **Branch**: `harden-to-24`
 > **Backlog**: BUG-020 (P1), BUG-019 (row), Codex signed-in measurement; ENH-002/003 stay deferred
-> **Status**: in progress
+> **Status**: shipped as v0.19.0
 
 The owner's directive: no new phase; resolve everything open up to Phase 24 that a host like
 Intent Studio needs, make Codex work (the owner signs in), and add a host with a page — the
@@ -46,3 +46,59 @@ sees nothing to answer; the parked child is released with the run.
 - 2026-09-12 — **Codex measured signed in**: the sub-type on every item, usage, the override spelling, the pre-permit, the failure shape; `codex.toml` says what is measured and what one thing still is not (a reasoning item). The end-to-end proof through the relay skips on the owner's free-tier quota, which these measurements exhausted; it is a live test now. ENH-005 filed (no strict MCP mode).
 - 2026-09-12 — **BUG-021 found and closed** (D58): a CLI's tool call the policy asks about is answered live by the person while the CLI waits; measured with Claude Code. The coder's `full` mode now asks before every write.
 - 2026-09-12 — **`examples/studio/`**: the visual host — conversation, the record as agent steps with Allow/Refuse on a live question, the workspace's files. Driven in the browser on the owner's subscription: Claude Code wrote `primes.py` (asked, allowed), ran it (asked, allowed), reported the primes; the file opened in the page. **BUG-022 found and closed** on the first question answered there (the wall-clock carve at a second boundary).
+- 2026-09-12 — closed: D57/D58 on the record, 0.19.0, landed.
+
+## Decisions taken in this round
+
+### [DECISION] 2026-09-12 — D57: a component may ask for itself, and the run parks on it
+
+Topics: ask, park, resume, agent, bug-020
+Affects-phases: phase-24-the-skill-registry
+Affects-specs: architecture/runtime.md#the-governed-step, architecture/wire.md
+
+`Asked` has been an observation kind since Phase 0 — *the step paused; whoever implements
+governance decides what asking means* — and nothing ever produced one. BUG-020 is why it must: an
+agent whose tool call was asked about holds a question that is not the policy's and not its own to
+answer. It answers `Asked(question, handle)` and the executor parks the run on it exactly as if
+governance had asked. On resume the component is invoked again and finds, through `resumed()`,
+the host's answer and whatever it `kept` before parking — both carried in the interrupt payload
+the checkpointer already holds, and so is what the step was holding (a child spawned and parked
+in the same step is not in the state's channel, because the node never returned). The runtime
+keeps nothing durable; a process may end between the question and the answer.
+
+The step is charged on the leg that completes, as a governance Ask already is: the first leg's
+charge never reaches the checkpoint. Measured — the "obvious" fix, not charging the second leg,
+reported one step for two.
+
+The agent adapter uses it: a held child that asked becomes the agent's own question; on resume it
+restores its transcript, sends the judgement into the held child, and continues the turn it was
+on. Nested agents get it for free, each level using the same mechanism. `keep` and `resumed`
+cross the wire.
+
+*Why:* consent-before-effect is what an Ask is for, and inside an agent it was a silent no.
+*Overturned by:* a checkpointer that cannot carry an interrupt payload — LangGraph's all can.
+
+---
+
+### [DECISION] 2026-09-12 — D58: a step that cannot park asks the host live
+
+Topics: ask, questions, recording, provider, bug-021
+Affects-phases: phase-24-the-skill-registry
+Affects-specs: architecture/runtime.md#modules, architecture/adapters.md#the-map, architecture/wire.md
+
+D57 parks. A step holding a **provider's session** open cannot: it is what keeps the provider
+alive, and a tool call the provider is blocked on cannot wait for a process that has ended. So a
+second shape, the same in every other respect: `ctx.ask(question)` puts `Asked` on the record where
+it was raised and waits on a `Questions` handle the host keeps — the same kind of thing as
+`Cancellation` (D15), not a port: the host reaching in. The host sees `pending()`, answers by
+handle. With no handle the answer is a `Refuse` that says nobody was there — consent nobody gave
+is not consent (D38). A child inherits its parent's handle; the runtime side of the wire owns one.
+
+The RecordingServer uses it: a CLI's tool call that the policy asks about runs as a held child
+(D51), the question is put to the host live, and the child is sent the answer while the CLI waits
+on the call. The coder answers at the terminal; the studio with a button.
+
+*Why:* the person must be in the loop for a provider's act the same as for an agent's.
+*Overturned by:* a provider whose session can be parked and resumed by the harness — none is.
+
+---

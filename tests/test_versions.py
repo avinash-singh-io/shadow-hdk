@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.18.0"
-"""0.18.0 because the agent adapter's public surface grew: `Skill` has `description` and `source`
+EXPECTED = "0.19.0"
+"""0.19.0 because the runtime's contract with a component grew two ways to ask (D57, D58):
+`RunContext.keep`/`resumed` and a produced `Asked` observation that parks the run; `RunContext.ask`
+and `Questions` on `RunOptions` for a live question. `Dialect` grew `subtype_key`,
+`mcp_config_shape`, `allow_override` and `failed_text_at` (Codex, measured). Nothing a host held
+before changed shape; every one of these is an addition, and the wire's protocol grew three
+messages for them. A host that answered questions at the top only keeps working as it did.
+
+0.18.0 because the agent adapter's public surface grew: `Skill` has `description` and `source`
 (D54) and `load_skill` refuses a file without a line, which a host's skill files may lack;
 `SkillRegistry`, `SkillSource`, `DirectorySkills`, `MintedSkills`, `SkillComponents`, `kept_from`
 and `shipped_skills` are new (D55, D56). No kernel type changed and `AgentComponent` is as it was,

@@ -144,7 +144,7 @@ classDiagram
 | `trust.py` | `Trust(keys, revoked, must_sign)`, `sign`, `verify`, `signing_bytes` — HMAC-SHA256 over the registration's canonical form minus the signature (D27) |
 | `acting.py` | `exhausted(lease)`, `grounds(context, argv=, warrant=)` — what a driver reads at the moment of the act and what its `Acted` receipt carries (R9); the warrant is carried, not judged (ADR-1) |
 | `inputs.py` | `resolve_inputs(bindings, handles) -> JsonValue`; `DanglingRef` |
-| `step.py` | `StepExecutor.invoke` — the seven moves |
+| `step.py` | `StepExecutor.invoke` — the seven moves; a component answering `Asked` parks the run and is resumed with the answer and what it kept (D57) |
 | `compile.py` | `compile_composition`; the structural-hash cache (D11) |
 | `state.py` | `RunState` TypedDict and its reducers |
 | `loop.py` | `run`, `resume` — Started … Ended, end reasons, child forwarding |
