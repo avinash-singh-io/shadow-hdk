@@ -42,7 +42,7 @@ def test_thinking_touches_nothing() -> None:
 
 @pytest.mark.parametrize("kind", ["edit", "move"])
 def test_changing_a_file_is_reversible(kind: str) -> None:
-    """Reversible; *where* it writes follows containment (BUG-018, see `test_looking_only_reads`)."""
+    """Reversible; where it writes follows containment (BUG-018; see `test_looking_only_reads`)."""
     found = profile(kind)
     assert found.writes == EVERYTHING
     assert profile(kind, contained=True).writes == WORKSPACE
