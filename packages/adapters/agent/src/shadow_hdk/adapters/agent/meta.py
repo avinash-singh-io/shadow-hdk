@@ -7,16 +7,20 @@ would not notice.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from shadow_hdk.adapters.agent.pattern import (
     COMPACT,
     COMPOSE,
     DESCRIBE,
     DONE,
+    MINT_SKILL,
     PROPOSE,
     RECALL,
     RELEASE,
     SEND,
     SPAWN,
+    USE_SKILL,
 )
 
 from shadow_hdk.kernel.components import Interface
@@ -137,8 +141,59 @@ RELEASE_INTERFACE = Interface(
     },
 )
 
+USE_SKILL_INTERFACE = Interface(
+    name=USE_SKILL,
+    description=(
+        "Load a procedure to follow for the rest of this work. You are given each skill's name and "
+        "one line; the procedure itself arrives when you choose it."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": ["name"],
+    },
+)
+"""The verb as a pattern names it. What the model is actually offered is `use_skill_for`, built
+per turn with the registry's names and lines on it (D55)."""
+
+
+def use_skill_for(listing: Sequence[tuple[str, str]]) -> Interface:
+    """The verb with this turn's skills on it — a name and a line each, the body withheld."""
+    lines = "; ".join(f"{name} — {line}" if line else name for name, line in listing)
+    return Interface(
+        name=USE_SKILL,
+        description=f"{USE_SKILL_INTERFACE.description} Skills: {lines}.",
+        input_schema={
+            "type": "object",
+            "properties": {"name": {"type": "string", "enum": [name for name, _ in listing]}},
+            "required": ["name"],
+        },
+    )
+
+
+MINT_SKILL_INTERFACE = Interface(
+    name=MINT_SKILL,
+    description=(
+        "Write down a procedure worth repeating: a name, one line saying what it is for, the "
+        "procedure itself, and the tools it needs. It is usable at once in this run and proposed "
+        "to whoever keeps this run's record; whether it is kept is their decision."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "prompt": {"type": "string"},
+            "needs": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["name", "description", "prompt"],
+    },
+)
+
 BY_NAME = {
     COMPACT: COMPACT_INTERFACE,
+    USE_SKILL: USE_SKILL_INTERFACE,
+    MINT_SKILL: MINT_SKILL_INTERFACE,
     SPAWN: SPAWN_INTERFACE,
     SEND: SEND_INTERFACE,
     RELEASE: RELEASE_INTERFACE,
@@ -152,6 +207,9 @@ BY_NAME = {
 __all__ = [
     "BY_NAME",
     "COMPACT_INTERFACE",
+    "MINT_SKILL_INTERFACE",
+    "USE_SKILL_INTERFACE",
+    "use_skill_for",
     "RELEASE_INTERFACE",
     "SEND_INTERFACE",
     "SPAWN_INTERFACE",

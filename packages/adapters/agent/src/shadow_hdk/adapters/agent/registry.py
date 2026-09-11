@@ -22,7 +22,9 @@ from importlib import resources
 from pathlib import Path
 from typing import Protocol
 
-from shadow_hdk.adapters.agent.skills import Skill, load_skill
+from shadow_hdk.adapters.agent.skills import Skill, load_skill, skill_from
+
+from shadow_hdk.kernel.observations import Proposal
 
 
 class SkillSource(Protocol):
@@ -66,15 +68,21 @@ class MintedSkills:
 
 
 class SkillRegistry:
-    """The union, later sources shadowing earlier ones by name."""
+    """The union, later sources shadowing earlier ones by name.
+
+    `minted` is the last source and always there: what this registry's agents write down mid-run
+    (D56). It lives as long as the registry object does — a host that wants minting scoped to a
+    run hands a fresh registry to that run, which is what the host example does.
+    """
 
     def __init__(self, sources: Sequence[SkillSource] = ()) -> None:
         self.sources: tuple[SkillSource, ...] = tuple(sources)
+        self.minted = MintedSkills()
 
     async def _resolved(self) -> tuple[dict[str, Skill], list[Skill]]:
         by_name: dict[str, Skill] = {}
         shadowed: list[Skill] = []
-        for source in self.sources:
+        for source in (*self.sources, self.minted):
             for skill in await source.skills():
                 if skill.name in by_name:
                     shadowed.append(by_name[skill.name])
@@ -84,6 +92,10 @@ class SkillRegistry:
     async def all(self) -> tuple[Skill, ...]:
         by_name, _ = await self._resolved()
         return tuple(by_name.values())
+
+    async def skills(self) -> Sequence[Skill]:
+        """A registry is itself a source, so a host composes one from another."""
+        return await self.all()
 
     async def listing(self) -> tuple[tuple[str, str], ...]:
         """Names and lines — what the model sees until it chooses (D55)."""
@@ -98,6 +110,18 @@ class SkillRegistry:
         return tuple(shadowed)
 
 
+def kept_from(proposal: Proposal, *, source: str = "kept") -> Skill:
+    """A host's half of keeping: the `kind="skill"` proposal it kept, as a skill it can hand back.
+
+    The payload is exactly what `mint_skill` proposed, and it is checked the way a file is — a
+    proposal is data from a run, not a trusted record, and a host that stored a malformed one
+    finds out here rather than in a model's catalogue.
+    """
+    if proposal.kind != "skill" or not isinstance(proposal.payload, dict):
+        raise ValueError(f"not a skill proposal: kind={proposal.kind!r}")
+    return skill_from(dict(proposal.payload), where=f"proposal {proposal.kind!r}", source=source)
+
+
 def shipped_skills() -> DirectorySkills:
     """The library this package ships: a few procedures that make sense for any agent. None is
     about code, because the harness is not."""
@@ -105,4 +129,11 @@ def shipped_skills() -> DirectorySkills:
     return DirectorySkills(Path(str(where)), source="shipped")
 
 
-__all__ = ["DirectorySkills", "MintedSkills", "SkillRegistry", "SkillSource", "shipped_skills"]
+__all__ = [
+    "DirectorySkills",
+    "MintedSkills",
+    "SkillRegistry",
+    "SkillSource",
+    "kept_from",
+    "shipped_skills",
+]

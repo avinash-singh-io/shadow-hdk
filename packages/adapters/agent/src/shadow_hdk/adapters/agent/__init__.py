@@ -10,11 +10,13 @@ from shadow_hdk.adapters.agent.pattern import (
     DONE,
     MAILBOX,
     META_TOOLS,
+    MINT_SKILL,
     PROPOSE,
     RECALL,
     RELEASE,
     SEND,
     SPAWN,
+    USE_SKILL,
     Pattern,
 )
 from shadow_hdk.adapters.agent.patterns import SINGLE_ROLE, single
@@ -23,6 +25,7 @@ from shadow_hdk.adapters.agent.registry import (
     MintedSkills,
     SkillRegistry,
     SkillSource,
+    kept_from,
     shipped_skills,
 )
 from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
@@ -30,12 +33,14 @@ from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, ski
 __all__ = [
     "COMPACT",
     "MAILBOX",
+    "MINT_SKILL",
     "RELEASE",
     "SEND",
     "SPAWN",
     "COMPOSE",
     "DESCRIBE",
     "RECALL",
+    "USE_SKILL",
     "DONE",
     "META_TOOLS",
     "PROPOSE",
@@ -52,6 +57,7 @@ __all__ = [
     "load_skill",
     "missing_for",
     "pattern_from",
+    "kept_from",
     "skill_from",
     "thin",
     "shipped",

@@ -14,21 +14,24 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin, thinned
-from shadow_hdk.adapters.agent.meta import BY_NAME
+from shadow_hdk.adapters.agent.meta import BY_NAME, use_skill_for
 from shadow_hdk.adapters.agent.pattern import (
     COMPACT,
     COMPOSE,
     DESCRIBE,
     DONE,
     MAILBOX,
+    MINT_SKILL,
     PROPOSE,
     RECALL,
     RELEASE,
     SEND,
     SPAWN,
+    USE_SKILL,
     Pattern,
 )
-from shadow_hdk.adapters.agent.skills import Skill, missing_for
+from shadow_hdk.adapters.agent.registry import SkillRegistry
+from shadow_hdk.adapters.agent.skills import Skill, missing_for, skill_from
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
@@ -78,9 +81,13 @@ class AgentComponent(ComponentPort):
         registered_by: str = "host",
         at: str = "",
         skill: Skill | None = None,
+        skills: SkillRegistry | None = None,
     ) -> None:
         self.pattern = pattern
         self.skill = skill
+        self.skills = skills
+        """The registry this role may choose from (D54). Names and lines ride the `use_skill` verb;
+        a body arrives when chosen, after D17's check. `None` offers no verb."""
         """A team's procedure, and what it cannot do without (D17). Checked against what the policy
         leaves visible **before the first turn**, so a skill needing a component this deployment
         hides is refused for a penny rather than discovered halfway through for a pound."""
@@ -134,6 +141,8 @@ class _Turnwise:
         self.spent = Usage(0, 0, 0)
         self.nudged = False
         self.proposed = 0
+        self.using: list[str] = []
+        """Skills chosen this run, in order — for the record this loop reports when it finishes."""
         self.turns = 0
         self.helpers: dict[str, str] = {}
         """The model's own names for its helpers — `@1`, `@2` — over the runtime's run ids. A
@@ -194,6 +203,10 @@ class _Turnwise:
                 await self.propose(call)
             for call in [c for c in response.tool_calls if c.name == DESCRIBE]:
                 await self.describe(call)
+            for call in [c for c in response.tool_calls if c.name == USE_SKILL]:
+                await self.use_skill(call)
+            for call in [c for c in response.tool_calls if c.name == MINT_SKILL]:
+                await self.mint_skill(call)
             for call in [c for c in response.tool_calls if c.name == RECALL]:
                 self.recall(call)
             for call in [c for c in response.tool_calls if c.name == COMPACT]:
@@ -260,7 +273,18 @@ class _Turnwise:
             verbs.add(DESCRIBE)
         if self.pattern.offload_over is not None:
             verbs.add(RECALL)  # a handle the model cannot follow is worse than the flood
-        return thin(tools, self.pattern) + tuple(BY_NAME[name] for name in sorted(verbs))
+        # **Skills ride the verb** (D55): the registry's names and lines are on `use_skill` itself,
+        # rebuilt each turn so a skill minted a turn ago is there. Offered whenever there is one to
+        # choose, whether the pattern named the verb or not — a registry nobody can reach is a
+        # directory. `mint_skill` is the pattern's to grant: writing procedures is a power.
+        listing = await self.agent.skills.listing() if self.agent.skills is not None else ()
+        verbs.discard(USE_SKILL)
+        if self.agent.skills is None:
+            verbs.discard(MINT_SKILL)
+        offered = [BY_NAME[name] for name in sorted(verbs)]
+        if listing:
+            offered.append(use_skill_for(listing))
+        return thin(tools, self.pattern) + tuple(offered)
 
     def _within_the_ceiling(self, registration: Registration) -> bool:
         """Whether this role could ever be permitted to use it (BUG-012).
@@ -364,10 +388,80 @@ class _Turnwise:
 
     async def describe(self, call: ToolCall) -> None:
         """Answer what one tool takes — from `visible()` only, so a describe cannot reach past what
-        the policy left."""
+        the policy left. A skill's name is answered too: its line, its needs and its body, without
+        loading it — a look, not a choice."""
         arguments = call.arguments if isinstance(call.arguments, dict) else {}
-        answer = describe_for(str(arguments.get("name", "")), await self.ctx.visible())
-        text = answer if isinstance(answer, str) else dump(answer, Interface)
+        name = str(arguments.get("name", ""))
+        answer = describe_for(name, await self.ctx.visible())
+        skill = await self.agent.skills.find(name) if self.agent.skills is not None else None
+        if isinstance(answer, str) and skill is not None:
+            text = _skill_text(skill, loaded=False)
+        else:
+            text = answer if isinstance(answer, str) else dump(answer, Interface)
+        self.messages.append(Message("tool", text, tool_call_id=call.id))
+
+    async def use_skill(self, call: ToolCall) -> None:
+        """The act of choosing (D55), and where D17's check runs: against `visible()`, so a skill
+        needing what this run does not offer is refused by name and its body never arrives."""
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        name = str(arguments.get("name", ""))
+        registry = self.agent.skills
+        skill = await registry.find(name) if registry is not None else None
+        if skill is None:
+            names = ", ".join(n for n, _ in (await registry.listing() if registry else ()))
+            text = f"there is no skill named {name!r}; the skills are: {names or 'none'}"
+        else:
+            missing = missing_for(skill, await self.ctx.visible())
+            if missing:
+                text = (
+                    f"the skill {name!r} needs {sorted(missing)}, which this run does not offer; "
+                    "it was not loaded"
+                )
+            else:
+                self.using.append(name)
+                text = _skill_text(skill, loaded=True)
+        self.messages.append(Message("tool", text, tool_call_id=call.id))
+
+    async def mint_skill(self, call: ToolCall) -> None:
+        """Write a procedure down (D56). Two things happen and neither is a runtime power — the
+        same shape as `compact`: the skill goes into the registry this role was handed, usable at
+        once, and it goes to the **sink** as a proposal, where whoever keeps the record decides.
+        This adapter writes nowhere."""
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        registry = self.agent.skills
+        if registry is None:
+            text = "this role has no skill registry to mint into"
+        else:
+            try:
+                needs = arguments.get("needs", [])
+                data = {
+                    "name": arguments.get("name", ""),
+                    "description": arguments.get("description", ""),
+                    "prompt": arguments.get("prompt", ""),
+                    "needs": [str(n) for n in needs] if isinstance(needs, list) else [],
+                }
+                minted = registry.minted.add(skill_from(data, where=MINT_SKILL, source="minted"))
+            except ValueError as malformed:
+                text = f"not minted: {malformed}"
+            else:
+                await self.ctx.propose(
+                    Proposal(
+                        kind="skill",
+                        payload={
+                            "name": minted.name,
+                            "description": minted.description,
+                            "prompt": minted.prompt,
+                            "needs": sorted(minted.needs),
+                        },
+                        provenance=Provenance(
+                            registered_by=self.ctx.run_id, adapter="agent", at=self.ctx.now()
+                        ),
+                    )
+                )
+                text = (
+                    f"minted {minted.name!r}: usable now with `{USE_SKILL}`, and proposed for "
+                    "keeping — whether it is kept is not yours to decide"
+                )
         self.messages.append(Message("tool", text, tool_call_id=call.id))
 
     def offered(self, observation: Observation | None) -> str:
@@ -566,6 +660,15 @@ def _step_ids(node: object) -> list[str]:
     if isinstance(identifier, str):
         found.append(identifier)
     return found
+
+
+def _skill_text(skill: Skill, *, loaded: bool) -> str:
+    verb = "Follow this procedure from here on" if loaded else "Not loaded; this is what it says"
+    needs = ", ".join(sorted(skill.needs)) or "nothing in particular"
+    return (
+        f"Skill {skill.name!r} ({skill.source}) — {skill.description}\nNeeds: {needs}\n"
+        f"{verb}:\n\n{skill.prompt}"
+    )
 
 
 def _readable(observation: Observation | None) -> str:
