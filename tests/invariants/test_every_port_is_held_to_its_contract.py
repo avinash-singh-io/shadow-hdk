@@ -47,6 +47,7 @@ CONTRACTED: dict[str, str] = {
     "Controlled": "tests/adapters/basic/test_controlled.py",
     "DerivationComponents": "tests/adapters/derivation/test_derivation_is_a_component.py",
     "DeviceComponents": "tests/adapters/devices/test_devices_are_components.py",
+    "Environment": "tests/adapters/environment/test_an_environment_is_a_component.py",
     "FileSink": "tests/adapters/basic/test_basic.py",
     "LangChainModel": "tests/adapters/langchain/test_langchain.py",
     "Mailbox": "tests/adapters/basic/test_mailbox.py",

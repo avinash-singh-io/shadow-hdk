@@ -39,6 +39,7 @@ shadow-hdk-adapters-otel = { workspace = true }
 shadow-hdk-adapters-devices = { workspace = true }
 shadow-hdk-adapters-mqtt = { workspace = true }
 shadow-hdk-providers = { workspace = true }
+shadow-hdk-adapters-environment = { workspace = true }
 shadow-hdk-adapters-jsonl = { workspace = true }
 
 [dependency-groups]
@@ -60,7 +61,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src", "packages/wire/src", "packages/providers/src", "packages/adapters/jsonl/src", "packages/adapters/contained/src", "packages/adapters/derivation/src", "packages/adapters/otel/src", "packages/adapters/devices/src", "packages/adapters/mqtt/src", "tests"]
+src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src", "packages/wire/src", "packages/providers/src", "packages/adapters/environment/src", "packages/adapters/jsonl/src", "packages/adapters/contained/src", "packages/adapters/derivation/src", "packages/adapters/otel/src", "packages/adapters/devices/src", "packages/adapters/mqtt/src", "tests"]
 # Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
 # and a design document is not the formatter's business. momentum's own scaffold is vendored.
 extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
@@ -72,7 +73,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 python_version = "3.12"
 strict = true
 packages = ["shadow_hdk", "tests", "examples"]
-mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src:packages/adapters/otel/src:packages/adapters/devices/src:packages/adapters/mqtt/src:packages/wire/src:packages/providers/src:packages/adapters/jsonl/src:packages/adapters/contained/src:packages/adapters/derivation/src"
+mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/workspace/src:packages/adapters/sandbox_subprocess/src:packages/adapters/acp/src:packages/adapters/recording/src:packages/adapters/otel/src:packages/adapters/devices/src:packages/adapters/mqtt/src:packages/wire/src:packages/providers/src:packages/adapters/environment/src:packages/adapters/jsonl/src:packages/adapters/contained/src:packages/adapters/derivation/src"
 namespace_packages = true
 explicit_package_bases = true
 

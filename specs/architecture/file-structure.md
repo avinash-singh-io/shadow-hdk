@@ -47,6 +47,7 @@ shadow-hdk/
       recording/                     our registry as an MCP server                             Phase 5
       modes/                         rules as rows; the narrowing check                        Phase 1 / 10
       contained/                     gVisor and Firecracker, each proving containment          Phase 11
+      environment/                   where effects land, with a mode; local on the OS sandbox   Phase 22
       derivation/                    total expressions over typed tables                       Phase 12
       otel/                          the event stream exported                                 Phase 14
       devices/                       sensors, actuators, witnesses                             Phase 15

@@ -26,6 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ADAPTERS = ROOT / "packages" / "adapters"
+RUNTIME = ROOT / "packages" / "runtime" / "src" / "shadow_hdk" / "runtime"
 
 ENFORCED_BY: dict[str, tuple[str, str]] = {
     "workspace": (
@@ -51,7 +52,15 @@ ENFORCED_BY: dict[str, tuple[str, str]] = {
         "filesystem or a socket to reach — the scope names a different thing, not a narrower one",
         "tests/adapters/devices/test_devices.py",
     ),
+    "runtime:environment": (
+        "the one derivation (D48): `{workspace}` only where `Isolation` says writes or reads are "
+        "confined, and `Isolation` is set by a watched denial or an honest no, never by a wrapper",
+        "tests/runtime/test_an_environment_has_a_mode.py",
+    ),
 }
+# `environment` the adapter is deliberately absent: it declares no scope of its own. Every
+# profile it registers comes from the runtime's derivation above — the whole point of Phase 22, one
+# place to be wrong — and this invariant is precise enough to refuse a stale entry for it.
 """Adapter → (what makes the narrow claim true, the test that crosses the boundary to prove it)."""
 
 BOUNDARY_WORDS = ("outside", "everything", "denied", "OutsideTheRoot", "confine", "world")
@@ -74,12 +83,22 @@ def _declares_a_narrow_scope(source: Path) -> bool:
     return False
 
 
-def narrowing_adapters(adapters: Path) -> set[str]:
-    return {
+def narrowing_adapters(adapters: Path, runtime: Path | None = None) -> set[str]:
+    """Adapters by package name, and — because the derivation moved below them in Phase 22 —
+    runtime modules by `runtime:<module>`. A rule that walked only adapters would have gone quiet
+    the day the narrow scope moved into the runtime, which is the day it mattered most."""
+    found = {
         package.name
         for package in sorted(p for p in adapters.glob("*") if p.is_dir())
         if any(_declares_a_narrow_scope(s) for s in package.glob("src/**/*.py"))
     }
+    if runtime is not None and runtime.exists():
+        found |= {
+            f"runtime:{module.stem}"
+            for module in sorted(runtime.glob("*.py"))
+            if _declares_a_narrow_scope(module)
+        }
+    return found
 
 
 def unaccounted_for(narrowing: Iterable[str], enforced: Mapping[str, tuple[str, str]]) -> list[str]:
@@ -105,7 +124,7 @@ def not_really_proven(enforced: Mapping[str, tuple[str, str]], root: Path) -> li
 
 
 def test_every_adapter_that_narrows_a_scope_says_what_makes_it_true() -> None:
-    unaccounted = unaccounted_for(narrowing_adapters(ADAPTERS), ENFORCED_BY)
+    unaccounted = unaccounted_for(narrowing_adapters(ADAPTERS, RUNTIME), ENFORCED_BY)
 
     assert not unaccounted, (
         "these adapters declare a scope narrower than everything and nothing records what makes "
@@ -121,7 +140,7 @@ def test_each_named_proof_exists_and_crosses_the_boundary() -> None:
 
 def test_nothing_is_listed_that_no_longer_narrows() -> None:
     """The direction that rots silently: an entry left behind keeps the table looking complete."""
-    stale = sorted(set(ENFORCED_BY) - narrowing_adapters(ADAPTERS))
+    stale = sorted(set(ENFORCED_BY) - narrowing_adapters(ADAPTERS, RUNTIME))
 
     assert not stale, f"listed but no longer declares a narrow scope: {stale}"
 
@@ -130,9 +149,10 @@ def test_nothing_is_listed_that_no_longer_narrows() -> None:
 
 
 def test_the_walk_finds_the_adapters() -> None:
-    found = narrowing_adapters(ADAPTERS)
+    found = narrowing_adapters(ADAPTERS, RUNTIME)
 
     assert len(found) >= 4, f"the walk found only {sorted(found)}"
+    assert "runtime:environment" in found, "the runtime's derivation is not in the walk"
     assert "sandbox_subprocess" in found, "the adapter BUG-018 was found in is not in the walk"
 
 

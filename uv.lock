@@ -16,6 +16,7 @@ members = [
     "shadow-hdk-adapters-contained",
     "shadow-hdk-adapters-derivation",
     "shadow-hdk-adapters-devices",
+    "shadow-hdk-adapters-environment",
     "shadow-hdk-adapters-jsonl",
     "shadow-hdk-adapters-langchain",
     "shadow-hdk-adapters-mcp",
@@ -760,6 +761,15 @@ wheels = [
 ]
 
 [[package]]
+name = "httpx-sse"
+version = "0.4.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/4c/751061ffa58615a32c31b2d82e8482be8dd4a89154f003147acee90f2be9/httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d", size = 15943, upload-time = "2025-10-10T21:48:22.271Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/fd/6668e5aec43ab844de6fc74927e155a3b37bf40d7c3790e49fc0406b6578/httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc", size = 8960, upload-time = "2025-10-10T21:48:21.158Z" },
+]
+
+[[package]]
 name = "httpx2"
 version = "2.12.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1421,6 +1431,28 @@ requires-dist = [
 ]
 
 [[package]]
+name = "shadow-hdk-adapters-environment"
+version = "0.15.0"
+source = { editable = "packages/adapters/environment" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.optional-dependencies]
+opensandbox = [
+    { name = "opensandbox" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "opensandbox", marker = "extra == 'opensandbox'", specifier = ">=0.1.16,<0.2" },
+]
+provides-extras = ["opensandbox"]
+
+[[package]]
 name = "shadow-hdk-adapters-jsonl"
 version = "0.15.0"
 source = { editable = "packages/adapters/jsonl" }
@@ -1860,6 +1892,22 @@ wheels = [
 ]
 
 [[package]]
+name = "opensandbox"
+version = "0.1.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpx" },
+    { name = "httpx-sse" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3f/15/3db0638f9a4f2ace097e8ebfc9a592eff5a864f36933ee0579fce88350b5/opensandbox-0.1.16.tar.gz", hash = "sha256:b9253a58eb9f01bff522fccf317746b464805893c56a6ad447e0f1cc7f37276c", size = 253711, upload-time = "2026-08-26T04:07:41.242Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/a3/5431e516c1ed4027c4b011b1969b46b7ec6754c47e2b5a1427a99f8827a6/opensandbox-0.1.16-py3-none-any.whl", hash = "sha256:2e3b7e18e52f69f9696cb563713e2581e10a727d4dc83edc0ec27b1c725c3ce0", size = 583522, upload-time = "2026-08-26T04:07:39.503Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.44.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2215,6 +2263,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/82/4c9ecabab13363e72d880f2fb504c5f750433b2b6f16e99f4ec21ada284c/pytest_timeout-2.4.0.tar.gz", hash = "sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a", size = 17973, upload-time = "2025-05-05T19:44:34.99Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/b6/3127540ecdf1464a00e5a01ee60a1b09175f6913f0644ac748494d9c4b21/pytest_timeout-2.4.0-py3-none-any.whl", hash = "sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2", size = 14382, upload-time = "2025-05-05T19:44:33.502Z" },
+]
+
+[[package]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
 ]
 
 [[package]]

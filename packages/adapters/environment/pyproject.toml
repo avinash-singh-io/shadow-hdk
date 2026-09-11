@@ -1,0 +1,19 @@
+[project]
+name = "shadow-hdk-adapters-environment"
+version = "0.15.0"
+description = "Where effects land, with a mode: local on the OS sandbox, or isolated in a box somebody else built."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["shadow-hdk-kernel==0.15.0", "shadow-hdk==0.15.0"]
+
+[project.optional-dependencies]
+opensandbox = ["opensandbox>=0.1.16,<0.2"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]
