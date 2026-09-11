@@ -15,13 +15,13 @@ from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Allow, Event, Refuse
+from shadow_hdk.kernel import Allow, Event, Refuse, Usage
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime import Questions
 from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.steps import Fold, as_json
 
-PAGE = (Path(__file__).parent / "page.html").read_text(encoding="utf-8")
+PAGE = Path(__file__).parent / "page.html"
 
 
 @dataclass
@@ -79,6 +79,7 @@ class Studio:
         self.talk = await self._conversation.__aenter__()
         self.provider = getattr(self.talk, "provider", "") or "the provider signed in here"
         asyncio.create_task(self._relay_questions())
+        asyncio.create_task(self._relay_withdrawals())
 
     async def close(self) -> None:
         if self._conversation is not None:
@@ -95,7 +96,15 @@ class Studio:
                 run_id=pending.run_id,
                 step=pending.step,
                 question=pending.question,
+                component=pending.component,
+                inputs=pending.inputs,
             )
+
+    async def _relay_withdrawals(self) -> None:
+        """A question the asker stopped waiting for — the page takes its buttons away."""
+        while True:
+            gone = await self.questions.next_withdrawn()
+            self.note("withdrawn", handle=gone.handle)
 
     async def say(self, text: str) -> dict[str, Any]:
         if self.busy:
@@ -106,7 +115,13 @@ class Studio:
             done = await self.talk.turn(text)
         finally:
             self.busy = False
-        answer = {"text": done.text, "failed": bool(done.failed), "reasoning": done.reasoning}
+        usage = getattr(done, "usage", None)
+        answer = {
+            "text": done.text,
+            "failed": bool(done.failed),
+            "reasoning": done.reasoning,
+            "usage": json.loads(dump(usage, Usage)) if usage is not None else None,
+        }
         self.note("agent", **answer)
         return answer
 
@@ -122,11 +137,17 @@ class Studio:
     def files(self) -> list[dict[str, Any]]:
         found: list[dict[str, Any]] = []
         for path in sorted(self.root.rglob("*")):
-            if any(part.startswith(".") for part in path.relative_to(self.root).parts):
+            parts = path.relative_to(self.root).parts
+            if any(part.startswith(".") or part == "__pycache__" for part in parts):
                 continue
             if path.is_file():
+                stat = path.stat()
                 found.append(
-                    {"path": str(path.relative_to(self.root)), "bytes": path.stat().st_size}
+                    {
+                        "path": str(path.relative_to(self.root)),
+                        "bytes": stat.st_size,
+                        "mtime": stat.st_mtime,
+                    }
                 )
         return found
 
@@ -142,7 +163,9 @@ class Studio:
 
 def build_app(studio: Studio) -> Starlette:
     async def page(_request: Request) -> HTMLResponse:
-        return HTMLResponse(PAGE)
+        # Read on each request: the page is the part of this example a person iterates on while
+        # the conversation behind it stays open.
+        return HTMLResponse(PAGE.read_text(encoding="utf-8"))
 
     async def status(_request: Request) -> JSONResponse:
         return JSONResponse(

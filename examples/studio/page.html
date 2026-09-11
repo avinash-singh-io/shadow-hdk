@@ -5,144 +5,268 @@
 <title>shadow-hdk studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --line:#262b35; --fg:#e6e8ee; --dim:#8b93a3; --think:#7dd3fc; --ok:#86efac; --bad:#fca5a5; --ask:#fde68a; --accent:#a78bfa; }
-  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
-  header { display:flex; gap:16px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); }
-  header b { color:var(--accent) } header span { color:var(--dim) } header code { color:var(--fg); background:#0b0d11; padding:2px 6px; border-radius:4px }
-  main { display:grid; grid-template-columns: 1.1fr 1.4fr 0.8fr; min-height:0 }
-  section { display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--line) } section:last-child { border-right:0 }
-  h2 { margin:0; padding:8px 14px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:var(--panel) }
-  .scroll { overflow:auto; padding:12px 14px; flex:1 }
-  .msg { margin:0 0 12px; padding:10px 12px; border-radius:10px; background:var(--panel); white-space:pre-wrap; word-wrap:break-word }
-  .msg.you { border-left:3px solid var(--accent) } .msg.agent { border-left:3px solid var(--ok) } .msg.failed { border-left-color:var(--bad) }
-  .msg small { display:block; color:var(--dim); margin-bottom:4px }
-  form { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line); background:var(--panel) }
-  input, button, textarea { font:inherit } textarea { flex:1; background:#0b0d11; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; resize:none; height:44px }
-  button { background:var(--accent); color:#0b0d11; border:0; border-radius:8px; padding:0 14px; font-weight:600; cursor:pointer } button:disabled { opacity:.5; cursor:default }
-  .step { padding:6px 8px; border-radius:8px; margin:0 0 6px; background:var(--panel); border:1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px }
-  .step .head { display:flex; gap:8px; align-items:baseline } .step .who { font-weight:600 } .step .cost { color:var(--dim); margin-left:auto }
-  .step .out { color:var(--dim); white-space:pre-wrap; margin-top:4px; max-height:120px; overflow:auto }
-  .step.nested { margin-left:18px }
-  .think { color:var(--think); font-style:italic; margin:6px 0 6px 4px; white-space:pre-wrap }
-  .think::before { content:"∴ "; }
-  .ok { color:var(--ok) } .bad { color:var(--bad) } .ask { color:var(--ask) }
-  .question { border:1px solid var(--ask); background:#2a2410; border-radius:10px; padding:10px 12px; margin:0 0 10px }
-  .question .q { color:var(--ask); margin-bottom:8px } .question button { margin-right:8px; padding:6px 12px } .question .no { background:var(--bad) }
-  .files li { list-style:none; padding:4px 0; cursor:pointer; color:var(--fg) } .files li:hover { color:var(--accent) } .files ul { padding:0; margin:0 }
-  .files li span { color:var(--dim); float:right }
-  pre.file { background:#0b0d11; padding:10px; border-radius:8px; white-space:pre-wrap; word-wrap:break-word; border:1px solid var(--line); max-height:45vh; overflow:auto }
+  :root { --bg:#0f1115; --panel:#171a21; --panel2:#1d2129; --line:#262b35; --fg:#e6e8ee; --dim:#8b93a3; --think:#7dd3fc; --ok:#86efac; --bad:#fca5a5; --ask:#fde68a; --accent:#a78bfa; --you:#232838; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
+  header { display:flex; gap:18px; align-items:center; padding:9px 16px; border-bottom:1px solid var(--line); background:var(--panel); font-size:12.5px; color:var(--dim) }
+  header b { color:var(--fg); font-weight:600 } header code { color:var(--fg) }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:6px } .dot.busy { background:var(--ask); animation: pulse 1s infinite }
+  @keyframes pulse { 50% { opacity:.3 } }
+  main { display:grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr); min-height:0 }
+  section { display:flex; flex-direction:column; min-height:0 }
+  section + section { border-left:1px solid var(--line) }
+  h2 { margin:0; padding:7px 14px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:var(--panel) }
+  .scroll { overflow:auto; padding:14px; flex:1 }
   .empty { color:var(--dim); font-style:italic }
-  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--dim); margin-right:6px } .dot.busy { background:var(--ask); animation:pulse 1s infinite } @keyframes pulse { 50% { opacity:.3 } }
+
+  /* the conversation: turns made of parts, in the order they happened */
+  .you { margin:0 0 14px; padding:10px 14px; border-radius:12px; background:var(--you); white-space:pre-wrap; max-width:80%; margin-left:auto }
+  .turn { margin:0 0 18px; padding:0 0 0 12px; border-left:2px solid var(--line) }
+  .turn.live { border-left-color:var(--accent) }
+  .part { margin:0 0 6px }
+  .think { color:var(--think); font-size:13px; white-space:pre-wrap }
+  .think .lead { cursor:pointer } .think .lead::before { content:"∴ "; opacity:.7 }
+  .think .more { display:none; margin-top:4px; padding-left:16px; opacity:.9 } .think.open .more { display:block }
+  .think.open .lead .ellipsis { display:none }
+  .tool { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; border:1px solid var(--line); border-radius:8px; background:var(--panel) }
+  .tool .head { display:flex; gap:10px; align-items:baseline; padding:6px 10px; cursor:pointer }
+  .tool .head .mark { width:14px; display:inline-block } .tool .head .name { font-weight:600 } .tool .head .arg { color:var(--dim); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap } .tool .head .cost { color:var(--dim); font-size:11px }
+  .tool .body { display:none; border-top:1px solid var(--line); padding:8px 10px; max-height:320px; overflow:auto; white-space:pre-wrap; word-break:break-word; color:#cfd5e1 }
+  .tool.open .body { display:block }
+  .tool .children { border-top:1px solid var(--line); padding:8px 8px 4px 22px }
+  .running .mark { color:var(--ask) } .completed .mark { color:var(--ok) } .failed .mark, .refused .mark { color:var(--bad) } .asked .mark { color:var(--ask) }
+  .question { margin:6px 0 8px 22px; padding:10px 12px; border:1px solid var(--ask); border-radius:8px; background:#2a2718 }
+  .question .q { color:var(--ask); margin-bottom:8px; white-space:pre-wrap }
+  .question .about { font-family: ui-monospace, Menlo, monospace; font-size:12.5px; margin-bottom:6px } .question .about code { color:var(--fg) }
+  .question .args { margin:0 0 8px; padding:6px 8px; border-radius:6px; background:var(--bg); font-size:11.5px; max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-word }
+  .question button { margin-right:8px; padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--fg); cursor:pointer } .question button.yes { border-color:var(--ok) } .question button.no { border-color:var(--bad) }
+  .question.answered { border-color:var(--line); color:var(--dim); background:var(--panel) }
+  .answer { margin-top:10px; padding:4px 14px; border-radius:12px; background:var(--panel); max-width:92% } .answer.failed { border:1px solid var(--bad) }
+  .answer p { margin:8px 0; white-space:pre-wrap } .answer pre { margin:8px 0; padding:8px 10px; border-radius:8px; background:var(--bg); font-size:12px; overflow:auto } .answer code { background:var(--bg); padding:1px 4px; border-radius:4px; font-size:12.5px } .answer ul, .answer ol { margin:6px 0; padding-left:22px } .answer h3, .answer h4, .answer h5, .answer h6 { margin:10px 0 4px; font-size:14px }
+  .answer table { border-collapse:collapse; margin:8px 0; font-size:13px } .answer th, .answer td { border:1px solid var(--line); padding:4px 8px; text-align:left }
+  .foot { margin-top:6px; font-size:11.5px; color:var(--dim) }
+  form { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line); background:var(--panel) }
+  textarea { flex:1; resize:none; min-height:44px; max-height:160px; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit }
+  button.send { padding:0 18px; border-radius:10px; border:1px solid var(--accent); background:var(--accent); color:#0f1115; font-weight:600; cursor:pointer } button.send:disabled { opacity:.5; cursor:default }
+
+  /* the environment */
+  .files ul { list-style:none; margin:0; padding:0 } .files li { display:flex; justify-content:space-between; gap:8px; padding:4px 6px; border-radius:6px; cursor:pointer; font-family: ui-monospace, Menlo, monospace; font-size:12.5px }
+  .files li:hover, .files li.sel { background:var(--panel2) } .files li span { color:var(--dim); font-size:11px } .files li.changed { color:var(--ok) } .files li.changed::after { content:" ●"; color:var(--ok) }
+  .file { margin:12px 0 0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); font-size:12px; white-space:pre-wrap; word-break:break-word; max-height:60vh; overflow:auto }
+  .file .fn { color:var(--dim); margin-bottom:6px; font-family: ui-monospace, Menlo, monospace }
 </style>
 </head>
 <body>
 <header>
-  <b>shadow-hdk</b> <span>studio</span>
+  <b>shadow-hdk studio</b>
   <span><i class="dot" id="dot"></i><span id="provider">connecting…</span></span>
   <span>mode <code id="mode">…</code></span>
-  <span>workspace <code id="root">…</code></span>
+  <span>root <code id="root">…</code></span>
+  <span id="spend"></span>
 </header>
 <main>
   <section>
     <h2>Conversation</h2>
-    <div class="scroll" id="chat"><p class="empty">Say something to the agent. Its file and shell tools are this run's, governed by the policy; what it does lands in the middle pane as it happens.</p></div>
-    <form id="say"><textarea id="text" placeholder="e.g. write a small python script that prints the first 10 primes, run it, and show me the output" ></textarea><button id="send">Send</button></form>
+    <div class="scroll" id="chat"><p class="empty">Say something to the agent. What it thinks, what it does and what it asks appear here, in order, as they happen. Its tools are this run's, judged by the policy.</p></div>
+    <form id="say"><textarea id="text" placeholder="Ask for something… (Enter to send, Shift+Enter for a new line)"></textarea><button class="send" id="send" type="submit">Send</button></form>
   </section>
   <section>
-    <h2>Agent steps — the record, as it happens</h2>
-    <div class="scroll" id="steps"><p class="empty">Nothing yet.</p></div>
-  </section>
-  <section>
-    <h2>Workspace files</h2>
-    <div class="scroll files"><ul id="files"></ul><pre class="file" id="file" hidden></pre></div>
+    <h2>Environment — <span id="env-title">the workspace</span></h2>
+    <div class="scroll files"><ul id="files"></ul><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div></div>
   </section>
 </main>
 <script>
 const $ = id => document.getElementById(id);
-const chat = $('chat'), steps = $('steps'), files = $('files'), fileBox = $('file');
-let stepsEmpty = true, chatEmpty = true;
-function clearEmpty(el, flag) { if (flag) el.innerHTML = ''; }
+const chat = $('chat'), files = $('files'), fileBox = $('file');
+let chatEmpty = true;
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-function scrollDown(el) { el.scrollTop = el.scrollHeight; }
+function scrollDown() { chat.scrollTop = chat.scrollHeight; }
 const MARK = {completed:'✓', failed:'✗', refused:'✕', asked:'?', running:'…'};
-const CLS = {completed:'ok', failed:'bad', refused:'bad', asked:'ask'};
 const topRun = {id: null};
-const questionsOpen = {};
+let turn = null;                  // the assistant turn being rendered
+const parts = {};                 // (run_id + ':' + step) → tool part element, for filling and nesting
+const questions = {};             // handle → question card
+const runParent = {};             // child run id → the run that spawned it, for nesting sub-agents
+let known = {};                   // path → mtime, to mark what changed
+let cents = 0, tokens = 0;
 
-function addMsg(kind, text, extra) {
-  clearEmpty(chat, chatEmpty); chatEmpty = false;
-  const d = document.createElement('div'); d.className = 'msg ' + kind + (extra && extra.failed ? ' failed' : '');
-  d.innerHTML = '<small>' + (kind === 'you' ? 'you' : 'agent') + '</small>' + esc(text);
-  chat.appendChild(d); scrollDown(chat);
+// ------------------------------------------------------------------ turns and parts
+function openTurn() {
+  if (chatEmpty) { chat.innerHTML = ''; chatEmpty = false; }
+  turn = document.createElement('div'); turn.className = 'turn live'; chat.appendChild(turn); return turn;
 }
-function addThought(text, nested) {
-  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
-  const d = document.createElement('div'); d.className = 'think' + (nested ? ' nested' : ''); d.textContent = text.trim();
-  steps.appendChild(d); scrollDown(steps);
+function currentTurn() { return turn || openTurn(); }
+function addYou(text) {
+  if (chatEmpty) { chat.innerHTML = ''; chatEmpty = false; }
+  if (turn) turn.classList.remove('live');
+  const d = document.createElement('div'); d.className = 'you'; d.textContent = text; chat.appendChild(d);
+  openTurn(); scrollDown();
 }
-function addStep(step, nested) {
-  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
-  const d = document.createElement('div'); d.className = 'step' + (nested ? ' nested' : '');
-  const who = step.component || step.step;
+function addThought(text) {
+  const t = text.trim(); if (!t) return;
+  const d = document.createElement('div'); d.className = 'part think';
+  const first = t.split('\n')[0];
+  const rest = t.slice(first.length).trim();
+  d.innerHTML = '<div class="lead">' + esc(first.slice(0, 160)) + (first.length > 160 || rest ? '<span class="ellipsis"> …</span>' : '') + '</div>' + (rest || first.length > 160 ? '<div class="more">' + esc(t) + '</div>' : '');
+  d.querySelector('.lead').onclick = () => d.classList.toggle('open');
+  currentTurn().appendChild(d); scrollDown();
+}
+let ROOT = '';
+function summarise(component, inputs) {
+  if (!inputs || typeof inputs !== 'object') return '';
+  if (inputs.command) {
+    // The agent habitually prefixes `cd <root> &&` — it is already there; show what it ran.
+    let c = inputs.command;
+    if (ROOT) c = c.replace(new RegExp('^cd\\s+"?' + ROOT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"?\\s*(&&|;)\\s*'), '');
+    return c;
+  }
+  if (inputs.path !== undefined) return inputs.path + (inputs.content !== undefined ? '  (' + inputs.content.length + ' chars)' : '');
+  if (inputs.source) return inputs.source.split('\n')[0] + (inputs.source.includes('\n') ? ' …' : '');
+  if (inputs.query) return inputs.query;
+  return JSON.stringify(inputs).slice(0, 200);
+}
+function toolKey(run_id, step) { return run_id + ':' + step; }
+function toolPart(e) {
+  // A tool call the agent made: opened when it is invoked, filled when its step closes.
+  const d = document.createElement('div'); d.className = 'part tool running'; d.dataset.key = toolKey(e.run_id, e.step);
+  d.innerHTML = '<div class="head"><span class="mark">…</span><span class="name">' + esc(e.component) + '</span><span class="arg">' + esc(summarise(e.component, e.inputs)) + '</span><span class="cost"></span></div><div class="body"></div>';
+  d.querySelector('.head').onclick = () => d.classList.toggle('open');
+  parts[d.dataset.key] = d;
+  // A sub-agent's step nests under the step of the run that spawned it — the one still running.
+  const above = runParent[e.run_id];
+  let parent = null;
+  if (above && above !== topRun.id) { const open = [...document.querySelectorAll('.tool.running')].filter(x => x.dataset.key.startsWith(above + ':')); parent = open[open.length - 1] || null; }
+  if (parent) { let c = parent.querySelector(':scope > .children'); if (!c) { c = document.createElement('div'); c.className = 'children'; parent.appendChild(c); } c.appendChild(d); }
+  else currentTurn().appendChild(d);
+  scrollDown(); return d;
+}
+function fillPart(step) {
+  const d = parts[toolKey(step.run_id, step.step)] || toolPart({run_id: step.run_id, step: step.step, component: step.component, inputs: {}});
   const outcome = step.outcome || 'running';
+  d.className = 'part tool ' + outcome;
+  d.querySelector('.mark').textContent = MARK[outcome] || '·';
   let out = '';
-  if (step.observation && step.observation.kind === 'completed') out = JSON.stringify(step.observation.output);
-  else if (step.observation && step.observation.kind === 'failed') out = step.observation.error;
-  else if (step.observation && step.observation.kind === 'refused') out = step.observation.reason;
-  if (step.reason) out = step.reason;
-  const cost = step.usage && step.usage.cost_cents != null ? step.usage.cost_cents + '¢' : (step.usage && step.usage.output_tokens != null ? step.usage.output_tokens + ' tok' : '');
-  d.innerHTML = '<div class="head"><span class="' + (CLS[outcome]||'') + '">' + (MARK[outcome]||'·') + '</span><span class="who">' + esc(who) + '</span><span class="cost">' + esc(cost) + '</span></div>' + (out ? '<div class="out">' + esc(out.slice(0, 2000)) + '</div>' : '');
-  steps.appendChild(d); scrollDown(steps);
+  const o = step.observation;
+  if (o && o.kind === 'completed') out = typeof o.output === 'string' ? o.output : JSON.stringify(o.output, null, 1);
+  else if (o && o.kind === 'failed') out = o.error;
+  else if (o && o.kind === 'refused') out = 'refused: ' + o.reason;
+  if (step.reason && outcome !== 'completed') out = (outcome === 'asked' ? 'asked: ' : 'refused: ') + step.reason;
+  const body = d.querySelector('.body'); body.textContent = (out || '(nothing came back)').slice(0, 6000);
+  if (step.usage) { d.querySelector('.cost').textContent = costOf(step.usage); }
+  if (outcome === 'failed' || outcome === 'refused') d.classList.add('open');
+  scrollDown();
+}
+function costOf(u) {
+  if (!u) return '';
+  if (u.cost_cents != null) return u.cost_cents + '¢';
+  if (u.output_tokens != null) return (u.input_tokens != null ? u.input_tokens + '→' : '') + u.output_tokens + ' tok';
+  return '';
 }
 function addQuestion(q) {
-  clearEmpty(steps, stepsEmpty); stepsEmpty = false;
   const d = document.createElement('div'); d.className = 'question'; d.id = 'q-' + q.handle;
-  d.innerHTML = '<div class="q">? ' + esc(q.question) + '</div><button class="yes">Allow</button><button class="no">Refuse</button>';
-  d.querySelector('.yes').onclick = () => answer(q.handle, true, d);
-  d.querySelector('.no').onclick = () => answer(q.handle, false, d);
-  steps.appendChild(d); scrollDown(steps); questionsOpen[q.handle] = d;
+  // What is being asked about comes first — the tool and what it would do — then the policy's reason.
+  const about = q.component ? '<div class="about"><b>' + esc(q.component) + '</b> <code>' + esc(summarise(q.component, q.inputs)) + '</code></div>' : '';
+  const full = q.inputs && typeof q.inputs === 'object' ? '<pre class="args">' + esc(JSON.stringify(q.inputs, null, 1).slice(0, 3000)) + '</pre>' : '';
+  d.innerHTML = about + '<div class="q">? ' + esc(q.question) + '</div>' + full + '<button class="yes">Allow</button><button class="no">Refuse</button>';
+  d.dataset.q = (q.component ? q.component + ' ' + summarise(q.component, q.inputs) + ' — ' : '') + q.question;
+  d.querySelector('.yes').onclick = () => answer(q.handle, true);
+  d.querySelector('.no').onclick = () => answer(q.handle, false);
+  const on = parts[toolKey(q.run_id, q.step)];
+  if (on) on.insertAdjacentElement('afterend', d); else currentTurn().appendChild(d);
+  questions[q.handle] = d; scrollDown();
 }
-async function answer(handle, allow, d) {
+function settle(handle, how) {
+  const d = questions[handle]; if (!d) return;
+  d.classList.add('answered'); d.innerHTML = '<div class="q">' + how + ' — ' + esc(d.dataset.q || '') + '</div>';
+}
+async function answer(handle, allow) {
   await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow, reason: allow ? '' : 'the person refused'})});
-  d.innerHTML = '<div class="q">' + (allow ? '✓ allowed' : '✕ refused') + '</div>';
 }
+function md(text) {
+  // Enough markdown for an agent's answer: fences, inline code, bold, headings, lists, paragraphs.
+  const out = []; const lines = String(text).split('\n'); let i = 0;
+  const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  while (i < lines.length) {
+    const l = lines[i];
+    if (l.startsWith('```')) { const buf = []; i++; while (i < lines.length && !lines[i].startsWith('```')) buf.push(lines[i++]); i++; out.push('<pre>' + esc(buf.join('\n')) + '</pre>'); continue; }
+    const h = l.match(/^(#{1,4})\s+(.*)/); if (h) { out.push('<h' + (h[1].length + 2) + '>' + inline(h[2]) + '</h' + (h[1].length + 2) + '>'); i++; continue; }
+    if (/^\s*[-*]\s+/.test(l)) { const items = []; while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) items.push('<li>' + inline(lines[i].replace(/^\s*[-*]\s+/, '')) + '</li>'), i++; out.push('<ul>' + items.join('') + '</ul>'); continue; }
+    if (/^\s*\d+\.\s+/.test(l)) { const items = []; while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) items.push('<li>' + inline(lines[i].replace(/^\s*\d+\.\s+/, '')) + '</li>'), i++; out.push('<ol>' + items.join('') + '</ol>'); continue; }
+    if (/^\s*\|.*\|\s*$/.test(l) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      const head = cells(l); i += 2; const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) rows.push(cells(lines[i++]));
+      out.push('<table><thead><tr>' + head.map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>');
+      continue;
+    }
+    if (!l.trim()) { i++; continue; }
+    const buf = []; while (i < lines.length && lines[i].trim() && !lines[i].startsWith('```') && !/^(#{1,4})\s/.test(lines[i]) && !/^\s*([-*]|\d+\.)\s+/.test(lines[i])) buf.push(lines[i++]);
+    out.push('<p>' + inline(buf.join('\n')) + '</p>');
+  }
+  return out.join('');
+}
+function addAnswer(line) {
+  const t = currentTurn();
+  const d = document.createElement('div'); d.className = 'answer' + (line.failed ? ' failed' : '');
+  d.innerHTML = line.text ? md(line.text) : (line.failed ? '(the provider reported this turn as failed)' : '');
+  t.appendChild(d);
+  const tools = t.querySelectorAll('.tool').length, asks = t.querySelectorAll('.question').length;
+  const f = document.createElement('div'); f.className = 'foot';
+  f.textContent = tools + ' tool call' + (tools === 1 ? '' : 's') + (asks ? ', ' + asks + ' question' + (asks === 1 ? '' : 's') : '') + (line.usage ? ' · ' + costOf(line.usage) : '');
+  t.appendChild(f); t.classList.remove('live'); turn = null;
+  if (line.usage) { cents += line.usage.cost_cents || 0; tokens += (line.usage.output_tokens || 0) + (line.usage.input_tokens || 0); $('spend').textContent = 'this conversation: ' + (cents ? cents + '¢' : tokens + ' tok'); }
+  scrollDown();
+}
+
+// ------------------------------------------------------------------ the stream
 function onLine(line) {
-  if (line.kind === 'you') addMsg('you', line.text);
-  else if (line.kind === 'agent') { addMsg('agent', line.text, line); refreshFiles(); setBusy(false); }
+  if (line.kind === 'you') { addYou(line.text); setBusy(true); }
+  else if (line.kind === 'agent') { addAnswer(line); refreshFiles(); setBusy(false); }
   else if (line.kind === 'question') addQuestion(line);
-  else if (line.kind === 'answered') { const d = questionsOpen[line.handle]; if (d) d.innerHTML = '<div class="q">' + (line.allow ? '✓ allowed' : '✕ refused') + '</div>'; }
+  else if (line.kind === 'answered') settle(line.handle, line.allow ? '✓ allowed' : '✕ refused');
+  else if (line.kind === 'withdrawn') settle(line.handle, '↩ withdrawn: the agent stopped waiting');
   else if (line.kind === 'event') {
     const e = line.event;
     if (topRun.id === null && e.kind === 'started') topRun.id = e.run_id;
-    if (e.kind === 'reasoned') addThought(e.text, e.run_id !== topRun.id);
-    if (e.kind === 'invoked' && e.component !== 'converse') refreshFiles();
-    if (e.kind === 'refused' || e.kind === 'ended') { if (e.kind === 'ended' && e.run_id === topRun.id) addStep({step:'run', outcome:'completed', observation:{kind:'completed', output:'ended: ' + e.reason}}); }
+    if (e.kind === 'spawned') runParent[e.child_run_id] = e.run_id;
+    else if (e.kind === 'reasoned') addThought(e.text);
+    else if (e.kind === 'invoked' && e.step !== 'converse') { toolPart(e); }
+    else if (e.kind === 'observed' && e.step !== 'converse') { refreshFiles(); }
+    else if (e.kind === 'ended' && e.run_id === topRun.id) { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the conversation ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
   }
-  else if (line.kind === 'step') {
-    const s = line.step;
-    if (s.step === 'converse') return;   // the step holding the conversation: its questions are shown on the tool's step, its end below
-    addStep(s, !!s.parent || s.run_id !== topRun.id);
-  }
+  else if (line.kind === 'step') { const s = line.step; if (s.step === 'converse') return; fillPart(s); }
 }
 function setBusy(b) { $('dot').className = 'dot' + (b ? ' busy' : ''); $('send').disabled = b; }
+
+// ------------------------------------------------------------------ the environment
+let selected = null;
 async function refreshFiles() {
   const r = await fetch('/files'); const j = await r.json();
-  files.innerHTML = j.files.length ? j.files.map(f => '<li data-path="' + esc(f.path) + '">' + esc(f.path) + '<span>' + f.bytes + ' B</span></li>').join('') : '<li class="empty">(empty)</li>';
-  files.querySelectorAll('li[data-path]').forEach(li => li.onclick = async () => {
-    const r = await fetch('/file?path=' + encodeURIComponent(li.dataset.path)); const j = await r.json();
-    fileBox.hidden = false; fileBox.textContent = j.content || j.error;
-  });
+  const fresh = {};
+  files.innerHTML = j.files.length ? j.files.map(f => {
+    fresh[f.path] = f.mtime;
+    const changed = known[f.path] === undefined ? Object.keys(known).length > 0 : known[f.path] !== f.mtime;
+    return '<li data-path="' + esc(f.path) + '" class="' + (changed ? 'changed ' : '') + (selected === f.path ? 'sel' : '') + '">' + esc(f.path) + '<span>' + f.bytes + ' B</span></li>';
+  }).join('') : '<li class="empty">(empty)</li>';
+  known = Object.keys(known).length ? {...known, ...fresh} : fresh;
+  files.querySelectorAll('li[data-path]').forEach(li => li.onclick = () => showFile(li.dataset.path));
+  if (selected && fresh[selected] !== undefined) showFile(selected, true);
+}
+async function showFile(path, quiet) {
+  const r = await fetch('/file?path=' + encodeURIComponent(path)); const j = await r.json();
+  selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = j.content || j.error;
+  if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.path === path));
 }
 async function status() {
   const r = await fetch('/status'); const j = await r.json();
-  $('provider').textContent = j.provider || '…'; $('mode').textContent = j.mode; $('root').textContent = j.root;
+  ROOT = j.root; $('provider').textContent = j.provider || '…'; $('mode').textContent = j.mode; $('root').textContent = j.root; $('env-title').textContent = j.root.split('/').slice(-1)[0] + ' · ' + j.mode;
   setBusy(j.busy);
 }
 $('say').onsubmit = async ev => {
   ev.preventDefault(); const text = $('text').value.trim(); if (!text) return;
   $('text').value = ''; setBusy(true);
   const r = await fetch('/say', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({text})});
-  if (!r.ok) { const j = await r.json(); addMsg('agent', j.error, {failed:true}); setBusy(false); }
+  if (!r.ok) { const j = await r.json(); addAnswer({text: j.error, failed: true}); setBusy(false); }
 };
 $('text').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('say').requestSubmit(); } });
 const es = new EventSource('/stream');
