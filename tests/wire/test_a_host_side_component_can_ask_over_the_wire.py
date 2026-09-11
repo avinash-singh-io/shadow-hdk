@@ -82,3 +82,52 @@ async def test_a_host_side_component_asks_and_is_resumed_with_what_it_kept() -> 
     done = [e for e in after if e.kind == "observed" and e.step == "s1"]
     assert done[-1].observation == Completed({"from": {"draft": 3}})
     assert [e for e in after if isinstance(e, Ended)][-1].reason == "completed"
+
+
+async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None:
+    """`ask()` (D58): the component is on the host's side; the `Questions` handle is on the
+    runtime's side, where the record is. The question crosses, waits, and the judgement returns."""
+    import asyncio
+
+    from shadow_hdk.runtime import Questions
+
+    async def asks_live(_inputs: JsonValue) -> Observation:
+        context = current_run()
+        assert context is not None
+        answer = await context.ask("live?")
+        return Completed({"answer": answer.kind})
+
+    ports = Ports(
+        model=None,
+        components=(InMemoryComponents([(ASKER, asks_live)]),),
+        governance=AllowAll(),
+        sink=ListSink(),
+        clock=FixedClock(),
+    )
+    questions = Questions()
+    options = RunOptions(
+        lease=Lease(Ceiling(10, 60, None), Floor(0)), run_id="w2", questions=questions
+    )
+
+    async with loopback(ports) as (host, runtime):
+        await host.initialize()
+
+        async def answer_it() -> None:
+            pending = await asyncio.wait_for(runtime_questions(runtime).next(), 20)
+            runtime_questions(runtime).answer(pending.handle, {"kind": "refuse", "reason": "no"})
+
+        # The handle lives runtime-side: the test reaches it there, as a host process would.
+        task = asyncio.create_task(answer_it())
+        with anyio.fail_after(60):
+            await host.run(PLAN, options)
+        await task
+        after = list(host.events)
+
+    done = [e for e in after if e.kind == "observed" and e.step == "s1"]
+    assert done[-1].observation == Completed({"answer": "refuse"})
+    assert [e.question for e in after if isinstance(e, AskedEvent)] == ["live?"]
+
+
+def runtime_questions(runtime: Any) -> Any:
+    """The runtime side's `Questions`, where the host process holds it."""
+    return runtime.questions

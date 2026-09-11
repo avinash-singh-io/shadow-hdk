@@ -150,6 +150,7 @@ classDiagram
 | `loop.py` | `run`, `resume` — Started … Ended, end reasons, child forwarding |
 | `errors.py` | `RuntimeStop` and its three — `LeaseExhausted`, `Cancelled`, `PortFailure` — plus `DanglingRef`. **A stop is a `BaseException`** (TD-006): every component adapter catches `Exception`, and it should, so a stop that was one got swallowed by whatever component was running |
 | `cancel.py` | the handle a host keeps and the check a step makes (D15) |
+| `questions.py` | the other handle a host keeps: a component asks the host **live** while its step runs, because a step holding a provider's session cannot park (D58) |
 | `children.py` | what a run is holding — spawn · send · release, and the records that survive a park (D16, D37); `Narrowed`, the pattern's ceiling applied as a second gate where the child is spawned, whichever side of the wire (D51) |
 | `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |

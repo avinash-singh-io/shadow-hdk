@@ -36,6 +36,7 @@ from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.runtime import Ports, Resumed, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
+    CONTEXT_ASK,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
@@ -126,6 +127,14 @@ class WireRunContext(RunContext):
     async def floor_met_now(self) -> bool:
         answered = await self._peer.call(CONTEXT_FLOOR_MET, {})
         return bool(answered["floor_met"])
+
+    async def ask(self, question: str, *, step: str | None = None) -> Any:
+        """A live question crosses and waits: the host's `Questions` handle is on the runtime's
+        side, where the record is (D58). The judgement comes back as JSON."""
+        answered = await self._peer.call(
+            CONTEXT_ASK, {"question": question, "step": step or self._step}
+        )
+        return _as_answer(answered.get("answer"))
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
         """Crosses for the same reason `reasoned` does (D57): the interrupt that will carry this

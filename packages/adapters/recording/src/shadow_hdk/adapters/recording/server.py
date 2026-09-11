@@ -27,11 +27,12 @@ from mcp import types
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import Binding, Composition, Invoke
+from shadow_hdk.kernel.events import Asked as AskedEvent
 from shadow_hdk.kernel.events import Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Refused
-from shadow_hdk.runtime import RunContext, run
+from shadow_hdk.runtime import RunContext, resume, run
 
 
 class RecordingServer:
@@ -110,18 +111,38 @@ class RecordingServer:
         if remaining.max_steps <= 0:
             return _error("the run has no steps left")
 
-        observation: Observation | None = None
-        async for event in run(
-            composition,
-            self._context.ports,
-            options=await self._context.spawn_options_now(
-                Ceiling(
-                    max_steps=min(2, remaining.max_steps),
-                    max_wall_seconds=remaining.max_wall_seconds,
-                    max_cost_cents=remaining.max_cost_cents,
-                )
+        # Its own id and a checkpointer of its own, so that if the policy asks, the nested run can
+        # be resumed with the answer — `resume` needs both, and `spawn_options_now` mints neither.
+        from langgraph.checkpoint.memory import InMemorySaver
+
+        options = await self._context.spawn_options_now(
+            Ceiling(
+                max_steps=min(2, remaining.max_steps),
+                max_wall_seconds=remaining.max_wall_seconds,
+                max_cost_cents=remaining.max_cost_cents,
             ),
-        ):
+            run_id=self._context.ports.clock.new_id(),
+            checkpointer=InMemorySaver(),
+        )
+        observation, question = await self._drive(
+            run(composition, self._context.ports, options=options), step
+        )
+        while observation is None and question is not None:
+            # **The policy asked, and the child is waiting on this very call** (BUG-021, D58). The
+            # nested run parked; this step cannot — it is what keeps the provider alive — so the
+            # question is put to the host live and the nested run resumed with the answer. A run
+            # with nobody to ask is told so, and the answer is a refusal.
+            answer = await self._context.ask(question)
+            observation, question = await self._drive(
+                resume(composition, answer, self._context.ports, options=options), step
+            )
+        return _as_result(observation)
+
+    async def _drive(self, events: Any, step: str) -> tuple[Observation | None, str | None]:
+        """Run the nested run out; say what the step observed, or what it asked."""
+        observation: Observation | None = None
+        question: str | None = None
+        async for event in events:
             if isinstance(event, Observed) and event.step == step:
                 observation = event.observation
             elif isinstance(event, RefusedEvent) and event.step == step:
@@ -131,7 +152,9 @@ class RecordingServer:
                 # So a reader that watches only for `Observed` misses every refusal, which is what
                 # the first version of this did.
                 observation = Refused(event.reason)
-        return _as_result(observation)
+            elif isinstance(event, AskedEvent) and event.step == step:
+                question = event.question
+        return observation, question
 
     # ------------------------------------------------------------------ the wire
 

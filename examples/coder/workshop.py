@@ -64,8 +64,15 @@ OPEN = Mode(
         contained=False,
         costs=True,
     ),
+    # **Asked, not waved through.** Inside this line the agent goes ahead; between it and the
+    # ceiling — a write anywhere on the machine, in this mode every write, because an unconfined
+    # environment cannot say where a write lands — the person is asked, live, while the provider
+    # waits on the call (D58). The honest setting for a laptop with no sandbox.
+    ask_above=EffectProfile(
+        reads=EVERYTHING, writes=OURS, reaches=True, reversible=False, contained=False, costs=True
+    ),
 )
-"""Everything, said out loud. What `--mode full` gets."""
+"""Everything, said out loud — and every write asked about. What `--mode full` gets."""
 
 LOOKING = Mode(
     "looking", EffectProfile(reads=EVERYTHING, reaches=True, contained=False, costs=True)

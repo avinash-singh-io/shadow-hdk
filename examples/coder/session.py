@@ -41,7 +41,7 @@ from shadow_hdk.kernel import (
     ToolSource,
 )
 from shadow_hdk.providers import detect, environment_for, open_with, search_dirs, shipped
-from shadow_hdk.runtime import RunOptions, current_run, run
+from shadow_hdk.runtime import Questions, RunOptions, current_run, run
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.testing import InMemoryComponents, make_registration
 
@@ -102,8 +102,13 @@ async def a_conversation(
     want: str | None = None,
     mode: EnvironmentMode = "workspace-write",
     on_event: Callable[[Event], None] | None = None,
+    questions: Questions | None = None,
 ) -> AsyncIterator[Any]:
     """A resident provider whose only tools are this run's, inside a live run.
+
+    `questions` is where the policy's questions about the provider's tool calls go while the
+    provider waits on them (D58) — the person at the terminal, in this example. Without one, a
+    call the policy asks about is refused: nobody was there to ask.
 
     Yields something with `turn(prompt)` on it. Everything the provider does while you hold it lands
     on the run's stream.
@@ -162,7 +167,8 @@ async def a_conversation(
         """
         reason = "the run ended before the conversation started"
         try:
-            async for event in run(plan, ports, options=RunOptions(lease=a_lease())):
+            options = RunOptions(lease=a_lease(), questions=questions)
+            async for event in run(plan, ports, options=options):
                 if isinstance(event, Refused) and event.step == "converse":
                     reason = f"the conversation was refused: {event.reason}"
                 if isinstance(event, Ended) and event.reason != "completed":

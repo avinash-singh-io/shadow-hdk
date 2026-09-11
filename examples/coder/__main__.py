@@ -15,6 +15,7 @@ from pathlib import Path
 
 from examples.coder.session import NoProvider, a_conversation
 from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, RefusedEvent, Spent
+from shadow_hdk.runtime import Questions
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
@@ -66,6 +67,24 @@ def show(event: Event) -> None:
         print(f"{DIM}  [conversation ended: {event.reason}]{OFF}", flush=True)
 
 
+async def answer_questions(questions: Questions) -> None:
+    """The person's side of D58: a tool call the policy asks about waits here for a `y`/`n`.
+
+    The provider is blocked on that call, so the question is put to the terminal as it arrives;
+    `input()` is blocking and the run is on this loop, so it runs in a thread.
+    """
+    from shadow_hdk.kernel import Allow, Refuse
+
+    while True:
+        pending = await questions.next()
+        print(f"\n\033[33m? {pending.question}{OFF}", flush=True)
+        said = await asyncio.to_thread(input, f"{BOLD}allow? [y/N]{OFF} ")
+        questions.answer(
+            pending.handle,
+            Allow() if said.strip().lower() in ("y", "yes") else Refuse("the person said no"),
+        )
+
+
 async def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("-")]
     mode: EnvironmentMode = "workspace-write"
@@ -76,8 +95,12 @@ async def main() -> int:
         if flag.startswith("--provider="):
             want = flag.split("=", 1)[1]
     root = Path(argv[0] if argv else "./coder-workspace").resolve()
+    questions = Questions()
+    answering = asyncio.create_task(answer_questions(questions))
     try:
-        async with a_conversation(root, want=want, mode=mode, on_event=show) as talk:
+        async with a_conversation(
+            root, want=want, mode=mode, on_event=show, questions=questions
+        ) as talk:
             print(f"{BOLD}Workspace:{OFF} {root}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
             if mode == "workspace-write":
@@ -112,6 +135,8 @@ async def main() -> int:
         # person to see, verbatim: it names what is missing and what to pass instead.
         print(f"\033[31m{cannot}{OFF}", file=sys.stderr)
         return 3
+    finally:
+        answering.cancel()
 
 
 if __name__ == "__main__":

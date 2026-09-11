@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime
+from typing import Any
 
 from pydantic import JsonValue
 
@@ -177,12 +178,15 @@ class Session:
         principal: str | None = None,
         parent_run_id: RunId | None = None,
         cancellation: Cancellation | None = None,
+        questions: Any = None,
     ) -> None:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
         self.principal = principal
         self.meter = LeaseMeter(lease, clock)
         self.cancellation = cancellation if cancellation is not None else Cancellation()
+        self.questions = questions
+        """Where a component asks the host live (D58); `None` is nobody to ask."""
         self._context = dict(context or {})
         clashing = sorted(RESERVED_ATTRIBUTES & set(self._context))
         if clashing:

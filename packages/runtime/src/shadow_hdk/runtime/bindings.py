@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from shadow_hdk.runtime.cancel import Cancellation
     from shadow_hdk.runtime.children import Children
     from shadow_hdk.runtime.emit import Emitter
+    from shadow_hdk.runtime.questions import Questions
     from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
     from shadow_hdk.runtime.trust import Trust
@@ -84,6 +85,10 @@ class RunOptions:
     parent: Any = MISSING
     cancellation: Cancellation | None = None
     """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
+    questions: Questions | None = None
+    """Where a component asks the host **live** while its step is still running (D58) — a step
+    that holds a provider's session cannot park. A child inherits its parent's. `None` means
+    nobody is there to ask, and `ask()` says so."""
 
 
 @dataclass(frozen=True)
@@ -235,6 +240,7 @@ class RunContext:
         # The parent's handle by default: a child that outlived the run which spawned it is a leak
         # with a budget. `cancellation=` in the overrides makes the child its own to stop (D15).
         overrides.setdefault("cancellation", self._session.cancellation)
+        overrides.setdefault("questions", self._session.questions)
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:
@@ -297,6 +303,26 @@ class RunContext:
         await self._emitter.emit(lambda **k: Proposed(proposal=proposal, **k))
 
     # ------------------------------------------------------------------ asking for itself (D57)
+
+    async def ask(self, question: str, *, step: str | None = None) -> Any:
+        """Ask the host and wait for the answer, without parking (D58). `Asked` goes on the record
+        first, so a reader sees the question where it was raised. With no `Questions` handle the
+        answer is a `Refuse` that says nobody was there — consent nobody gave is not consent."""
+        from shadow_hdk.kernel.events import Asked as AskedEvent
+        from shadow_hdk.kernel.ports import Refuse
+        from shadow_hdk.runtime.questions import Pending
+
+        where = step if step is not None else (self.step or "")
+        handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
+        await self._emitter.emit(
+            lambda **k: AskedEvent(step=where, question=question, handle=handle, **k)
+        )
+        questions = self._session.questions
+        if questions is None:
+            return Refuse("nobody was there to ask: the run has no Questions handle")
+        return await questions.ask(
+            Pending(handle=handle, run_id=self.run_id, step=where, question=question)
+        )
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
         """What this step wants back if it parks. Read by the executor when the component answers

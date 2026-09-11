@@ -75,6 +75,7 @@ async def with_a_run[T](
     governance: GovernancePort | None = None,
     extra: Sequence[Registration] = (),
     steps: int = 20,
+    questions: Any = None,
 ) -> tuple[T, list[Event]]:
     """Run `what` inside a step, giving back its answer **and the parent's event stream**."""
     box: list[Any] = []
@@ -100,7 +101,9 @@ async def with_a_run[T](
         async for e in run(
             Composition((Invoke("s1", DRIVER.id),)),
             ports,
-            options=RunOptions(lease=Lease(Ceiling(steps, 600, 10_000), Floor(0))),
+            options=RunOptions(
+                lease=Lease(Ceiling(steps, 600, 10_000), Floor(0)), questions=questions
+            ),
         )
     ]
     assert box, "the driver never ran"

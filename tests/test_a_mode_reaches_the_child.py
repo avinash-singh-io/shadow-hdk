@@ -32,8 +32,15 @@ from shadow_hdk.adapters.modes import Mode, ModeGovernance
 from shadow_hdk.adapters.recording import RecordingServer
 
 from shadow_hdk.adapters.environment import LocalEnvironment, local_sandbox
-from shadow_hdk.kernel import Completed, Composition, EffectProfile, Invoke, Observation
-from shadow_hdk.runtime import Ports, RunOptions, current_run, run
+from shadow_hdk.kernel import (
+    Allow,
+    Completed,
+    Composition,
+    EffectProfile,
+    Invoke,
+    Observation,
+)
+from shadow_hdk.runtime import Ports, Questions, RunOptions, current_run, run
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.testing import (
     FixedClock,
@@ -58,10 +65,15 @@ subject the thing it is named after.
 
 
 async def offered_and_asked(
-    root: Path, policy: Mode, environment_mode: EnvironmentMode = "full"
+    root: Path,
+    policy: Mode,
+    environment_mode: EnvironmentMode = "full",
+    *,
+    questions: Questions | None = None,
 ) -> dict[str, Any]:
     """What a child would be handed under `policy` over an environment in `environment_mode`, and
-    what happens if it calls the shell anyway."""
+    what happens if it calls the shell anyway. `questions` is who answers when the policy asks
+    (D58); nobody, by default."""
     found: dict[str, Any] = {}
 
     async def drive(_inputs: Any) -> Observation:
@@ -82,9 +94,16 @@ async def offered_and_asked(
         clock=FixedClock(),
     )
     plan = Composition((Invoke("watching", "watching"),))
-    async for _ in run(plan, ports, options=RunOptions(lease=a_lease())):
+    async for _ in run(plan, ports, options=RunOptions(lease=a_lease(), questions=questions)):
         pass
     return found
+
+
+class SaysYes(Questions):
+    """A person who allows everything the moment it is asked — the test's stand-in for `y`."""
+
+    async def ask(self, pending: Any) -> Any:
+        return Allow()
 
 
 async def test_a_policy_narrower_than_the_environment_does_not_offer_what_exceeds_it(
@@ -117,14 +136,27 @@ async def test_the_refusal_names_the_mode_and_not_the_tool(tmp_path: Path) -> No
     assert "run_shell" not in said, f"the refusal is about the effects, not the name: {said}"
 
 
-async def test_the_open_policy_does_offer_it(tmp_path: Path) -> None:
+async def test_the_open_policy_does_offer_it_and_asks_before_a_write(tmp_path: Path) -> None:
     """The anti-vacuity half: a registry that offered nothing under every policy would pass the
-    tests above and mean nothing."""
-    seen = await offered_and_asked(tmp_path, OPEN, "full")
+    tests above and mean nothing. `open` asks before a write (its ask line); with a person who
+    says yes, the write goes through. (Written first with no ask line; the premise moved.)"""
+    seen = await offered_and_asked(tmp_path, OPEN, "full", questions=SaysYes())
 
     assert "run_shell" in seen["offered"]
     assert seen["ran"].is_error is False
     assert seen["wrote"].is_error is False
+
+
+async def test_with_nobody_to_ask_the_open_policys_write_is_refused_and_says_so(
+    tmp_path: Path,
+) -> None:
+    seen = await offered_and_asked(tmp_path, OPEN, "full")
+
+    assert seen["wrote"].is_error is True
+    assert "nobody" in seen["wrote"].content[0].text
+    # An unconfined shell writes anywhere too — `full` declares it so — and is asked the same way.
+    assert seen["ran"].is_error is True
+    assert "nobody" in seen["ran"].content[0].text
 
 
 @pytest.mark.skipif(

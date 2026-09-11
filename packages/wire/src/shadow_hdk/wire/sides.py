@@ -34,12 +34,13 @@ from shadow_hdk.kernel.ports import (
     ModelResponse,
     Refuse,
 )
-from shadow_hdk.runtime import Ports, RunOptions
+from shadow_hdk.runtime import Ports, Questions, RunOptions
 from shadow_hdk.runtime.steps import Fold, Step, as_json
 from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     COMPLETE,
+    CONTEXT_ASK,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
@@ -89,6 +90,11 @@ class RuntimeSide:
         self._clock = clock
         from langgraph.checkpoint.memory import InMemorySaver
 
+        self.questions = Questions()
+        """**A session owns a `Questions` handle** (D58): a live question from a component on the
+        host's side lands here, where the process serving the runtime can answer it — the same
+        way it owns the checkpointer. A host in another language answers through its own process's
+        surface on this object; the loopback tests reach it directly."""
         self._checkpointer = checkpointer if checkpointer is not None else InMemorySaver()
         """**A session owns a checkpointer** (BUG-006). Without one every `resume` over the wire
         raised, so an Ask that crossed the wire could never be answered. The default lives as long
@@ -110,6 +116,7 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_RELEASE, self._context_release)
         self.peer.serves(CONTEXT_IS_HELD, self._context_is_held)
         self.peer.serves(CONTEXT_KEEP, self._context_keep)
+        self.peer.serves(CONTEXT_ASK, self._context_ask)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
 
     def ports(self) -> Ports:
@@ -141,6 +148,14 @@ class RuntimeSide:
         return {
             "registrations": [json.loads(dump(r, Registration)) for r in await self.live.visible()]
         }
+
+    async def _context_ask(self, params: dict[str, Any]) -> Any:
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is nobody to ask")
+        answer = await self.live.ask(str(params.get("question", "")), step=params.get("step"))
+        if isinstance(answer, Allow | Ask | Refuse):
+            answer = json.loads(dump(answer, Judgement))
+        return {"answer": answer}
 
     async def _context_keep(self, params: dict[str, Any]) -> Any:
         if self.live is None:
@@ -240,6 +255,7 @@ class RuntimeSide:
             principal=params.get("principal"),
             run_id=params.get("run_id"),
             checkpointer=self._checkpointer,
+            questions=self.questions,
         )
         ports = self.ports()
         stream = (
