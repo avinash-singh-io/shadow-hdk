@@ -88,3 +88,69 @@ The Phase 21 claim is proven with a plain component that thinks; the agent over 
 Phase 23's explicit task, with this as its starting measurement.
 
 ---
+### [DECISION] 2026-09-11 — D47: a large result is held by the agent, never written by the runtime
+
+Topics: offloading, context, principles
+Affects-phases: phase-21-the-visible-agent
+Affects-specs: architecture/adapters.md#agent
+
+A tool that returns a hundred kilobytes costs a hundred kilobytes of context on every turn after
+it. Past `Pattern.offload_over` the model sees a handle, a size and a preview, and `recall` pages
+the rest — offered whenever the threshold is set, because a handle the model cannot follow is worse
+than the flood it replaced (the rule `describe` follows above the catalogue threshold).
+
+**The plan said *the environment, as a file*, and the plan was wrong.** That would give the runtime
+a write path, which the second principle forbids: the runtime acts through components and records
+through the sink, and a file it wrote itself is neither. Offloading is about the *model's* context
+and nothing else. The agent adapter holds the full result in memory for the run; the record and
+the sink get the whole observation exactly as they always did, and a test proves the stream was
+not truncated.
+
+The threshold is a pattern field beside `catalogue_threshold`, not a `RunOptions` field as first
+planned: what the model sees is the pattern's to say, and the two thresholds belong together.
+
+*Why:* the cost is in the transcript, not on disk. *Overturned by:* a result too large to hold in
+memory for a run, which is a component's problem to solve before it returns, not the loop's.
+
+---
+
+### [DISCOVERY] 2026-09-11 — where Claude Code's thinking is, measured
+
+Topics: reasoning, claude-code, measurement
+Affects-phases: phase-21-the-visible-agent
+
+Three subscription turns, against claude 2.1.235:
+
+* The `thinking` block arrives on `assistant` events at `message.content[].thinking` — the path
+  the provider file named — **with its text empty** and only a signature, by default. Print mode
+  redacts reasoning.
+* `--thinking-display` accepts `summarized` and `omitted`; `full` is refused (probed by
+  value-rejection, the way the reference probes hidden flags). With `summarized` the block carries
+  the provider's own summary — 143 characters for a one-line question.
+* `--include-partial-messages` streams it as `thinking_delta` events beside `text_delta`.
+* Through our own `JsonlSession` with the shipped provider: `Turn.reasoning` carried the summary.
+  Two earlier example turns — write a file, read it back — carried none, because the model does
+  not engage extended thinking for every task; that is the model's call and reads as *did not say*.
+
+So what reaches the record is a **summary the provider wrote**, never the raw text, and D45 holds:
+the record carries what the model said, and a summary is what this one says. The flag is a field
+on the record with the measurement beside it.
+
+---
+
+### [SCOPE_CHANGE] 2026-09-11 — deferred schemas were already built; the phase fixed one lie in them
+
+Topics: catalogue, describe, d13
+Affects-phases: phase-21-the-visible-agent
+
+D13's fourth mechanism — `thin()` at `catalogue_threshold` — shipped in Phase 8. Group 3 did not
+build it again. It found two things and fixed both:
+
+* Above the threshold a pattern that had not enabled `describe` was told to call it anyway. The
+  loop now offers `describe` whenever it thins, whatever the pattern said — a mechanism offered by
+  halves is a lie, and the existing wiring test had encoded exactly that lie.
+* The *call describe* sentence was appended to every one-liner; over two hundred tools it was
+  measured at a third of the catalogue, which is not what *a name and a line each* means. It is
+  said once, on the verb. Two hundred tools now cost under a quarter of their whole schemas.
+
+---

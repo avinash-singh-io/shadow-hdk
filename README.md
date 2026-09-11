@@ -136,16 +136,39 @@ mid-run is seen, and one that vanishes is gone.
 
 ## What comes out
 
-Eleven event kinds, in one ordered stream per run:
+Twelve event kinds, in one ordered stream per run:
 
 `started` · `composed` · `invoked` · `observed` · `proposed` · `refused` · `asked` · `spawned` ·
-`spent` · `held` · `ended`
+`spent` · `held` · `reasoned` · `ended`
 
 Six observation kinds, which is what a step's outcome can be:
 
 `Completed` · `Refused` · `Asked` · `Failed` · `Pending` · `Acted`
 
 `Acted` is the receipt of a world-effect: it says the thing happened, and never carries the payload.
+`Reasoned` is what the model thought, on the record ahead of what it did — a model that reports no
+reasoning emits none.
+
+### The visible agent
+
+Nobody renders twelve raw kinds; every client renders **steps** — what it thought, what it reached
+for, what came back, which sub-agent went off and did what, what was refused, what it cost. The
+runtime folds the stream into `Step`s once, as a pure function over any event iterable:
+
+```python
+from shadow_hdk.runtime.steps import run_steps, steps
+
+async for step in run_steps(run(plan, ports, options=options)):
+    print(step.step, step.outcome, step.reasoning[:60], [c.step for c in step.children])
+```
+
+Over the wire the same fold sends each step as a `step` notification beside the events, already
+folded, so a host in another language renders agent steps without porting the fold.
+
+Two things keep a long run cheap: above `catalogue_threshold` the model sees a name and a line
+per tool and pulls a schema with `describe` when it reaches for one; past `offload_over` a large
+result reaches the model as a handle, a size and a preview, and `recall` pages the rest. The record
+gets the whole thing either way — offloading is about the model's context, never yours.
 
 ---
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import replace
 
-from shadow_hdk.adapters.agent.catalogue import describe_for, thin
+from shadow_hdk.adapters.agent.catalogue import describe_for, thin, thinned
 from shadow_hdk.adapters.agent.meta import BY_NAME
 from shadow_hdk.adapters.agent.pattern import (
     COMPACT,
@@ -23,6 +23,7 @@ from shadow_hdk.adapters.agent.pattern import (
     DONE,
     MAILBOX,
     PROPOSE,
+    RECALL,
     RELEASE,
     SEND,
     SPAWN,
@@ -133,6 +134,8 @@ class _Turnwise:
         self.pattern = agent.pattern
         self.ctx = context
         self.messages: list[Message] = []
+        self.held: dict[str, str] = {}
+        """Results too large for the model's context; kept for the run, paged by `recall` (D47)."""
         self.spent = Usage(0, 0, 0)
         self.nudged = False
         self.proposed = 0
@@ -196,6 +199,8 @@ class _Turnwise:
                 await self.propose(call)
             for call in [c for c in response.tool_calls if c.name == DESCRIBE]:
                 await self.describe(call)
+            for call in [c for c in response.tool_calls if c.name == RECALL]:
+                self.recall(call)
             for call in [c for c in response.tool_calls if c.name == COMPACT]:
                 await self.compact(call)
             for call in [c for c in response.tool_calls if c.name in (SPAWN, SEND, RELEASE)]:
@@ -253,9 +258,14 @@ class _Turnwise:
         ]
         # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
         # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
-        return thin(tools, self.pattern) + tuple(
-            BY_NAME[name] for name in sorted(self.pattern.meta_tools)
-        )
+        # **And `describe` is offered whenever thinning is in effect**, whether the pattern enabled
+        # it or not: a thinned entry has no schema, and a mechanism offered by halves is a lie.
+        verbs = set(self.pattern.meta_tools)
+        if thinned(tools, self.pattern):
+            verbs.add(DESCRIBE)
+        if self.pattern.offload_over is not None:
+            verbs.add(RECALL)  # a handle the model cannot follow is worse than the flood
+        return thin(tools, self.pattern) + tuple(BY_NAME[name] for name in sorted(verbs))
 
     def _within_the_ceiling(self, registration: Registration) -> bool:
         """Whether this role could ever be permitted to use it (BUG-012).
@@ -380,6 +390,45 @@ class _Turnwise:
         text = answer if isinstance(answer, str) else dump(answer, Interface)
         self.messages.append(Message("tool", text, tool_call_id=call.id))
 
+    def offered(self, observation: Observation | None) -> str:
+        """What the model sees of a result — the whole of it, or a handle if it is large (D47).
+
+        The record and the sink saw the whole observation already; this is about the *model's*
+        context, which is re-sent on every turn after this one. Past the pattern's threshold the
+        model gets a handle, the size, a preview and the verb to page the rest. Held here, in
+        memory, for the run: the runtime has no write path and offloading is not a reason to grow
+        one.
+        """
+        text = _readable(observation)
+        over = self.pattern.offload_over
+        if over is None or len(text) <= over:
+            return text
+        handle = f"result-{len(self.held) + 1}"
+        self.held[handle] = text
+        preview = text[: min(over // 4, 800)]
+        return _as_json(
+            {
+                "offloaded": handle,
+                "size": len(text),
+                "preview": preview,
+                "how": f"call `{RECALL}` with this handle, a start and a length to read more",
+            }
+        )
+
+    def recall(self, call: ToolCall) -> None:
+        """A slice of a held result. A handle nobody issued is a sentence, not a crash — the model
+        made it up, and telling it so is cheaper than ending the run."""
+        arguments = call.arguments if isinstance(call.arguments, dict) else {}
+        handle = str(arguments.get("handle", ""))
+        if (whole := self.held.get(handle)) is None:
+            self.messages.append(
+                Message("tool", f"no offloaded result is called {handle!r}", tool_call_id=call.id)
+            )
+            return
+        start = max(0, int(arguments.get("start", 0) or 0))
+        length = max(1, int(arguments.get("length", 4_000) or 4_000))
+        self.messages.append(Message("tool", whole[start : start + length], tool_call_id=call.id))
+
     def done(self, call: ToolCall) -> Observation | None:
         """`None` means *not yet* — the floor is not met and this is the one nudge it gets."""
         if not self.ctx.floor_met() and not self.nudged:
@@ -446,7 +495,7 @@ class _Turnwise:
             if call.name in BY_NAME:
                 continue
             observation = observed.get(call.id)
-            self.messages.append(Message("tool", _readable(observation), tool_call_id=call.id))
+            self.messages.append(Message("tool", self.offered(observation), tool_call_id=call.id))
 
     # ------------------------------------------------------------------ bookkeeping
 

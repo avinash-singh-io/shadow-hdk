@@ -64,6 +64,7 @@ rather than remembered.
 | D44 | the registry is connected to, never launched | [`phases/phase-20-providers/history.md`](/phases/phase-20-providers/history.md) |
 | D45 | thinking is on the record, beside what it led to | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
 | D46 | the stream folds into steps, once, and the fold crosses the wire folded | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
+| D47 | a large result is held by the agent, never written by the runtime | [`phases/phase-21-the-visible-agent/history.md`](/phases/phase-21-the-visible-agent/history.md) |
 
 ## Also here
 

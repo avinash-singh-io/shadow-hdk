@@ -42,6 +42,12 @@ launch_args = [
   "-p",
   "--input-format", "stream-json",
   "--output-format", "stream-json",
+  # **Measured 2026-09-11.** Without this the `thinking` block arrives with its text empty and only
+  # a signature — the CLI redacts reasoning in print mode by default. The flag's allowed values are
+  # `summarized` and `omitted` (probed by value-rejection; `full` is refused), so what reaches the
+  # record is the provider's own *summary* of its thinking, never the raw text. That is what it
+  # gives, and D45 says the record carries what the model said rather than what we made up.
+  "--thinking-display", "summarized",
   "--verbose",
 ]
 
@@ -91,8 +97,10 @@ prompt_shape = "stream-json-user"
 say_on = ["assistant"]
 say_at = "message.content[].text"
 # Thinking arrives as content blocks beside the text — the API's own shape, passed through:
-#   {"type": "thinking", "thinking": "..."}
-# Present when the model was asked to think; absent otherwise, which reads as *did not say*.
+#   {"type": "thinking", "thinking": "...", "signature": "..."}
+# **Measured 2026-09-11**: present on `assistant` events; the text is a summary when launched with
+# `--thinking-display summarized` (above) and **empty** without it. A 144-character summary for a
+# one-line question, arriving on the path below.
 think_on = ["assistant"]
 think_at = "message.content[].thinking"
 done_on = ["result"]

@@ -54,8 +54,12 @@ def test_a_catalogue_over_the_threshold_is_names_and_one_liners() -> None:
     assert all("Does the" in (interface.description or "") for interface in shown), (
         "the one-line description is the whole point of the thinned form"
     )
-    assert all(DESCRIBE in (interface.description or "") for interface in shown), (
-        "a thinned entry has to say how to get the schema back"
+    # A thinned entry is **a name and a line** — not a line plus one sentence two hundred times.
+    # How to get the schema back is said once, on `describe` itself, which the loop offers whenever
+    # it thins (Phase 21). This used to assert the sentence per entry, and was measured to make it a
+    # third of a two-hundred-tool catalogue.
+    assert all(DESCRIBE not in (interface.description or "") for interface in shown), (
+        "the how-to-ask sentence is repeated per entry"
     )
 
 
@@ -145,6 +149,10 @@ async def test_the_catalogue_the_model_is_offered_is_thinned_above_the_threshold
     offered = {i.name: i for i in model.requests[0].tools}
     assert "search" in offered, "thinning dropped a component"
     assert not offered["search"].input_schema.get("properties"), "the catalogue went out whole"
-    assert DESCRIBE in (offered["search"].description or "")
+    # The way to ask is said **once, on the verb**, never per entry (Phase 21): this test used to
+    # assert the sentence on every one-liner, and over two hundred tools that sentence was a third
+    # of the catalogue. The verb is offered instead — whether or not this pattern enabled it.
+    assert DESCRIBE not in (offered["search"].description or "")
+    assert DESCRIBE in offered, "thinned without the verb that fetches the rest"
     # The model's own verbs are never thinned: a verb it has to ask about is one it will not use.
     assert offered["done"].input_schema.get("properties"), "a meta-tool was thinned"

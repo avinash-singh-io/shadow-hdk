@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Refused, Spent
+from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, Refused, Spent
 
 DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
 
@@ -31,7 +31,11 @@ def show(event: Event) -> None:
     """
     if not _conversation:
         _conversation.append(event.run_id)
-    if isinstance(event, Invoked) and event.step != "converse":
+    if isinstance(event, Reasoned):
+        # What it thought, before what it did (D45) — the line a person most wants to read.
+        thought = event.text.strip().replace("\n", " ")
+        print(f"\033[36m  ∴ {thought[:200]}{OFF}", flush=True)
+    elif isinstance(event, Invoked) and event.step != "converse":
         print(f"{DIM}  · {event.component}{OFF}", flush=True)
     elif isinstance(event, Observed) and event.step != "converse":
         print(f"{DIM}    → {str(event.observation)[:150]}{OFF}", flush=True)

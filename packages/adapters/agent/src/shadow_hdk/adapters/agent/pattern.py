@@ -21,6 +21,7 @@ DONE = "done"
 DESCRIBE = "describe"
 COMPACT = "compact"
 SPAWN = "spawn"
+RECALL = "recall"
 SEND = "send"
 RELEASE = "release"
 META_TOOLS = frozenset({COMPOSE, PROPOSE, DONE, DESCRIBE, COMPACT, SPAWN, SEND, RELEASE})
@@ -40,6 +41,12 @@ class Pattern:
     """`None` means every component the policy leaves visible; a set names this role's own."""
     ceiling: EffectProfile | None = None
     max_turns: int = 12
+    offload_over: int | None = None
+    """Large-result offloading (D47). A tool result rendering to more than this many characters
+    reaches the model as a handle, a size and a preview, and `recall` pages the rest. Held by the
+    agent for the run — never written anywhere, because the runtime has no write path and the
+    record gets the whole observation regardless. `None` is off, and off is the default: what
+    counts as large is the pattern's to say."""
     catalogue_threshold: int = 30
     """D13's fourth mechanism. At or above this many components the model is offered names and
     one-line descriptions, and pulls a schema on demand with `describe`. Below it nothing changes:

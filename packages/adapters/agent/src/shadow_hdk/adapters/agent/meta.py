@@ -13,6 +13,7 @@ from shadow_hdk.adapters.agent.pattern import (
     DESCRIBE,
     DONE,
     PROPOSE,
+    RECALL,
     RELEASE,
     SEND,
     SPAWN,
@@ -71,6 +72,23 @@ DESCRIBE_INTERFACE = Interface(
     },
 )
 
+RECALL_INTERFACE = Interface(
+    name=RECALL,
+    description=(
+        "Read part of a result that was too large to show you whole. You were given its handle, "
+        "its size and a preview; ask for a slice by start and length."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "handle": {"type": "string"},
+            "start": {"type": "integer", "minimum": 0},
+            "length": {"type": "integer", "minimum": 1},
+        },
+        "required": ["handle"],
+    },
+)
+
 COMPACT_INTERFACE = Interface(
     name=COMPACT,
     description=(
@@ -125,6 +143,7 @@ BY_NAME = {
     SEND: SEND_INTERFACE,
     RELEASE: RELEASE_INTERFACE,
     DESCRIBE: DESCRIBE_INTERFACE,
+    RECALL: RECALL_INTERFACE,
     DONE: DONE_INTERFACE,
     PROPOSE: PROPOSE_INTERFACE,
     COMPOSE: COMPOSE_INTERFACE,

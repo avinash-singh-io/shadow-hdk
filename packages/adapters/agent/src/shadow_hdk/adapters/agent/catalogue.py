@@ -8,8 +8,12 @@ Two rules the thinning obeys, and both are about not lying to the model:
 
 * **Thinning drops schemas, never components.** A model that cannot see a tool cannot ask about it,
   and a shorter list it cannot act on is worse than a long one it can.
-* **A thinned entry says how to get the rest.** An input schema that is silently empty reads as
-  *this takes no arguments*, which is a different and wrong statement.
+* **The way to get the rest is said once, on the verb** — `describe`'s own description says what
+  it is for — and never per entry. The first version appended *call `describe` with this name* to
+  every one-liner; over two hundred tools that sentence was a third of the catalogue, which is not
+  what *a name and a line each* means. An input schema that is silently empty reads as *this takes
+  no arguments*, so `describe` is **offered whenever thinning is in effect**, whatever the pattern
+  enabled (Phase 21) — a mechanism offered by halves is a lie.
 """
 
 from __future__ import annotations
@@ -20,7 +24,8 @@ from shadow_hdk.adapters.agent.pattern import DESCRIBE, Pattern
 
 from shadow_hdk.kernel.components import Interface, Registration
 
-HOW_TO_ASK = f"Call `{DESCRIBE}` with this name to see what it takes."
+HOW_TO_ASK = f"Call `{DESCRIBE}` with a tool's name to see what it takes."
+"""Said once, on the verb, never per entry."""
 
 
 def thin(interfaces: Sequence[Interface], pattern: Pattern) -> tuple[Interface, ...]:
@@ -30,12 +35,18 @@ def thin(interfaces: Sequence[Interface], pattern: Pattern) -> tuple[Interface, 
     return tuple(
         Interface(
             name=interface.name,
-            description=f"{interface.description or interface.name} {HOW_TO_ASK}".strip(),
+            description=(interface.description or interface.name).strip(),
             input_schema={},
             output_schema={},
         )
         for interface in interfaces
     )
+
+
+def thinned(interfaces: Sequence[Interface], pattern: Pattern) -> bool:
+    """Whether `thin` would thin this catalogue — the one question the loop needs answered to
+    know whether to offer `describe`."""
+    return len(interfaces) >= pattern.catalogue_threshold
 
 
 def describe_for(name: str, visible: Iterable[Registration]) -> Interface | str:
@@ -50,4 +61,4 @@ def describe_for(name: str, visible: Iterable[Registration]) -> Interface | str:
     return f"no component called {name!r} is available to you"
 
 
-__all__ = ["HOW_TO_ASK", "describe_for", "thin"]
+__all__ = ["HOW_TO_ASK", "describe_for", "thin", "thinned"]

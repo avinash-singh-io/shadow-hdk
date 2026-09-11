@@ -22,16 +22,16 @@ phase: 21
 - [x] the wire: a `step` notification beside `event` on the existing SSE session (one path, not two); the schema published
 
 ## Group 3 — deferred schemas
-- [ ] the pattern field; `describe` fetches on first use
-- [ ] two hundred tools cost two hundred lines, counted
+- [x] the pattern field; `describe` fetches on first use
+- [x] two hundred tools cost two hundred lines, counted
 
 ## Group 4 — offloading
-- [ ] `RunOptions.offload_over`
-- [ ] a large observation lands as a file; the model sees a handle, a size, a preview
-- [ ] the sink and the record still get the whole thing
+- [x] `Pattern.offload_over` — a pattern field beside `catalogue_threshold`, not `RunOptions` (D47)
+- [x] a large observation is held by the agent — never a file (D47); the model sees a handle, a size, a preview
+- [x] the sink and the record still get the whole thing
 
 ## Close
-- [ ] D45–D47 recorded; index regenerated
-- [ ] the coder example shows reasoning on a live turn
-- [ ] README: twelve kinds
+- [x] D45–D47 recorded; index regenerated
+- [x] the coder example shows reasoning on a live turn
+- [x] README: twelve kinds
 - [ ] status, roadmap, changelog, board
