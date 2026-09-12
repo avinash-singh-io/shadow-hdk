@@ -4,7 +4,7 @@ with Allow/Refuse where the policy asked, naming the tool and its arguments — 
 beside it: the root's files, the changed ones marked.
 
     uv run python -m examples.studio [workspace] [--provider=claude-code|codex|opencode]
-                                     [--mode=workspace-write|full|read-only] [--port=8765]
+                                     [--mode=read-only|ask|workspace-write|full] [--port=8765]
                                      [--store=live.sqlite]
 
 — which is `shadow-hdk serve --http --page examples/studio/page.html` with those flags, and

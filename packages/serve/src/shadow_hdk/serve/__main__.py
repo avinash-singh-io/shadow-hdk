@@ -62,9 +62,7 @@ def settings_from(rest: list[str]) -> Settings:
     if root := _flag(rest, "root"):
         settings = replace(settings, root=Path(root).resolve())
     if mode := _flag(rest, "mode"):
-        if mode not in ("read-only", "workspace-write", "full"):
-            raise ValueError(f"--mode={mode!r} is not read-only, workspace-write or full")
-        settings = replace(settings, mode=mode)  # type: ignore[arg-type]
+        settings = replace(settings, mode=mode)  # a mode id; refused at open if unknown
     if store := _flag(rest, "store"):
         settings = replace(settings, store=Path(store))
     if provider := _flag(rest, "provider"):

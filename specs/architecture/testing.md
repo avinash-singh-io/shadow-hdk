@@ -96,7 +96,16 @@ into `Failed`.
 **`adapters/contract/`** — the six abstract suites, subclassed by `basic`, `agent` and the runtime's
 own doubles in Phase 0; by every adapter thereafter.
 
-**`invariants/`** — the two shipped, plus: the runtime imports no adapter; no adapter imports another.
+**`invariants/`** — the properties, held by walks over the tree rather than by review: the
+kernel is pure and the runtime imports no adapter and no adapter imports another (`stands_alone`);
+every narrow scope is enforced; every port implementation is held to its contract suite; every
+registry has a store source (D66); every `harness.toml` key maps to a port or a profile and the
+facade reaches only public APIs (D71); the wire is at parity — every context method and every
+public method of `Thread`, `Approvals` and `Store` crosses or says why, every event kind is
+published (D51, D67); the TypeScript client is current with the schemas (D68); a session leader
+is started in one place (`start_held`, D77); the decisions index is true; these documents name
+only paths that exist; the gate covers every package; a wheel carries what it needs; the live
+job only runs when asked.
 
 **`test_bare_harness.py`** — an MCP-shaped stub component, an agent component, a sub-agent, allow-all
 governance, the stdout sink; the marker comes off, and the CI job fails if it is ever re-added.

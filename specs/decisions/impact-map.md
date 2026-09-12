@@ -15,7 +15,12 @@ entry carries matching `Topics:`.
 | runtime, resume, leases | specs/architecture/runtime.md | The drive; The governed step |
 | wire | specs/architecture/wire.md | Rules already fixed |
 | agent, transcript | specs/architecture/adapters.md | The agent adapter |
-| sandbox, workspace | specs/architecture/adapters.md | The workspace and code adapters |
+| sandbox, environment, workspace, roots | specs/architecture/adapters.md | The environment — where the agent's effects land |
+| modes, approval, ask | specs/architecture/adapters.md | The modes adapter — what ships now |
+| thread, turn, item, activity, store, registries, tools, skills | specs/architecture/wire.md | The thread, crossed |
+| processes, framing, one-implementation | specs/architecture/runtime.md | Modules |
+| providers, claude-code, codex, resume, clean-scope | packages/providers/src/shadow_hdk/providers/library/ | the provider files |
+| serve, facade, batteries, keeping | specs/architecture/adapters.md | Batteries; specs/architecture/overview.md — the front door |
 | mypy, ci, landing | specs/architecture/testing.md | Layers |
 | spec-drift | specs/architecture/file-structure.md | (whole file) |
 | posture | specs/epics/0007-the-environment.md | Decisions |

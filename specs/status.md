@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 28 — the workspace — closed as v0.25.0)
+> **Last Updated**: 2026-09-13 (the specs synced to 0.25.2; BUG-034 closed)
 > **Current Phase**: **none — Phase 28 (the workspace) is complete and released as v0.25.0.**
 > Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
@@ -13,7 +13,7 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,404 tests; mypy strict over 248 files; eighteen distributions at **0.25.2**, all MIT.
+> 1,407 tests; mypy strict over 249 files; eighteen distributions at **0.25.2**, all MIT.
 >
 > **Latest Release**: **v0.25.2**, released 2026-09-12 — a patch: one rule, one implementation
 > (D77 — `start_held`, `LineBuffer`, the root-name rule). Before it v0.25.1 (a battery's process

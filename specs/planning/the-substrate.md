@@ -30,7 +30,7 @@ the same agent loop from another language, run the CLI as a subprocess"*
 
 **Consequence for us.** The loop stays in Python. Every other language consumes the protocol — a
 process (stdio JSONL) or a socket (HTTP/SSE, WebSocket) with **generated bindings**. Codex ships
-`codex app-server generate-ts` / `generate-json-schema`; we already publish fourteen JSON-Schema
+`codex app-server generate-ts` / `generate-json-schema`; we already publish fifteen JSON-Schema
 contracts and hold them by an invariant. What is missing is a `serve` entry point with a stdio
 transport, a TypeScript package generated from those schemas, and the host-held handles
 (questions, dials) crossing the protocol — today a host in another language cannot answer a
@@ -353,7 +353,8 @@ extended from components to all of them.
 | Providers — which CLI or key a thread uses; provider *definitions* (TOML) | **live** | `Provider` is data (D40); a store row is a provider like a file is; detection is a probe, not a restart |
 | Budgets (lease defaults per mode or thread) | **live** | data on the mode; a running thread's lease is what it was granted |
 | Vocabulary — registry name, activity labels, question wording, mode names | **live** | data with defaults (principle 8) |
-| Environment mode of a thread | **live per thread** | chosen at open; changing it mid-thread reopens the environment (a proof runs again) |
+| Environment mode of a thread | **live per thread** (built, D76) | a mode names the environment mode it needs; `set_mode` re-opens the environment (a proof runs again), then reopens the provider on its own session so its catalogue follows |
+| The workspace — which directories a thread works on | **live per thread** (built, D76) | one or many roots named at `thread/start`; `thread/add_root` re-opens the environment over the new set, proven again; `WorkspaceChanged` on the record |
 | Threads — create, resume, fork, rollback, list, archive | **live** | `ThreadStore` |
 | Kernel contracts (event kinds, effect profile fields, schemas) | **substrate** | code; a minor version of every package (D9) |
 | The loop (governance, leases, the record, activity) | **substrate** | code |

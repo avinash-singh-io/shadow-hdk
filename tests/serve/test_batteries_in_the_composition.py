@@ -153,7 +153,7 @@ async def test_a_confined_mode_hides_the_battery_and_a_looking_mode_offers_it(
     files = _reference_battery(tmp_path / "batteries")
     for mode, expected in (("workspace-write", False), ("read-only", True)):
         host = BatteryHost(
-            Settings(root=tmp_path / "ws", mode=mode, batteries=("reference",), batteries_dir=files)  # type: ignore[arg-type]
+            Settings(root=tmp_path / "ws", mode=mode, batteries=("reference",), batteries_dir=files)
         )
         thread = await host.open(root="", mode=mode, want=None, name="tools", observer=None)
         try:

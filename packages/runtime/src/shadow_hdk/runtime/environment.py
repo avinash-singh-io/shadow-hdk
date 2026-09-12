@@ -75,9 +75,16 @@ class CannotEnforce(RuntimeError):
     """A mode was asked for that this environment cannot make true. Names the gap."""
 
 
+MODES: tuple[Mode, ...] = ("read-only", "workspace-write", "full")
+
+
 def requires(isolation: Isolation, mode: Mode) -> None:
     """Enforced or refused. `full` asks for nothing; the other two ask for confined writes, a
-    denied network, and a proof that both were watched to hold."""
+    denied network, and a proof that both were watched to hold. The name is checked first: a
+    confined isolation would satisfy any name that is not `full`, so an unknown mode reached the
+    sandbox as a confined one (found by the spec sync)."""
+    if mode not in MODES:
+        raise ValueError(f"{mode!r} is not an environment mode; the modes are {list(MODES)}")
     if mode == "full":
         return
     missing = []
@@ -372,6 +379,7 @@ def _completed(output: JsonValue) -> Observation:
 
 
 __all__ = [
+    "MODES",
     "resolved",
     "output_activity",
     "OPERATIONS",

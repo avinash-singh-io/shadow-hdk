@@ -8,7 +8,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Seventeen distributions at `0.16.0`, all MIT.** 949 tests; `mypy --strict` over 147 files;
+**Eighteen distributions at `0.25.2`, all MIT.** 1,404 tests; `mypy --strict` over 248 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -116,10 +116,11 @@ reasoning past it.
 The charge happens inside the invoke, not at the top, because the lease measures **work** — a step
 that was refused before it ran did none.
 
-## The six ports
+## The ports
 
-The port set is open (D22). The first six are what the runtime itself calls; the seventh is the second
-**provider** seam (D39) — see *Your key, or your subscription* below.
+The port set is open (D22). The first six are what the runtime itself calls in a run; the
+seventh is the second **provider** seam (D39) — see *Your key, or your subscription* below; the
+last two are what a *thread* and the *registries* keep their state in (D62, D66).
 
 | Port | You supply | Shipped adapters |
 |---|---|---|
@@ -129,17 +130,20 @@ The port set is open (D22). The first six are what the runtime itself calls; the
 | `SinkPort` | `propose(proposal)` | `basic` — stdout, a file that survives a crash, a callback |
 | `ObserverPort` | `on(event)` | `basic`, `otel` |
 | `ClockPort` | `now()`, `new_id()` | `basic`, and a fixed clock for tests |
-| `AgentPort` | `open(tools, workspace)` → a resident session | `acp` — Claude Code, OpenCode, anything speaking ACP |
+| `AgentPort` | `open(tools, workspace, behaviour, resume)` → a resident session | `jsonl` — Claude Code, Codex; `acp` — OpenCode, anything speaking ACP |
+| `ThreadStore` | `create`, `save`, `get`, `list` a thread record (the shipped ones also `archive`) | `runtime` (memory), `basic` (sqlite) |
+| `Store` | `put`, `get`, `delete`, `list`, `version` on a collection of JSON rows | `runtime` (memory), `basic` (sqlite); yours behind your database |
 
 A registry is the **union of every component port, recomputed every step** — so a tool that appears
 mid-run is seen, and one that vanishes is gone.
 
 ## What comes out
 
-Fourteen event kinds, in one ordered stream per run — the record, complete and replayable:
+Fifteen event kinds, in one ordered stream per run — the record, complete and replayable:
 
 `started` · `composed` · `invoked` · `observed` · `proposed` · `refused` · `approval_requested` ·
-`input_requested` · `spawned` · `usage` · `held` · `reasoning` · `mode_changed` · `ended`
+`input_requested` · `spawned` · `usage` · `held` · `reasoning` · `mode_changed` · `workspace_changed` ·
+`ended`
 
 Seven observation kinds, which is what a step's outcome can be:
 
@@ -170,7 +174,7 @@ async for event in thread.turn("add a .gitignore and run the tests"):
 await thread.set_mode("read-only")  # policy and behaviour, switched live
 ```
 
-Nobody renders fourteen raw kinds; the runtime folds them into `Item`s once, as a pure function
+Nobody renders fifteen raw kinds; the runtime folds them into `Item`s once, as a pure function
 over any event iterable (`runtime.items`), and the wire sends each item as an `item` notification
 beside the events, so a host in another language renders agent steps without porting the fold.
 
@@ -211,7 +215,7 @@ objects.
 # harness.toml
 [environment]
 root = "."
-mode = "workspace-write"     # read-only · workspace-write · full · a mode of your own
+mode = "workspace-write"     # read-only · ask · workspace-write · full · a mode of your own (a file or a row)
 
 [provider]
 want = "claude-code"         # or codex · opencode — whichever is signed in here; omit for the first found

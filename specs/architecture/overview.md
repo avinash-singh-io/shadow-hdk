@@ -11,20 +11,25 @@ type: Architecture
 ## Three packages, arrows pointing one way
 
 ```
-  ADAPTERS   many small packages; each depends on runtime
-    models: langchain (openai-compatible · anthropic · ollama · huggingface · …) · acp
-    components: callable · mcp · cli · http · agent · workspace · recording
-    sandboxes: subprocess · gvisor · firecracker
-    governance: allow-all · modes · effect-rules
-    sinks: list · stdout · callback          observers: stdout · callback · otel
+  SERVE      the front door (D67, D71): Harness · harness.toml · shadow-hdk serve · batteries
+  WIRE       the runtime over JSON-RPC — stdio, HTTP/SSE — for a host in any language; the schemas
+  PROVIDERS  a provider is a file: Claude Code · Codex · OpenCode, your key or your subscription
+                    │ depend on adapters (serve) / runtime (wire, providers)
+  ADAPTERS   many small packages; each depends on runtime, none on another
+    models: langchain (openai-compatible · anthropic · ollama · huggingface · …)
+    agents: jsonl (Claude Code, Codex) · acp (OpenCode) · agent (the model loop as a component)
+    components: callable · mcp · environment (local on the OS sandbox · a box) · recording · devices · mqtt · derivation
+    governance: allow-all · modes (policy + behaviour + presentation + environment mode)
+    sinks: list · stdout · file · callback          observers: stdout · callback · otel
                     │ implements ports
   RUNTIME    one package; depends only on kernel
     the registry · the governed step · composition → graph · leases · events
     sub-agent spawning · session handles · run / resume / current_run
+    the thread (turns, modes, roots) · the offer · the environment base · processes · lines
                     │ pure types
   KERNEL     one package; depends on nothing
-    Component · Registration · EffectProfile · Composition
-    Observation · Proposal · Lease · Event · the ports
+    Component · Registration · EffectProfile · Composition · Workspace
+    Observation · Proposal · Lease · Event · the ports · Thread and Turn records
 ```
 
 A host sits **above** all three as one more set of adapters plus its product. Nothing below the line
@@ -63,9 +68,12 @@ story, and it is one function (`runtime/step.py`):
 lease check   →  the ceiling always beats everything; exhausted ends the run
 resolve       →  registry: which component port owns this registration
 inputs        →  bindings resolved from earlier steps' handles
-judge         →  governance port: Allow | Ask | Refuse over the effect profile
+judge         →  governance port: Allow | Ask | Refuse over the effect profile — told the run's
+                 context (thread, turn, mode), which a child run inherits from its parent (D74)
    Refuse     →  Refused event + Refused observation; the component is never called
-   Ask        →  Asked event; interrupt(); the host resumes with a judgement
+   Ask        →  Asked event; interrupt(); the host resumes with a judgement — or, for a step
+                 that cannot park, the host's Approvals handle answers live (D58), the person's
+                 rules read first (D65)
 invoke        →  the component does its work; an exception becomes a Failed observation
 observe       →  Invoked + Observed events; the output is stored under the step's handle
 ```
@@ -95,6 +103,13 @@ agent = AgentComponent(pattern=orchestrator_workers, tools=record_tools + worksp
 `single` offers the model no `compose` and no `spawn`, so it *cannot* change its shape — plain ReAct
 over its tools. `orchestrator_workers` offers them, and leases bound the fan-out. The runtime is
 identical in both cases; the pattern is a file.
+
+A product with a *conversation* rather than a brief holds a **`Thread`** (D62): opened on the
+roots the product names — one directory or several, added while it runs (D76) — in a mode it
+can switch (the policy, the sandbox and the provider's catalogue move together — D64, D76),
+turned once per message, each turn its own run on the record, with the tools it is offered
+(`Thread.tools()`), the handles it answers through (`Approvals`) and the store every registry
+reads (D66) — in-process, or over the wire as `thread/*` for a host in any language (D67).
 
 ## Where the boundary falls
 

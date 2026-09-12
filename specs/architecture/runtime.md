@@ -143,7 +143,7 @@ classDiagram
 | module | holds |
 |---|---|
 | `__init__.py` | `run`, `resume`, `current_run`, `Ports`, `RunOptions`, `RunContext`, `Trust` |
-| `bindings.py` | `Ports`, `RunOptions`, `RunContext`, the contextvar (D2); `executing(step)` — the scope within which `current_run().step` is set, the component's invoke only |
+| `bindings.py` | `Ports`, `RunOptions`, `RunContext`, the contextvar (D2); `executing(step)` — the scope within which `current_run().step` is set, the component's invoke only; `spawn_options` — a child inherits its parent's context attributes (thread, turn, mode) unless handed its own (D74, BUG-030) |
 | `session.py` | `Session`, `LeaseMeter`, `Handles` |
 | `emit.py` | `Emitter` — seq, clock stamp, queue, observer task; `activity`/`forward_activity` — what is happening, beside the record (D63): to an `ActivityObserver` if one listens, up to the parent if a child, dropped-oldest, never on the stream `run` yields |
 | `registry.py` | `Registry` — union of component ports, `resolve`, `visible`; with a `Trust`, a driver that cannot prove itself is refused at `refresh` — absent, reason in `refused` (D27) |
@@ -161,9 +161,9 @@ classDiagram
 | `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
 | `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
-| `environment.py` | an environment has a mode: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48) |
-| `offer.py` | the run's registry offered to an agent that owns its own loop (D42, D62): one call routed as a child run under a carved ceiling, judged, recorded, the policy's question put to the host live; `InProcessOffer` for an agent in this process, the recording adapter's `SocketOffer` in front of it for a CLI |
-| `threads.py` | `Thread` — the container every product has (D62): a provider opened once and held across turns, the registry served for its lifetime under the host's name, each turn its own run under a ceiling carved from the thread's lease; `ThreadStore` port, `InMemoryThreads`; fork and rollback honest about the provider's transcript |
+| `environment.py` | an environment has a mode and a workspace: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48); one or many roots, `inside()` by the root-name rule, `reopen` on a new workspace or mode — proven again, refused unchanged (D76, D77) |
+| `offer.py` | the run's registry offered to an agent that owns its own loop (D42, D62): one call routed as a child run under a carved ceiling, judged, recorded, the policy's question put to the host live; `InProcessOffer` for an agent in this process, the recording adapter's `SocketOffer` in front of it for a CLI; `changed()` tells a resident agent its catalogue changed (`tools/list_changed`, BUG-032) |
+| `threads.py` | `Thread` — the container every product has (D62): a provider opened once and held across turns, resumed on its own session id when reopened (D76), the registry served for its lifetime under the host's name, each turn its own run; `set_mode` (policy, then the environment follows, then the provider — D64, D76), `add_root`, `tools()` — what the agent is offered now with the mode's judgement (D73); `workspace`, `environment_mode`; `WorkspaceChanged` and `ModeChanged` announced between turns |
 | `store.py` | `InMemoryStore` — the `Store` port (D66) for a process: collections of JSON rows, a version per collection |
 | `switched.py` | `Switched` — a component port minus what a store's switches say is off (D66), read at every refresh; `store_switches` |
 | `person.py` | `ask_person` — the agent's own question to the person as a component (D65): no effects, `InputRequested` on the record, the text through the host's handle; nobody there is a failure that says so |
