@@ -9,7 +9,10 @@ if (!address) {
   console.error("usage: node smoke.js http://127.0.0.1:PORT [token]");
   process.exit(2);
 }
-const client = new HarnessClient({ address, token: process.argv[3] });
+const client = new HarnessClient({ address, token: process.argv[3] || undefined });
+// The mode to switch to: one that differs from the thread's and that this machine can enforce
+// (the driver picks it — `read-only` where an OS sandbox is, a store mode where none is).
+const other = process.argv[4] || "read-only";
 await client.connect();
 const started = await client.thread.start({});
 client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
@@ -21,7 +24,7 @@ for await (const line of client.turn.start(started.thread_id, "hello from typesc
   else if (line.kind === "event") seen.push(`event:${line.event.kind}`);
   else seen.push(`activity:${line.activity.kind}`);
 }
-const changed = await client.thread.setMode(started.thread_id, "read-only");
+const changed = await client.thread.setMode(started.thread_id, other);
 const files = await client.files.list(started.thread_id);
 const modes = await client.modes.list();
 const batteries = await client.batteries.list();

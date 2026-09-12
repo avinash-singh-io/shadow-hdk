@@ -12,6 +12,7 @@ import anyio
 import pytest
 
 from shadow_hdk.wire import connect_to, served_over_http
+from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE
 from tests.test_the_studio_example import StudioHost, _ports
 
 pytestmark = pytest.mark.anyio
@@ -48,13 +49,13 @@ async def test_a_thread_starts_on_two_roots_and_the_files_methods_span_them(
                             {"name": "finance", "path": str(finance)},
                             {"name": "sales", "path": str(sales)},
                         ],
-                        "mode": "workspace-write",
+                        "mode": ENFORCEABLE,
                     },
                 )
                 tid = started["thread_id"]
                 assert started["root"] == str(finance), "the primary, for a one-root reader"
                 assert [r["name"] for r in started["roots"]] == ["finance", "sales"]
-                assert started["environment"] == "workspace-write", (
+                assert started["environment"] == ENFORCEABLE, (
                     "the sandbox's mode, beside the policy's"
                 )
                 listed = await client.peer.call("files/list", {"thread_id": tid})
@@ -96,7 +97,7 @@ async def test_a_root_is_added_live_and_the_change_is_on_the_record(tmp_path: Pa
 
                 client.peer.hears("event", keep)
                 started = await client.peer.call(
-                    "thread/start", {"root": str(finance), "mode": "workspace-write"}
+                    "thread/start", {"root": str(finance), "mode": ENFORCEABLE}
                 )
                 tid = started["thread_id"]
                 assert [r["name"] for r in started["roots"]] == ["finance"]

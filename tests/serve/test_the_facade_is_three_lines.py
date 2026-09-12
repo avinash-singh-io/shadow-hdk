@@ -17,7 +17,7 @@ from shadow_hdk.kernel import Ceiling, Floor, Lease, Turn
 from shadow_hdk.kernel.ports import AgentSession
 from shadow_hdk.serve import Harness, load_settings
 from shadow_hdk.serve.config import Budget
-from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE
+from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE, another_mode
 
 pytestmark = pytest.mark.anyio
 
@@ -103,9 +103,9 @@ async def test_the_constructor_is_the_file_without_the_file(tmp_path: Path) -> N
                 "workspace-write",
                 "full",
             ]
-            # A mode that differs from the one open: a no-op `set_mode` records nothing (D64),
-            # and on a machine that can only open `full`, `full` would be that no-op.
-            other = "read-only" if ENFORCEABLE != "read-only" else "full"
+            # A mode that differs from the one open and is enforceable here (D76): a no-op
+            # `set_mode` records nothing (D64), and a mode this machine cannot confine raises.
+            other = await another_mode(h.host.store)
             changed = await h.set_mode(other)
             assert [e.kind for e in changed] == ["mode_changed"]
     assert h.problems == (), "nothing was wanted that could not be had"

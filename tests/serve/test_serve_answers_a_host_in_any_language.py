@@ -36,6 +36,23 @@ ENFORCEABLE: Mode = "workspace-write" if local_sandbox() is not None else "full"
 and CI's Linux runner has none — so these open the mode this machine can prove, which is not
 what they are about."""
 
+OTHER_MODE = "read-only" if local_sandbox() is not None else "wide"
+"""A mode that differs from `ENFORCEABLE` and is enforceable here. Since a mode names the
+sandbox mode it needs (D76), `read-only` cannot be switched to where nothing confines; `wide`
+is a store mode with the `full` policy (`another_mode(store)` writes it) — a different id, the
+same environment, so a switch is a real change that the machine can make true."""
+
+
+async def another_mode(store: Any) -> str:
+    """Write the mode `OTHER_MODE` names when it is not shipped; return its id."""
+    if OTHER_MODE == "wide":
+        await store.put(
+            "modes",
+            "wide",
+            {"id": "wide", "name": "Wide", "policy": "full", "environment": "full"},
+        )
+    return OTHER_MODE
+
 
 class ScriptedProvider:
     """An `AgentPort` that speaks without a CLI: what the live studio has is a real one."""
