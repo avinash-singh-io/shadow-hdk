@@ -26,7 +26,31 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-12, evening
+## Where this stands — 2026-09-12, late
+
+**Phases 0–28 are done** and v0.25.0 is released. Phase 28 built what the owner's review asked
+for: the workspace as one or many roots chosen per conversation and added while it runs; a mode
+that moves all three of its surfaces together — what the OS enforces, what the policy judges,
+what the model is told it has (the provider reopened on its own session, its memory kept); the
+`ask` mode; the registries visible; and two governance holes closed (a child judged in its
+parent's context; every CLI built-in off). What remains is 29 (context engineering) and 30
+(collaboration), the owner's call.
+
+### Where this stood — 2026-09-12, night
+
+**Phase 28 — the workspace — is open**, from the owner's review and a demo run from outside the
+tree (`../harness-demo/`). Two groups are built on the branch: the registries visible
+(`Thread.tools()`, `tools/list`, `skills/list` — D73) and what the demo found — a child run was
+judged in the governance's default mode rather than its parent's, so `set_mode("read-only")` let
+a `run_shell` write (BUG-030, D74); a Claude Code built-in the deny list did not name was a second
+shell (BUG-031, D75); no shipped mode *asked* before a write inside the workspace, so the `ask`
+mode is the fourth. What remains is the phase's reason: **the workspace as one or many roots,
+chosen per thread and added live**, the environment following the mode, the provider's catalogue
+following it (BUG-032), and minted skills kept rather than printed. Context engineering and
+collaboration move to 29 and 30 — nothing in them depends on this, and this is what the product
+hits first.
+
+### Where this stood — 2026-09-12, evening
 
 **Phases 0–27 are done** and v0.24.0 is released. The substrate plan (`planning/the-substrate.md`)
 is built through its third phase: the host's controls (25), every one of them over the wire for a
@@ -136,8 +160,9 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 25 | The host's controls | **DONE** · `phase-25-the-hosts-controls` | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule"; the `Store` port — every registry live, no restart |
 | 26 | Any language | **DONE** · `phase-26-any-language` | 25 | the thread, the handles and the store cross the wire as methods (`ThreadHost`, parity rule 4); `shadow-hdk serve` over stdio and HTTP/SSE with the shipped composition (`shadow-hdk-serve`); a TypeScript client generated from the schemas, held by an invariant; the studio a page `serve` serves, talking the wire only; `files/*`; a session's threads close with it |
 | 27 | Batteries and the facade | **DONE** · `phase-27-batteries-and-the-facade` | 25, 26 | a battery is a file — wigolo and ddgs consumed behind the MCP/callable component port with vouched effects, judged by the modes as they are (D70); `harness.toml` and `Harness.load()` — three lines, `budget`, one step deeper, two invariants (D71); the coder on the facade; the optimiser port specified, its evaluator locked first (D72) |
-| 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
-| 29 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
+| 28 | The workspace | **DONE** · `phase-28-the-workspace` | 25, 26, 27 | the registries visible (`tools/list`, `skills/list` — D73); a child judged in its parent's context (D74); the `ask` mode and every CLI built-in off (D75); one or many roots per thread, named at `thread/start` and added live, the environment and the provider following the mode (`--resume`), minted skills kept in the store (D76) |
+| 29 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
+| 30 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 
 ## What comes next — the consumable line
 
@@ -160,8 +185,9 @@ files; the phases after it are capability, not readiness.
 | **25** | **The host's controls** | 24 | What every product that ships an agent has and we measured we lacked (`the-substrate.md` §1). **Activity**: an ephemeral stream beside the record — partial thinking, partial text, a running command's output, "composing" — never checkpointed (principle 6). **Conversation**: the thread-of-turns moved out of the example into the harness; a turn is a *step* of the conversation's run, so Thread → Turn → Item is Run → Step → child steps with no new concept; `steer` and `interrupt`. **Modes** = policy + `Behaviour` (role, model, effort, temperature, tools offered) + presentation, authored as data, the provider file mapping behaviour to that CLI's flags; the three defaults per environment mode shipped, not exampled. **Dials**: a host handle turned mid-run; `Dialed` on the record. **Questions both ways**: "allow, and add this rule" proposed through the sink; `ask_person` for the agent's own questions. The studio consumes all of it: collapsed step runs, streamed thinking and text, a mode selector, a question item. |
 | **26** | **Any language** | 25 | `shadow-hdk serve` over stdio JSONL (Codex's default) and HTTP/SSE; **every host handle crosses the wire** — questions, dials, cancellation — and the parity invariant covers handles; a TypeScript package generated from the published schemas at build time; the studio rewritten to consume the wire and nothing local, which is how a product in another language would. |
 | 27 | Batteries and the facade | 25 | `web_search` and `web_fetch` consumed as MCP servers behind the component port (wigolo first, `ddgs` as the light alternative), `reaches` so the modes already judge them. `harness.toml` — environment, modes, provider, tools, skills — and `Harness.load()`: three lines for a product that wants defaults, every port open underneath (principle 9); the coder and host examples reduced to it. The optimiser port (DSPy behind it, later) *specified*, not built — Rule 11 first. |
-| 28 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
-| 29 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
+| 28 | The workspace | 25, 26, 27 | What a conversation works on, chosen by the product: a `Workspace` of named roots — the primary where relative paths resolve, the rest addressed `name/path` (VS Code's multi-root, Claude Code's `--add-dir`, Codex's `writable_roots`) — named at `thread/start` or taken from the host's default, **added live** with the confinement proof re-run over the new set; the file tools and `files/*` across roots; the scope stays `workspace`, a rule says the path. A mode names the environment mode it needs and `set_mode` re-opens the environment when that differs. The offered registry tells a resident CLI its catalogue changed. The host's sink keeps what a run proposes. |
+| 29 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
+| 30 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
 
 ## Epics
 

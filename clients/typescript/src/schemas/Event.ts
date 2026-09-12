@@ -2,7 +2,7 @@
 // protocol_version 1. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
-export type Event = (Started | Composed | Invoked | Observed | Proposed | Refused1 | ApprovalRequested | InputRequested | Spawned | Held | UsageReported | Reasoning | ModeChanged | Ended)
+export type Event = (Started | Composed | Invoked | Observed | Proposed | Refused1 | ApprovalRequested | InputRequested | Spawned | Held | UsageReported | Reasoning | ModeChanged | WorkspaceChanged | Ended)
 export type At = string
 export type Kind = "started"
 export type MaxCostCents = (number | null)
@@ -136,11 +136,18 @@ export type Mode = string
 export type RunId12 = string
 export type Seq12 = number
 export type At14 = string
-export type Detail = (string | null)
-export type Kind26 = "ended"
-export type Reason2 = ("completed" | "lease_exhausted" | "gave_up" | "cancelled" | "failed")
+export type Kind26 = "workspace_changed"
+export type Name1 = string
+export type Path1 = string
+export type Roots = Root[]
 export type RunId13 = string
 export type Seq13 = number
+export type At15 = string
+export type Detail = (string | null)
+export type Kind27 = "ended"
+export type Reason2 = ("completed" | "lease_exhausted" | "gave_up" | "cancelled" | "failed")
+export type RunId14 = string
+export type Seq14 = number
 export type StepsTaken = number
 
 export interface Started {
@@ -471,12 +478,30 @@ mode: Mode
 run_id: RunId12
 seq: Seq12
 }
-export interface Ended {
+/**
+ * The thread's roots changed mid-thread (D76) — a directory added while the conversation
+ * ran — so a reader knows which turns could see which roots.
+ */
+export interface WorkspaceChanged {
 at: At14
-detail?: Detail
 kind?: Kind26
-reason: Reason2
+roots: Roots
 run_id: RunId13
 seq: Seq13
+}
+/**
+ * One directory a thread works on, and the name it is addressed by.
+ */
+export interface Root {
+name: Name1
+path: Path1
+}
+export interface Ended {
+at: At15
+detail?: Detail
+kind?: Kind27
+reason: Reason2
+run_id: RunId14
+seq: Seq14
 steps_taken: StepsTaken
 }

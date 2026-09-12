@@ -35,6 +35,7 @@ INDUSTRY_KINDS = {
     "usage",
     "reasoning",
     "mode_changed",
+    "workspace_changed",
     "ended",
 }
 

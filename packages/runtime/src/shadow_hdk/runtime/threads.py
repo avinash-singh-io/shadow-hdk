@@ -24,7 +24,7 @@ import asyncio
 import contextlib
 import json
 from collections.abc import AsyncIterator, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -52,12 +52,20 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.contracts import dump
-from shadow_hdk.kernel.events import Event, ModeChanged
+from shadow_hdk.kernel.events import Event, ModeChanged, WorkspaceChanged
 from shadow_hdk.kernel.events import Refused as RefusedEvent
-from shadow_hdk.kernel.ports import AgentPort, AgentSession, ComponentPort, ThreadStore
+from shadow_hdk.kernel.ports import (
+    AgentPort,
+    AgentSession,
+    ComponentPort,
+    Context,
+    ThreadStore,
+)
 from shadow_hdk.kernel.usage import Usage
+from shadow_hdk.kernel.workspace import Root, Workspace
 from shadow_hdk.runtime.bindings import Ports, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
+from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
 from shadow_hdk.runtime.session import LeaseMeter
@@ -74,6 +82,49 @@ TURN_EFFECTS = EffectProfile(
     reversible=False,
     costs=True,
 )
+
+
+@dataclass(frozen=True)
+class Offered:
+    """One registration as the agent would be offered it now, and which port carried it."""
+
+    registration: Registration
+    judgement: str
+    """`allow` · `ask` · `refuse` — what the current mode says of its effects."""
+    source: str
+    """Who registered it — the registration's own provenance (`environment`, `agent`, a battery's
+    id) — and the port's class name after a colon where that adds something
+    (`environment:LocalEnvironment`). A wrapper such as `Switched` is looked through: it carries
+    a port, it is not the source."""
+
+
+def _unwrapped(port: Any) -> Any:
+    inner = port
+    while (wrapped := getattr(inner, "_inner", None)) is not None:  # `Switched`, or the next
+        inner = wrapped
+    return inner
+
+
+def _environment_of(ports: Ports) -> Environment | None:
+    """The environment among the ports, if one is there — the runtime's own base class, so no
+    adapter is named here; a host that composes something else gets `None` and no re-opening."""
+    for port in ports.components:
+        inner = _unwrapped(port)
+        if isinstance(inner, Environment):
+            return inner
+    return None
+
+
+def _environment_mode_of(ports: Ports) -> str:
+    environment = _environment_of(ports)
+    return environment.mode if environment is not None else ""
+
+
+def _source_of(port: ComponentPort, registration: Registration) -> str:
+    inner = _unwrapped(port)
+    who = registration.component.provenance.registered_by
+    kind = type(inner).__name__
+    return who if who.lower() == kind.lower() else f"{who}:{kind}"
 
 
 class _TurnComponents(ComponentPort):
@@ -201,8 +252,12 @@ class Thread:
         mode: str = "",
         provider: str = "",
         thread_id: str | None = None,
+        workspace: Workspace | None = None,
     ) -> Thread:
         """Start a thread: the record created, the registry served, the provider opened.
+
+        `workspace` names the roots (D76) — one or many; `root` alone is the one-root workspace.
+        The record carries both: `root` the primary for a one-root reader, `roots` the whole.
 
         `mode` is the **policy's** mode id — what `ModeGovernance` selects by at every step of
         every turn (the context key `mode`) — not the environment's; a thread opened with the
@@ -210,12 +265,15 @@ class Thread:
         because two vocabularies were one key. Until modes are one thing (group 4), a host passes
         the policy's name.
         """
+        workspace = workspace or Workspace.of(root)
         record = ThreadRecord(
             id=thread_id or ports.clock.new_id(),
-            root=str(root),
+            root=str(workspace.primary.path),
             created_at=ports.clock.now(),
             mode=mode,
             provider=provider,
+            roots=workspace.roots,
+            environment=_environment_mode_of(ports),
         )
         await store.create(record)
         thread = cls(
@@ -298,9 +356,31 @@ class Thread:
 
         self._holder = asyncio.create_task(hold())
         self._sources = await ready
-        self._session = await self._agent.open(
-            tools=self._sources, workspace=self._record.root, behaviour=self._behaviour
+        self._session = await self._open_provider()
+
+    async def _open_provider(self) -> AgentSession:
+        """The provider's session, opened on this thread's tools, workspace and behaviour — and
+        resumed on its own session id when the record has one (D76), so a reopen after a mode
+        change, a root added or a `thread/resume` keeps the agent's memory of the conversation.
+        `resume` is passed only when there is one, so an opener without the keyword (a test
+        double, an adapter that predates it) is still called the way it always was."""
+        extra: dict[str, Any] = {}
+        if self._record.session_id:
+            extra["resume"] = self._record.session_id
+        return await self._agent.open(
+            tools=tuple(self._sources),
+            workspace=self._record.root,
+            behaviour=self._behaviour,
+            **extra,
         )
+
+    async def _remember_session(self) -> None:
+        """The provider's own session id, off the session, onto the record — what a resume hands
+        back (D76)."""
+        found = getattr(self._session, "session_id", None) if self._session is not None else None
+        if isinstance(found, str) and found and found != self._record.session_id:
+            self._record = _replace(self._record, session_id=found)
+            await self._store.save(self._record)
 
     async def close(self) -> None:
         if self._session is not None:
@@ -346,11 +426,7 @@ class Thread:
             raise RuntimeError("the thread is closed")
         if self._session is None:
             # An interrupted provider that could not be told was closed; a turn reopens it.
-            self._session = await self._agent.open(
-                tools=tuple(self._sources),
-                workspace=self._record.root,
-                behaviour=self._behaviour,
-            )
+            self._session = await self._open_provider()
         if (left := self._meter.remaining().ceiling).max_steps <= 0:
             raise RuntimeError("the thread has no steps left")
         if self._kept:
@@ -470,15 +546,86 @@ class Thread:
                 turns[-1] = _replace_turn(turns[-1], outcome=outcome, text=said)
                 self._record = _replace(self._record, turns=tuple(turns))
                 await self._store.save(self._record)
+                await self._remember_session()  # the provider's own id, for the next reopen
 
     # ------------------------------------------------------------------ mode and options
+
+    async def tools(self) -> list[Offered]:
+        """What the agent is offered *now*: every registration the ports carry, each with the
+        judgement the current mode gives its effects — `allow`, `ask`, or `refuse` (absent from
+        the model's catalogue, `09` §4). The same registry a turn resolves against and the same
+        policy, asked the same question, so what a host shows and what the run will do cannot
+        drift. The turn's own step is not among them: it is the thread's, not a tool."""
+        from shadow_hdk.kernel.ports import Ask, Refuse
+
+        offered: list[Offered] = []
+        for port in self._ports.components:
+            try:
+                registrations = await port.registrations()
+            except Exception:  # noqa: BLE001 — a catalogue that will not answer offers nothing
+                continue
+            for registration in registrations:
+                if registration.id == TURN:
+                    continue
+                attributes: dict[str, JsonValue] = {
+                    "thread": self.id,
+                    **({"mode": self._record.mode} if self._record.mode else {}),
+                    **self._options,
+                    "posture": registration.component.provenance.posture,
+                    "component": registration.id,
+                }
+                judged = await self._ports.governance.judge(
+                    registration.component.effects,
+                    Context(run_id="<catalogue>", step="<catalogue>", attributes=attributes),
+                )
+                kind = (
+                    "refuse"
+                    if isinstance(judged, Refuse)
+                    else "ask"
+                    if isinstance(judged, Ask)
+                    else "allow"
+                )
+                offered.append(Offered(registration, kind, _source_of(port, registration)))
+        return offered
+
+    @property
+    def workspace(self) -> Workspace:
+        """The roots this thread works on (D76) — from the record, or the one root it names."""
+        if self._record.roots:
+            return Workspace(self._record.roots)
+        return Workspace.of(self._record.root)
+
+    @property
+    def environment_mode(self) -> str:
+        """What the sandbox enforces — the environment port's own mode — beside the policy's."""
+        return _environment_mode_of(self._ports)
+
+    async def add_root(self, name: str, path: Path | str) -> list[Event]:
+        """A directory added while the thread runs (D76; Claude Code's `/add-dir`): the
+        environment is re-opened on the new set — the confinement proof runs again — the record
+        carries the roots, and `WorkspaceChanged` says so. Refused, unchanged, when the name is
+        taken, the directory nests another root, or the sandbox cannot confine the new set."""
+        grown = self.workspace.with_root(Root(name, str(path)))
+        if self._turning.locked():
+            raise RuntimeError("a root is added between turns, not during one")
+        environment = _environment_of(self._ports)
+        if environment is not None:
+            await environment.reopen(workspace=grown)
+        self._record = _replace(self._record, roots=grown.roots, root=str(grown.primary.path))
+        await self._store.save(self._record)
+        await self.registry.changed()  # the tools describe the roots; a resident agent re-lists
+        await self._reopen_provider()  # and one that does not (BUG-032) is reopened, resumed
+        return await self._announce(lambda **k: WorkspaceChanged(roots=grown.roots, **k))
 
     async def set_mode(self, mode_id: str) -> list[Event]:
         """Change the run's mode mid-thread (D64; ACP's `session/set_mode`).
 
         The policy the governance selects by changes at the next step; if the mode carries a
-        different **behaviour**, the provider is reopened with it, resuming the thread. The change
-        is on the record (`ModeChanged`). An unknown mode raises and changes nothing.
+        different **behaviour**, the provider is reopened with it, resuming the thread; if it
+        names a different **environment** mode (D76), the environment is re-opened — proven
+        again — before the policy flips, so the page never says `full` over a sandbox that is
+        not. The change is on the record (`ModeChanged`). An unknown mode raises and changes
+        nothing; a sandbox that cannot make the environment mode true raises and changes nothing.
         """
         if self._modes is not None:
             find = getattr(self._modes, "find", None)
@@ -490,18 +637,30 @@ class Thread:
             spec, behaviour = None, self._behaviour
         if mode_id == self._record.mode and behaviour == self._behaviour:
             return []
-        self._record = _replace(self._record, mode=mode_id)
+        wanted = getattr(spec, "environment", None) if spec is not None else None
+        environment = _environment_of(self._ports)
+        if environment is not None and wanted and wanted != environment.mode:
+            await environment.reopen(mode=wanted)  # raises `CannotEnforce`: nothing changed
+        self._record = _replace(
+            self._record, mode=mode_id, environment=_environment_mode_of(self._ports)
+        )
         await self._store.save(self._record)
-        if spec is not None and behaviour != self._behaviour:
+        if spec is not None:
             self._behaviour = behaviour
-            if self._session is not None:
-                await self._session.close()
-            self._session = await self._agent.open(
-                tools=tuple(self._sources),
-                workspace=self._record.root,
-                behaviour=self._behaviour,
-            )
+        # The provider is reopened on its own session (D76): the catalogue it holds is the old
+        # mode's, and a resident CLI was measured to keep it after `list_changed` (BUG-032) — a
+        # fresh process re-lists, and `--resume` keeps its memory of the conversation.
+        await self._reopen_provider()
+        # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
+        await self.registry.changed()
         return await self._announce(lambda **k: ModeChanged(mode=mode_id, **k))
+
+    async def _reopen_provider(self) -> None:
+        if self._session is None:
+            return
+        await self._remember_session()
+        await self._session.close()
+        self._session = await self._open_provider()
 
     async def set_option(self, key: str, value: JsonValue) -> None:
         """A per-thread governance option, read at the next step's `Context` (ACP's
@@ -589,4 +748,4 @@ def _replace_turn(turn: TurnRecord, **changes: Any) -> TurnRecord:
     return replace(turn, **changes)
 
 
-__all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Thread"]
+__all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Offered", "Thread"]

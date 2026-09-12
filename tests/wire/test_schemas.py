@@ -63,6 +63,7 @@ TWELVE = (
     "usage",
     "reasoning",
     "mode_changed",
+    "workspace_changed",
     "ended",
 )
 

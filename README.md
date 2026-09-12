@@ -178,8 +178,12 @@ beside the events, so a host in another language renders agent steps without por
 
 A **mode** is a policy (what runs, what asks, what is refused — judged by *effects*), a behaviour
 (who the model is: role, model, effort, temperature, which tools are offered) and a presentation
-(id, name, description). Three ship — `read-only`, `workspace-write`, `full` — and yours are files
-(`modes/reviewer.md`, frontmatter and a prompt) or rows in the **store**. When the policy asks, the
+(id, name, description), and it names the **environment mode** it needs — what the sandbox must
+enforce — so switching a mode switches the sandbox too (D76). Four ship — `read-only`, `ask`
+(the workspace is the ceiling and every change inside it is asked about: the mode every coding
+CLI opens in), `workspace-write`, `full` — and yours are files (`modes/reviewer.md`, frontmatter
+and a prompt) or rows in the **store**. A mode change reopens the provider on its own session,
+so a resident CLI lists the new mode's tools and keeps its memory. When the policy asks, the
 host answers through its `Approvals` handle: **approve**, **deny**, or **approve and add a rule** —
 an `ActRule` naming the act, kept, read at the next judgement, on the record as a proposal. The
 agent's own question to the person is `ask_person`, an `InputRequest` on the record.
@@ -370,7 +374,8 @@ methods: `thread/start` · `thread/resume` · `thread/close` · `thread/list` ·
 `thread/rollback` · `thread/archive` · `thread/set_mode` · `thread/set_option` ·
 `thread/remaining` · `turn/start` · `turn/steer` · `turn/interrupt` · `approvals/pending` ·
 `approvals/answer` · `run/cancel` · `store/put|get|delete|list|version` · `modes/list` ·
-`rules/list` · `files/list` · `files/read` · `batteries/list`. Down the stream, tagged with the thread: `event`,
+`rules/list` · `files/list` · `files/read` · `batteries/list` · `tools/list` (what the agent is
+offered now, each with the mode's judgement) · `skills/list` · `thread/add_root`. Down the stream, tagged with the thread: `event`,
 `item` (folded runtime-side, D46), `activity` (D63), `approval_request`, `input_request`,
 `request_withdrawn`; `turn/start` returns the turn's record when it ends. An invariant holds
 every public method of `Thread`, `Approvals` and `Store` to a name in `protocol.py`.
@@ -452,6 +457,26 @@ env = await LocalEnvironment.open(Path("./work"), mode="workspace-write")
 
 `SandboxEnvironment` is the same six operations in a box somebody else built — OpenSandbox first —
 proven by two denials (D50).
+
+A **workspace is one or many roots** (D76) — the primary, where a relative path resolves, and
+the rest addressed by name (`sales/notes.md`), the shape of VS Code's multi-root, Claude Code's
+`--add-dir` and Codex's `writable_roots`:
+
+```python
+from shadow_hdk.kernel import Root, Workspace
+
+env = await LocalEnvironment.open(
+    workspace=Workspace((Root("finance", "./finance"), Root("sales", "./sales"))),
+    mode="workspace-write",
+)
+# the profile allows writes under every root; the proof writes inside each and outside all
+await env.reopen(workspace=env.workspace.with_root(Root("hr", "./hr")))  # proven again
+```
+
+A thread names its roots at `thread/start {roots: [{name, path}, …]}` and grows them with
+`thread/add_root` while it runs; `files/list` says each file's root. `Thread.tools()` says what
+the agent is offered *now* — every registration with the mode's judgement — and `tools/list`
+crosses it.
 
 ### Running the examples
 

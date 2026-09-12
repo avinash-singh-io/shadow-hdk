@@ -27,16 +27,37 @@ USAGE = (
 )
 
 
+VALUED = ("port", "token", "page", "root", "mode", "store", "provider")
+"""Flags that take a value — as `--name=value` or `--name value`, the way every CLI takes them."""
+
+
 def _flag(arguments: list[str], name: str, default: str = "") -> str:
-    for argument in arguments:
+    for index, argument in enumerate(arguments):
         if argument.startswith(f"--{name}="):
             return argument.split("=", 1)[1]
+        if argument == f"--{name}" and index + 1 < len(arguments):
+            return arguments[index + 1]
     return default
+
+
+def _words(arguments: list[str]) -> list[str]:
+    """The positional arguments: what is left once every flag, and the value it takes, is out."""
+    words: list[str] = []
+    skip = False
+    for argument in arguments:
+        if skip:
+            skip = False
+            continue
+        if argument.startswith("--"):
+            skip = argument.lstrip("-") in VALUED  # `--root ./work`: the next word is its value
+            continue
+        words.append(argument)
+    return words
 
 
 def settings_from(rest: list[str]) -> Settings:
     """The file first (if one is named), then each flag over it."""
-    words = [a for a in rest if not a.startswith("--")]
+    words = _words(rest)
     settings = load_settings(words[0]) if words else Settings(root=Path.cwd())
     if root := _flag(rest, "root"):
         settings = replace(settings, root=Path(root).resolve())

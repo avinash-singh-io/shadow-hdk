@@ -34,6 +34,10 @@ class ModeSpec:
     description: str = ""
     behaviour: Behaviour = field(default_factory=Behaviour)
     source: str = "shipped"
+    environment: str = ""
+    """The environment mode this mode needs — what the sandbox must enforce (D76): `read-only`,
+    `workspace-write` or `full`. `Thread.set_mode` re-opens the environment when it differs from
+    the one open; empty means the environment stays as it is."""
 
     @classmethod
     def of(
@@ -45,6 +49,7 @@ class ModeSpec:
         description: str = "",
         behaviour: Behaviour | None = None,
         source: str = "shipped",
+        environment: str = "",
     ) -> ModeSpec:
         return cls(
             id=mode_id,
@@ -53,6 +58,7 @@ class ModeSpec:
             description=description,
             behaviour=behaviour or Behaviour(),
             source=source,
+            environment=environment,
         )
 
 
@@ -117,7 +123,16 @@ def governance_for(
     return ModeGovernance(registry, default=default, key=key, rules=rules)
 
 
-SHIPPED_POLICY_IDS = ("read-only", "workspace-write", "full")
+SHIPPED_POLICY_IDS = ("read-only", "ask", "workspace-write", "full")
+ENVIRONMENT_MODES = ("read-only", "workspace-write", "full")
+ENVIRONMENT_OF = {
+    "read-only": "read-only",
+    "ask": "workspace-write",
+    "workspace-write": "workspace-write",
+    "full": "full",
+}
+"""Which environment mode each shipped policy needs (D76): `ask` is the confined sandbox with a
+question before every change; the other three are the environment mode of the same name."""
 
 
 def policy_named(name: str) -> Policy | None:
@@ -154,6 +169,12 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
     made: dict[str, Any] = dict(raw)
     if "tools_offered" in made:
         made["tools_offered"] = tuple(made["tools_offered"])
+    # The environment mode (D76): the document's own, or the one the named policy ships with.
+    environment = str(document.get("environment", "") or "") or ENVIRONMENT_OF.get(policy_name, "")
+    if environment not in ENVIRONMENT_MODES:
+        raise ValueError(
+            f"mode {mode_id!r}: environment {environment!r} is not one of {list(ENVIRONMENT_MODES)}"
+        )
     return ModeSpec.of(
         mode_id,
         policy=policy,
@@ -161,6 +182,7 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
         description=str(document.get("description", "") or ""),
         behaviour=Behaviour(**made),
         source=source,
+        environment=environment,
     )
 
 
@@ -214,6 +236,33 @@ def _looking() -> Policy:
     )
 
 
+def _asking() -> Policy:
+    """The workspace is the ceiling, and anything that changes it is asked about first — the mode
+    every coding CLI opens in (Claude Code's *default*, Codex's *on-request*). Found wanting
+    through the demo: the shipped three had no band between *refuse* and *allow inside*, so a
+    person could never be asked about a write, and "approve and add a rule" had nothing to
+    answer."""
+    return Policy(
+        "ask",
+        ceiling=EffectProfile(
+            reads=EVERYTHING,
+            writes=OURS,
+            reaches=True,
+            reversible=False,
+            contained=True,
+            costs=True,
+        ),
+        ask_above=EffectProfile(
+            reads=EVERYTHING,
+            writes=PROVIDER,
+            reaches=True,
+            reversible=False,
+            contained=True,
+            costs=True,
+        ),
+    )
+
+
 def _confined() -> Policy:
     return Policy(
         "workspace-write",
@@ -251,22 +300,33 @@ def _open() -> Policy:
 
 
 def shipped_modes() -> tuple[ModeSpec, ...]:
-    """The three the harness ships, one per environment mode (D48, D64)."""
+    """The four the harness ships: one per environment mode (D48, D64), and `ask` — the
+    workspace-write environment with a question before every change."""
     return (
         ModeSpec.of(
             "read-only",
             policy=_looking(),
             description="Look, don't touch: nothing in the workspace is written or run.",
+            environment="read-only",
+        ),
+        ModeSpec.of(
+            "ask",
+            policy=_asking(),
+            description="Ask before every write or command inside the workspace; approve once, "
+            "or keep a rule.",
+            environment="workspace-write",
         ),
         ModeSpec.of(
             "workspace-write",
             policy=_confined(),
             description="Write and run inside the workspace, confined by the OS sandbox.",
+            environment="workspace-write",
         ),
         ModeSpec.of(
             "full",
             policy=_open(),
             description="Reach the whole machine; a write outside the workspace is asked about.",
+            environment="full",
         ),
     )
 

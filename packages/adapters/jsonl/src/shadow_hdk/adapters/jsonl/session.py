@@ -58,6 +58,7 @@ class JsonlSession:
         workspace: Path | None = None,
         tools: tuple[ToolSource, ...] = (),
         timeout_s: float = DEFAULT_TIMEOUT_S,
+        resume: str | None = None,
     ) -> None:
         self._provider = provider
         self._dialect = provider.dialect or Dialect()
@@ -67,8 +68,15 @@ class JsonlSession:
         self._tools = tools
         self._timeout_s = timeout_s
         self._process: asyncio.subprocess.Process | None = None
-        self._session_id: str | None = None
+        self._session_id: str | None = resume or None
+        """The CLI's own session id — read off its stream where the dialect says, or handed in
+        to resume (D76): the first process is started with the dialect's resume flag, so a
+        provider reopened after a mode change keeps its memory of the conversation."""
         self.stderr: str = ""
+
+    @property
+    def session_id(self) -> str | None:
+        return self._session_id
 
     # ------------------------------------------------------------------ the process
 

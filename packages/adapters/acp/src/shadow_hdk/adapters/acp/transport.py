@@ -52,6 +52,7 @@ class AcpProvider(AgentPort):
         tools: tuple[ToolSource, ...] = (),
         workspace: str | None = None,
         behaviour: Any = None,
+        resume: str | None = None,  # ACP's `session/load` is not wired here: accepted, unused
     ) -> AgentSession:
         """Start the provider and hand back the resident session.
 

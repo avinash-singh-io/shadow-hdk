@@ -97,6 +97,7 @@ class ScriptedThreads:
         self.agent = ScriptedAgent()
         self.rules: Any = None
         self.modes: Any = None
+        self.skills: Any = None
         self._tmp = tmp_path
 
     def _ports(self, observer: Any) -> Ports:
@@ -113,7 +114,14 @@ class ScriptedThreads:
         )
 
     async def open(
-        self, *, root: str, mode: str, want: str | None, name: str, observer: Any
+        self,
+        *,
+        root: str,
+        mode: str,
+        want: str | None,
+        name: str,
+        observer: Any,
+        roots: Any = None,
     ) -> Thread:
         thread = await Thread.open(
             agent=cast(Any, self.agent),

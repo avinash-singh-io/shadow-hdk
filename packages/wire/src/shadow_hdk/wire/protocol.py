@@ -61,6 +61,8 @@ THREAD_ARCHIVE = "thread/archive"
 THREAD_SET_MODE = "thread/set_mode"
 THREAD_SET_OPTION = "thread/set_option"
 THREAD_REMAINING = "thread/remaining"
+THREAD_ADD_ROOT = "thread/add_root"
+"""A directory added to the thread's workspace while it runs (D76; Claude Code's `/add-dir`)."""
 TURN_START = "turn/start"
 TURN_STEER = "turn/steer"
 TURN_INTERRUPT = "turn/interrupt"
@@ -80,6 +82,10 @@ RULES_LIST = "rules/list"
 # thread's root only, dotfiles and caches left out, never a path that resolves outside it
 FILES_LIST = "files/list"
 FILES_READ = "files/read"
+# the registries a host shows (Phase 28): what the agent is offered now, judged under its mode;
+# the skills the composition carries, with their sources
+TOOLS_LIST = "tools/list"
+SKILLS_LIST = "skills/list"
 BATTERIES_LIST = "batteries/list"
 """What the serving process has switched on (D70): every battery it knows, on, off or unavailable
 and why."""
@@ -127,11 +133,13 @@ __all__ = [
     "REQUEST_WITHDRAWN",
     "RULES_LIST",
     "RUN_CANCEL",
+    "SKILLS_LIST",
     "STORE_DELETE",
     "STORE_GET",
     "STORE_LIST",
     "STORE_PUT",
     "STORE_VERSION",
+    "THREAD_ADD_ROOT",
     "THREAD_ARCHIVE",
     "THREAD_CLOSE",
     "THREAD_FORK",
@@ -142,6 +150,7 @@ __all__ = [
     "THREAD_SET_MODE",
     "THREAD_SET_OPTION",
     "THREAD_START",
+    "TOOLS_LIST",
     "TURN_INTERRUPT",
     "TURN_START",
     "TURN_STEER",

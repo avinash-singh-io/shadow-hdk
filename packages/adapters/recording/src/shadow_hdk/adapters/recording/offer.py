@@ -68,12 +68,18 @@ class SocketOffer:
     ) -> Observation:
         return await self._holder.call(name, arguments)
 
+    async def changed(self) -> None:
+        await self._holder.changed()
+
     @asynccontextmanager
     async def served(self) -> AsyncIterator[tuple[ToolSource, ...]]:
         holder = self._holder
         async with (
             holder.served() as server,
-            serve_over_socket(server, refused=holder.refuse) as (port, token),
+            serve_over_socket(server, refused=holder.refuse, watch=holder.watch) as (
+                port,
+                token,
+            ),
         ):
             yield (relay_source(port, token),)
 

@@ -52,10 +52,19 @@ export type TurnLine =
   | { kind: "item"; thread_id: string; item: Item }
   | { kind: "activity"; thread_id: string; activity: Activity };
 
+export interface RootEntry {
+  name: string;
+  path: string;
+}
+
 export interface Started {
   thread_id: string;
-  /** The workspace the thread's tools act in — what `files.list` and `files.read` are under. */
+  /** The primary root's path — what a one-root reader expects; `roots` is the whole workspace. */
   root: string;
+  /** The workspace (D76): one or many roots, the first the primary; the rest addressed `name/path`. */
+  roots: RootEntry[];
+  /** The environment's own mode — what the sandbox enforces — beside `mode`, the policy's. */
+  environment: string;
   provider: string;
   mode: string;
   modes: { id: string; name: string; description: string; source: string }[];
@@ -76,7 +85,33 @@ export interface BatteryRow {
   problem: string | null;
 }
 
+export interface OfferedTool {
+  id: string;
+  name: string;
+  description: string;
+  effects: { reads: Scope; writes: Scope; reaches: boolean; reversible: boolean; contained: boolean; costs: boolean };
+  /** `allow` · `ask` · `refuse` — a refused one is absent from the model's catalogue. */
+  judgement: "allow" | "ask" | "refuse";
+  /** The port that carried it: `LocalEnvironment`, `SkillComponents`, a battery's adapter. */
+  source: string;
+  registration: JsonValue;
+}
+
+export interface Scope {
+  names: string[];
+  everything: boolean;
+}
+
+export interface SkillEntry {
+  name: string;
+  description: string;
+  needs: string[];
+  source: string;
+}
+
 export interface FileEntry {
+  /** Which root the file is under. */
+  root: string;
   path: string;
   bytes: number;
   mtime: number;
@@ -226,15 +261,18 @@ export class HarnessClient {
   // ---------------------------------------------------------------- the thread
 
   readonly thread = {
-    start: (params: { root?: string; mode?: string; provider?: string; name?: string; thread_id?: string }) =>
-      this.call<Started>("thread/start", params as { [key: string]: JsonValue }),
+    start: (params: { root?: string; roots?: RootEntry[]; mode?: string; provider?: string; name?: string; thread_id?: string }) =>
+      this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     list: () => this.call<{ threads: JsonValue[] }>("thread/list", {}),
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
     rollback: (thread_id: string, to_turn: number) => this.call<{ thread: JsonValue }>("thread/rollback", { thread_id, to_turn }),
     archive: (thread_id: string) => this.call<{ archived: string }>("thread/archive", { thread_id }),
-    setMode: (thread_id: string, mode: string) => this.call<{ events: Event[] }>("thread/set_mode", { thread_id, mode }),
+    setMode: (thread_id: string, mode: string) => this.call<{ events: Event[]; environment: string }>("thread/set_mode", { thread_id, mode }),
+    /** A directory added while the thread runs (D76): the sandbox re-proven over the new set. */
+    addRoot: (thread_id: string, name: string, path: string) =>
+      this.call<{ events: Event[]; root: string; roots: RootEntry[]; environment: string }>("thread/add_root", { thread_id, name, path }),
     setOption: (thread_id: string, key: string, value: JsonValue) => this.call<{ ok: boolean }>("thread/set_option", { thread_id, key, value }),
     remaining: (thread_id: string) => this.call<{ lease: JsonValue }>("thread/remaining", { thread_id }),
   };
@@ -316,8 +354,16 @@ export class HarnessClient {
   /** The thread's workspace, read — under its root only; dotfiles and caches left out (D69). */
   readonly files = {
     list: (thread_id: string) => this.call<{ files: FileEntry[] }>("files/list", { thread_id }),
-    read: (thread_id: string, path: string) => this.call<{ content: string }>("files/read", { thread_id, path }),
+    read: (thread_id: string, path: string, root?: string) =>
+      this.call<{ content: string }>("files/read", root ? { thread_id, root, path } : { thread_id, path }),
   };
+
+  /** What the thread's agent is offered now — every registration with the mode's judgement (Phase 28). */
+  readonly tools = {
+    list: (thread_id: string) => this.call<{ tools: OfferedTool[] }>("tools/list", { thread_id }),
+  };
+  /** The skills the composition carries — shipped, from the store, minted — with their sources. */
+  readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
 
   readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */

@@ -1016,6 +1016,25 @@
       "title": "Reasoning",
       "type": "object"
     },
+    "Root": {
+      "description": "One directory a thread works on, and the name it is addressed by.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path"
+      ],
+      "title": "Root",
+      "type": "object"
+    },
     "Sequence": {
       "properties": {
         "id": {
@@ -1294,6 +1313,44 @@
       "title": "UsageReported",
       "type": "object"
     },
+    "WorkspaceChanged": {
+      "description": "The thread's roots changed mid-thread (D76) \u2014 a directory added while the conversation\nran \u2014 so a reader knows which turns could see which roots.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "workspace_changed",
+          "default": "workspace_changed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "roots": {
+          "items": {
+            "$ref": "#/$defs/Root"
+          },
+          "title": "Roots",
+          "type": "array"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "roots"
+      ],
+      "title": "WorkspaceChanged",
+      "type": "object"
+    },
     "shadow_hdk__kernel__events__Refused": {
       "description": "Governance said no before the step ran.",
       "properties": {
@@ -1369,7 +1426,8 @@
       "refused": "#/$defs/shadow_hdk__kernel__events__Refused",
       "spawned": "#/$defs/Spawned",
       "started": "#/$defs/Started",
-      "usage": "#/$defs/UsageReported"
+      "usage": "#/$defs/UsageReported",
+      "workspace_changed": "#/$defs/WorkspaceChanged"
     },
     "propertyName": "kind"
   },
@@ -1412,6 +1470,9 @@
     },
     {
       "$ref": "#/$defs/ModeChanged"
+    },
+    {
+      "$ref": "#/$defs/WorkspaceChanged"
     },
     {
       "$ref": "#/$defs/Ended"

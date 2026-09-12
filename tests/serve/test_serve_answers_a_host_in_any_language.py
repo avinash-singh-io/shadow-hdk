@@ -36,6 +36,23 @@ ENFORCEABLE: Mode = "workspace-write" if local_sandbox() is not None else "full"
 and CI's Linux runner has none — so these open the mode this machine can prove, which is not
 what they are about."""
 
+OTHER_MODE = "read-only" if local_sandbox() is not None else "wide"
+"""A mode that differs from `ENFORCEABLE` and is enforceable here. Since a mode names the
+sandbox mode it needs (D76), `read-only` cannot be switched to where nothing confines; `wide`
+is a store mode with the `full` policy (`another_mode(store)` writes it) — a different id, the
+same environment, so a switch is a real change that the machine can make true."""
+
+
+async def another_mode(store: Any) -> str:
+    """Write the mode `OTHER_MODE` names when it is not shipped; return its id."""
+    if OTHER_MODE == "wide":
+        await store.put(
+            "modes",
+            "wide",
+            {"id": "wide", "name": "Wide", "policy": "full", "environment": "full"},
+        )
+    return OTHER_MODE
+
 
 class ScriptedProvider:
     """An `AgentPort` that speaks without a CLI: what the live studio has is a real one."""
@@ -43,7 +60,9 @@ class ScriptedProvider:
     def __init__(self) -> None:
         self.opened = 0
 
-    async def open(self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None) -> Any:
+    async def open(
+        self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None, resume: Any = None
+    ) -> Any:
         self.opened += 1
 
         class _Session:
@@ -89,7 +108,16 @@ async def test_serve_host_opens_a_thread_on_the_shipped_composition(tmp_path: Pa
     assert thread.record.turns[-1].text == "scripted: hello"
     assert [e.kind for e in events][0] == "started"
     assert host.approvals is not None and host.modes is not None and host.rules is not None
-    assert [m.id for m in await host.modes.all()] == ["read-only", "workspace-write", "full"]
+    assert [m.id for m in await host.modes.all()] == ["read-only", "ask", "workspace-write", "full"]
+    # The skill registry is the host's too (Phase 28 group 1): shipped first, then the store.
+    names = sorted(s.name for s in await host.skills.all())
+    assert names == [
+        "ask-when-ambiguous",
+        "look-before-you-change",
+        "page-a-large-result",
+        "verify-before-done",
+    ]
+    assert all(s.source == "shipped" for s in await host.skills.all())
 
 
 async def test_the_studio_composition_is_the_harnesss_now() -> None:

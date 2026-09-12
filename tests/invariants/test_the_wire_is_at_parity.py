@@ -104,6 +104,8 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.set_mode": "THREAD_SET_MODE",
     "Thread.set_option": "THREAD_SET_OPTION",
     "Thread.remaining": "THREAD_REMAINING",
+    "Thread.tools": "TOOLS_LIST",
+    "Thread.add_root": "THREAD_ADD_ROOT",
     # Approvals
     "Approvals.pending": "APPROVALS_PENDING",
     "Approvals.answer": "APPROVALS_ANSWER",
@@ -123,6 +125,10 @@ HANDLES_NOT_CROSSING: dict[str, str] = {
     "whether anything was running; the answer crosses inside those",
     "Thread.id": "the id crosses as `thread_id` in every result and notification",
     "Thread.record": "crosses as the result of `thread/resume` and `thread/list`",
+    "Thread.workspace": "crosses as `roots` in the results of `thread/start`, `thread/resume` "
+    "and `thread/add_root`, and in every `files/list` entry",
+    "Thread.environment_mode": "crosses as `environment` in the results of `thread/start`, "
+    "`thread/resume`, `thread/set_mode` and `thread/add_root`",
     "Approvals.ask": "the runtime's side of the handle — a component asks; the host answers",
 }
 

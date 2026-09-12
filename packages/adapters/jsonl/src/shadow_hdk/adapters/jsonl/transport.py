@@ -162,6 +162,7 @@ class JsonlProvider(AgentPort):
         tools: tuple[ToolSource, ...] = (),
         workspace: str | None = None,
         behaviour: Behaviour | None = None,
+        resume: str | None = None,
     ) -> AgentSession:
         # `replace`, not `__class__(**__dict__)`: copying a frozen dataclass around its own
         # constructor discards every argument's type.
@@ -175,6 +176,7 @@ class JsonlProvider(AgentPort):
             env=self._env,
             workspace=Path(workspace) if workspace else self._extra.get("workspace"),
             tools=tools,
+            resume=resume,
         )
 
 

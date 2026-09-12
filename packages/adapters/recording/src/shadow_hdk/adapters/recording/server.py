@@ -24,7 +24,7 @@ attaches each turn's run and detaches after.
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -60,6 +60,8 @@ class RecordingServer(Routing):
         self.refused_connections = 0
         """Connections that presented the wrong token, or none (D52). A count, never a credential:
         what was presented is not kept. Hand `refuse` to `serve_over_socket` to keep it."""
+        self._notifiers: set[Callable[[str], Awaitable[None]]] = set()
+        """One per live connection: how to send that connection a notification (BUG-032)."""
 
     def refuse(self) -> None:
         """One more connection turned away at the door."""
@@ -110,6 +112,23 @@ class RecordingServer(Routing):
 
         server.add_request_handler("tools/list", PaginatedRequestParams, list_tools)
         server.add_request_handler("tools/call", CallToolRequestParams, call_tool)
+
+    def watch(self, notify: Callable[[str], Awaitable[None]]) -> Callable[[], None]:
+        """A connection that can carry a notification registers how; the transport calls this
+        when it opens and the returned function when it closes."""
+        self._notifiers.add(notify)
+        return lambda: self._notifiers.discard(notify)
+
+    async def changed(self) -> None:
+        """Tell every connection to list again — MCP's `notifications/tools/list_changed`
+        (BUG-032). Measured: the mode flipped and a resident CLI kept the catalogue it fetched
+        under the old one until the thread was resumed. A connection that is gone is dropped, not
+        raised over."""
+        for notify in list(self._notifiers):
+            try:
+                await notify("notifications/tools/list_changed")
+            except Exception:  # noqa: BLE001 — a connection's death is that connection's problem
+                self._notifiers.discard(notify)
 
     @asynccontextmanager
     async def served(self) -> AsyncIterator[Any]:

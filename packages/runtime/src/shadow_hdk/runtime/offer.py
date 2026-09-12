@@ -50,6 +50,12 @@ class Offer(Protocol):
         self, name: str, arguments: Mapping[str, JsonValue] | None = None
     ) -> Observation: ...
 
+    async def changed(self) -> None:
+        """The catalogue changed under a resident agent — the mode flipped, a root was added —
+        and whoever holds a list of it should list again (BUG-032; MCP's
+        `notifications/tools/list_changed`). An in-process offer has nothing to tell."""
+        ...
+
 
 class Routing:
     """The routing itself: one counter, one name, one attached run at a time."""
@@ -154,6 +160,9 @@ def outcome_of(events: list[Any], step: str) -> tuple[Observation | None, str | 
 class InProcessOffer(Routing):
     """The registry offered to an agent in this process: it calls `call` directly, so there is
     nothing to serve and no tool source to hand it."""
+
+    async def changed(self) -> None:
+        return None
 
     @asynccontextmanager
     async def served(self) -> AsyncIterator[tuple[ToolSource, ...]]:

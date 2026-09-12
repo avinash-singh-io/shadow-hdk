@@ -14,7 +14,11 @@ import pytest
 
 from shadow_hdk.serve import ServeHost
 from shadow_hdk.serve.config import Settings
-from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE, ScriptedProvider
+from tests.serve.test_serve_answers_a_host_in_any_language import (
+    ENFORCEABLE,
+    ScriptedProvider,
+    another_mode,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -31,11 +35,12 @@ async def test_the_typescript_client_starts_a_thread_and_turns_it(tmp_path: Path
     from shadow_hdk.wire import served_over_http
 
     host = ServeHost(Settings(root=tmp_path, mode=ENFORCEABLE), agent=ScriptedProvider())
+    other = await another_mode(host.store)
     with anyio.fail_after(90):
         async with served_over_http(threads=host) as address:
             finished = await asyncio.to_thread(
                 subprocess.run,
-                [node, str(smoke), address],
+                [node, str(smoke), address, "", other],
                 capture_output=True,
                 text=True,
                 timeout=60,
@@ -46,8 +51,10 @@ async def test_the_typescript_client_starts_a_thread_and_turns_it(tmp_path: Path
     assert seen["text"] == "scripted: hello from typescript"
     assert seen["provider"] == "handed in"
     assert "item:turn-1" in seen["seen"] and "event:started" in seen["seen"]
-    assert seen["modes"] == ["read-only", "workspace-write", "full"]
-    assert seen["version"] == 0
+    assert seen["modes"][:4] == ["read-only", "ask", "workspace-write", "full"]
+    assert seen["version"] == (0 if other == "read-only" else 1), (
+        "the store mode, where one was written"
+    )
     assert seen["root"] == str(tmp_path) and seen["files"] == [], "the workspace, read (D69)"
     assert seen["mode_events"] == ["mode_changed"], "set_mode returned the record's own event"
     assert sorted(seen["batteries"]) == ["ddgs:off", "wigolo:off"], "shipped, none wanted (D70)"

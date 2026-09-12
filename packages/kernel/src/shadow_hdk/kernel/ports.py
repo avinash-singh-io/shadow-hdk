@@ -350,8 +350,12 @@ class AgentPort(Protocol):
         tools: tuple[ToolSource, ...] = (),
         workspace: str | None = None,
         behaviour: Behaviour | None = None,
+        resume: str | None = None,
     ) -> AgentSession:
         """Open a session. `behaviour` (D64) is who the model should be — mapped to this CLI's
-        flags by the provider file; a default of `None` keeps every existing opener working
-        (D14)."""
+        flags by the provider file; `resume` (D76) is the provider's own session id to pick up
+        where it left off — what a thread hands back when it reopens the provider after a mode
+        change or a resume, so the agent keeps its memory of the conversation; a default of
+        `None` keeps every existing opener working (D14). A session says its id through a
+        `session_id` attribute, when the provider has one."""
         ...

@@ -53,7 +53,11 @@ def mint() -> str:
 
 @asynccontextmanager
 async def serve_over_socket(
-    server: Any, *, host: str = "127.0.0.1", refused: Callable[[], None] | None = None
+    server: Any,
+    *,
+    host: str = "127.0.0.1",
+    refused: Callable[[], None] | None = None,
+    watch: Any = None,
 ) -> AsyncIterator[tuple[int, str]]:
     """Listen on an ephemeral loopback port and serve `server` to whoever presents the token.
 
@@ -85,7 +89,7 @@ async def serve_over_socket(
                     refused()
                 return
             try:
-                await serve_over_pipes(server, stream, stream)
+                await serve_over_pipes(server, stream, stream, watch=watch)
             except BaseExceptionGroup as group:
                 # **A connection's death is that connection's problem** (BUG-027). A CLI kills its
                 # relay while the registry is writing to it — measured in the studio, at the
