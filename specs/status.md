@@ -86,6 +86,7 @@ merged and released**: 1,338 tests, mypy strict over 233 files, eighteen distrib
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 27 — batteries and the facade | `phase-27-batteries-and-the-facade` | in progress | Group 1 (a battery is a file) next; `planning/the-substrate.md` §3.6/§3.7 is the plan |
 
 ## Upcoming Phases
 
