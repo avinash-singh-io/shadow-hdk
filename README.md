@@ -226,7 +226,7 @@ from shadow_hdk.serve import Harness
 
 async with Harness.load("harness.toml") as h:
     async for part in h.turn("add a .gitignore and run the tests"):
-        print(part.kind, part.item.component if part.item else part.activity.text if part.activity else "")
+        print(part.kind, part.item.component if part.item else "")
     print(h.thread.record.turns[-1].text)
 ```
 
