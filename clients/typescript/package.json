@@ -1,0 +1,18 @@
+{
+  "name": "shadow-hdk-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Types generated from shadow-hdk's published schemas, and a thin JSON-RPC/SSE client for `shadow-hdk serve`.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}

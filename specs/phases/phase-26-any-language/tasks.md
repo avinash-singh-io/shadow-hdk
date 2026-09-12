@@ -18,10 +18,10 @@ phase: 26
 
 ## Group 4 — serve
 - [x] `shadow-hdk-serve`: the composition moved out of the coder example (`ServeHost`, `a_thread`, `workshop`, `modes_for`); `shadow-hdk serve harness.toml --stdio|--http [--page]`; the thread's offer held by one task (found behind `--http`)
-- [x] the coder and the studio import the composition from the package; `examples/coder/workshop.py` deleted
+- [x] the coder and the studio import the composition from the package; the coder's former `workshop` module deleted
 
 ## Group 5 — TypeScript
-- [ ] survey recorded; generation from the schemas; a thin client; the drift invariant
+- [x] survey recorded (D68); `clients/typescript/` — generation from the schemas (one module per contract), a thin JSON-RPC/SSE client, `tsc --noEmit`, the drift invariant, proven against a live `serve --http`; CI installs node and builds it
 
 ## Group 6 — the studio on the wire
 - [ ] the studio consumes the wire and nothing local; driven live
