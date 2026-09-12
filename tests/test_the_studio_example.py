@@ -25,6 +25,7 @@ from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
 from shadow_hdk.serve import ServeHost
 from shadow_hdk.serve.config import Settings
 from shadow_hdk.wire import connect_to, protocol, served_over_http
+from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE
 
 pytestmark = pytest.mark.anyio
 
@@ -64,7 +65,7 @@ class StudioHost(ServeHost):
 
     def __init__(self, root: Path) -> None:
         self.writer = WritingProvider()
-        super().__init__(Settings(root=root, mode="workspace-write"), agent=cast(Any, self.writer))
+        super().__init__(Settings(root=root, mode=ENFORCEABLE), agent=cast(Any, self.writer))
 
     async def open(self, **kw: Any) -> Any:
         thread = await super().open(**kw)
@@ -152,7 +153,7 @@ async def test_a_turn_over_the_wire_writes_a_file_the_environment_pane_reads(
 
                 client.peer.hears("item", keep)
                 started = await client.peer.call(
-                    "thread/start", {"root": str(root), "mode": "workspace-write"}
+                    "thread/start", {"root": str(root), "mode": ENFORCEABLE}
                 )
                 tid = started["thread_id"]
                 assert started["root"] == str(root), "the page shows the root it was given"
@@ -181,7 +182,7 @@ async def test_a_reload_resumes_the_thread_and_reads_its_turns(tmp_path: Path) -
             async with connect_to(address, _ports()) as first:
                 await first.initialize()
                 started = await first.peer.call(
-                    "thread/start", {"root": str(tmp_path), "mode": "workspace-write"}
+                    "thread/start", {"root": str(tmp_path), "mode": ENFORCEABLE}
                 )
                 tid = started["thread_id"]
                 await first.peer.call("turn/start", {"thread_id": tid, "text": "one"})

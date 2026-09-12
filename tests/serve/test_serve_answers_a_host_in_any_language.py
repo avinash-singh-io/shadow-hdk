@@ -20,14 +20,21 @@ from typing import Any, cast
 import anyio
 import pytest
 
+from shadow_hdk.adapters.environment import local_sandbox
 from shadow_hdk.kernel import Turn
 from shadow_hdk.kernel.ports import AgentSession
 from shadow_hdk.runtime import Ports
+from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
 from shadow_hdk.serve import ServeHost, load_settings
 from shadow_hdk.serve.config import Settings
 
 pytestmark = pytest.mark.anyio
+
+ENFORCEABLE: Mode = "workspace-write" if local_sandbox() is not None else "full"
+"""The composition is real: a confined mode is refused where no OS sandbox can enforce it (D49),
+and CI's Linux runner has none — so these open the mode this machine can prove, which is not
+what they are about."""
 
 
 class ScriptedProvider:
@@ -68,10 +75,10 @@ def _ports() -> Ports:
 
 async def test_serve_host_opens_a_thread_on_the_shipped_composition(tmp_path: Path) -> None:
     provider = ScriptedProvider()
-    host = ServeHost(Settings(root=tmp_path, mode="workspace-write"), agent=provider)
+    host = ServeHost(Settings(root=tmp_path, mode=ENFORCEABLE), agent=provider)
 
     thread = await host.open(
-        root=str(tmp_path), mode="workspace-write", want=None, name="tools", observer=None
+        root=str(tmp_path), mode=ENFORCEABLE, want=None, name="tools", observer=None
     )
     try:
         events = [e async for e in thread.turn("hello")]
@@ -97,7 +104,7 @@ async def test_over_http_a_client_starts_a_thread_and_turns_it(tmp_path: Path) -
     from shadow_hdk.wire import connect_to, served_over_http
 
     provider = ScriptedProvider()
-    host = ServeHost(Settings(root=tmp_path, mode="workspace-write"), agent=provider)
+    host = ServeHost(Settings(root=tmp_path, mode=ENFORCEABLE), agent=provider)
     heard: list[str] = []
     with anyio.fail_after(60):
         async with served_over_http(threads=host) as address:
@@ -109,7 +116,7 @@ async def test_over_http_a_client_starts_a_thread_and_turns_it(tmp_path: Path) -
 
                 client.peer.hears("item", keep)
                 started = await client.peer.call(
-                    "thread/start", {"root": str(tmp_path), "mode": "workspace-write"}
+                    "thread/start", {"root": str(tmp_path), "mode": ENFORCEABLE}
                 )
                 done = await client.peer.call(
                     "turn/start", {"thread_id": started["thread_id"], "text": "over http"}

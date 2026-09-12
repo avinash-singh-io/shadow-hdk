@@ -341,7 +341,7 @@ import { HarnessClient } from "shadow-hdk-client";
 
 const client = new HarnessClient({ address: "http://127.0.0.1:8765" });
 await client.connect();
-const started = await client.thread.start({ mode: "workspace-write" });
+const started = await client.thread.start({}); // root and mode from harness.toml; or pass them
 client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
 for await (const line of client.turn.start(started.thread_id, "hello from typescript")) {
   if (line.kind === "item") console.log(line.item.step, line.item.outcome);

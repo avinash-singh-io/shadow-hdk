@@ -14,7 +14,7 @@ import pytest
 
 from shadow_hdk.serve import ServeHost
 from shadow_hdk.serve.config import Settings
-from tests.serve.test_serve_answers_a_host_in_any_language import ScriptedProvider
+from tests.serve.test_serve_answers_a_host_in_any_language import ENFORCEABLE, ScriptedProvider
 
 pytestmark = pytest.mark.anyio
 
@@ -30,7 +30,7 @@ async def test_the_typescript_client_starts_a_thread_and_turns_it(tmp_path: Path
         pytest.skip("clients/typescript is not built here (`npm install && npm run build`)")
     from shadow_hdk.wire import served_over_http
 
-    host = ServeHost(Settings(root=tmp_path, mode="workspace-write"), agent=ScriptedProvider())
+    host = ServeHost(Settings(root=tmp_path, mode=ENFORCEABLE), agent=ScriptedProvider())
     with anyio.fail_after(90):
         async with served_over_http(threads=host) as address:
             finished = await asyncio.to_thread(
@@ -63,7 +63,7 @@ def test_the_readme_snippet_is_what_the_smoke_run_runs(tmp_path: Path) -> None:
     assert block, "the README has the TypeScript snippet"
     smoke = (CLIENT / "src" / "smoke.ts").read_text(encoding="utf-8")
     for line in block.group(1).splitlines():
-        statement = line.strip()
+        statement = line.split("//")[0].strip()  # a trailing comment is for the reader
         if not statement or statement.startswith("import") or statement in ("}", "});"):
             continue
         if statement.startswith("const client"):

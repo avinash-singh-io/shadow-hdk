@@ -11,7 +11,7 @@ if (!address) {
 }
 const client = new HarnessClient({ address, token: process.argv[3] });
 await client.connect();
-const started = await client.thread.start({ mode: "workspace-write" });
+const started = await client.thread.start({});
 client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
 const seen: string[] = [];
 let text = "";
