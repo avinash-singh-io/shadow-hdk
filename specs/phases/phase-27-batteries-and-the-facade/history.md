@@ -151,3 +151,19 @@ settling the port's shapes first means the loop, when it is built, is measured a
 not written to flatter it.
 
 ---
+
+## Verification Evidence
+
+Captured fresh 2026-09-12 on the phase branch at close, before landing:
+
+- `uv run ruff check -q` → exit 0
+- `uv run ruff format --check -q` → exit 0
+- `uv run mypy` → exit 0 (`Success: no issues found in 237 source files`)
+- `uv run pytest -q -p no:cacheprovider -m 'not live'` → `1364 passed, 2 skipped, 12 deselected, 85 warnings in 146.90s (0:02:26)`
+- `tests/test_versions.py` → EXPECTED `0.24.0`, eighteen packages moved together (D9); `uv sync --all-packages` clean
+- RED first, every group: group 1 `ModuleNotFoundError: shadow_hdk.serve.batteries`; group 2 `unknown table [tools]`, `Settings() got an unexpected keyword 'batteries'`, `a_thread() got an unexpected keyword 'agent'`; the SIGTERM test *outlived SIGTERM while a page held the stream*; group 3 `cannot import name 'Harness'`; the two invariants proven to bite by mutation (a private import, a private attribute, a name not in `__all__`, a key with no meaning — each failed the build)
+- Mutation passes: group 1 seven killed (only/aliases/effects ignored; absent command unreported; store not shadowing; `requires` unchecked; effects optional); group 2 five killed (unknown id unreported; batteries not offered; `aclose` forgetting without closing; listing says on for all; `a_thread` ignoring batteries); README's Python snippet and TypeScript snippet each fail on a wrong line
+- Live, on the owner's subscription (Claude Code 2.1.235), through the studio served by `shadow-hdk serve --http --page … $SC/harness.toml` with `[tools] batteries = ["wigolo"]`, `WIGOLO_BIN` naming the scratchpad install, the thread in `read-only`: `batteries/list` → `wigolo:on`, `ddgs:off`; one turn — `web_search` (wigolo) returned the npm page with the version in its snippet; `web_fetch` of npmjs.com came back `blocked_by_challenge` and was shown as the failed item it is; `web_fetch` of `registry.npmjs.org/wigolo/latest` succeeded; the answer named 0.2.1 / AGPL-3.0-only with both sources and wrote nothing — 3 tool calls · 27¢; wigolo ended with serve
+- wigolo itself: `npm i wigolo@0.2.1` into the scratchpad only (796 MB of dependencies), started as a stdio MCP server in ~1.5 s, ten tools listed, none annotated — the survey behind D70
+
+---

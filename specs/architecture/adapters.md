@@ -190,6 +190,17 @@ A product with its own domain verbs — two dozen ways to write to its record, s
 implementations propose, and a sink that is the host's gate. **The runtime never learns what a claim
 is**, and that is the point of the example rather than the verbs themselves.
 
+## Batteries — a tool consumed behind the component port (Phase 27, D70)
+
+A *battery* is a file in `serve`'s `batteries_library` (or a directory, or a store row): an MCP
+server — its command on PATH or through an environment variable — or a Python callable, the tools
+to expose under the harness's names, and the **effects a deployment vouches for**. The MCP adapter
+takes `only=`, `aliases=`, `effects=` for exactly this; a server that annotates nothing is assumed
+the worst of until a file says otherwise. `wigolo` (web search and fetch; AGPL, its own process,
+never linked) and `ddgs` (the light alternative, an optional extra) ship. A battery's profile is
+honest — it reaches the web from a process outside the sandbox, `contained = false` — and the
+modes judge it by that: `workspace-write` hides it, `read-only` and `full` offer it; no rule.
+
 ## The environment — where the agent's effects land (Phase 22, D48–D50)
 
 Three adapters used to hold three opinions about one boundary — a workspace that checked every

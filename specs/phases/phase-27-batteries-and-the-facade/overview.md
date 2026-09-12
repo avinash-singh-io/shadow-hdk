@@ -3,7 +3,7 @@ type: Phase
 phase: 27
 name: batteries-and-the-facade
 epic: 0016-batteries-and-the-facade
-status: in-progress
+status: complete
 topics: [batteries, mcp, web-search, facade, harness-toml, budget, optimiser, serve]
 deps: [phase-25-the-hosts-controls, phase-26-any-language]
 ---

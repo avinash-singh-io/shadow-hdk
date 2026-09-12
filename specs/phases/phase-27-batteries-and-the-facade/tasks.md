@@ -21,4 +21,5 @@ phase: 27
 - [x] `specs/architecture/optimiser.md` — programs are documents with slots; `improve(program, evaluator, budget) → Improved` as a proposal through the sink; the evaluator locked first (Rule 11) over the recorded model port; DSPy mapped, a `HillClimb` for the contract suite; not built (D72)
 
 ## Close
-- [ ] decisions; index; status/roadmap/changelog/README; version; landed; board
+- [x] D70, D71, D72 recorded and indexed; `architecture/overview.md` and `adapters.md` grew the front door and batteries; status/roadmap/changelog/README; 0.24.0 across eighteen packages; Verification Evidence
+- [ ] landed (CI green → staging → main → `v0.24.0` → release); board with a Pins row

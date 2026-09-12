@@ -519,7 +519,7 @@ takes only what it uses — and one TypeScript client generated from the schemas
 packages/kernel                     pure types, one partial order, six ports — no I/O at all
 packages/runtime                    the loop, on LangGraph
 packages/wire                       the runtime behind JSON-RPC — ports inverted, or threads served
-packages/serve                      the shipped composition and `shadow-hdk serve`
+packages/serve                      the front door: `Harness`, `shadow-hdk serve`, batteries
 packages/providers                  what this machine can reach — your key, or your subscription
 packages/adapters/basic             allow-all · stdout · file · clock · callables
 packages/adapters/modes             governance as data: a mode is a ceiling and an ask line
@@ -573,7 +573,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–26 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–27 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

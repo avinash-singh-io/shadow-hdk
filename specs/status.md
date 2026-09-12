@@ -4,20 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 26 — any language — landed)
-> **Current Phase**: **none — Phase 26 (any language) is complete and released as v0.23.0.**
-> The thread, the handles, the store and the composition cross the wire (D67): a host in any
-> language opens a thread, turns it, sees items and activity, answers approval and input
-> requests, switches modes, forks and resumes, reads and writes the store — over
-> `shadow-hdk serve --stdio|--http`, from the shipped composition (`shadow-hdk-serve`).
-> A TypeScript client generated from the schemas (D68) is proven against a live server; the
-> studio is a page `serve` itself serves, talking the wire and nothing local (D69). Next: Phase
-> 27 (batteries and the facade).
+> **Last Updated**: 2026-09-12 (Phase 27 — batteries and the facade — landed)
+> **Current Phase**: **none — Phase 27 (batteries and the facade) is complete and released as
+> v0.24.0.** A battery is a file (D70): wigolo and ddgs consumed behind the component port with
+> the effects a deployment vouches for, judged by the shipped modes as they are; the facade
+> (D71): `harness.toml` and three lines — `Harness.load`, `async with`, `turn()` — `budget` in
+> the file, one step deeper without leaving it, two invariants holding the promise; the
+> optimiser port specified with its evaluator locked first (D72). The substrate plan's phases
+> 25–27 are built. Next: Phase 28 (context engineering) and Phase 29 (collaboration), the
+> owner's call.
 >
-> 1,338 tests; mypy strict over 233 files; eighteen distributions at **0.23.0**, all MIT.
+> 1,364 tests; mypy strict over 237 files; eighteen distributions at **0.24.0**, all MIT.
 >
-> **Latest Release**: **v0.23.0**, released 2026-09-12 — Phase 26, any language (D67–D69).
-> Contract change (the wire's second shape, a new package), so a *Pins* row. Before it v0.22.0
+> **Latest Release**: **v0.24.0**, released 2026-09-12 — Phase 27, batteries and the facade
+> (D70–D72). Contract change (the front door, `batteries/list`, a widened adapter), so a *Pins*
+> row. Before it v0.23.0 (Phase 26, any language, D67–D69), v0.22.0
 > (Phase 25, the host's controls, D61–D66), v0.21.0 (the words, mid-phase), v0.20.0 (the studio inline; seven bugs found by using it, D59,
 > D60), v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
 > the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
@@ -32,8 +33,8 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Twenty-seven phases are built,
-merged and released**: 1,338 tests, mypy strict over 233 files, eighteen distributions at 0.23.0.
+that adopter, and it lives in the shared roadmap rather than here. **Twenty-eight phases are built,
+merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distributions at 0.24.0.
 
 ## Completed Phases
 
@@ -71,11 +72,13 @@ merged and released**: 1,338 tests, mypy strict over 233 files, eighteen distrib
 | 24 | The skill registry | Complete, merged | **v0.18.0** |
 | 25 | The host's controls | Complete, merged | **v0.22.0** |
 | 26 | Any language | Complete, merged | **v0.23.0** |
+| 27 | Batteries and the facade | Complete, merged | **v0.24.0** |
 
 ## Ad-hoc / Patch Releases
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.24.0 | 2026-09-12 | phase 27 | batteries and the facade: a battery is a file (wigolo, ddgs), `Harness.load` and `harness.toml`, `budget`, the optimiser specified (D70–D72) |
 | v0.23.0 | 2026-09-12 | phase 26 | any language: the thread, the handles and the store over the wire; `shadow-hdk serve`; the TypeScript client; the studio on the wire (D67–D69) |
 | v0.22.0 | 2026-09-12 | phase 25 | the host's controls: Thread/Turn/Item/Activity, modes = policy + behaviour, rules and input, the Store (D61–D66) |
 | v0.21.0 | 2026-09-12 | phase 25 (mid) | the record speaks the industry's words (D61) |
@@ -86,7 +89,6 @@ merged and released**: 1,338 tests, mypy strict over 233 files, eighteen distrib
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 27 — batteries and the facade | `phase-27-batteries-and-the-facade` | in progress | Group 1 (a battery is a file) next; `planning/the-substrate.md` §3.6/§3.7 is the plan |
 
 ## Upcoming Phases
 

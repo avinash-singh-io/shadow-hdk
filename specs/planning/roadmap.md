@@ -26,7 +26,16 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-12, later
+## Where this stands — 2026-09-12, evening
+
+**Phases 0–27 are done** and v0.24.0 is released. The substrate plan (`planning/the-substrate.md`)
+is built through its third phase: the host's controls (25), every one of them over the wire for a
+host in any language (26), and now the batteries and the facade (27) — `harness.toml` and three
+lines by default, the same objects one step deeper, web search and fetch consumed as batteries
+with honest effects. What remains of the roadmap is Phase 28 (context engineering) and Phase 29
+(collaboration), unchanged; the optimiser is specified and waits on its locked evaluator.
+
+### Where this stood — 2026-09-12, later
 
 **Phases 0–26 are done** and v0.23.0 is released. Phase 25 gave the harness the host's controls in
 the industry's words; Phase 26 carried every one of them across the wire — a host in TypeScript
@@ -126,7 +135,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
 | 25 | The host's controls | **DONE** · `phase-25-the-hosts-controls` | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule"; the `Store` port — every registry live, no restart |
 | 26 | Any language | **DONE** · `phase-26-any-language` | 25 | the thread, the handles and the store cross the wire as methods (`ThreadHost`, parity rule 4); `shadow-hdk serve` over stdio and HTTP/SSE with the shipped composition (`shadow-hdk-serve`); a TypeScript client generated from the schemas, held by an invariant; the studio a page `serve` serves, talking the wire only; `files/*`; a session's threads close with it |
-| 27 | Batteries and the facade | planned | 25 | web search and fetch consumed; `harness.toml` and `Harness.load()`; the optimiser port specified |
+| 27 | Batteries and the facade | **DONE** · `phase-27-batteries-and-the-facade` | 25, 26 | a battery is a file — wigolo and ddgs consumed behind the MCP/callable component port with vouched effects, judged by the modes as they are (D70); `harness.toml` and `Harness.load()` — three lines, `budget`, one step deeper, two invariants (D71); the coder on the facade; the optimiser port specified, its evaluator locked first (D72) |
 | 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 29 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 
