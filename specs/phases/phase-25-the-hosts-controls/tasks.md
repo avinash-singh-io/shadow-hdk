@@ -36,8 +36,8 @@ phase: 25
 - [x] the invariant: every registry has a store source (`test_every_registry_has_a_store_source.py`)
 
 ## Group 7 — the studio
-- [ ] collapsed item runs; deltas; mode selector; InputRequest item; approve-and-add-rule
-- [ ] live turns measured
+- [x] collapsed item runs ("Ran N commands, used M tools ›", expandable, thoughts break runs); deltas; the mode selector live; InputRequest item; approve-and-add-rule; the admin surface
+- [x] live turns measured: wc.py — 6 tool calls in three folded runs between six thoughts, 44¢; the duplicate final thought found and fixed at the source (record once)
 
 ## Close
-- [ ] decisions; index; status/roadmap/changelog/README; landed; board
+- [x] D61–D66; index; status/roadmap/changelog/README; 0.22.0; landed; board

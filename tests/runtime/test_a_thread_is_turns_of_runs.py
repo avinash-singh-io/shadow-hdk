@@ -464,3 +464,48 @@ async def test_interrupt_ends_the_running_turn_and_the_record_says_cancelled(
 
 async def _collect(events: Any) -> list[Any]:
     return [e async for e in events]
+
+
+async def test_reasoning_the_session_already_recorded_is_not_recorded_again(
+    tmp_path: Path,
+) -> None:
+    """Measured in the studio: the jsonl session puts each thought on the record as it arrives
+    *and* returns them joined in `Turn.reasoning`; the thread emitted that again, so the last
+    thought of every turn was the first one repeated. The record is complete once (principle 6):
+    the thread emits `Turn.reasoning` only when nothing of the kind reached the record during
+    the turn."""
+    from shadow_hdk.runtime import current_run
+
+    class RecordsItself(ScriptedAgent):
+        async def open(
+            self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None
+        ) -> Any:
+            self.opened_with = tools
+            agent = self
+
+            class _Session:
+                async def turn(self, prompt: str) -> Turn:
+                    context = current_run()
+                    assert context is not None
+                    await context.reasoning("first thought")
+                    await context.reasoning("second thought")
+                    return Turn(text="said", reasoning="first thought" + "second thought")
+
+                async def close(self) -> None:
+                    agent.closed += 1
+
+                async def stream(self, prompt: str) -> AsyncIterator[Any]:  # pragma: no cover
+                    raise NotImplementedError
+                    yield
+
+            return _Session()
+
+    agent = RecordsItself([])
+    thread = await open_thread(agent, InMemoryThreads(), tmp_path)
+    try:
+        events = [e async for e in thread.turn("go")]
+    finally:
+        await thread.close()
+
+    thoughts = [e.text for e in events if e.kind == "reasoning"]
+    assert thoughts == ["first thought", "second thought"], thoughts

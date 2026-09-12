@@ -3,7 +3,7 @@ type: Phase
 phase: 25
 name: the-hosts-controls
 epic: 0014-the-hosts-controls
-status: in-progress
+status: complete
 topics: [thread, turn, item, activity, modes, behaviour, approvals, store, terminology]
 deps: [phase-24-the-skill-registry]
 ---

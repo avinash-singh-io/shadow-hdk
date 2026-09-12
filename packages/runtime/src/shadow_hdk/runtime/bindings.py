@@ -423,6 +423,12 @@ class RunContext:
             return Refuse(answered.reason)
         return answered
 
+    def recorded(self, kind: str) -> int:
+        """How many events of `kind` this run has recorded so far. A component whose transport
+        already streamed its reasoning onto the record asks this before recording the whole
+        again (principle 6: once)."""
+        return self._emitter.recorded(kind)
+
     async def request_input(self, question: str, *, step: str | None = None) -> str | None:
         """The agent's own question to the person (D65): `InputRequested` on the record, the
         answer as text through the same handle the approvals use. `None` when nobody was there —

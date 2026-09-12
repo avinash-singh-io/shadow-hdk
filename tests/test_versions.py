@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.21.0"
-"""0.21.0 because the record speaks the industry's words (D61): `reasoned` is `reasoning`, `spent`
+EXPECTED = "0.22.0"
+"""0.22.0 because the kernel grew the host's controls (Phase 25, D62–D66): `ThreadRecord` and
+`TurnRecord` with the `ThreadStore` port; `Activity` beside the record; `Behaviour` and
+`BehaviourArg` with `ModeChanged` a fourteenth event kind; `ActRule`; the `Store` port; and
+`AgentPort.open` takes a `behaviour`. New contracts and one widened port, so a host that
+implements `AgentPort` changes; the rest is additive — but additive on the kernel is still the
+kernel, and the join moves.
+
+0.21.0 because the record speaks the industry's words (D61): `reasoned` is `reasoning`, `spent`
 is `usage`, `asked` is `approval_requested`, and `input_requested` is a thirteenth kind — the
 agent's own question to the person. `Asked` the observation is `ApprovalRequest`; `InputRequest`
 joins it. What a host renders is an `Item` (`runtime.items`); the handle it answers through is

@@ -36,6 +36,9 @@
   .tool .body { display:none; border-top:1px solid var(--line); padding:8px 10px; max-height:320px; overflow:auto; white-space:pre-wrap; word-break:break-word; color:#cfd5e1 }
   .tool.open .body { display:block }
   .tool .children { border-top:1px solid var(--line); padding:8px 8px 4px 22px }
+  .tools-run { border:1px solid var(--line); border-radius:8px; background:var(--panel) }
+  .tools-run .run-head { display:flex; gap:8px; align-items:baseline; padding:6px 10px; cursor:pointer; color:var(--dim); font-size:13px } .tools-run .run-head .chev { display:inline-block; transition: transform .12s } .tools-run.open .run-head .chev { transform: rotate(90deg) }
+  .tools-run .items { display:none; padding:4px 8px 8px; border-top:1px solid var(--line) } .tools-run.open .items { display:block } .tools-run .items .tool { margin:6px 0 0 }
   .running .mark { color:var(--ask) } .completed .mark { color:var(--ok) } .failed .mark, .refused .mark { color:var(--bad) } .asked .mark { color:var(--ask) }
   .question { margin:6px 0 8px 22px; padding:10px 12px; border:1px solid var(--ask); border-radius:8px; background:#2a2718 }
   .question .q { color:var(--ask); margin-bottom:8px; white-space:pre-wrap }
@@ -160,8 +163,34 @@ function toolPart(e) {
   let parent = null;
   if (above && !turnRuns.has(above)) { const open = [...document.querySelectorAll('.tool.running')].filter(x => x.dataset.key.startsWith(above + ':')); parent = open[open.length - 1] || null; }
   if (parent) { let c = parent.querySelector(':scope > .children'); if (!c) { c = document.createElement('div'); c.className = 'children'; parent.appendChild(c); } c.appendChild(d); }
-  else currentTurn().appendChild(d);
-  scrollDown(); return d;
+  else toolRun().appendChild(d);
+  updateRun(d.closest('.tools-run')); scrollDown(); return d;
+}
+// Consecutive tool calls fold into one line — "Ran N commands, used M tools ›" — expandable, each
+// item expandable again (the shape Claude Code and Codex converge on). The run that is still
+// receiving calls stays open so the person sees them land; it folds when the turn answers.
+function toolRun() {
+  const t = currentTurn(); const last = t.lastElementChild;
+  if (last && last.classList.contains('tools-run')) return last.querySelector(':scope > .items');
+  const r = document.createElement('div'); r.className = 'part tools-run open';
+  r.innerHTML = '<div class="run-head"><span class="chev">›</span><span class="run-title">Running…</span></div><div class="items"></div>';
+  r.querySelector('.run-head').onclick = () => r.classList.toggle('open');
+  t.appendChild(r); return r.querySelector(':scope > .items');
+}
+function updateRun(r) {
+  if (!r) return;
+  const items = [...r.querySelectorAll(':scope > .items > .tool')];
+  const commands = items.filter(x => /^(run_shell|run_python)$/.test(x.querySelector('.name').textContent)).length;
+  const tools = new Set(items.map(x => x.querySelector('.name').textContent)).size;
+  const failed = items.filter(x => x.classList.contains('failed') || x.classList.contains('refused')).length;
+  const running = items.some(x => x.classList.contains('running'));
+  const parts_ = [];
+  if (commands) parts_.push('Ran ' + commands + ' command' + (commands === 1 ? '' : 's'));
+  if (tools) parts_.push((commands ? 'used ' : 'Used ') + tools + ' tool' + (tools === 1 ? '' : 's'));
+  let title = parts_.join(', ') || 'Working…';
+  if (failed) title += ' · ' + failed + ' failed';
+  if (running) title += ' …';
+  r.querySelector('.run-title').textContent = title;
 }
 function fillPart(step) {
   // A step that closed as "asked" with no tool part of its own is the question card already
@@ -179,6 +208,7 @@ function fillPart(step) {
   if (step.reason && outcome !== 'completed') out = (outcome === 'refused' ? 'refused: ' : 'asked: ') + step.reason;
   const body = d.querySelector('.body'); body.textContent = (out || '(nothing came back)').slice(0, 6000);
   if (step.usage) { d.querySelector('.cost').textContent = costOf(step.usage); }
+  updateRun(d.closest('.tools-run'));
   if (outcome === 'failed' || outcome === 'refused') d.classList.add('open');
   scrollDown();
 }
@@ -213,7 +243,7 @@ function addQuestion(q) {
   // A question on a live step (D58) is asked on the step holding the conversation; a parked
   // one names the tool's own step. Hang the card under the part if there is one, else in the turn.
   const on = parts[toolKey(q.run_id, q.step)];
-  if (on) on.insertAdjacentElement('afterend', d); else currentTurn().appendChild(d);
+  if (on) { on.insertAdjacentElement('afterend', d); const r = on.closest('.tools-run'); if (r) r.classList.add('open'); } else currentTurn().appendChild(d);
   questions[q.handle] = d; scrollDown();
 }
 function settle(handle, how) {
@@ -251,6 +281,7 @@ function md(text) {
 }
 function addAnswer(line) {
   const t = currentTurn();
+  t.querySelectorAll(':scope > .tools-run').forEach(r => { r.classList.remove('open'); updateRun(r); });
   const d = document.createElement('div'); d.className = 'answer' + (line.failed ? ' failed' : '');
   d.innerHTML = line.text ? md(line.text) : (line.failed ? '(the provider reported this turn as failed)' : '');
   t.appendChild(d);

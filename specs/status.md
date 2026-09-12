@@ -4,29 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (the studio driven like a person would)
-> **Current Phase**: **none — used, not built, and released as v0.20.0.** The studio's page shows
-> the trace inline in the conversation, the environment beside it; five real tasks were driven
-> through it on the owner's subscription (a CLI with tests, a playable Snake game, a refactor with
-> a commit, a CSV report with `pip install` refused by the person, a read-only session) and
-> **seven bugs were found live, reproduced under tests and closed**: `/dev/null` in the sandbox
-> (BUG-023), parallel tool calls born exhausted (BUG-024), an exception group that named nothing
-> (BUG-025), a question that named nothing (**D59**, BUG-026), a dead connection ending the
-> conversation and the relay's thirty-second timeout (**D60**, BUG-027/028), read-only refusing
-> the conversation (BUG-029). Three enhancements filed (ENH-006/007/008).
+> **Last Updated**: 2026-09-12 (Phase 25 — the host's controls — landed)
+> **Current Phase**: **none — Phase 25 (the host's controls) is complete and released as
+> v0.22.0.** The host-facing vocabulary is the industry's (D61): `Thread` · `Turn` · `Item` ·
+> `Activity`; a turn is a run (D62); activity streams beside the record (D63); a mode is a policy,
+> a behaviour and a presentation, switched live (D64); "approve and add a rule" and the agent's
+> own question to the person (D65); one `Store` port and every registry reading it live (D66).
+> Every group was measured on the owner's subscription through the studio. Next: Phase 26 (any
+> language) and Phase 27 (batteries and the facade).
 >
-> Phases 21–24 are the four the owner asked for (v0.15.0–v0.18.0); 25 and 26 are the owner's to
-> open. Open and deferred: ENH-002 (a TLS broker), ENH-003 (a second protocol adapter), ENH-005
-> (Codex has no strict MCP mode — upstream), ENH-006 (a scratch in read-only), ENH-007 (nothing on
-> screen while a long tool call is composed), ENH-008 (the CLI's own refused tools are invisible).
+> 1,309 tests; mypy strict over 229 files; seventeen distributions at **0.22.0**, all MIT.
 >
-> **CI is green** and runs on every push.
->
-> 1,201 tests; mypy strict over 213 files; seventeen distributions at **0.20.0**, all MIT.
->
-> **Latest Release**: **v0.20.0**, released 2026-09-12 — the studio inline; seven bugs found by
-> using it (D59, D60). Contract change (`Asked` says what it is about), so a *Pins* row. Before it
-> v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
+> **Latest Release**: **v0.22.0**, released 2026-09-12 — Phase 25, the host's controls (D61–D66).
+> Contract change (threads, activity, behaviour, rules, the store), so a *Pins* row. Before it
+> v0.21.0 (the words, mid-phase), v0.20.0 (the studio inline; seven bugs found by using it, D59,
+> D60), v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
 > the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
 > **Health**: On Track
 
@@ -39,8 +31,8 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Twenty-five phases are built,
-merged and released**: 1,201 tests, mypy strict over 213 files, seventeen distributions at 0.20.0.
+that adopter, and it lives in the shared roadmap rather than here. **Twenty-six phases are built,
+merged and released**: 1,309 tests, mypy strict over 229 files, seventeen distributions at 0.22.0.
 
 ## Completed Phases
 
@@ -76,11 +68,14 @@ merged and released**: 1,201 tests, mypy strict over 213 files, seventeen distri
 | 22 | The environment | Complete, merged | **v0.16.0** |
 | 23 | A host, in-process and in any language | Complete, merged | **v0.17.0** |
 | 24 | The skill registry | Complete, merged | **v0.18.0** |
+| 25 | The host's controls | Complete, merged | **v0.22.0** |
 
 ## Ad-hoc / Patch Releases
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.22.0 | 2026-09-12 | phase 25 | the host's controls: Thread/Turn/Item/Activity, modes = policy + behaviour, rules and input, the Store (D61–D66) |
+| v0.21.0 | 2026-09-12 | phase 25 (mid) | the record speaks the industry's words (D61) |
 | v0.20.0 | 2026-09-12 | hardening | the studio inline; five scenarios; BUG-023–029 closed (D59, D60) |
 | v0.19.0 | 2026-09-12 | hardening | BUG-020/021/022 closed (D57, D58); Codex measured; the studio |
 
@@ -88,7 +83,7 @@ merged and released**: 1,201 tests, mypy strict over 213 files, seventeen distri
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 25 — the host's controls | `phase-25-the-hosts-controls` | in progress | Groups 1–3 done (D61 the words, D62 the thread, D63 activity); Group 4 (modes = policy + behaviour) next |
+| _(none)_ | — | — | Phases 0–25 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
 
 ## Upcoming Phases
 

@@ -349,7 +349,10 @@ class Thread:
                     done = await session.turn(prompt)
                 finally:
                     registry.detach()
-                if done.reasoning:
+                if done.reasoning and context.recorded("reasoning") == 0:
+                    # The provider's transport may already have put each thought on the record
+                    # as it arrived (the jsonl session does); the whole is then a repeat. Only a
+                    # provider that recorded nothing has this said for it (principle 6: once).
                     await context.reasoning(done.reasoning)
                 output: dict[str, JsonValue] = {"text": done.text, "stop_reason": done.stop_reason}
                 if done.usage is not None:

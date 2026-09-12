@@ -235,3 +235,40 @@ questions; both rows are in `live.sqlite`. Ten mutants killed.
 by editing a file, redeploying or restarting (principle 10); only the substrate is code.
 
 ---
+
+### [NOTE] 2026-09-12 — Group 7: the studio folds tool runs; the duplicate thought
+
+Topics: studio, items, folding, reasoning-once
+Affects-phases: phase-25-the-hosts-controls
+Affects-specs: none
+
+Consecutive tool items fold into one line — "Ran N commands, used M tools ›" — expandable, each
+item expandable again; a thought breaks a run, so a turn reads *think → run › → think → run › →
+answer*, which is the shape Claude Code and Codex converge on. A rendering choice, not a
+decision. Measured live (the wc.py task, 44¢): six tool calls in three folded runs between six
+thoughts, 27 tests green in the sandbox. The screen showed one defect: the last thought of the
+turn repeated the first — the jsonl session puts each thought on the record as it arrives *and*
+returns them joined in `Turn.reasoning`, and the thread recorded that again. Fixed at the source
+(principle 6, once): the emitter counts what it recorded by kind, `RunContext.recorded(kind)`
+says so, and the thread records `Turn.reasoning` only when nothing of the kind reached the
+record during the turn. RED first; the test is the measured case.
+
+---
+
+## Verification Evidence
+
+Captured fresh 2026-09-12 on the phase branch at close, before landing:
+
+- `uv run ruff check -q` → exit 0
+- `uv run ruff format --check -q` → exit 0
+- `uv run mypy` → exit 0 (`Success: no issues found`)
+- `uv run pytest -q -p no:cacheprovider` → `1309 passed, 2 skipped, 12 deselected, 85 warnings in 137.70s (0:02:17)`
+- `tests/test_versions.py` → EXPECTED `0.22.0`, seventeen packages moved together (D9)
+- Live, on the owner's subscription (Claude Code 2.1.235), through `examples/studio/`:
+  - group 2 — one turn = one run, two child runs, `reasoning` and `usage` (26¢) on the record; the first turn refused (the mode vocabulary collision) → fixed and pinned
+  - group 5 — asked once, *approve and don't ask again*, the second write ran silent; the agent asked "which language?" through `ask_person`, got Hindi, wrote नमस्ते! (30¢)
+  - group 6 — a mode created at runtime through the store was offered, switched to (the provider reopened with "Arr…"), judged from; a rule created at runtime removed the next approval; both rows in `live.sqlite`
+  - group 7 — six tool calls in three folded runs between six thoughts, 27 tests green in the sandbox (44¢); the duplicate final thought found and fixed
+- Mutation passes: group 2 seven killed; group 4 four (one after the test was strengthened); group 5 nine (two after tests widened); group 6 ten
+
+---

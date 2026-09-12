@@ -136,34 +136,57 @@ mid-run is seen, and one that vanishes is gone.
 
 ## What comes out
 
-Twelve event kinds, in one ordered stream per run:
+Fourteen event kinds, in one ordered stream per run — the record, complete and replayable:
 
-`started` · `composed` · `invoked` · `observed` · `proposed` · `refused` · `asked` · `spawned` ·
-`spent` · `held` · `reasoned` · `ended`
+`started` · `composed` · `invoked` · `observed` · `proposed` · `refused` · `approval_requested` ·
+`input_requested` · `spawned` · `usage` · `held` · `reasoning` · `mode_changed` · `ended`
 
-Six observation kinds, which is what a step's outcome can be:
+Seven observation kinds, which is what a step's outcome can be:
 
-`Completed` · `Refused` · `Asked` · `Failed` · `Pending` · `Acted`
+`Completed` · `Refused` · `ApprovalRequest` · `InputRequest` · `Failed` · `Pending` · `Acted`
 
 `Acted` is the receipt of a world-effect: it says the thing happened, and never carries the payload.
-`Reasoning` is what the model thought, on the record ahead of what it did — a model that reports no
-reasoning emits none.
+`reasoning` is what the model thought, on the record ahead of what it did — a model that reports no
+reasoning emits none. Beside the record runs **activity** — partial thinking, partial text, a
+running command's output — live, bounded, never checkpointed: the record is complete, the activity
+is live.
 
-### The visible agent
+### The host's vocabulary — Thread · Turn · Item · Activity
 
-Nobody renders twelve raw kinds; every client renders **steps** — what it thought, what it reached
-for, what came back, which sub-agent went off and did what, what was refused, what it cost. The
-runtime folds the stream into `Step`s once, as a pure function over any event iterable:
+The words are the industry's. A **thread** is the container every product has (Codex's thread,
+Claude Code's session): the provider opened once and held, its record kept through a `ThreadStore`
+you implement or take as shipped (sqlite), resumable, forkable, listable. A **turn** is one
+exchange — one run of the thread, under a ceiling carved from the thread's lease. An **item** is
+what you render: a fold of the events into what the agent thought, reached for, got back, spawned,
+was refused, asked and spent, each tool call a child item under the turn. **Activity** is the
+stream beside it.
 
 ```python
-from shadow_hdk.runtime.items import run_items, steps
+from shadow_hdk.runtime.threads import Thread
 
-async for step in run_items(run(plan, ports, options=options)):
-    print(step.step, step.outcome, step.reasoning[:60], [c.step for c in step.children])
+thread = await Thread.open(agent=provider, ports=ports, store=store, root=".", lease=lease)
+async for event in thread.turn("add a .gitignore and run the tests"):
+    ...  # the record, as it happens
+await thread.set_mode("read-only")  # policy and behaviour, switched live
 ```
 
-Over the wire the same fold sends each step as a `step` notification beside the events, already
-folded, so a host in another language renders agent steps without porting the fold.
+Nobody renders fourteen raw kinds; the runtime folds them into `Item`s once, as a pure function
+over any event iterable (`runtime.items`), and the wire sends each item as an `item` notification
+beside the events, so a host in another language renders agent steps without porting the fold.
+
+### Modes, approvals, rules — and the store
+
+A **mode** is a policy (what runs, what asks, what is refused — judged by *effects*), a behaviour
+(who the model is: role, model, effort, temperature, which tools are offered) and a presentation
+(id, name, description). Three ship — `read-only`, `workspace-write`, `full` — and yours are files
+(`modes/reviewer.md`, frontmatter and a prompt) or rows in the **store**. When the policy asks, the
+host answers through its `Approvals` handle: **approve**, **deny**, or **approve and add a rule** —
+an `ActRule` naming the act, kept, read at the next judgement, on the record as a proposal. The
+agent's own question to the person is `ask_person`, an `InputRequest` on the record.
+
+Everything a product would keep in a database — modes, rules, skills, which tools are on,
+providers — is a registry with a `Store` source: change a row, and the next step reads it. Only
+the substrate (contracts, the loop, ports, adapters, transports) is code.
 
 Two things keep a long run cheap: above `catalogue_threshold` the model sees a name and a line
 per tool and pulls a schema with `describe` when it reaches for one; past `offload_over` a large
@@ -463,7 +486,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–24 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–25 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:
@@ -475,7 +498,7 @@ irreversible step must produce an `Acted` whichever port it came through, and wh
 signed — are open decisions rather than missing code.
 
 The low-level design is in [`specs/architecture/overview.md`](specs/architecture/overview.md); the
-thirty-eight decisions behind it are mapped in
+sixty-six decisions behind it are mapped in
 [`specs/decisions/index.md`](specs/decisions/index.md).
 
 MIT.

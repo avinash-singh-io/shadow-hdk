@@ -54,6 +54,9 @@ class Emitter:
         """Where a child's activity goes: its parent's emitter, which forwards up to the root's
         observer — the same path its events take (D63)."""
         self._seq = 0
+        self._counts: dict[str, int] = {}
+        """How many of each kind this run has recorded — a fact a component may ask for, so it
+        does not record twice what a transport already put on the record (D63, principle 6)."""
         self._stream: asyncio.Queue[Any] = asyncio.Queue()
         """**Unbounded, and it must be.** Filled and drained by the same task — a step emits, the
         `async for` in `run` yields — so a bound would deadlock the run against itself the moment a
@@ -65,6 +68,10 @@ class Emitter:
         self.observer_dropped = 0
         """Events the observer never saw because it had fallen `OBSERVER_BACKLOG_MAX` behind. A
         record with a hole in it and no count reads as complete."""
+
+    def recorded(self, kind: str) -> int:
+        """How many events of `kind` this run has put on the record so far."""
+        return self._counts.get(kind, 0)
 
     @property
     def observer_backlog(self) -> int:
@@ -85,6 +92,7 @@ class Emitter:
         """Stamp an event and put it on both queues. Returns the event it built."""
         event = make(run_id=self._run_id, seq=self._seq, at=self._clock.now())
         self._seq += 1
+        self._counts[event.kind] = self._counts.get(event.kind, 0) + 1
         self._stream.put_nowait(event)
         self._offer(event)
         return event
