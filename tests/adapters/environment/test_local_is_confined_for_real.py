@@ -176,7 +176,7 @@ async def test_a_sandbox_that_does_not_actually_confine_is_refused(
     from shadow_hdk.adapters.environment import local as module
 
     class Pretends(module.LocalSandbox):
-        def wrap(self, argv: list[str], *, root: Path, mode: str) -> list[str]:
+        def wrap(self, argv: list[str], *, root: Any, mode: str) -> list[str]:
             return argv  # confines nothing
 
     monkeypatch.setattr(module, "local_sandbox", lambda: Pretends("pretend", "/bin/true"))

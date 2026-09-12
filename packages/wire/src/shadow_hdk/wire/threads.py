@@ -45,6 +45,7 @@ from shadow_hdk.wire.protocol import (
     STORE_LIST,
     STORE_PUT,
     STORE_VERSION,
+    THREAD_ADD_ROOT,
     THREAD_ARCHIVE,
     THREAD_CLOSE,
     THREAD_FORK,
@@ -73,7 +74,14 @@ class ThreadHost(Protocol):
     skills: Any
 
     async def open(
-        self, *, root: str, mode: str, want: str | None, name: str, observer: Any
+        self,
+        *,
+        root: str,
+        mode: str,
+        want: str | None,
+        name: str,
+        observer: Any,
+        roots: Any = None,
     ) -> Thread: ...
 
     async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
@@ -118,6 +126,7 @@ class ThreadMethods:
             (THREAD_SET_MODE, self._set_mode),
             (THREAD_SET_OPTION, self._set_option),
             (THREAD_REMAINING, self._remaining),
+            (THREAD_ADD_ROOT, self._add_root),
             (TURN_START, self._turn),
             (TURN_STEER, self._steer),
             (TURN_INTERRUPT, self._interrupt),
@@ -172,6 +181,7 @@ class ThreadMethods:
             want=params.get("provider") or None,
             name=str(params.get("name", "") or "tools"),
             observer=ActivityToWire(self._peer, thread_id),
+            roots=params.get("roots") or None,
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged
@@ -180,7 +190,7 @@ class ThreadMethods:
         self.threads[thread.id] = thread
         return {
             "thread_id": thread.id,
-            "root": thread.record.root,
+            **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
             "modes": await self._modes(host),
@@ -194,7 +204,7 @@ class ThreadMethods:
         self.threads[thread.id] = thread
         return {
             "thread_id": thread.id,
-            "root": thread.record.root,
+            **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
             "modes": await self._modes(host),
@@ -243,8 +253,28 @@ class ThreadMethods:
         return {"archived": thread_id}
 
     async def _set_mode(self, params: dict[str, Any]) -> dict[str, Any]:
-        changed = await self._thread(params).set_mode(str(params.get("mode", "")))
-        return {"events": [json.loads(dump(e, Event)) for e in changed]}
+        thread = self._thread(params)
+        changed = await thread.set_mode(str(params.get("mode", "")))
+        return {
+            "events": await self._announced(thread, changed),
+            "environment": thread.environment_mode,
+        }
+
+    async def _add_root(self, params: dict[str, Any]) -> dict[str, Any]:
+        thread = self._thread(params)
+        changed = await thread.add_root(str(params.get("name", "")), str(params.get("path", "")))
+        return {
+            "events": await self._announced(thread, changed),
+            **_workspace_json(thread),
+        }
+
+    async def _announced(self, thread: Thread, changed: list[Event]) -> list[dict[str, Any]]:
+        """A change between turns is on the record, so it goes down the stream like any event —
+        a reader that only listens sees it — and comes back in the result for the one that asked."""
+        lines = [json.loads(dump(e, Event)) for e in changed]
+        for line in lines:
+            await self._peer.notify(EVENT, {"thread_id": thread.id, "event": line})
+        return lines
 
     async def _set_option(self, params: dict[str, Any]) -> dict[str, Any]:
         await self._thread(params).set_option(str(params.get("key", "")), params.get("value"))
@@ -386,25 +416,33 @@ class ThreadMethods:
     # ------------------------------------------------------------------ the workspace (D69)
 
     async def _files_list(self, params: dict[str, Any]) -> dict[str, Any]:
-        root = Path(self._thread(params).record.root).resolve()
+        """Every file under every root (D76), each entry saying which root it is in."""
         found: list[dict[str, Any]] = []
-        for path in sorted(root.rglob("*")):
-            parts = path.relative_to(root).parts
-            if any(part.startswith(".") or part == "__pycache__" for part in parts):
-                continue
-            if path.is_file():
-                stat = path.stat()
-                found.append(
-                    {
-                        "path": str(path.relative_to(root)),
-                        "bytes": stat.st_size,
-                        "mtime": stat.st_mtime,
-                    }
-                )
+        for root in self._thread(params).workspace.roots:
+            base = Path(root.path)
+            for path in sorted(base.rglob("*")):
+                parts = path.relative_to(base).parts
+                if any(part.startswith(".") or part == "__pycache__" for part in parts):
+                    continue
+                if path.is_file():
+                    stat = path.stat()
+                    found.append(
+                        {
+                            "root": root.name,
+                            "path": str(path.relative_to(base)),
+                            "bytes": stat.st_size,
+                            "mtime": stat.st_mtime,
+                        }
+                    )
         return {"files": found}
 
     async def _files_read(self, params: dict[str, Any]) -> dict[str, Any]:
-        root = Path(self._thread(params).record.root).resolve()
+        """One file, under the root named — the primary when none is (D76)."""
+        workspace = self._thread(params).workspace
+        name = str(params.get("root", "") or "")
+        if name and not workspace.has(name):
+            raise FileNotFoundError(f"no root {name!r}: {name!r} is not in the workspace")
+        root = Path((workspace.named(name) if name else workspace.primary).path)
         relative = str(params.get("path", ""))
         target = (root / relative).resolve()
         # `..` is not a dotfile — it is the traversal the root check below refuses on its own.
@@ -480,6 +518,16 @@ def _request_json(pending: Any) -> dict[str, Any]:
         "component": pending.component,
         "inputs": pending.inputs,
         "kind": pending.kind,
+    }
+
+
+def _workspace_json(thread: Thread) -> dict[str, Any]:
+    """`root` (the primary) for a one-root reader; `roots` the whole workspace; `environment`
+    the sandbox's own mode beside the policy's (D76)."""
+    return {
+        "root": thread.record.root,
+        "roots": thread.workspace.as_json(),
+        "environment": thread.environment_mode,
     }
 
 

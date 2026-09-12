@@ -61,6 +61,7 @@ class OpenTelemetryObserver(ObserverPort):
             "held",
             "reasoning",
             "mode_changed",
+            "workspace_changed",
             "ended",
         }
     )
@@ -133,6 +134,13 @@ class OpenTelemetryObserver(ObserverPort):
             case "mode_changed":
                 self._run(event.run_id, at).add_event(
                     "mode_changed", {"shadow_hdk.mode": event.mode}, at
+                )
+            case "workspace_changed":
+                # The names, never the paths (D28): where a person's directories are is theirs.
+                self._run(event.run_id, at).add_event(
+                    "workspace_changed",
+                    {"shadow_hdk.roots": ",".join(r.name for r in event.roots)},
+                    at,
                 )
             case "reasoning":
                 # Length, never the text (D28): a trace carries the *shape* of a run, and a

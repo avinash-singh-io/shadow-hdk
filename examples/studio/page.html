@@ -58,6 +58,9 @@
   button.send { padding:0 18px; border-radius:10px; border:1px solid var(--accent); background:var(--accent); color:#0f1115; font-weight:600; cursor:pointer } button.send:disabled { opacity:.5; cursor:default }
 
   /* the environment */
+  .files .root { margin:8px 0 2px; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim) } .files .root b { color:var(--accent); font-weight:600 }
+  .addroot { display:flex; gap:6px; margin:10px 0 0 } .addroot input { flex:1; padding:4px 8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit; font-size:12px } .addroot button { padding:2px 10px; border-radius:6px; border:1px solid var(--accent); background:var(--panel2); color:var(--fg); cursor:pointer } .addroot .said { color:var(--dim); font-size:11px; align-self:center }
+  .tool.exited .mark { color:var(--ask) }
   .files ul { list-style:none; margin:0; padding:0 } .files li { display:flex; justify-content:space-between; gap:8px; padding:4px 6px; border-radius:6px; cursor:pointer; font-family: ui-monospace, Menlo, monospace; font-size:12.5px }
   .files li:hover, .files li.sel { background:var(--panel2) } .files li span { color:var(--dim); font-size:11px } .files li.changed { color:var(--ok) } .files li.changed::after { content:" ●"; color:var(--ok) }
   .file { margin:12px 0 0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); font-size:12px; white-space:pre-wrap; word-break:break-word; max-height:60vh; overflow:auto }
@@ -76,6 +79,7 @@
   <span><i class="dot" id="dot"></i><span id="provider">connecting…</span></span>
   <span>mode <select id="mode-select" title="switch the agent's mode — the policy that judges its tools, live"></select></span>
   <span>root <code id="root">…</code></span>
+  <span title="what the OS sandbox enforces, beside the policy the selector picks">sandbox <code id="sandbox">…</code></span>
   <span id="spend"></span>
 </header>
 <main>
@@ -86,7 +90,8 @@
   </section>
   <section>
     <h2>Environment — <span id="env-title">the workspace</span></h2>
-    <div class="scroll files"><ul id="files"></ul><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div>
+    <div class="scroll files"><div id="roots"></div><ul id="files"></ul>
+      <form id="add-root" class="addroot"><input name="path" placeholder="add a directory (absolute path)… — Claude Code's /add-dir" title="a second root: the sandbox is re-proven over both, and the tools can address it by name"><button type="submit">+</button><span class="said" id="root-said"></span></form><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div>
       <details class="admin reg" open><summary>Tools — what the agent is offered in this mode</summary><div id="tools" class="rules"></div></details>
       <details class="admin reg"><summary>Skills — the procedures it can choose, and mint</summary><div id="skills" class="rules"></div></details>
       <details class="admin"><summary>Live data — modes and rules, no restart</summary>
@@ -254,6 +259,9 @@ function fillPart(step) {
   else if (o && o.kind === 'refused') out = 'refused: ' + o.reason;
   if (step.reason && outcome !== 'completed') out = (outcome === 'refused' ? 'refused: ' : 'asked: ') + step.reason;
   const body = d.querySelector('.body'); body.textContent = (out || '(nothing came back)').slice(0, 6000);
+  // A command that exited non-zero is a *completed* call on the record (the tool ran); the page
+  // says so with a different mark, the way a terminal would (ENH-010).
+  if (o && o.kind === 'completed' && o.output && typeof o.output === 'object' && o.output.exit_code) { d.classList.add('exited'); d.querySelector('.mark').textContent = '!'; d.querySelector('.mark').title = 'exit ' + o.output.exit_code; }
   if (step.usage) { d.querySelector('.cost').textContent = costOf(step.usage); }
   updateRun(d.closest('.tools-run'));
   if (outcome === 'failed' || outcome === 'refused') d.classList.add('open');
@@ -392,6 +400,7 @@ function onEvent(e) {
   else if (e.kind === 'reasoning') { if (liveThought) { liveThought.remove(); liveThought = null; } addThought(e.text); }
   else if (e.kind === 'invoked') { toolPart(e); }
   else if (e.kind === 'observed' && !isTurn) { refreshFiles(); }
+  else if (e.kind === 'workspace_changed') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— workspace: ' + e.roots.map(r => r.name).join(' + ') + ' —'; currentTurn().appendChild(d); }
   else if (e.kind === 'mode_changed') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— mode changed to ' + e.mode + ' —'; currentTurn().appendChild(d); }
   else if (e.kind === 'ended' && turnRuns.has(e.run_id) && e.reason !== 'completed') { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the turn ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
 }
@@ -404,26 +413,50 @@ hear('request_withdrawn', p => settle(p.handle, '↩ withdrawn: the agent stoppe
 function setBusy(b) { $('dot').className = 'dot' + (b ? ' busy' : ''); $('send').disabled = b; }
 
 // ------------------------------------------------------------------ the environment
-let selected = null;
+let selected = null;               // 'root/path' of the file shown
+let ROOTS = [];                    // the thread's roots (D76): the first is the primary
+function showRoots(roots, environment) {
+  ROOTS = roots || [];
+  ROOT = ROOTS.length ? ROOTS[0].path : ROOT;
+  $('root').textContent = ROOTS.map((r, i) => r.path + (i === 0 && ROOTS.length > 1 ? ' (primary)' : '')).join('  ·  ') || ROOT;
+  if (environment) $('sandbox').textContent = environment;
+  $('env-title').textContent = ROOTS.map(r => r.name).join(' + ') + ' · ' + $('mode-select').value;
+}
 async function refreshFiles() {
   if (!THREAD) return;
   const j = await call('files/list', {thread_id: THREAD});
   const fresh = {};
-  files.innerHTML = j.files.length ? j.files.map(f => {
-    fresh[f.path] = f.mtime;
-    const changed = known[f.path] === undefined ? Object.keys(known).length > 0 : known[f.path] !== f.mtime;
-    return '<li data-path="' + esc(f.path) + '" class="' + (changed ? 'changed ' : '') + (selected === f.path ? 'sel' : '') + '">' + esc(f.path) + '<span>' + f.bytes + ' B</span></li>';
-  }).join('') : '<li class="empty">(empty)</li>';
+  const byRoot = {}; ROOTS.forEach(r => byRoot[r.name] = []);
+  j.files.forEach(f => { (byRoot[f.root] ||= []).push(f); });
+  files.innerHTML = Object.keys(byRoot).map(name => {
+    const rows = byRoot[name].map(f => {
+      const key = name + '/' + f.path; fresh[key] = f.mtime;
+      const changed = known[key] === undefined ? Object.keys(known).length > 0 : known[key] !== f.mtime;
+      return '<li data-root="' + esc(name) + '" data-path="' + esc(f.path) + '" class="' + (changed ? 'changed ' : '') + (selected === key ? 'sel' : '') + '">' + esc(f.path) + '<span>' + f.bytes + ' B</span></li>';
+    }).join('') || '<li class="empty">(empty)</li>';
+    return (ROOTS.length > 1 ? '<div class="root"><b>' + esc(name) + '</b>' + (name === (ROOTS[0] || {}).name ? ' · primary' : '') + '</div>' : '') + rows;
+  }).join('');
   known = Object.keys(known).length ? {...known, ...fresh} : fresh;
-  files.querySelectorAll('li[data-path]').forEach(li => li.onclick = () => showFile(li.dataset.path));
-  if (selected && fresh[selected] !== undefined) showFile(selected, true);
+  files.querySelectorAll('li[data-path]').forEach(li => li.onclick = () => showFile(li.dataset.root, li.dataset.path));
+  if (selected && fresh[selected] !== undefined) { const [r, ...rest] = selected.split('/'); showFile(r, rest.join('/'), true); }
 }
-async function showFile(path, quiet) {
+async function showFile(root, path, quiet) {
   let content;
-  try { content = (await call('files/read', {thread_id: THREAD, path})).content; } catch (e) { content = e.message; }
-  selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = content;
-  if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.path === path));
+  try { content = (await call('files/read', {thread_id: THREAD, root, path})).content; } catch (e) { content = e.message; }
+  selected = root + '/' + path; fileBox.hidden = false; $('fn').textContent = (ROOTS.length > 1 ? root + '/' : '') + path; $('fc').textContent = content;
+  if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.root === root && li.dataset.path === path));
 }
+$('add-root').onsubmit = async ev => {
+  // A directory added while the thread runs (D76): the sandbox is re-proven over the new set,
+  // the tools describe it, and `WorkspaceChanged` lands on the record.
+  ev.preventDefault(); const path = new FormData(ev.target).get('path').trim(); if (!path) return;
+  const name = path.replace(/\/+$/, '').split('/').pop();
+  try {
+    const r = await call('thread/add_root', {thread_id: THREAD, name, path});
+    showRoots(r.roots, r.environment); ev.target.reset(); $('root-said').textContent = 'added ' + name;
+    refreshFiles(); refreshTools();
+  } catch (e) { $('root-said').textContent = e.message; }
+};
 
 // ------------------------------------------------------------------ the modes and the rules (live data, D66)
 let modesLoaded = '';
@@ -435,9 +468,10 @@ function offerModes(modes, current) {
     sel.innerHTML = modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + (m.source && m.source !== 'shipped' ? ' (' + esc(m.source) + ')' : '') + '">' + esc(m.name) + (m.source && m.source !== 'shipped' ? ' ·' : '') + '</option>').join('');
     sel.onchange = async () => {
       const r = await call('thread/set_mode', {thread_id: THREAD, mode: sel.value});
-      r.events.forEach(onEvent);   // `ModeChanged` is on the record, between turns too (D64)
+      // `ModeChanged` arrives on the stream like every event (D64); the sandbox followed (D76).
+      $('sandbox').textContent = r.environment || $('sandbox').textContent;
       refreshTools();              // the offer follows the mode
-      $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + sel.value;
+      $('env-title').textContent = ROOTS.map(x => x.name).join(' + ') + ' · ' + sel.value;
     };
     modesLoaded = ids;
   }
@@ -515,9 +549,9 @@ async function open() {
   }
   if (!started) { started = await call('thread/start', {}); history.replaceState(null, '', '?thread=' + encodeURIComponent(started.thread_id)); }
   THREAD = started.thread_id; ROOT = started.root;
-  $('provider').textContent = started.provider || 'the provider signed in here'; $('root').textContent = ROOT;
-  $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + started.mode;
+  $('provider').textContent = started.provider || 'the provider signed in here';
   offerModes(started.modes, started.mode);
+  showRoots(started.roots, started.environment);
   (started.turns || []).forEach(t => { addYou(t.prompt); addAnswer({text: t.text, failed: t.outcome !== 'completed'}); });
   setBusy(false); refreshFiles(); refreshRules(); refreshTools(); refreshSkills(); setInterval(refreshModes, 10000);
 }

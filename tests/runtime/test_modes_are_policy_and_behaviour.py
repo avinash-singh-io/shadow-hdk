@@ -41,16 +41,30 @@ class RecordingAgent:
     def __init__(self) -> None:
         self.behaviours: list[Behaviour | None] = []
         self.opened = 0
+        self.session_id: str | None = None
+        """What the provider's session says its id is, when it has one."""
+        self.resumed: list[str] = []
+        """The session ids each open was told to resume (D76)."""
 
     async def open(
-        self, *, tools: Any = (), workspace: Any = None, behaviour: Behaviour | None = None
+        self,
+        *,
+        tools: Any = (),
+        workspace: Any = None,
+        behaviour: Behaviour | None = None,
+        resume: str | None = None,
     ) -> AgentSession:
         self.opened += 1
         self.behaviours.append(behaviour)
-        return cast(AgentSession, _Session())
+        if resume:
+            self.resumed.append(resume)
+        return cast(AgentSession, _Session(self.session_id))
 
 
 class _Session:
+    def __init__(self, session_id: str | None = None) -> None:
+        self.session_id = session_id
+
     async def turn(self, prompt: str) -> Turn:
         return Turn(text="ok")
 
@@ -186,8 +200,11 @@ async def test_set_mode_to_an_unknown_mode_is_refused_and_changes_nothing(tmp_pa
         await thread.close()
 
 
-async def test_set_mode_with_the_same_behaviour_does_not_reopen(tmp_path: Path) -> None:
-    """Only a *behaviour* change reopens the provider; a policy-only change is a context flip."""
+async def test_set_mode_reopens_the_provider_on_its_own_session(tmp_path: Path) -> None:
+    """A mode change reopens the provider (D76): the catalogue a resident CLI holds is the old
+    mode's, and it was measured to keep it after `list_changed` (BUG-032); a fresh process lists
+    again, and is resumed on the provider's own session id so it keeps its memory. Setting the
+    mode it already has changes nothing and reopens nothing."""
     registry = ModeRegistry(
         (
             ModeSpec.of("workspace-write", behaviour=Behaviour(model="sonnet")),
@@ -198,10 +215,25 @@ async def test_set_mode_with_the_same_behaviour_does_not_reopen(tmp_path: Path) 
     thread = await _thread(agent, tmp_path, registry)
     try:
         changed = await thread.set_mode("read-only")
-        assert agent.opened == 1, "same behaviour, same session"
+        assert agent.opened == 2, "reopened, so the provider lists the new mode's tools"
         assert [e.kind for e in changed] == ["mode_changed"], "a policy change is still a change"
         again = await thread.set_mode("read-only")
-        assert again == [], "setting the mode it already has changes nothing, so records nothing"
+        assert again == [] and agent.opened == 2, "the mode it already has: nothing, no reopen"
     finally:
         await thread.close()
     assert thread.record.mode == "read-only"
+
+
+async def test_a_reopen_hands_the_providers_session_id_back(tmp_path: Path) -> None:
+    """The session says its id; the record keeps it; the next open is told to resume it."""
+    registry = ModeRegistry((ModeSpec.of("workspace-write"), ModeSpec.of("read-only")))
+    agent = RecordingAgent()
+    agent.session_id = "claude-abc"
+    thread = await _thread(agent, tmp_path, registry)
+    try:
+        [_ async for _ in thread.turn("hello")]
+        assert thread.record.session_id == "claude-abc", "remembered after the turn"
+        await thread.set_mode("read-only")
+        assert agent.resumed == ["claude-abc"], "the reopen was told which session to resume"
+    finally:
+        await thread.close()

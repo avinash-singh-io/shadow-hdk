@@ -6,7 +6,14 @@ from pathlib import Path
 
 from shadow_hdk.adapters.environment.backends import Box, IsolationBackend, prove_box
 from shadow_hdk.kernel.observations import Observation
-from shadow_hdk.runtime.environment import CannotEnforce, Environment, Mode, requires
+from shadow_hdk.kernel.workspace import Workspace
+from shadow_hdk.runtime.environment import (
+    CannotEnforce,
+    Environment,
+    Isolation,
+    Mode,
+    requires,
+)
 
 
 class SandboxEnvironment(Environment):
@@ -23,8 +30,6 @@ class SandboxEnvironment(Environment):
         output_limit: int = 64_000,
         at: str = "",
     ) -> None:
-        from shadow_hdk.runtime.environment import Isolation
-
         assert isinstance(isolation, Isolation)
         super().__init__(root, mode=mode, isolation=isolation, source="sandbox", at=at)
         self._box = box
@@ -63,6 +68,17 @@ class SandboxEnvironment(Environment):
             output_limit=output_limit,
             at=at,
         )
+
+    def _prove_now(self, workspace: Workspace, mode: Mode) -> Isolation:
+        """A box mounts one root at `MOUNT` and was proven when it opened; it cannot take a
+        second root or another mode without another box. Refused honestly (D76): the isolation
+        it has is offered only for the workspace and mode it was proven for."""
+        if workspace.roots != self.workspace.roots or mode != self.mode:
+            raise CannotEnforce(
+                "a box is proven for one root and one mode; open another box for a different "
+                "workspace or mode"
+            )
+        return self.isolation
 
     async def _read(self, path: str) -> str:
         return await self._box.read(path)

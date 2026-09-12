@@ -37,7 +37,7 @@ from shadow_hdk.adapters.modes import (
 from shadow_hdk.adapters.recording import SocketOffer
 
 from shadow_hdk.adapters.environment import LocalEnvironment
-from shadow_hdk.kernel import Lease, ThreadStore
+from shadow_hdk.kernel import Lease, ThreadStore, Workspace
 from shadow_hdk.kernel.ports import AgentPort
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals, Ports
@@ -55,6 +55,7 @@ from shadow_hdk.serve.batteries import (
     store_batteries,
 )
 from shadow_hdk.serve.config import Budget, Settings
+from shadow_hdk.serve.keeping import KeepingSink
 
 MODES = ModeRegistry(shipped_modes())
 _POLICY = {spec.id: spec.policy for spec in MODES.listing()}
@@ -128,8 +129,11 @@ async def workshop(
     modes: ModeRegistry | None = None,
     batteries: Sequence[Any] = (),
     skills: SkillRegistry | None = None,
+    workspace: Workspace | None = None,
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
+
+    `workspace` names the roots (D76) — one or many; `root` alone is the one-root workspace.
 
     `skills` is the registry the agent chooses from and mints into; a host that hands one in
     shares it across its threads, so a skill minted in one is offered in the next and listed on
@@ -140,7 +144,12 @@ async def workshop(
     because it is the right thing for them to see.
     """
     environment = await LocalEnvironment.open(
-        root, mode=mode, timeout_s=60.0, output_limit=32_000, at="2026-09-11T00:00:00+00:00"
+        root,
+        mode=mode,
+        timeout_s=60.0,
+        output_limit=32_000,
+        at="2026-09-11T00:00:00+00:00",
+        workspace=workspace,
     )
     chosen_from = SkillComponents(
         skills if skills is not None else skills_for(store),
@@ -206,6 +215,9 @@ class ServeHost:
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
         self.skills = skills_for(self.store)
+        self.sink: Any = KeepingSink(self.store, sink if sink is not None else StdoutSink())
+        """Where a run's proposals go: a minted skill is kept as a store row (ENH-011), and every
+        proposal reaches the sink handed in — or stdout, the shipped default."""
         self.batteries = batteries_for(self.store, files=settings.batteries_dir)
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
@@ -296,10 +308,18 @@ class ServeHost:
         name: str,
         observer: Any = None,
         thread_id: str | None = None,
+        roots: Any = None,
     ) -> Thread:
-        where = Path(root or self.settings.root).resolve()
-        where.mkdir(parents=True, exist_ok=True)
-        environment_mode: EnvironmentMode = mode or self.settings.mode  # type: ignore[assignment]
+        # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
+        # `root`, or the settings' default. Every root is made if it is not there.
+        workspace = (
+            Workspace.from_json(roots) if roots else Workspace.of(Path(root or self.settings.root))
+        )
+        for each in workspace.roots:
+            Path(each.path).mkdir(parents=True, exist_ok=True)
+        where = Path(workspace.primary.path).resolve()
+        policy_mode = mode or self.settings.mode
+        environment_mode = await self._environment_for(policy_mode)
         agent, called = await self._provider(want, where)
         ports = await workshop(
             where,
@@ -309,6 +329,7 @@ class ServeHost:
             modes=self.modes,
             batteries=await self._battery_ports(),
             skills=self.skills,
+            workspace=workspace,
         )
         thread = await Thread.open(
             agent=agent,
@@ -320,19 +341,35 @@ class ServeHost:
             approvals=self.approvals,
             rules=self.rules,
             modes=self.modes,
-            mode=environment_mode,
+            mode=policy_mode,
             provider=called,
             thread_id=thread_id,
+            workspace=workspace,
         )
         self.provider = called
         return thread
+
+    async def _environment_for(self, policy_mode: str) -> EnvironmentMode:
+        """The sandbox mode a policy mode needs (D76): from its spec, or the mode itself where
+        the two vocabularies coincide, or the settings' default."""
+        spec = await self.modes.find(policy_mode)
+        wanted = (spec.environment if spec is not None else "") or (
+            policy_mode if policy_mode in ("read-only", "workspace-write", "full") else ""
+        )
+        chosen: EnvironmentMode = wanted or self.settings.mode  # type: ignore[assignment]
+        return chosen
 
     async def resume(self, thread_id: str, *, observer: Any = None) -> Thread:
         record = await self.threads.get(thread_id)
         if record is None:
             raise KeyError(f"no thread {thread_id!r} in the store")
-        where = Path(record.root)
-        environment_mode: EnvironmentMode = record.mode or self.settings.mode  # type: ignore[assignment]
+        workspace = Workspace(record.roots) if record.roots else Workspace.of(record.root)
+        where = Path(workspace.primary.path)
+        # The policy's mode is the record's; the environment's is the one it was proven in last
+        # (D76), or the settings' where a record predates that field.
+        environment_mode: EnvironmentMode = (  # type: ignore[assignment]
+            record.environment or self.settings.mode
+        )
         agent, _called = await self._provider(None, where)
         ports = await workshop(
             where,
@@ -342,6 +379,7 @@ class ServeHost:
             modes=self.modes,
             batteries=await self._battery_ports(),
             skills=self.skills,
+            workspace=workspace,
         )
         return await Thread.resume(
             thread_id,
@@ -362,9 +400,8 @@ class ServeHost:
             handed["observer"] = observer
         if self._governance is not None:
             handed["governance"] = self._governance
-        if self._sink is not None:
-            handed["sink"] = self._sink
-        return replace(ports, **handed) if handed else ports
+        handed["sink"] = self.sink
+        return replace(ports, **handed)
 
     async def list(self) -> Any:
         return await self.threads.list()

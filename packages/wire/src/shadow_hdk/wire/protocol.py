@@ -61,6 +61,8 @@ THREAD_ARCHIVE = "thread/archive"
 THREAD_SET_MODE = "thread/set_mode"
 THREAD_SET_OPTION = "thread/set_option"
 THREAD_REMAINING = "thread/remaining"
+THREAD_ADD_ROOT = "thread/add_root"
+"""A directory added to the thread's workspace while it runs (D76; Claude Code's `/add-dir`)."""
 TURN_START = "turn/start"
 TURN_STEER = "turn/steer"
 TURN_INTERRUPT = "turn/interrupt"
@@ -137,6 +139,7 @@ __all__ = [
     "STORE_LIST",
     "STORE_PUT",
     "STORE_VERSION",
+    "THREAD_ADD_ROOT",
     "THREAD_ARCHIVE",
     "THREAD_CLOSE",
     "THREAD_FORK",

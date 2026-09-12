@@ -45,6 +45,7 @@ class Provider(AgentPort):
         tools: tuple[ToolSource, ...] = (),
         workspace: str | None = None,
         behaviour: object | None = None,
+        resume: str | None = None,
     ) -> AgentSession:
         self.opened_with.append(tools)
         return self.session

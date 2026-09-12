@@ -114,7 +114,14 @@ class ScriptedThreads:
         )
 
     async def open(
-        self, *, root: str, mode: str, want: str | None, name: str, observer: Any
+        self,
+        *,
+        root: str,
+        mode: str,
+        want: str | None,
+        name: str,
+        observer: Any,
+        roots: Any = None,
     ) -> Thread:
         thread = await Thread.open(
             agent=cast(Any, self.agent),

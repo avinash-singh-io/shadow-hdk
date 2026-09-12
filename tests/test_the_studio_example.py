@@ -47,7 +47,8 @@ class WritingProvider:
 
         class _Session:
             async def turn(self, prompt: str) -> Turn:
-                await provider.reach("write_file", {"path": "hello.txt", "content": "hello"})
+                target = prompt if prompt.endswith(".txt") else "hello.txt"
+                await provider.reach("write_file", {"path": target, "content": "hello"})
                 return Turn(text="done: " + prompt)
 
             async def close(self) -> None:

@@ -17,6 +17,7 @@ from shadow_hdk.kernel.composition import Composition, Handle, StepId
 from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Observation, Proposal
 from shadow_hdk.kernel.usage import Usage
+from shadow_hdk.kernel.workspace import Root
 
 RunId = str
 
@@ -199,6 +200,18 @@ EndReason = Literal["completed", "lease_exhausted", "gave_up", "cancelled", "fai
 
 
 @dataclass(frozen=True)
+class WorkspaceChanged:
+    """The thread's roots changed mid-thread (D76) — a directory added while the conversation
+    ran — so a reader knows which turns could see which roots."""
+
+    run_id: RunId
+    seq: int
+    at: str
+    roots: tuple[Root, ...]
+    kind: Literal["workspace_changed"] = "workspace_changed"
+
+
+@dataclass(frozen=True)
 class ModeChanged:
     """The host changed the run's mode mid-thread (D64) — the record says when, and to what, so a
     reader knows which policy judged the turns that follow."""
@@ -237,6 +250,7 @@ Event = Annotated[
     | UsageReported
     | Reasoning
     | ModeChanged
+    | WorkspaceChanged
     | Ended,
     Field(discriminator="kind"),
 ]

@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from shadow_hdk.kernel.workspace import Root
+
 ThreadId = str
 TurnId = str
 
@@ -38,6 +40,7 @@ class ThreadRecord:
 
     id: ThreadId
     root: str
+    """The primary root's path — what a one-root reader expects; `roots` is the whole workspace."""
     created_at: str
     mode: str = ""
     provider: str = ""
@@ -47,6 +50,11 @@ class ThreadRecord:
     seeded_turns: int = 0
     session_id: str = ""
     """The provider's own session id, when it has one — what a resume hands back to it."""
+    roots: tuple[Root, ...] = ()
+    """The workspace (D76): one or many roots, the first the primary. Empty means the one root
+    `root` names — a record written before roots were kept."""
+    environment: str = ""
+    """The environment's own mode — what the sandbox enforces — beside `mode`, the policy's."""
 
 
 __all__ = ["ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]

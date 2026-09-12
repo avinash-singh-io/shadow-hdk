@@ -48,6 +48,7 @@ from shadow_hdk.kernel.events import (
     Spawned,
     Started,
     UsageReported,
+    WorkspaceChanged,
 )
 from shadow_hdk.kernel.events import (
     Refused as RefusedEvent,
@@ -102,11 +103,17 @@ from shadow_hdk.kernel.providers import (
 )
 from shadow_hdk.kernel.rules import ActRule
 from shadow_hdk.kernel.threads import ThreadId, ThreadRecord, TurnId, TurnRecord
+from shadow_hdk.kernel.workspace import Root, Workspace
 
 __all__ = [
+    "Root",
+    "Workspace",
+    "Root",
+    "Workspace",
     "Activity",
     "ActivityObserver",
     "ModeChanged",
+    "WorkspaceChanged",
     "Reasoning",
     "Behaviour",
     "BehaviourArg",

@@ -43,7 +43,9 @@ class ScriptedProvider:
     def __init__(self) -> None:
         self.opened = 0
 
-    async def open(self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None) -> Any:
+    async def open(
+        self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None, resume: Any = None
+    ) -> Any:
         self.opened += 1
 
         class _Session:

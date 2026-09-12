@@ -141,3 +141,56 @@ async def test_a_client_that_calls_forever_is_stopped_by_the_parents_lease() -> 
 
     errors, _ = await over_the_wire(call_until_stopped, steps=6)
     assert errors > 0, "the client was never stopped"
+
+
+@pytest.mark.anyio
+async def test_a_session_that_listed_is_told_when_the_list_changes() -> None:
+    """BUG-032: a resident CLI lists once and keeps the catalogue; after `set_mode` it must be
+    told to list again — MCP's `notifications/tools/list_changed`, sent to every session that
+    has listed this registry."""
+    heard: list[str] = []
+
+    async def drive(context: RunContext) -> int:
+        holder = RecordingServer(context)
+        async with (
+            create_client_server_memory_streams() as (
+                (client_read, client_write),
+                (server_read, server_write),
+            ),
+            holder.served() as server,
+            anyio.create_task_group() as group,
+        ):
+            group.start_soon(
+                server.run, server_read, server_write, server.create_initialization_options()
+            )
+
+            async def notify(method: str) -> None:
+                from mcp.shared.message import SessionMessage
+                from mcp_types import JSONRPCNotification
+
+                await server_write.send(
+                    SessionMessage(JSONRPCNotification(jsonrpc="2.0", method=method, params=None))
+                )
+
+            forget = holder.watch(notify)
+
+            async def on_message(message: Any) -> None:
+                method = getattr(getattr(message, "root", message), "method", None)
+                if method:
+                    heard.append(str(method))
+
+            async with ClientSession(client_read, client_write, message_handler=on_message) as s:
+                await s.initialize()
+                await s.list_tools()
+                await holder.changed()
+                for _ in range(100):
+                    if "notifications/tools/list_changed" in heard:
+                        break
+                    await anyio.sleep(0.01)
+                forget()
+                await holder.changed()  # nobody watching any more: nothing sent, nothing raised
+            group.cancel_scope.cancel()
+        return heard.count("notifications/tools/list_changed")
+
+    told, _ = await with_a_run(drive)
+    assert told == 1, heard

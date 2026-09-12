@@ -380,7 +380,7 @@ def test_every_event_kind_is_accounted_for() -> None:
         if isinstance(cls, type) and dataclasses.is_dataclass(cls) and hasattr(cls, "kind")
     }
     assert kinds == OpenTelemetryObserver.HANDLED
-    assert len(kinds) == 14  # input_requested (D61), mode_changed (D64)
+    assert len(kinds) == 15  # input_requested (D61), mode_changed (D64), workspace_changed (D76)
 
 
 async def test_a_run_that_fails_mid_step_ends_the_step_span() -> None:

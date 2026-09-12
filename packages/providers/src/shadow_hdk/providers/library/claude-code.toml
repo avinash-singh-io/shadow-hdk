@@ -141,6 +141,12 @@ output_tokens_at = "usage.output_tokens"
 # user's own global MCP configuration joining the run ungoverned; and its native file and shell
 # tools are refused so ours are the only ones it has. A provider left holding its own tools does
 # its work outside the registry, where nothing here sees it.
+# **Measured 2026-09-12 (D76).** Every stream-json line carries `session_id` (the `system`/`init`
+# line first, then each `assistant` and the `result`); `--resume <id>` starts a process on that
+# conversation. A thread hands the id back when it reopens the provider — after a mode change,
+# on `thread/resume` — so the agent keeps its memory rather than starting from the record alone.
+resume_args = ["--resume"]
+session_id_at = "session_id"
 mcp_config_arg = "--mcp-config"
 mcp_strict_args = ["--strict-mcp-config"]
 # **Measured 2026-09-11.** Without this the child answers "Claude requested permissions to use

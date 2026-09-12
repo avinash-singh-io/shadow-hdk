@@ -50,6 +50,7 @@ CONTRACTED: dict[str, str] = {
     "DeviceComponents": "tests/adapters/devices/test_devices_are_components.py",
     "Environment": "tests/adapters/environment/test_an_environment_is_a_component.py",
     "FileSink": "tests/adapters/basic/test_basic.py",
+    "KeepingSink": "tests/serve/test_the_host_keeps_what_a_run_proposes.py",
     "LangChainModel": "tests/adapters/langchain/test_langchain.py",
     "Mailbox": "tests/adapters/basic/test_mailbox.py",
     "McpComponents": "tests/adapters/mcp/test_mcp.py",

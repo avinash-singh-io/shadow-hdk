@@ -44,6 +44,7 @@ from shadow_hdk.kernel.components import (
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 from shadow_hdk.kernel.observations import Failed, Observation, Refused
 from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.kernel.workspace import Root, Workspace
 
 Mode = Literal["read-only", "workspace-write", "full"]
 Operation = Literal["read", "write", "delete", "list", "run"]
@@ -171,13 +172,24 @@ class Environment(ComponentPort):
         isolation: Isolation,
         source: str = "environment",
         at: str = "",
+        workspace: Workspace | None = None,
     ) -> None:
         requires(isolation, mode)
-        self.root = (root or Path.cwd()).resolve()
+        # One root or many (D76): `workspace` names them; `root` alone is the one-root workspace
+        # every earlier caller meant, and `self.root` stays the primary's path for them.
+        self.workspace: Workspace = _resolved(workspace or Workspace.of(root or Path.cwd()))
+        self.root = Path(self.workspace.primary.path)
         self.mode: Mode = mode
         self.isolation = isolation
         self._source = source
         self._at = at
+
+    @property
+    def roots(self) -> tuple[Root, ...]:
+        return self.workspace.roots
+
+    def root_path(self, root: Root) -> Path:
+        return Path(root.path)
 
     # ------------------------------------------------------------------ the mechanism
 
@@ -199,6 +211,26 @@ class Environment(ComponentPort):
     async def close(self) -> None:
         """Whatever the mechanism holds open, let go."""
 
+    # ------------------------------------------------------------------ re-opening (D76)
+
+    def _prove_now(self, workspace: Workspace, mode: Mode) -> Isolation:
+        """What is true of this mechanism for *that* workspace in *that* mode — watched again,
+        never carried over. A subclass whose isolation cannot change answers with what it has."""
+        raise NotImplementedError
+
+    async def reopen(self, *, workspace: Workspace | None = None, mode: Mode | None = None) -> None:
+        """The same environment on a different workspace or in a different mode — a root added
+        while the thread runs, a mode that needs another sandbox — proven before it is believed
+        (D36) and refused, unchanged, where it cannot be (`CannotEnforce`)."""
+        wanted_workspace = _resolved(workspace) if workspace is not None else self.workspace
+        wanted_mode: Mode = mode or self.mode
+        isolation = self._prove_now(wanted_workspace, wanted_mode)
+        requires(isolation, wanted_mode)
+        self.workspace = wanted_workspace
+        self.root = Path(wanted_workspace.primary.path)
+        self.mode = wanted_mode
+        self.isolation = isolation
+
     # ------------------------------------------------------------------ the port
 
     async def registrations(self) -> Sequence[Registration]:
@@ -208,7 +240,7 @@ class Environment(ComponentPort):
                 component=Component(
                     interface=Interface(
                         name=name,
-                        description=f"{description} Mode: {self.mode}.",
+                        description=f"{description} Mode: {self.mode}. {self.workspace.describe()}",
                         input_schema={
                             "type": "object",
                             "properties": properties,
@@ -267,12 +299,21 @@ class Environment(ComponentPort):
     # ------------------------------------------------------------------ paths
 
     def inside(self, given: str) -> Path:
-        """A path resolved against the root and required to stay under it — what the workspace
+        """A path resolved against a root and required to stay under one — what the workspace
         adapter did, kept, because a confined mode that resolved `..` out of the root would be a
-        confinement the mode did not admit. Hard links are refused for the same reason as before."""
-        candidate = (self.root / given).resolve()
-        if candidate != self.root and not candidate.is_relative_to(self.root):
-            raise OutsideTheRoot(f"{given!r} resolves outside the environment's root")
+        confinement the mode did not admit. Hard links are refused for the same reason as before.
+
+        Which root (D76): an absolute path is whichever root it lies under; `name/rest` where
+        `name` is a root's name is that root; anything else is relative to the primary."""
+        candidate = self._resolve(given)
+        if not any(
+            candidate == Path(r.path) or candidate.is_relative_to(r.path) for r in self.roots
+        ):
+            names = ", ".join(r.name for r in self.roots)
+            raise OutsideTheRoot(
+                f"{given!r} resolves outside the environment's root"
+                + (f"s ({names})" if len(self.roots) > 1 else "")
+            )
         try:
             found = candidate.lstat()
         except (OSError, ValueError):
@@ -283,6 +324,32 @@ class Environment(ComponentPort):
                 "environment cannot tell whether one of them is outside it"
             )
         return candidate
+
+    def _resolve(self, given: str) -> Path:
+        as_path = Path(given)
+        if as_path.is_absolute():
+            return as_path.resolve()
+        head = as_path.parts[0] if as_path.parts else ""
+        if head and self.workspace.has(head) and head != self.workspace.primary.name:
+            return (Path(self.workspace.named(head).path) / Path(*as_path.parts[1:])).resolve()
+        if head and head == self.workspace.primary.name and len(self.roots) > 1:
+            # `finance/x` when finance is the primary: the primary has no directory of its own
+            # name unless it really does — prefer the root, as the description promised.
+            named = (self.root / Path(*as_path.parts[1:])).resolve()
+            literal = (self.root / given).resolve()
+            return literal if literal.exists() else named
+        return (self.root / given).resolve()
+
+
+def _resolved(workspace: Workspace) -> Workspace:
+    """The kernel's roots with their paths resolved here, where the filesystem is — and refused
+    where one root lies inside another, which the kernel cannot know."""
+    resolved = Workspace(tuple(Root(r.name, str(Path(r.path).resolve())) for r in workspace.roots))
+    for a in resolved.roots:
+        for b in resolved.roots:
+            if a is not b and a.path != b.path and Path(a.path).is_relative_to(b.path):
+                raise ValueError(f"root {a.name!r} is inside root {b.name!r}")
+    return resolved
 
 
 class OutsideTheRoot(Exception):
