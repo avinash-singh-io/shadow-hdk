@@ -92,11 +92,11 @@ class ScriptedThreads:
 
     def __init__(self, tmp_path: Path) -> None:
         self.approvals = Approvals()
-        self.store = InMemoryStore()
+        self.store: Any = InMemoryStore()
         self.threads = InMemoryThreads()
         self.agent = ScriptedAgent()
-        self.rules = None
-        self.modes = None
+        self.rules: Any = None
+        self.modes: Any = None
         self._tmp = tmp_path
 
     def _ports(self, observer: Any) -> Ports:

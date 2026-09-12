@@ -64,6 +64,18 @@ THREAD_REMAINING = "thread/remaining"
 TURN_START = "turn/start"
 TURN_STEER = "turn/steer"
 TURN_INTERRUPT = "turn/interrupt"
+# the handles (principle 7): what a person does during a run, from any language
+APPROVALS_PENDING = "approvals/pending"
+APPROVALS_ANSWER = "approvals/answer"
+RUN_CANCEL = "run/cancel"
+# the store (D66), crossed
+STORE_PUT = "store/put"
+STORE_GET = "store/get"
+STORE_DELETE = "store/delete"
+STORE_LIST = "store/list"
+STORE_VERSION = "store/version"
+MODES_LIST = "modes/list"
+RULES_LIST = "rules/list"
 
 # runtime → host, one way
 EVENT = "event"
@@ -72,6 +84,11 @@ ITEM = "item"
 another language renders agent steps without porting the fold."""
 ACTIVITY = "activity"
 """What is happening beside the record (D63), as a notification — never on the record."""
+APPROVAL_REQUEST = "approval_request"
+INPUT_REQUEST = "input_request"
+REQUEST_WITHDRAWN = "request_withdrawn"
+"""A request the host must answer, pushed as it becomes pending — and withdrawn when the asker
+stopped waiting (D59) — so a client need not poll `approvals/pending`."""
 
 HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAINING})
 RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})
@@ -94,6 +111,19 @@ class Agreed:
 
 __all__ = [
     "ACTIVITY",
+    "APPROVALS_ANSWER",
+    "APPROVALS_PENDING",
+    "APPROVAL_REQUEST",
+    "INPUT_REQUEST",
+    "MODES_LIST",
+    "REQUEST_WITHDRAWN",
+    "RULES_LIST",
+    "RUN_CANCEL",
+    "STORE_DELETE",
+    "STORE_GET",
+    "STORE_LIST",
+    "STORE_PUT",
+    "STORE_VERSION",
     "THREAD_ARCHIVE",
     "THREAD_CLOSE",
     "THREAD_FORK",

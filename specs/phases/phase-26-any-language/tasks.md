@@ -10,11 +10,11 @@ phase: 26
 - [x] `thread/resume`, `close`, `list`, `fork`, `rollback`, `archive`, `set_mode`, `set_option`, `remaining`; `turn/steer`, `turn/interrupt`
 
 ## Group 2 — handles over the wire
-- [ ] `approvals/pending`, `approvals/answer` (three answers, and text), withdrawn as a notification; `run/cancel`
-- [ ] the parity invariant extended to handles and thread operations
+- [x] `approvals/pending`, `approvals/answer` (approve · deny · approve_and_add_rule; `{text}` for input); `approval_request`/`input_request`/`request_withdrawn` pushed; `run/cancel`
+- [x] the parity invariant's rule 4: every public method of `Thread`, `Approvals` and `Store` crosses or says why
 
 ## Group 3 — the store over the wire
-- [ ] `store/put|get|delete|list|version`; `modes/list`, `rules/list`; a crossed row is live
+- [x] `store/put|get|delete|list|version`; `modes/list`, `rules/list`; a crossed row is a mode at the next read
 
 ## Group 4 — serve
 - [ ] `shadow-hdk-serve`: the composition moved out of the coder example; `serve harness.toml --stdio|--http`

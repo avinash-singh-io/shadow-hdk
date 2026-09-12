@@ -13,6 +13,7 @@ here: `ThreadHost` is a port, and `shadow_hdk.serve` implements it.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any, Protocol
 
@@ -23,8 +24,21 @@ from shadow_hdk.runtime.items import Fold, as_json
 from shadow_hdk.runtime.threads import Thread
 from shadow_hdk.wire.protocol import (
     ACTIVITY,
+    APPROVAL_REQUEST,
+    APPROVALS_ANSWER,
+    APPROVALS_PENDING,
     EVENT,
+    INPUT_REQUEST,
     ITEM,
+    MODES_LIST,
+    REQUEST_WITHDRAWN,
+    RULES_LIST,
+    RUN_CANCEL,
+    STORE_DELETE,
+    STORE_GET,
+    STORE_LIST,
+    STORE_PUT,
+    STORE_VERSION,
     THREAD_ARCHIVE,
     THREAD_CLOSE,
     THREAD_FORK,
@@ -99,8 +113,19 @@ class ThreadMethods:
             (TURN_START, self._turn),
             (TURN_STEER, self._steer),
             (TURN_INTERRUPT, self._interrupt),
+            (APPROVALS_PENDING, self._pending),
+            (APPROVALS_ANSWER, self._answer),
+            (RUN_CANCEL, self._cancel),
+            (STORE_PUT, self._store_put),
+            (STORE_GET, self._store_get),
+            (STORE_DELETE, self._store_delete),
+            (STORE_LIST, self._store_list),
+            (STORE_VERSION, self._store_version),
+            (MODES_LIST, self._modes_list),
+            (RULES_LIST, self._rules_list),
         ):
             peer.serves(method, handler)
+        self._relays: list[asyncio.Task[None]] = []
 
     # ------------------------------------------------------------------ lookups
 
@@ -123,6 +148,7 @@ class ThreadMethods:
 
     async def _start(self, params: dict[str, Any]) -> dict[str, Any]:
         host = self._host_or_raise()
+        self._relaying(host)
         thread_id_hint = str(params.get("thread_id", "") or "")
         # The observer needs the id before the thread exists; the id is the clock's next.
         thread_id = thread_id_hint or self._clock.new_id()
@@ -147,6 +173,7 @@ class ThreadMethods:
 
     async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
         host = self._host_or_raise()
+        self._relaying(host)
         thread_id = str(params.get("thread_id", ""))
         thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
         self.threads[thread.id] = thread
@@ -223,6 +250,108 @@ class ThreadMethods:
         await thread.interrupt()
         return {"interrupted": was}
 
+    # ------------------------------------------------------------------ the handles
+
+    def _relaying(self, host: ThreadHost) -> None:
+        """Push each request as it becomes pending, and each withdrawal — once per wire."""
+        if self._relays or getattr(host, "approvals", None) is None:
+            return
+        self._relays = [
+            asyncio.create_task(self._relay_requests(host)),
+            asyncio.create_task(self._relay_withdrawals(host)),
+        ]
+
+    def _thread_of_run(self, run_id: str) -> str:
+        for thread in self.threads.values():
+            turns = thread.record.turns
+            if turns and turns[-1].run_id == run_id:
+                return thread.id
+        return ""
+
+    async def _relay_requests(self, host: ThreadHost) -> None:
+        while True:
+            pending = await host.approvals.next()
+            await self._peer.notify(
+                INPUT_REQUEST if pending.kind == "input" else APPROVAL_REQUEST,
+                {
+                    "thread_id": self._thread_of_run(pending.run_id),
+                    "request": _request_json(pending),
+                },
+            )
+
+    async def _relay_withdrawals(self, host: ThreadHost) -> None:
+        while True:
+            gone = await host.approvals.next_withdrawn()
+            await self._peer.notify(
+                REQUEST_WITHDRAWN,
+                {"thread_id": self._thread_of_run(gone.run_id), "handle": gone.handle},
+            )
+
+    async def _pending(self, _params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        return {"requests": [_request_json(p) for p in host.approvals.pending()]}
+
+    async def _answer(self, params: dict[str, Any]) -> dict[str, Any]:
+        """The host's answer, as JSON: `{"kind": "approve"}`, `{"kind": "deny", "reason"}`,
+        `{"kind": "approve_and_add_rule", "rule": {...}}` — or `{"text": "..."}` for an input
+        request. The runtime's `accept_answer` reads these shapes (D65)."""
+        host = self._host_or_raise()
+        answer = params.get("answer")
+        if isinstance(answer, dict) and "text" in answer and "kind" not in answer:
+            answer = str(answer["text"])
+        done = host.approvals.answer(str(params.get("handle", "")), answer)
+        return {"answered": bool(done)}
+
+    async def _cancel(self, params: dict[str, Any]) -> dict[str, Any]:
+        thread = self._thread(params)
+        was = thread.turning
+        await thread.interrupt()
+        return {"cancelled": was}
+
+    # ------------------------------------------------------------------ the store
+
+    def _store_or_raise(self) -> Any:
+        host = self._host_or_raise()
+        store = getattr(host, "store", None)
+        if store is None:
+            raise RuntimeError("no store: the process serving this wire handed in none")
+        return store
+
+    async def _store_put(self, params: dict[str, Any]) -> dict[str, Any]:
+        await self._store_or_raise().put(
+            str(params["collection"]), str(params["key"]), params.get("row")
+        )
+        return {"ok": True}
+
+    async def _store_get(self, params: dict[str, Any]) -> dict[str, Any]:
+        row = await self._store_or_raise().get(str(params["collection"]), str(params["key"]))
+        return {"row": row}
+
+    async def _store_delete(self, params: dict[str, Any]) -> dict[str, Any]:
+        await self._store_or_raise().delete(str(params["collection"]), str(params["key"]))
+        return {"ok": True}
+
+    async def _store_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        rows = await self._store_or_raise().list(str(params["collection"]))
+        return {"rows": [[key, row] for key, row in rows]}
+
+    async def _store_version(self, params: dict[str, Any]) -> dict[str, Any]:
+        return {"version": await self._store_or_raise().version(str(params["collection"]))}
+
+    async def _modes_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        return {"modes": await self._modes(self._host_or_raise())}
+
+    async def _rules_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        from shadow_hdk.kernel import ActRule
+
+        host = self._host_or_raise()
+        registry = getattr(host, "rules", None)
+        if registry is None:
+            return {"rules": []}
+        all_now = getattr(registry, "all_now", None)
+        rules = await all_now() if all_now is not None else registry.all()
+        return {"rules": [json.loads(dump(r, ActRule)) for r in rules]}
+
     async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
         registry = getattr(host, "modes", None)
         if registry is None:
@@ -231,6 +360,18 @@ class ThreadMethods:
             {"id": m.id, "name": m.name, "description": m.description, "source": m.source}
             for m in await registry.all()
         ]
+
+
+def _request_json(pending: Any) -> dict[str, Any]:
+    return {
+        "handle": pending.handle,
+        "run_id": pending.run_id,
+        "step": pending.step,
+        "question": pending.question,
+        "component": pending.component,
+        "inputs": pending.inputs,
+        "kind": pending.kind,
+    }
 
 
 def _turn_json(turn: Any) -> dict[str, Any]:
