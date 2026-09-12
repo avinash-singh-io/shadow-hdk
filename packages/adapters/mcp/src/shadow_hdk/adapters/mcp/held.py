@@ -19,7 +19,7 @@ from typing import Any
 
 import anyio
 
-from shadow_hdk.runtime.processes import hold, stop_or_kill
+from shadow_hdk.runtime.processes import start_held, stop_or_kill
 from mcp import StdioServerParameters
 from mcp import types as mcp_types
 from mcp.client.stdio import get_default_environment
@@ -33,17 +33,15 @@ GRACE_S = 2.0
 async def held_stdio_client(server: StdioServerParameters) -> AsyncIterator[tuple[Any, Any]]:
     """The `(read, write)` streams a `ClientSession` takes, over a server process we hold."""
     command = shutil.which(server.command) or server.command
-    process = await asyncio.create_subprocess_exec(
+    # A session leader the runtime holds (D35, D53): ended with its group, and when we end.
+    process = await start_held(
         command,
         *server.args,
         cwd=str(server.cwd) if server.cwd else None,
         env=get_default_environment() | dict(server.env or {}),
         stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
         stderr=None,  # its diagnostics are ours to see, as the SDK's default has them
-        start_new_session=True,  # a session leader: its group is its own, and ends as one
     )
-    hold(process)  # and it ends when we end, whatever ends us (D53)
     assert process.stdin is not None and process.stdout is not None
 
     to_session_send, to_session = anyio.create_memory_object_stream[SessionMessage | Exception](0)

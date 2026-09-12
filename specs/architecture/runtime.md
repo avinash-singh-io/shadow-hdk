@@ -168,7 +168,8 @@ classDiagram
 | `switched.py` | `Switched` — a component port minus what a store's switches say is off (D66), read at every refresh; `store_switches` |
 | `person.py` | `ask_person` — the agent's own question to the person as a component (D65): no effects, `InputRequested` on the record, the text through the host's handle; nobody there is a failure that says so |
 | `items.py` | the event stream folded into the items a host renders — one pure fold, in-process and over the wire (D46, D61); `run_items(nested=True)` yields every item as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
-| `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006); every session leader the runtime starts is `hold`-ed and dies with the interpreter, by whichever door (D53, BUG-019) |
+| `processes.py` | starting and ending what the harness owns — `start_held` is **the one place** a session leader is started (the leash, the coding CLIs, the ACP bridge, a battery's MCP server all call it; an invariant refuses the next copy), and every one is `hold`-ed and dies with the interpreter, by whichever door (D35, D53, BUG-019, BUG-033) |
+| `lines.py` | newline-delimited frames over a byte stream, one implementation (`LineBuffer`) — the wire's stdio channel and the recording adapter's pipes read by it, so a blank line or a carriage return means the same on every peer |
 | `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
 | `testing/` | `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock` (D8) |
 

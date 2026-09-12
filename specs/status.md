@@ -13,10 +13,11 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,395 tests; mypy strict over 246 files; eighteen distributions at **0.25.1**, all MIT.
+> 1,404 tests; mypy strict over 248 files; eighteen distributions at **0.25.2**, all MIT.
 >
-> **Latest Release**: **v0.25.1**, released 2026-09-12 — a patch: a battery's process is held
-> (BUG-033), Claude Code from a clean scope (ENH-012). Before it **v0.25.0** — Phase 28, the workspace (D73–D76).
+> **Latest Release**: **v0.25.2**, released 2026-09-12 — a patch: one rule, one implementation
+> (D77 — `start_held`, `LineBuffer`, the root-name rule). Before it v0.25.1 (a battery's process
+> held, BUG-033; Claude Code from a clean scope, ENH-012) and **v0.25.0** — Phase 28, the workspace (D73–D76).
 > Contract change (roots, `WorkspaceChanged`, `tools/list`, `skills/list`, `thread/add_root`,
 > `AgentPort.open(resume=)`, the `ask` mode, a child's context), so a *Pins* row. Before it
 > v0.24.0 (Phase 27, batteries and the facade, D70–D72), v0.23.0 (Phase 26, any language, D67–D69), v0.22.0
@@ -80,6 +81,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.25.2 | 2026-09-12 | patch | D77 one rule, one implementation: `start_held` the one place a session leader is started (an invariant refuses the next copy); `LineBuffer` the one framing; a root's name a rule, not an `exists()` guess |
 | v0.25.1 | 2026-09-12 | patch | BUG-033 a battery's MCP server is a held session leader, ended with its group; ENH-012 Claude Code launched with no settings sources and no auto-memory — a run's instructions are the mode's behaviour only |
 | v0.25.0 | 2026-09-12 | phase 28 | the workspace: one or many roots per thread, added live; the environment and the provider follow the mode; the `ask` mode; the registries visible; a child judged in its parent's context (D73–D76) |
 | v0.24.0 | 2026-09-12 | phase 27 | batteries and the facade: a battery is a file (wigolo, ddgs), `Harness.load` and `harness.toml`, `budget`, the optimiser specified (D70–D72) |

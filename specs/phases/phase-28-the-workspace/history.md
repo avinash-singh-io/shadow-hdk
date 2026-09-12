@@ -166,6 +166,43 @@ together, or the page lies.
 
 ---
 
+### [DECISION] 2026-09-12 — D77: one rule, one implementation — a session leader is started in one place, frames are split in one place, and a root's name is a rule rather than a guess
+
+Topics: processes, framing, workspace, principles, BUG-033
+Affects-phases: phase-28-the-workspace
+Affects-specs: architecture/runtime.md#modules
+
+Three tightenings after the owner's standing rule (no patchwork, even in a fix), each turning a
+duplicated or heuristic piece into one stated rule with a test that refuses the next copy.
+
+**A session leader is started in one place.** Five copies of `create_subprocess_exec(...,
+start_new_session=True)` + `hold(process)` — the leash (twice), the jsonl CLI session, the ACP
+bridge, and the battery transport BUG-033 had just added — were one rule with five
+implementations, the exact shape D35 was written against. `runtime.processes.start_held` is now
+the one place; every caller calls it; an invariant walks every package's source and refuses a
+`start_new_session=True` anywhere else (RED: it named all five).
+
+**Frames are split in one place.** The wire's stdio channel and the recording adapter's pipes
+each carried a buffer-and-split loop for newline-delimited JSON — and already differed (one
+skipped blank lines, one did not). `runtime.lines.LineBuffer` is the one implementation: a
+frame is what lies between newlines, a carriage return is not part of it, a blank line is not a
+frame, what is left at end of stream is a truncated frame. Both readers use it; four mutations
+(CR kept, blank lines as frames, and two more) each fail a test.
+
+**A root's name is a rule.** `inside()` had decided whether `finance/x` meant the root named
+`finance` or a directory in the primary by asking whether the literal path *existed* — a
+heuristic, and one that would flip as files appeared. The rule now: another root's name wins;
+the primary's own name is not an address (a repository `foo` with a package `foo/` inside keeps
+meaning what it always meant); the one spelling the rule would hide — an entry of the primary
+named like another root — is refused when the root is named (at open and on `add_root`), once,
+rather than guessed at every path. Resolution never touches the filesystem.
+
+*Why:* a rule with two implementations is a rule with one bug; a heuristic is a rule nobody
+wrote down. The owner's rule (2026-09-12): every change to the harness, a fix included, is done
+the principled way.
+
+---
+
 ## Verification Evidence
 
 Captured fresh 2026-09-12 on the phase branch at close, before landing:

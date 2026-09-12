@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
-from shadow_hdk.runtime.processes import end_the_group, hold
+from shadow_hdk.runtime.processes import end_the_group, start_held
 
 KEPT_ENV = ("PATH", "LANG", "LC_ALL")
 """The environment a leashed program sees. Everything else — every secret the host process holds —
@@ -120,15 +120,8 @@ async def run_leashed(
     environment = {name: os.environ[name] for name in KEPT_ENV if name in os.environ}
     environment["TMPDIR"] = str(cwd)
     try:
-        process = await asyncio.create_subprocess_exec(
-            *argv,
-            cwd=cwd,
-            env=environment,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            start_new_session=True,  # its own group, so the whole tree can be ended at once (D35)
-        )
-        hold(process)  # and it dies with us, whatever ends us (D53)
+        # A session leader the runtime holds (D35, D53): the whole tree ends at once, and with us.
+        process = await start_held(*argv, cwd=cwd, env=environment)
     except OSError as broken:
         return Failed(f"{type(broken).__name__}: {broken}")
     if memory_mb is not None and process.pid is not None:
@@ -286,15 +279,7 @@ async def start_leashed(
     """Start `argv` under the same rules as `run_leashed`, and hand back the handle."""
     environment = {name: os.environ[name] for name in KEPT_ENV if name in os.environ}
     environment["TMPDIR"] = str(cwd)
-    process = await asyncio.create_subprocess_exec(
-        *argv,
-        cwd=cwd,
-        env=environment,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        start_new_session=True,
-    )
-    hold(process)  # dies with us, whatever ends us (D53)
+    process = await start_held(*argv, cwd=cwd, env=environment)  # held (D35, D53)
     if memory_mb is not None and process.pid is not None:
         _limit_memory(process.pid, memory_mb)
     return HeldProcess(process, timeout_s=timeout_s, limit=output_limit)
