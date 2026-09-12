@@ -25,6 +25,7 @@ members = [
     "shadow-hdk-adapters-recording",
     "shadow-hdk-kernel",
     "shadow-hdk-providers",
+    "shadow-hdk-serve",
     "shadow-hdk-wire",
     "shadow-hdk-workspace",
 ]
@@ -1589,6 +1590,35 @@ dependencies = [
 requires-dist = [{ name = "shadow-hdk-kernel", editable = "packages/kernel" }]
 
 [[package]]
+name = "shadow-hdk-serve"
+version = "0.22.0"
+source = { editable = "packages/serve" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-adapters-agent" },
+    { name = "shadow-hdk-adapters-basic" },
+    { name = "shadow-hdk-adapters-environment" },
+    { name = "shadow-hdk-adapters-modes" },
+    { name = "shadow-hdk-adapters-recording" },
+    { name = "shadow-hdk-kernel" },
+    { name = "shadow-hdk-providers" },
+    { name = "shadow-hdk-wire", extra = ["serve"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
+    { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
+    { name = "shadow-hdk-adapters-environment", editable = "packages/adapters/environment" },
+    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
+    { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "shadow-hdk-providers", editable = "packages/providers" },
+    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
+]
+
+[[package]]
 name = "shadow-hdk-wire"
 version = "0.22.0"
 source = { editable = "packages/wire" }
@@ -1634,6 +1664,7 @@ dependencies = [
     { name = "shadow-hdk-adapters-recording" },
     { name = "shadow-hdk-kernel" },
     { name = "shadow-hdk-providers" },
+    { name = "shadow-hdk-serve" },
     { name = "shadow-hdk-wire", extra = ["serve"] },
 ]
 
@@ -1668,6 +1699,7 @@ requires-dist = [
     { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
     { name = "shadow-hdk-kernel", editable = "packages/kernel" },
     { name = "shadow-hdk-providers", editable = "packages/providers" },
+    { name = "shadow-hdk-serve", editable = "packages/serve" },
     { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
 ]
 

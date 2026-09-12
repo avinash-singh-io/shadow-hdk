@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import uuid
 from typing import Any, Protocol
 
 from shadow_hdk.kernel import Event, Lease, ThreadRecord
@@ -150,8 +151,9 @@ class ThreadMethods:
         host = self._host_or_raise()
         self._relaying(host)
         thread_id_hint = str(params.get("thread_id", "") or "")
-        # The observer needs the id before the thread exists; the id is the clock's next.
-        thread_id = thread_id_hint or self._clock.new_id()
+        # The observer needs an id before the thread exists; it is re-tagged with the thread's
+        # own once the thread has minted it, so any placeholder will do here.
+        thread_id = thread_id_hint or f"opening-{uuid.uuid4().hex[:8]}"
         thread = await host.open(
             root=str(params.get("root", "") or ""),
             mode=str(params.get("mode", "") or ""),

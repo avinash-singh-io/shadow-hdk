@@ -15,8 +15,6 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
-from examples.coder.thread import a_thread
-from examples.coder.workshop import modes_for
 from shadow_hdk.kernel import ActRule, Event
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.providers import NoProvider
@@ -24,6 +22,7 @@ from shadow_hdk.runtime import Approvals, Approve, ApproveAndAddRule, Deny
 from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.items import Fold, as_json
 from shadow_hdk.runtime.store import InMemoryStore
+from shadow_hdk.serve import a_thread, modes_for
 
 PAGE = Path(__file__).parent / "page.html"
 

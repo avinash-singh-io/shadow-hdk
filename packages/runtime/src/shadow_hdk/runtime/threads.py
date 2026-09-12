@@ -21,6 +21,7 @@ provider remembers.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import replace
@@ -164,7 +165,8 @@ class Thread:
         self._approvals = approvals
         self._checkpointer = checkpointer
         self._session: AgentSession | None = None
-        self._serving: Any = None
+        self._holder: asyncio.Task[None] | None = None
+        self._let_go: asyncio.Event = asyncio.Event()
         self._turning: asyncio.Lock = asyncio.Lock()
         self._sources: tuple[Any, ...] = ()
         self._modes = modes
@@ -272,8 +274,30 @@ class Thread:
         return thread
 
     async def _start(self) -> None:
-        self._serving = self.registry.served()
-        self._sources = tuple(await self._serving.__aenter__())
+        # **The offer lives in a task of its own.** A socket offer is an anyio listener and a task
+        # group, and those are bound to the task that entered them; `open` and `close` are called
+        # from whichever task a host happens to be on — over the wire, two different handler
+        # tasks — and exiting a cancel scope from another task is an error. So one task holds the
+        # offer open for the thread's lifetime and is told when to let go. Measured behind
+        # `serve --http`: the first thread opened over HTTP died at close with *"attempted to exit
+        # a cancel scope that isn't the current task's"*.
+        loop = asyncio.get_running_loop()
+        ready: asyncio.Future[tuple[Any, ...]] = loop.create_future()
+        self._let_go = asyncio.Event()
+
+        async def hold() -> None:
+            try:
+                async with self.registry.served() as sources:
+                    if not ready.done():
+                        ready.set_result(tuple(sources))
+                    await self._let_go.wait()
+            except BaseException as failed:
+                if not ready.done():
+                    ready.set_exception(failed)
+                raise
+
+        self._holder = asyncio.create_task(hold())
+        self._sources = await ready
         self._session = await self._agent.open(
             tools=self._sources, workspace=self._record.root, behaviour=self._behaviour
         )
@@ -282,9 +306,12 @@ class Thread:
         if self._session is not None:
             await self._session.close()
             self._session = None
-        if self._serving is not None:
-            await self._serving.__aexit__(None, None, None)
-            self._serving = None
+        holder = self._holder
+        if holder is not None:
+            self._let_go.set()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await holder
+            self._holder = None
 
     # ------------------------------------------------------------------ what it is
 
@@ -315,7 +342,7 @@ class Thread:
         turn's duration, and are child runs under the step — so a host folds them under the
         turn's item (D62).
         """
-        if self._serving is None:
+        if self._holder is None:
             raise RuntimeError("the thread is closed")
         if self._session is None:
             # An interrupted provider that could not be told was closed; a turn reopens it.

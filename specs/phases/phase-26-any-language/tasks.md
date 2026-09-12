@@ -17,8 +17,8 @@ phase: 26
 - [x] `store/put|get|delete|list|version`; `modes/list`, `rules/list`; a crossed row is a mode at the next read
 
 ## Group 4 — serve
-- [ ] `shadow-hdk-serve`: the composition moved out of the coder example; `serve harness.toml --stdio|--http`
-- [ ] the coder and the studio import the composition from the package
+- [x] `shadow-hdk-serve`: the composition moved out of the coder example (`ServeHost`, `a_thread`, `workshop`, `modes_for`); `shadow-hdk serve harness.toml --stdio|--http [--page]`; the thread's offer held by one task (found behind `--http`)
+- [x] the coder and the studio import the composition from the package; `examples/coder/workshop.py` deleted
 
 ## Group 5 — TypeScript
 - [ ] survey recorded; generation from the schemas; a thin client; the drift invariant

@@ -77,7 +77,7 @@ the sandbox had declared `reads: {workspace}` — a claim that was false, and th
 way to check.
 
 The profile is honest now, so a mode that permits running code has to say `everything`, and reading
-that in [`workshop.py`](workshop.py) is meant to be uncomfortable. Narrowing it back is exactly what
+that in the harness's `workshop` (`shadow_hdk.serve`) is meant to be uncomfortable. Narrowing it back is exactly what
 a **contained** sandbox is for (D25, D36) — and why those proofs need a Linux host rather than a
 laptop.
 
@@ -98,6 +98,5 @@ believes the answer, or says it could not tell.
 
 | | |
 |---|---|
-| [`workshop.py`](workshop.py) | the tools, the policy, the lease — everything a host decides, and it is short on purpose |
-| [`thread.py`](thread.py) | the wiring, all of it the harness's: `Thread` over the provider signed in here, the registry served on the authenticated socket for the thread's lifetime (`SocketOffer`), the workshop's environment and policy |
+| [`thread.py`](thread.py) | one import: `a_thread` from `shadow_hdk.serve` — the composition is the harness's (Phase 26), nothing of it is here |
 | [`__main__.py`](__main__.py) | the conversation |
