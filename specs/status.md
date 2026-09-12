@@ -83,7 +83,7 @@ merged and released**: 1,309 tests, mypy strict over 229 files, seventeen distri
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | — | — | Phases 0–25 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
+| 26 — any language | `phase-26-any-language` | in progress | Group 1 (threads over the wire) next; `planning/the-substrate.md` §1.1/§3.8 is the plan |
 
 ## Upcoming Phases
 
