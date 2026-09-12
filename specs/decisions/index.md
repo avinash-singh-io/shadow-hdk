@@ -90,6 +90,9 @@ rather than remembered.
 | D70 | a battery is a file — an MCP server or a callable consumed behind the component port, its effects vouched for | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
 | D71 | one package is the host's front door — `Harness` in `shadow-hdk-serve`, three lines by default, one step deeper without leaving it | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
 | D72 | the optimiser is a port over documents with slots, gated by the sink; its evaluator is locked before any loop | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
+| D73 | the registries are the harness's answer — `Thread.tools()`, `tools/list`, `skills/list` | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
+| D74 | a child run is judged in its parent's context | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
+| D75 | the `ask` mode; a run's tool surface is exactly the registry | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 
 ## Also here
 

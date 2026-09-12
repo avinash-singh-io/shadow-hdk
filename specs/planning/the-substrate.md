@@ -377,7 +377,7 @@ through the wire in 26, once the handles cross; in 25 it consumes the primitives
 | 26 | **Any language** | 25 | `serve` with stdio; handles over the wire; **the store's CRUD as methods**; generated TypeScript; the studio rewritten on the wire only; parity invariant over handles |
 | 27 | **Batteries and the facade** | 25 | web search/fetch consumed; `harness.toml` + `Harness.load`; the coder and host examples reduced to the facade; the DSPy optimiser port *specified*, not built |
 
-Context engineering and collaboration (today's 25/26) move to 28/29; nothing in them depends on
+Context engineering and collaboration (today's 25/26) move to 29/30 — Phase 28 is the workspace, opened 2026-09-12 from the owner's review; nothing in them depends on
 being earlier. The roadmap says so.
 
 ## 4a. Simple to use, deep by choice — how the architecture makes both true

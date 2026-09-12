@@ -4,17 +4,18 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 27 — batteries and the facade — landed)
-> **Current Phase**: **none — Phase 27 (batteries and the facade) is complete and released as
-> v0.24.0.** A battery is a file (D70): wigolo and ddgs consumed behind the component port with
-> the effects a deployment vouches for, judged by the shipped modes as they are; the facade
-> (D71): `harness.toml` and three lines — `Harness.load`, `async with`, `turn()` — `budget` in
-> the file, one step deeper without leaving it, two invariants holding the promise; the
-> optimiser port specified with its evaluator locked first (D72). The substrate plan's phases
-> 25–27 are built. Next: Phase 28 (context engineering) and Phase 29 (collaboration), the
-> owner's call.
+> **Last Updated**: 2026-09-12 (Phase 28 — the workspace — opened; groups 1–2 built on the branch)
+> **Current Phase**: **28 — the workspace** (`phase-28-the-workspace`). Opened from the owner's
+> review and a demo run from outside the tree (`../harness-demo/`, eight turns on the
+> subscription). Built: the registries visible — `Thread.tools()`, `tools/list`, `skills/list`
+> (D73); a child run judged in its parent's context (BUG-030, D74 — `set_mode("read-only")` had
+> let a `run_shell` write); every Claude Code built-in off by construction (BUG-031, D75); the
+> `ask` mode, measured with approve · approve-and-add-rule · deny; `serve[providers]`. To build:
+> the workspace as one or many roots per thread, added live; the environment and the provider's
+> catalogue following the mode (BUG-032); minted skills kept in the store. Phases 29 (context
+> engineering) and 30 (collaboration) after.
 >
-> 1,364 tests; mypy strict over 237 files; eighteen distributions at **0.24.0**, all MIT.
+> 1,372 tests; mypy strict over 240 files; eighteen distributions at **0.24.0** (0.25.0 at the close of 28), all MIT.
 >
 > **Latest Release**: **v0.24.0**, released 2026-09-12 — Phase 27, batteries and the facade
 > (D70–D72). Contract change (the front door, `batteries/list`, a widened adapter), so a *Pins*
@@ -89,6 +90,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 28 — the workspace | `phase-28-the-workspace` | in progress | groups 1–2 built (registries visible; BUG-030/031 closed; the `ask` mode); groups 3–4 designed in `plan.md` — roots, the environment follows the mode, BUG-032, minted skills kept |
 
 ## Upcoming Phases
 
@@ -117,18 +119,14 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | ID | Type | Description |
 |----|------|-------------|
-| BUG-004 | Bug | The lease and `seq` reset on every resume — a parked run gets its whole ceiling back, and held children are orphaned. Reproduced. |
-| BUG-005 | Bug | The assistant's tool calls are dropped from the transcript, so a strict provider rejects turn two. The agent loop is proven against `ScriptedModel` only. |
-| BUG-006 | Bug | `resume` over the wire always raises (no checkpointer), and `serve` issues a session on a bare GET — the run token `wire.md` calls fixed is unbuilt. |
-| BUG-007 | Bug | mypy strict silently skips `wire`, `contained` and `derivation`; nine real errors in `wire` today. The type gate has never covered them. |
-| TD-009 | Tech Debt | CI has never run on a phase commit — zero PRs, two runs at founding. Every green gate so far is a local run reported by the session that wrote the code. |
+| _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: BUG-032 (P2), BUG-033 (P2), ENH-005–011 (P2–P3) — see the backlog |
 
 ## Next Actions
 
-1. Phase 9, Group 1 — the protocol and the loopback: `initialize` refusing a version mismatch, the five inverted ports, and wire.md's acceptance test — *the in-process runtime suite passes through a loopback transport, or the wire is not done*
-2. Phase 9, Groups 2–4 — `--stdio`, then `serve` which **listens** (Phase 5's debt), then the published schemas and v0.1.0 prepared. **Tagging is the owner's**
-3. Phases 10–14 in roadmap order; the environment epic after
-3. Carried to Phase 9, each with what would settle it: tokens reaching the observer (the tenth event kind arrived in Phase 7 as `Held`, so this still needs its own); a **listening** transport (streamable HTTP) for a child on another machine, since the recording server can only be connected to, never launched; and **TD-001**, our observation classes riding in graph state where a future LangGraph will block them
+1. Phase 28 group 3 — the workspace: `Workspace`/`Root`, the OS profiles and the proof over many roots, `thread/start {roots}`, `thread/add_root`, `files/*` across roots, the environment following the mode, BUG-032
+2. Phase 28 group 4 — the host's sink keeps a minted skill as a store row
+3. Close 28 (0.25.0, land, board); then Phase 29 (context engineering) and 30 (collaboration), the owner's call
+4. Owner-gated, unchanged: ADR-1, ADR-2, a Linux host for the containment proofs, a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
 
