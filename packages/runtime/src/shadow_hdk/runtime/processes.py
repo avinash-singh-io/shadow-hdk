@@ -27,8 +27,17 @@ import contextlib
 import os
 import signal
 import threading
+from collections.abc import Mapping
 
-__all__ = ["end_the_group", "end_everything_held", "held_now", "hold", "let_go", "stop_or_kill"]
+__all__ = [
+    "end_everything_held",
+    "end_the_group",
+    "held_now",
+    "hold",
+    "let_go",
+    "start_held",
+    "stop_or_kill",
+]
 
 
 class _Leader:
@@ -40,6 +49,37 @@ class _Leader:
 _held: set[int] = set()
 _installed = False
 _lock = threading.Lock()
+
+
+async def start_held(
+    *argv: str,
+    cwd: str | os.PathLike[str] | None = None,
+    env: Mapping[str, str] | None = None,
+    stdin: int | None = None,
+    stdout: int | None = asyncio.subprocess.PIPE,
+    stderr: int | None = asyncio.subprocess.PIPE,
+) -> asyncio.subprocess.Process:
+    """Start a session leader and hold it — **the one place** a process the harness owns is
+    started (D35, D53). Its own session, so its whole tree is one group that `end_the_group`
+    ends at once; held, so the interpreter's ending ends it by whichever door. Every caller that
+    used to spell this out — a step's command, a coding CLI, an ACP agent, a battery's MCP
+    server — calls this, and an invariant refuses the next copy.
+
+    `stdin=None` inherits ours (a step's command); `asyncio.subprocess.PIPE` opens a pipe (a
+    session that is written to). Raises `OSError` as `create_subprocess_exec` does: whether a
+    command that cannot start is a `Failed` observation or an exception is the caller's to say.
+    """
+    process = await asyncio.create_subprocess_exec(
+        *argv,
+        cwd=cwd,
+        env=dict(env) if env is not None else None,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        start_new_session=True,
+    )
+    hold(process)
+    return process
 
 
 def hold(process: _Leader) -> None:

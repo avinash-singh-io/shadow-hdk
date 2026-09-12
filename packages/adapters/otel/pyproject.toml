@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-otel"
-version = "0.25.1"
+version = "0.25.2"
 description = "The shape of a run as a trace, over the OpenTelemetry API alone."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.1", "opentelemetry-api>=1.44,<2"]
+dependencies = ["shadow-hdk-kernel==0.25.2", "opentelemetry-api>=1.44,<2"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

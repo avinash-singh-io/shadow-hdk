@@ -16,12 +16,15 @@ stderr and why this module never prints.
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import anyio
+
+from shadow_hdk.runtime.lines import LineBuffer
 
 
 @dataclass
@@ -37,23 +40,24 @@ class StdioChannel:
 
     inbound: Any
     outbound: Any
-    _buffer: bytes = b""
+    _frames: LineBuffer = field(default_factory=LineBuffer)
+    _ready: deque[bytes] = field(default_factory=deque)
 
     async def send(self, frame: str) -> None:
         await _write(self.outbound, frame.encode("utf-8") + b"\n")
 
     async def receive(self) -> str:
-        while b"\n" not in self._buffer:
+        # One framing, the runtime's (`LineBuffer`): the same rule the recording adapter's pipes
+        # read by, so a blank line or a stray carriage return means the same on every peer.
+        while not self._ready:
             chunk = await _read(self.inbound)
             if not chunk:
-                # End of stream with nothing buffered is the other end closing, which is how a
-                # stdio peer says goodbye. With something buffered it is a truncated frame, and
+                # End of stream with nothing pending is the other end closing, which is how a
+                # stdio peer says goodbye. With something pending it is a truncated frame, and
                 # either way there is no next message.
                 raise anyio.EndOfStream
-            self._buffer += chunk
-        line, _, rest = self._buffer.partition(b"\n")
-        self._buffer = rest
-        return line.decode("utf-8")
+            self._ready.extend(self._frames.feed(chunk))
+        return self._ready.popleft().decode("utf-8")
 
     async def aclose(self) -> None:
         with anyio.CancelScope(shield=True):

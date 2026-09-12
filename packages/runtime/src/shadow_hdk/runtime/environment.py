@@ -331,13 +331,12 @@ class Environment(ComponentPort):
             return as_path.resolve()
         head = as_path.parts[0] if as_path.parts else ""
         if head and self.workspace.has(head) and head != self.workspace.primary.name:
+            # Another root's name wins — the rule the tools describe — and never a look at the
+            # filesystem: the one spelling this would hide (an entry of the primary named like
+            # a root) is refused when the root is named, in `resolved`. The primary's own name is
+            # not an address: a relative path is relative to it, so a repository `foo` with a
+            # package `foo/` inside keeps meaning what it always meant.
             return (Path(self.workspace.named(head).path) / Path(*as_path.parts[1:])).resolve()
-        if head and head == self.workspace.primary.name and len(self.roots) > 1:
-            # `finance/x` when finance is the primary: the primary has no directory of its own
-            # name unless it really does — prefer the root, as the description promised.
-            named = (self.root / Path(*as_path.parts[1:])).resolve()
-            literal = (self.root / given).resolve()
-            return literal if literal.exists() else named
         return (self.root / given).resolve()
 
 
@@ -349,6 +348,16 @@ def resolved(workspace: Workspace) -> Workspace:
         for b in resolved.roots:
             if a is not b and a.path != b.path and Path(a.path).is_relative_to(b.path):
                 raise ValueError(f"root {a.name!r} is inside root {b.name!r}")
+    primary = Path(resolved.primary.path)
+    for root in resolved.roots[1:]:
+        # Another root's name wins in `inside()`; an entry of the primary spelled the same way
+        # would be unreachable by that name — refused here, once, rather than guessed at every
+        # path. The primary's own name is not an address, so it is not checked.
+        if (primary / root.name).exists():
+            raise ValueError(
+                f"root {root.name!r} shares its name with `{root.name}/` in the primary "
+                f"({primary}); name the root differently"
+            )
     return resolved
 
 

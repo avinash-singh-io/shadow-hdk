@@ -94,6 +94,7 @@ rather than remembered.
 | D74 | a child run is judged in its parent's context | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 | D75 | the `ask` mode; a run's tool surface is exactly the registry | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 | D76 | the workspace is one or many roots, chosen per thread and added live; the environment and the provider follow the mode | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
+| D77 | one rule, one implementation — a session leader started in one place, frames split in one place, a root's name a rule rather than a guess | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 
 ## Also here
 

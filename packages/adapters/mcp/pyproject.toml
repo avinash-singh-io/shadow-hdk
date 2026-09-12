@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-mcp"
-version = "0.25.1"
+version = "0.25.2"
 description = "An MCP server's tools become components, with effect profiles derived from its annotations rather than trusted."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.1", "shadow-hdk==0.25.1", "mcp>=2.0,<3"]
+dependencies = ["shadow-hdk-kernel==0.25.2", "shadow-hdk==0.25.2", "mcp>=2.0,<3"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

@@ -60,7 +60,6 @@ async def test_relative_paths_resolve_in_the_primary_and_a_name_reaches_another_
     env = await LocalEnvironment.open(workspace=workspace, mode="full")
     assert await env.invoke("read_file", {"path": "revenue.csv"}) == Completed("r\n")
     assert await env.invoke("read_file", {"path": "sales/notes.md"}) == Completed("n\n")
-    assert await env.invoke("read_file", {"path": "finance/revenue.csv"}) == Completed("r\n")
     await env.invoke("write_file", {"path": "sales/new.md", "content": "x"})
     assert (sales / "new.md").read_text(encoding="utf-8") == "x"
     listed = await env.invoke("list_dir", {"path": "sales"})
@@ -139,3 +138,40 @@ async def test_a_relative_root_is_resolved_before_the_proof(
     assert await env.invoke("write_file", {"path": "sales/x.txt", "content": "x"}) == Completed(
         {"path": "sales/x.txt", "bytes": 1}
     )
+
+
+async def test_another_roots_name_wins_and_the_primarys_name_is_not_an_address(
+    tmp_path: Path,
+) -> None:
+    """The rule, not a guess: `sales/x` means the root named `sales` whatever the primary
+    contains, and resolution never asks the filesystem. The primary's own name is not an address —
+    a relative path is relative to it, so a repository `finance` with a `finance/` package inside
+    keeps meaning what it always meant."""
+    finance, sales, workspace = two(tmp_path)
+    env = await LocalEnvironment.open(workspace=workspace, mode="full")
+    assert env.inside("sales/notes.md") == (sales / "notes.md").resolve()
+    assert env.inside("sales/not/yet/there.txt") == (sales / "not/yet/there.txt").resolve()
+    assert env.inside("revenue.csv") == (finance / "revenue.csv").resolve()
+    assert env.inside("finance/x.py") == (finance / "finance" / "x.py").resolve(), (
+        "the primary's name is a directory like any other"
+    )
+
+
+async def test_a_root_may_not_share_its_name_with_an_entry_of_the_primary(tmp_path: Path) -> None:
+    """The one ambiguity the rule would hide — an entry of the primary spelled like another root —
+    is refused when the root is named, at open and when added live, never resolved by guessing.
+    The primary's own name is not checked: it is not an address."""
+    finance, sales, _ = two(tmp_path)
+    (finance / "sales").mkdir()  # the primary has a `sales/` of its own
+    with pytest.raises(ValueError, match="shares its name"):
+        await LocalEnvironment.open(
+            workspace=Workspace((Root("finance", str(finance)), Root("sales", str(sales)))),
+            mode="full",
+        )
+    env = await LocalEnvironment.open(workspace=Workspace.of(finance), mode="full")
+    with pytest.raises(ValueError, match="shares its name"):
+        await env.reopen(workspace=env.workspace.with_root(Root("sales", str(sales))))
+    assert [r.name for r in env.roots] == ["finance"], "refused, unchanged"
+    (finance / "finance").mkdir()  # a repository with a package of its own name: allowed
+    await env.reopen(workspace=Workspace((Root("finance", str(finance)), Root("hr", str(sales)))))
+    assert [r.name for r in env.roots] == ["finance", "hr"]

@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.25.1"
-"""0.25.1 — a patch: two fixes with no contract change. A battery's MCP server is a held session
+EXPECTED = "0.25.2"
+"""0.25.2 — a patch: one rule, one implementation (D77). `start_held` the one place a session
+leader is started; `LineBuffer` the one framing; the root-name rule in place of a heuristic. No
+contract change; every package moves together (D9).
+
+0.25.1 — a patch: two fixes with no contract change. A battery's MCP server is a held session
 leader ended with its group (BUG-033); Claude Code launched from a clean scope, no settings
 sources and no auto-memory (ENH-012). Every package moves together (D9).
 

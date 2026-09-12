@@ -28,6 +28,8 @@ import mcp_types
 from anyio.abc import ByteReceiveStream, ByteSendStream
 from mcp.shared.message import SessionMessage
 
+from shadow_hdk.runtime.lines import LineBuffer
+
 
 async def serve_over_pipes(
     server: Any,
@@ -56,17 +58,12 @@ async def serve_over_pipes(
     forget = watch(notify) if watch is not None else None
 
     async def read_the_child() -> None:
-        buffered = b""
+        frames = LineBuffer()  # one framing, the runtime's, for every line-delimited peer
         async with to_server_write:
             async for chunk in incoming:
-                buffered += chunk
-                while b"\n" in buffered:
-                    line, buffered = buffered.split(b"\n", 1)
-                    if line.strip():
-                        message = mcp_types.jsonrpc_message_adapter.validate_json(
-                            line, by_name=False
-                        )
-                        await to_server_write.send(SessionMessage(message))
+                for line in frames.feed(chunk):
+                    message = mcp_types.jsonrpc_message_adapter.validate_json(line, by_name=False)
+                    await to_server_write.send(SessionMessage(message))
 
     async def write_to_the_child() -> None:
         async with from_server_read:

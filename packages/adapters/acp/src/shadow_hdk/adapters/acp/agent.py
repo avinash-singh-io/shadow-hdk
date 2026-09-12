@@ -38,7 +38,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort, ToolSource, Turn, Usage
 from shadow_hdk.runtime import current_run
-from shadow_hdk.runtime.processes import hold, stop_or_kill
+from shadow_hdk.runtime.processes import start_held, stop_or_kill
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -138,18 +138,17 @@ class AcpAgent(ComponentPort):
     # ------------------------------------------------------------------ residency
 
     async def start(self) -> None:
-        self._process = await asyncio.create_subprocess_exec(
+        # A session leader the runtime holds (D35, D53): `stop()` ends the whole tree — a coding
+        # agent spawns compilers, test runners and language servers — and it dies with this
+        # process, whatever ends it (BUG-019).
+        self._process = await start_held(
             self._command,
             *self._args,
             cwd=self._cwd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
-            # Its own session, so `stop()` can end the whole tree (D35). A coding agent spawns
-            # compilers, test runners and language servers; without this they are in *our* group
-            # and survive the child that started them.
-            start_new_session=True,
+            stderr=None,
         )
-        hold(self._process)  # and it dies with this process, whatever ends it (D53, BUG-019)
         # Named from the agent's side: `input_stream` is what goes *into* it — the writer.
         self._agent = acp.connect_to_agent(self.client, self._process.stdin, self._process.stdout)
         await asyncio.wait_for(self._agent.initialize(protocol_version=1), self._timeout_s)
