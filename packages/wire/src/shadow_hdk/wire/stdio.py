@@ -109,8 +109,14 @@ async def serve_stdio(threads: Any = None) -> None:
         outbound=anyio.wrap_file(sys.stdout.buffer),
     )
     runtime = RuntimeSide(channel, threads=threads)
-    async with anyio.create_task_group() as group:
-        await runtime.peer.serve_forever(group)
+    try:
+        async with anyio.create_task_group() as group:
+            await runtime.peer.serve_forever(group)
+    finally:
+        # The pipe closed: what it opened closes with it (D69), before the process ends and a
+        # provider is left to notice on its own.
+        with anyio.CancelScope(shield=True):
+            await runtime.threads.close_all()
 
 
 @asynccontextmanager

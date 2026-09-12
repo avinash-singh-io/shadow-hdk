@@ -10,14 +10,15 @@ import { HarnessClient } from "shadow-hdk-client";
 
 const client = new HarnessClient({ address: "http://127.0.0.1:8765" });
 await client.connect();
-const { thread_id } = await client.thread.start({ mode: "workspace-write" });
+const started = await client.thread.start({ mode: "workspace-write" });
 client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
-for await (const line of client.turn.start(thread_id, "add a .gitignore and run the tests")) {
+for await (const line of client.turn.start(started.thread_id, "hello from typescript")) {
   if (line.kind === "item") console.log(line.item.step, line.item.outcome);
   if (line.kind === "activity") process.stdout.write(line.activity.text);
   if (line.kind === "done") console.log(line.turn.text);
 }
-await client.thread.setMode(thread_id, "read-only");
+await client.thread.setMode(started.thread_id, "read-only");
+const files = await client.files.list(started.thread_id);
 ```
 
 Local only: `npm install` here (never `-g`), `npm run generate` after the schemas change,

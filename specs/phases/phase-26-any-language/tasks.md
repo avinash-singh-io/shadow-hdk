@@ -24,7 +24,8 @@ phase: 26
 - [x] survey recorded (D68); `clients/typescript/` — generation from the schemas (one module per contract), a thin JSON-RPC/SSE client, `tsc --noEmit`, the drift invariant, proven against a live `serve --http`; CI installs node and builds it
 
 ## Group 6 — the studio on the wire
-- [ ] the studio consumes the wire and nothing local; driven live
+- [x] the studio consumes the wire and nothing local (D69): `serve --http --page`, `files/list`+`files/read` as thread methods, a session's threads close with it, `serve` flags; driven live — one turn on Claude Code (7 tool calls, 31¢), a reload resumed the thread over a new session with no provider left behind
 
 ## Close
-- [ ] decisions; index; status/roadmap/changelog/README; 0.23.0; landed; board
+- [x] D67, D68, D69 recorded and indexed; `architecture/wire.md` grew the second shape; status/roadmap/changelog/README; 0.23.0 across eighteen packages; Verification Evidence fresh
+- [ ] landed (CI green → staging → main → `v0.23.0` → release); board with a Pins row

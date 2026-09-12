@@ -26,7 +26,16 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-12
+## Where this stands — 2026-09-12, later
+
+**Phases 0–26 are done** and v0.23.0 is released. Phase 25 gave the harness the host's controls in
+the industry's words; Phase 26 carried every one of them across the wire — a host in TypeScript
+holds a thread, answers an approval, switches a mode and reads the store through `shadow-hdk
+serve`, with types generated from the schemas — and made the studio a client of that wire and
+nothing else, which is how the two things the wire still lacked (`files/*`, sessions closing their
+threads) were found. Phase 27 (batteries and the facade) is next; 28 and 29 unchanged.
+
+### Where this stood — 2026-09-12
 
 **Phases 0–24 are done** and v0.20.0 is released. Then the harness was *used* for a day — five
 real tasks through the studio on a subscription — and that found seven bugs (all closed) and a
@@ -116,7 +125,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 23 | A host, in-process and in any language | **DONE** · `phase-23-a-host-in-any-language` | 21, 22 | a real host consumes the runtime; the wire held to parity; socket authentication; the live proof on demand — **the consumable line** |
 | 24 | The skill registry | **DONE** · `phase-24-the-skill-registry` | 23 | skills predefined, minted in a run, proposed for keeping through the sink; progressive disclosure |
 | 25 | The host's controls | **DONE** · `phase-25-the-hosts-controls` | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule"; the `Store` port — every registry live, no restart |
-| 26 | Any language | planned | 25 | `serve` over stdio and HTTP; every host handle crosses the wire; the store's CRUD as methods; TypeScript generated from the schemas; the studio on the wire only |
+| 26 | Any language | **DONE** · `phase-26-any-language` | 25 | the thread, the handles and the store cross the wire as methods (`ThreadHost`, parity rule 4); `shadow-hdk serve` over stdio and HTTP/SSE with the shipped composition (`shadow-hdk-serve`); a TypeScript client generated from the schemas, held by an invariant; the studio a page `serve` serves, talking the wire only; `files/*`; a session's threads close with it |
 | 27 | Batteries and the facade | planned | 25 | web search and fetch consumed; `harness.toml` and `Harness.load()`; the optimiser port specified |
 | 28 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 29 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |

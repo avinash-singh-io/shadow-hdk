@@ -310,6 +310,49 @@ flowchart LR
     r ==>|"events"| app
 ```
 
+### A host in any language
+
+The wire's second shape (D67) keeps the ports **runtime-side** — the shipped composition, a store,
+the provider signed in here — and a host across it drives *threads* by method, the way Codex's app
+server is driven. `shadow-hdk serve` runs it:
+
+```
+shadow-hdk serve harness.toml --stdio                     # newline-delimited JSON-RPC on a pipe
+shadow-hdk serve harness.toml --http --port 8765          # loopback listener, SSE for the way back
+shadow-hdk serve --http --page examples/studio/page.html --root ./work --mode workspace-write
+```
+
+Over `--http` a client opens the session with `GET /rpc` (an SSE stream; the session id comes
+back in `x-shadow-hdk-session`) and posts JSON-RPC frames to `POST /rpc` with that header. The
+methods: `thread/start` · `thread/resume` · `thread/close` · `thread/list` · `thread/fork` ·
+`thread/rollback` · `thread/archive` · `thread/set_mode` · `thread/set_option` ·
+`thread/remaining` · `turn/start` · `turn/steer` · `turn/interrupt` · `approvals/pending` ·
+`approvals/answer` · `run/cancel` · `store/put|get|delete|list|version` · `modes/list` ·
+`rules/list` · `files/list` · `files/read`. Down the stream, tagged with the thread: `event`,
+`item` (folded runtime-side, D46), `activity` (D63), `approval_request`, `input_request`,
+`request_withdrawn`; `turn/start` returns the turn's record when it ends. An invariant holds
+every public method of `Thread`, `Approvals` and `Store` to a name in `protocol.py`.
+
+`clients/typescript/` is the proof in another language — types generated from the published
+schemas (D68) and a thin client, driven against a live `serve --http` by the test suite:
+
+```ts
+import { HarnessClient } from "shadow-hdk-client";
+
+const client = new HarnessClient({ address: "http://127.0.0.1:8765" });
+await client.connect();
+const started = await client.thread.start({ mode: "workspace-write" });
+client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
+for await (const line of client.turn.start(started.thread_id, "hello from typescript")) {
+  if (line.kind === "item") console.log(line.item.step, line.item.outcome);
+  if (line.kind === "activity") process.stdout.write(line.activity.text);
+  if (line.kind === "done") console.log(line.turn.text);
+}
+```
+
+The studio (`examples/studio/`) is a page `serve` itself serves, talking exactly these methods and
+nothing local (D69) — what the page does, a product in any language does the same way.
+
 ### Your key, or your subscription
 
 Two ways to pay for the thinking, and the harness governs both the same way.
@@ -427,13 +470,14 @@ Code:
 
 ## Layout
 
-Seventeen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
-takes only what it uses.
+Eighteen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
+takes only what it uses — and one TypeScript client generated from the schemas.
 
 ```
 packages/kernel                     pure types, one partial order, six ports — no I/O at all
 packages/runtime                    the loop, on LangGraph
-packages/wire                       the runtime behind JSON-RPC, ports inverted
+packages/wire                       the runtime behind JSON-RPC — ports inverted, or threads served
+packages/serve                      the shipped composition and `shadow-hdk serve`
 packages/providers                  what this machine can reach — your key, or your subscription
 packages/adapters/basic             allow-all · stdout · file · clock · callables
 packages/adapters/modes             governance as data: a mode is a ceiling and an ask line
@@ -449,6 +493,7 @@ packages/adapters/derivation        total expressions over typed tables, fixed-p
 packages/adapters/devices           sensors, actuators, witnesses — one device contract
 packages/adapters/mqtt              MQTT topics over that device contract
 packages/adapters/otel              the shape of a run as a trace, over the OpenTelemetry API alone
+clients/typescript                  types from the schemas, and a thin client for `serve --http`
 ```
 
 ### The invariants
@@ -486,7 +531,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–25 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–26 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:

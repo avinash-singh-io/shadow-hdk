@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from pathlib import Path
 from typing import Any, Protocol
 
 from shadow_hdk.kernel import Event, Lease, ThreadRecord
@@ -29,6 +30,8 @@ from shadow_hdk.wire.protocol import (
     APPROVALS_ANSWER,
     APPROVALS_PENDING,
     EVENT,
+    FILES_LIST,
+    FILES_READ,
     INPUT_REQUEST,
     ITEM,
     MODES_LIST,
@@ -124,6 +127,8 @@ class ThreadMethods:
             (STORE_VERSION, self._store_version),
             (MODES_LIST, self._modes_list),
             (RULES_LIST, self._rules_list),
+            (FILES_LIST, self._files_list),
+            (FILES_READ, self._files_read),
         ):
             peer.serves(method, handler)
         self._relays: list[asyncio.Task[None]] = []
@@ -168,6 +173,7 @@ class ThreadMethods:
         self.threads[thread.id] = thread
         return {
             "thread_id": thread.id,
+            "root": thread.record.root,
             "provider": thread.record.provider,
             "mode": thread.record.mode,
             "modes": await self._modes(host),
@@ -181,8 +187,10 @@ class ThreadMethods:
         self.threads[thread.id] = thread
         return {
             "thread_id": thread.id,
+            "root": thread.record.root,
             "provider": thread.record.provider,
             "mode": thread.record.mode,
+            "modes": await self._modes(host),
             "turns": [_turn_json(t) for t in thread.record.turns],
         }
 
@@ -191,6 +199,20 @@ class ThreadMethods:
         await thread.close()
         del self.threads[thread.id]
         return {"closed": thread.id}
+
+    async def close_all(self) -> None:
+        """What this wire opened, closed with it: a session that ends — the page reloaded, the
+        pipe closed — must not leave a provider process and an offered socket behind. Measured:
+        without this every reload of the studio kept the previous provider alive."""
+        for relay in self._relays:
+            relay.cancel()
+        self._relays = []
+        for thread in list(self.threads.values()):
+            try:
+                await thread.close()
+            except Exception:  # noqa: BLE001 — one thread's trouble must not keep the rest open
+                continue
+        self.threads.clear()
 
     async def _list(self, _params: dict[str, Any]) -> dict[str, Any]:
         host = self._host_or_raise()
@@ -353,6 +375,39 @@ class ThreadMethods:
         all_now = getattr(registry, "all_now", None)
         rules = await all_now() if all_now is not None else registry.all()
         return {"rules": [json.loads(dump(r, ActRule)) for r in rules]}
+
+    # ------------------------------------------------------------------ the workspace (D69)
+
+    async def _files_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        root = Path(self._thread(params).record.root).resolve()
+        found: list[dict[str, Any]] = []
+        for path in sorted(root.rglob("*")):
+            parts = path.relative_to(root).parts
+            if any(part.startswith(".") or part == "__pycache__" for part in parts):
+                continue
+            if path.is_file():
+                stat = path.stat()
+                found.append(
+                    {
+                        "path": str(path.relative_to(root)),
+                        "bytes": stat.st_size,
+                        "mtime": stat.st_mtime,
+                    }
+                )
+        return {"files": found}
+
+    async def _files_read(self, params: dict[str, Any]) -> dict[str, Any]:
+        root = Path(self._thread(params).record.root).resolve()
+        relative = str(params.get("path", ""))
+        target = (root / relative).resolve()
+        # `..` is not a dotfile — it is the traversal the root check below refuses on its own.
+        hidden = any(part.startswith(".") and part != ".." for part in Path(relative).parts)
+        if not target.is_relative_to(root) or hidden or not target.is_file():
+            raise FileNotFoundError(f"{relative!r} is not in the workspace")
+        try:
+            return {"content": target.read_text(encoding="utf-8")[:200_000]}
+        except UnicodeDecodeError:
+            return {"content": f"(binary, {target.stat().st_size} bytes)"}
 
     async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
         registry = getattr(host, "modes", None)

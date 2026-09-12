@@ -3,7 +3,7 @@ type: Phase
 phase: 26
 name: any-language
 epic: 0015-any-language
-status: in-progress
+status: complete
 topics: [wire, thread, serve, stdio, http, typescript, handles, parity, store]
 deps: [phase-25-the-hosts-controls]
 ---

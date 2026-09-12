@@ -123,6 +123,10 @@ def build_app(
                         yield f"data: {frame}\n\n".encode()
                 finally:
                     sessions.pop(session_id, None)
+                    # The session's threads go with it (D69) — shielded, because this runs as
+                    # the response is being cancelled and a close must still finish.
+                    with anyio.CancelScope(shield=True):
+                        await session.runtime.threads.close_all()
                     group.cancel_scope.cancel()
 
         return StreamingResponse(

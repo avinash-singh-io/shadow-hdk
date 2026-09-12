@@ -3,7 +3,7 @@
 // the session id arrives in the `x-shadow-hdk-session` response header and travels back on every POST.
 //
 // Hand-written on purpose: the *types* are generated from the published schemas (src/schemas/),
-// the *protocol* is fourteen methods a product calls, and a client that hides them behind a
+// the *protocol* is the methods a product calls, and a client that hides them behind a
 // framework would be one more thing to keep in step.
 
 import type { Event } from "./schemas/Event.js";
@@ -54,9 +54,21 @@ export type TurnLine =
 
 export interface Started {
   thread_id: string;
+  /** The workspace the thread's tools act in — what `files.list` and `files.read` are under. */
+  root: string;
   provider: string;
   mode: string;
   modes: { id: string; name: string; description: string; source: string }[];
+}
+
+export interface Resumed extends Started {
+  turns: TurnRecord[];
+}
+
+export interface FileEntry {
+  path: string;
+  bytes: number;
+  mtime: number;
 }
 
 const SESSION_HEADER = "x-shadow-hdk-session";
@@ -205,7 +217,7 @@ export class HarnessClient {
   readonly thread = {
     start: (params: { root?: string; mode?: string; provider?: string; name?: string; thread_id?: string }) =>
       this.call<Started>("thread/start", params as { [key: string]: JsonValue }),
-    resume: (thread_id: string) => this.call<{ thread_id: string; provider: string; mode: string; turns: TurnRecord[] }>("thread/resume", { thread_id }),
+    resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     list: () => this.call<{ threads: JsonValue[] }>("thread/list", {}),
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
@@ -288,6 +300,12 @@ export class HarnessClient {
     delete: (collection: string, key: string) => this.call<{ ok: boolean }>("store/delete", { collection, key }),
     list: (collection: string) => this.call<{ rows: [string, JsonValue][] }>("store/list", { collection }),
     version: (collection: string) => this.call<{ version: number }>("store/version", { collection }),
+  };
+
+  /** The thread's workspace, read — under its root only; dotfiles and caches left out (D69). */
+  readonly files = {
+    list: (thread_id: string) => this.call<{ files: FileEntry[] }>("files/list", { thread_id }),
+    read: (thread_id: string, path: string) => this.call<{ content: string }>("files/read", { thread_id, path }),
   };
 
   readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };

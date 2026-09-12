@@ -76,6 +76,10 @@ STORE_LIST = "store/list"
 STORE_VERSION = "store/version"
 MODES_LIST = "modes/list"
 RULES_LIST = "rules/list"
+# the thread's workspace, read (D69): what a page shows beside the conversation — under the
+# thread's root only, dotfiles and caches left out, never a path that resolves outside it
+FILES_LIST = "files/list"
+FILES_READ = "files/read"
 
 # runtime → host, one way
 EVENT = "event"
@@ -141,6 +145,8 @@ __all__ = [
     "CONTEXT_PROPOSE",
     "CONTEXT_REMAINING",
     "EVENT",
+    "FILES_LIST",
+    "FILES_READ",
     "HOST_DRIVES",
     "INITIALIZE",
     "INVOKE",
