@@ -1621,6 +1621,10 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+providers = [
+    { name = "shadow-hdk-adapters-acp" },
+    { name = "shadow-hdk-adapters-jsonl" },
+]
 search = [
     { name = "ddgs" },
 ]
@@ -1629,9 +1633,11 @@ search = [
 requires-dist = [
     { name = "ddgs", marker = "extra == 'search'", specifier = ">=9" },
     { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-adapters-acp", marker = "extra == 'providers'", editable = "packages/adapters/acp" },
     { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
     { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
     { name = "shadow-hdk-adapters-environment", editable = "packages/adapters/environment" },
+    { name = "shadow-hdk-adapters-jsonl", marker = "extra == 'providers'", editable = "packages/adapters/jsonl" },
     { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
     { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
     { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
@@ -1639,7 +1645,7 @@ requires-dist = [
     { name = "shadow-hdk-providers", editable = "packages/providers" },
     { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
 ]
-provides-extras = ["search"]
+provides-extras = ["search", "providers"]
 
 [[package]]
 name = "shadow-hdk-wire"

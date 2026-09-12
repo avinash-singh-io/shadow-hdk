@@ -97,8 +97,9 @@ async def test_the_constructor_is_the_file_without_the_file(tmp_path: Path) -> N
             assert parts[-1].kind == "turn" and parts[-1].turn is not None
             assert parts[-1].turn.text == "the answer to again"
             assert h.approvals is h.host.approvals, "the handles are the host's"
-            assert h.modes and [m.id for m in await h.modes.all()][:3] == [
+            assert h.modes and [m.id for m in await h.modes.all()][:4] == [
                 "read-only",
+                "ask",
                 "workspace-write",
                 "full",
             ]

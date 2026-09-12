@@ -46,7 +46,7 @@ async def test_the_typescript_client_starts_a_thread_and_turns_it(tmp_path: Path
     assert seen["text"] == "scripted: hello from typescript"
     assert seen["provider"] == "handed in"
     assert "item:turn-1" in seen["seen"] and "event:started" in seen["seen"]
-    assert seen["modes"] == ["read-only", "workspace-write", "full"]
+    assert seen["modes"] == ["read-only", "ask", "workspace-write", "full"]
     assert seen["version"] == 0
     assert seen["root"] == str(tmp_path) and seen["files"] == [], "the workspace, read (D69)"
     assert seen["mode_events"] == ["mode_changed"], "set_mode returned the record's own event"

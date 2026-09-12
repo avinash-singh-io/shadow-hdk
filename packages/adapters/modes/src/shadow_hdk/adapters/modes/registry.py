@@ -117,7 +117,7 @@ def governance_for(
     return ModeGovernance(registry, default=default, key=key, rules=rules)
 
 
-SHIPPED_POLICY_IDS = ("read-only", "workspace-write", "full")
+SHIPPED_POLICY_IDS = ("read-only", "ask", "workspace-write", "full")
 
 
 def policy_named(name: str) -> Policy | None:
@@ -214,6 +214,33 @@ def _looking() -> Policy:
     )
 
 
+def _asking() -> Policy:
+    """The workspace is the ceiling, and anything that changes it is asked about first — the mode
+    every coding CLI opens in (Claude Code's *default*, Codex's *on-request*). Found wanting
+    through the demo: the shipped three had no band between *refuse* and *allow inside*, so a
+    person could never be asked about a write, and "approve and add a rule" had nothing to
+    answer."""
+    return Policy(
+        "ask",
+        ceiling=EffectProfile(
+            reads=EVERYTHING,
+            writes=OURS,
+            reaches=True,
+            reversible=False,
+            contained=True,
+            costs=True,
+        ),
+        ask_above=EffectProfile(
+            reads=EVERYTHING,
+            writes=PROVIDER,
+            reaches=True,
+            reversible=False,
+            contained=True,
+            costs=True,
+        ),
+    )
+
+
 def _confined() -> Policy:
     return Policy(
         "workspace-write",
@@ -251,12 +278,19 @@ def _open() -> Policy:
 
 
 def shipped_modes() -> tuple[ModeSpec, ...]:
-    """The three the harness ships, one per environment mode (D48, D64)."""
+    """The four the harness ships: one per environment mode (D48, D64), and `ask` — the
+    workspace-write environment with a question before every change."""
     return (
         ModeSpec.of(
             "read-only",
             policy=_looking(),
             description="Look, don't touch: nothing in the workspace is written or run.",
+        ),
+        ModeSpec.of(
+            "ask",
+            policy=_asking(),
+            description="Ask before every write or command inside the workspace; approve once, "
+            "or keep a rule.",
         ),
         ModeSpec.of(
             "workspace-write",

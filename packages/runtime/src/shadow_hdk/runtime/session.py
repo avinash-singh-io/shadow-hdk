@@ -219,6 +219,11 @@ class Session:
                 "setting one here would be overwritten silently on every step — rename them"
             )
 
+    @property
+    def attributes(self) -> Mapping[str, JsonValue]:
+        """What the host put on this run, as handed in — what a child inherits (BUG-030)."""
+        return self._context
+
     def context_for(
         self,
         step: StepId,

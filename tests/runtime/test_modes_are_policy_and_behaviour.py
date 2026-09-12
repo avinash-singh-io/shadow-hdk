@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from shadow_hdk.adapters.modes import ModeRegistry, ModeSpec, shipped_modes
+from shadow_hdk.adapters.modes import ModeRegistry, ModeSpec, governance_for, shipped_modes
 
 from shadow_hdk.kernel import Behaviour, Ceiling, Floor, Lease, Turn
 from shadow_hdk.kernel.events import ModeChanged
@@ -62,14 +62,40 @@ class _Session:
         yield
 
 
-def test_shipped_modes_are_the_three_defaults_with_a_presentation() -> None:
+def test_shipped_modes_are_the_four_defaults_with_a_presentation() -> None:
     registry = ModeRegistry(shipped_modes())
     by_id = {m.id: m for m in registry.listing()}
-    assert set(by_id) == {"read-only", "workspace-write", "full"}
+    assert set(by_id) == {"read-only", "ask", "workspace-write", "full"}
     assert by_id["read-only"].name and by_id["read-only"].description
     # the policy half is real: read-only refuses a write, full permits it (asking)
     assert by_id["read-only"].policy.ceiling.writes.names == frozenset({"provider-state"})
     assert by_id["full"].policy.ask_above is not None
+
+
+async def test_the_ask_mode_asks_before_every_write_and_allows_a_read() -> None:
+    """The mode every coding CLI opens in (Claude Code's *default*, Codex's *on-request*): the
+    workspace is the ceiling, and anything that writes or runs inside it is asked about first —
+    a person approves once, or keeps a rule (D65)."""
+    from shadow_hdk.kernel import EffectProfile, ScopeSet
+    from shadow_hdk.kernel.ports import Allow, Ask, Context, Refuse
+
+    governance = governance_for(ModeRegistry(shipped_modes()), default="ask")
+    context = Context(run_id="r", step="s", attributes={"mode": "ask"})
+    read = EffectProfile(reads=ScopeSet(everything=True), contained=True)
+    write = EffectProfile(
+        reads=ScopeSet(everything=True), writes=ScopeSet.of("workspace"), contained=True
+    )
+    run = EffectProfile(
+        reads=ScopeSet(everything=True),
+        writes=ScopeSet.of("workspace"),
+        reversible=False,
+        contained=True,
+    )
+    outside = EffectProfile(reads=ScopeSet(everything=True), writes=ScopeSet(everything=True))
+    assert isinstance(await governance.judge(read, context), Allow)
+    assert isinstance(await governance.judge(write, context), Ask)
+    assert isinstance(await governance.judge(run, context), Ask)
+    assert isinstance(await governance.judge(outside, context), Refuse), "outside is the ceiling"
 
 
 def test_a_registry_finds_a_mode_and_a_missing_one_is_none() -> None:

@@ -30,7 +30,7 @@ async def test_tools_list_says_what_the_agent_is_offered_with_effects_and_judgem
     assert "look" in tools, sorted(tools)
     assert tools["look"]["judgement"] == "allow"
     assert tools["look"]["effects"]["reads"] == {"names": ["workspace"], "everything": False}
-    assert tools["look"]["source"] == "InMemoryComponents"
+    assert tools["look"]["source"].endswith(":InMemoryComponents")
     assert tools["look"]["description"], "the line the model chooses by"
     assert "turn" not in tools, "the turn is the thread's own step, not a tool the agent is offered"
 

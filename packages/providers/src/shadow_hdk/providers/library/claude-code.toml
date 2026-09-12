@@ -54,6 +54,15 @@ launch_args = [
   # activity beside the record (D63); the record still gets the whole, as before.
   "--include-partial-messages",
   "--verbose",
+  # **Measured 2026-09-12 (BUG-031).** The deny list below names the built-ins that existed when
+  # it was written; claude 2.1.235 also ships `Monitor`, which runs a shell command, and in a
+  # `read-only` thread the model reached for it ("the one shell path available") and was stopped
+  # only by the CLI's own redirect guard — not by this run's governance. A run's tool surface must
+  # be exactly the registry, whatever built-ins the next CLI version adds: `--tools ""` disables
+  # every built-in by construction (the CLI's own words: *use "" to disable all built-in tools*);
+  # the MCP registry still arrives through `--mcp-config`. The deny list stays as the record of
+  # what was found and as a belt for a CLI that ignores an empty `--tools`.
+  "--tools", "",
 ]
 
 # How the run's own registry reaches it, and therefore how D42's socket closes around it. A provider

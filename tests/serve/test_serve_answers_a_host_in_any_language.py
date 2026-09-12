@@ -89,7 +89,7 @@ async def test_serve_host_opens_a_thread_on_the_shipped_composition(tmp_path: Pa
     assert thread.record.turns[-1].text == "scripted: hello"
     assert [e.kind for e in events][0] == "started"
     assert host.approvals is not None and host.modes is not None and host.rules is not None
-    assert [m.id for m in await host.modes.all()] == ["read-only", "workspace-write", "full"]
+    assert [m.id for m in await host.modes.all()] == ["read-only", "ask", "workspace-write", "full"]
     # The skill registry is the host's too (Phase 28 group 1): shipped first, then the store.
     names = sorted(s.name for s in await host.skills.all())
     assert names == [

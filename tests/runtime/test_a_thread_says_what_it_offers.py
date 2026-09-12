@@ -71,7 +71,7 @@ async def test_the_offer_is_every_registration_with_its_judgement(tmp_path: Path
     assert by_name["look"].judgement == "allow"
     assert by_name["touch"].judgement == "ask"
     assert by_name["touch"].registration.component.effects.writes == ScopeSet.of("workspace")
-    assert by_name["look"].source == "InMemoryComponents", "which port carried it"
+    assert by_name["look"].source.endswith(":InMemoryComponents"), "who registered it, and the port"
 
 
 async def test_the_offer_follows_the_mode(tmp_path: Path) -> None:

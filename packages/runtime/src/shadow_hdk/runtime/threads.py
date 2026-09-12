@@ -90,7 +90,21 @@ class Offered:
     judgement: str
     """`allow` · `ask` · `refuse` — what the current mode says of its effects."""
     source: str
-    """The port's class name: `LocalEnvironment`, `SkillComponents`, a battery's adapter."""
+    """Who registered it — the registration's own provenance (`environment`, `agent`, a battery's
+    id) — and the port's class name after a colon where that adds something
+    (`environment:LocalEnvironment`). A wrapper such as `Switched` is looked through: it carries
+    a port, it is not the source."""
+
+
+def _source_of(port: ComponentPort, registration: Registration) -> str:
+    inner = port
+    while (
+        wrapped := getattr(inner, "_inner", None)
+    ) is not None:  # `Switched`, or the next wrapper
+        inner = wrapped
+    who = registration.component.provenance.registered_by
+    kind = type(inner).__name__
+    return who if who.lower() == kind.lower() else f"{who}:{kind}"
 
 
 class _TurnComponents(ComponentPort):
@@ -525,7 +539,7 @@ class Thread:
                     if isinstance(judged, Ask)
                     else "allow"
                 )
-                offered.append(Offered(registration, kind, type(port).__name__))
+                offered.append(Offered(registration, kind, _source_of(port, registration)))
         return offered
 
     async def set_mode(self, mode_id: str) -> list[Event]:

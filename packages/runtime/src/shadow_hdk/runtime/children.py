@@ -173,6 +173,7 @@ class Children:
         checkpointer: Any = None,
         within: EffectProfile | None = None,
         within_name: str = "",
+        context: Mapping[str, JsonValue] | None = None,
     ) -> tuple[str, list[Event]]:
         """Start a child and let it run. If it parks rather than ending, this parent holds it.
 
@@ -196,7 +197,12 @@ class Children:
         cancellation = Cancellation()
         handle = self._context.ports.clock.new_id()
         options = self._context.spawn_options(
-            ceiling, run_id=handle, checkpointer=saver, cancellation=cancellation
+            ceiling,
+            run_id=handle,
+            checkpointer=saver,
+            cancellation=cancellation,
+            # The parent's attributes unless the caller hands the child its own (BUG-030).
+            **({"context": dict(context)} if context is not None else {}),
         )
         ports = self._context.ports
         if within is not None:

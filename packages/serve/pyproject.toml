@@ -21,6 +21,13 @@ dependencies = [
 
 [project.optional-dependencies]
 search = ["ddgs>=9"]   # the ddgs battery's engine — optional, so the light alternative stays light
+# The transports the shipped providers speak (a provider is a file naming one): `jsonl` for Claude
+# Code and Codex, `acp` for OpenCode. A product that installs `shadow-hdk-serve[providers]` can
+# open a thread on whichever CLI is signed in; without them `ready()` names the missing transport.
+providers = [
+    "shadow-hdk-adapters-jsonl==0.24.0",
+    "shadow-hdk-adapters-acp==0.24.0",
+]
 
 [project.scripts]
 shadow-hdk = "shadow_hdk.serve.__main__:main"

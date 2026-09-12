@@ -247,6 +247,12 @@ class RunContext:
         overrides.setdefault("cancellation", self._session.cancellation)
         overrides.setdefault("approvals", self._session.approvals)
         overrides.setdefault("rules", self._session.rules)
+        # **The parent's context, by default** (BUG-030). What a host put on the run — the thread,
+        # the turn, the *mode* — is what its policy judges by, and a child's steps are judged by
+        # the same policy: a child that carried no context was judged in the governance's default
+        # mode, so `set_mode("read-only")` refused the turn's own step and let the agent's
+        # `run_shell` — a child spawned through the offered registry — write a file.
+        overrides.setdefault("context", dict(self._session.attributes))
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:
