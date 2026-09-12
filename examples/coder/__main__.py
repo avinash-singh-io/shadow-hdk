@@ -13,7 +13,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from examples.coder.session import NoProvider, a_conversation
+from examples.coder.thread import a_thread
 from shadow_hdk.kernel import (
     Ended,
     Event,
@@ -23,14 +23,12 @@ from shadow_hdk.kernel import (
     RefusedEvent,
     UsageReported,
 )
+from shadow_hdk.providers import NoProvider
 from shadow_hdk.runtime import Approvals
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
 DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
-
-
-_conversation: list[str] = []
 
 
 def ask(prompt: str) -> str | None:
@@ -51,19 +49,18 @@ def ask(prompt: str) -> str | None:
 def show(event: Event) -> None:
     """What the run did, as it does it. This is the whole demonstration.
 
-    Only the conversation's own `Ended` is shown. Every tool the provider calls is a **child run**
-    with an `Ended` of its own, and printing all of them says "run ended" after each file write,
-    which reads as something finishing when nothing has.
+    A turn's own `Ended` says only "completed" and is not shown; every tool the provider calls is a
+    **child run** under the turn with an `Ended` of its own, and printing those said "run ended"
+    after each file write, which reads as something finishing when nothing has.
     """
-    if not _conversation:
-        _conversation.append(event.run_id)
+
     if isinstance(event, Reasoning):
         # What it thought, before what it did (D45) — the line a person most wants to read.
         thought = event.text.strip().replace("\n", " ")
         print(f"\033[36m  ∴ {thought[:200]}{OFF}", flush=True)
-    elif isinstance(event, Invoked) and event.step != "converse":
+    elif isinstance(event, Invoked) and not event.step.startswith("turn-"):
         print(f"{DIM}  · {event.component}{OFF}", flush=True)
-    elif isinstance(event, Observed) and event.step != "converse":
+    elif isinstance(event, Observed) and not event.step.startswith("turn-"):
         print(f"{DIM}    → {str(event.observation)[:150]}{OFF}", flush=True)
     elif isinstance(event, RefusedEvent):
         # The *event*, not the observation of the same name — the first cut checked the
@@ -71,8 +68,8 @@ def show(event: Event) -> None:
         print(f"\033[31m  ✕ refused: {event.reason}{OFF}", flush=True)
     elif isinstance(event, UsageReported):
         print(f"{DIM}    ({event.usage}){OFF}", flush=True)
-    elif isinstance(event, Ended) and event.run_id == _conversation[0]:
-        print(f"{DIM}  [conversation ended: {event.reason}]{OFF}", flush=True)
+    elif isinstance(event, Ended) and event.reason != "completed":
+        print(f"{DIM}  [the turn ended: {event.reason}]{OFF}", flush=True)
 
 
 async def answer_questions(questions: Approvals) -> None:
@@ -81,15 +78,16 @@ async def answer_questions(questions: Approvals) -> None:
     The provider is blocked on that call, so the question is put to the terminal as it arrives;
     `input()` is blocking and the run is on this loop, so it runs in a thread.
     """
-    from shadow_hdk.kernel import Allow, Refuse
+    from shadow_hdk.runtime import Approve, Deny
 
     while True:
         pending = await questions.next()
-        print(f"\n\033[33m? {pending.question}{OFF}", flush=True)
-        said = await asyncio.to_thread(input, f"{BOLD}allow? [y/N]{OFF} ")
+        about = f" · {pending.component} {pending.inputs}" if pending.component else ""
+        print(f"\n\033[33m? {pending.question}{about}{OFF}", flush=True)
+        said = await asyncio.to_thread(input, f"{BOLD}approve? [y/N]{OFF} ")
         questions.answer(
             pending.handle,
-            Allow() if said.strip().lower() in ("y", "yes") else Refuse("the person said no"),
+            Approve() if said.strip().lower() in ("y", "yes") else Deny("the person said no"),
         )
 
 
@@ -106,10 +104,8 @@ async def main() -> int:
     questions = Approvals()
     answering = asyncio.create_task(answer_questions(questions))
     try:
-        async with a_conversation(
-            root, want=want, mode=mode, on_event=show, approvals=questions
-        ) as talk:
-            print(f"{BOLD}Workspace:{OFF} {root}")
+        async with a_thread(root, want=want, mode=mode, approvals=questions) as thread:
+            print(f"{BOLD}Workspace:{OFF} {root}  {DIM}({thread.record.provider}){OFF}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
             if mode == "workspace-write":
                 print(
@@ -131,10 +127,12 @@ async def main() -> int:
                     return 0
                 if not said:
                     continue
-                done = await talk.turn(said)
-                print(f"\n{BOLD}agent ›{OFF} {done.text}\n")
-                if done.failed:
-                    print(f"\033[31m  (the provider reported this turn as failed){OFF}\n")
+                async for event in thread.turn(said):
+                    show(event)
+                turn = thread.record.turns[-1]
+                print(f"\n{BOLD}agent ›{OFF} {turn.text}\n")
+                if turn.outcome != "completed":
+                    print(f"\033[31m  (the turn ended {turn.outcome}){OFF}\n")
     except NoProvider as nothing:
         print(f"{nothing}", file=sys.stderr)
         return 2

@@ -99,5 +99,5 @@ believes the answer, or says it could not tell.
 | | |
 |---|---|
 | [`workshop.py`](workshop.py) | the tools, the policy, the lease — everything a host decides, and it is short on purpose |
-| [`session.py`](session.py) | the wiring: a run, a registry served on a loopback socket, a provider that can only reach it |
+| [`thread.py`](thread.py) | the wiring, all of it the harness's: `Thread` over the provider signed in here, the registry served on the authenticated socket for the thread's lifetime (`SocketOffer`), the workshop's environment and policy |
 | [`__main__.py`](__main__.py) | the conversation |

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from pydantic import JsonValue
 
@@ -246,6 +247,63 @@ class ClockPortContract:
         clock = self.port()
         ids = [clock.new_id() for _ in range(50)]
         assert len(set(ids)) == 50
+
+
+class ThreadStoreContract:
+    """Override `store` with a fresh, empty store each call (D62)."""
+
+    def store(self) -> Any:
+        raise NotImplementedError
+
+    async def test_a_record_round_trips_field_for_field(self) -> None:
+        from shadow_hdk.kernel import ThreadRecord, TurnRecord
+
+        store = self.store()
+        record = ThreadRecord(
+            id="t1",
+            root="/work",
+            created_at="2026-01-01T00:00:00+00:00",
+            mode="confined",
+            provider="scripted 0",
+            turns=(
+                TurnRecord(
+                    id="turn-1",
+                    run_id="r1",
+                    prompt="p",
+                    at="2026-01-01T00:00:01+00:00",
+                    outcome="completed",
+                    text="a",
+                ),
+            ),
+            forked_from="t0",
+            seeded_turns=1,
+            session_id="s",
+        )
+        await store.create(record)
+        assert await store.get("t1") == record
+
+    async def test_save_replaces_and_a_missing_thread_is_none(self) -> None:
+        from dataclasses import replace
+
+        from shadow_hdk.kernel import ThreadRecord
+
+        store = self.store()
+        record = ThreadRecord(id="t1", root="/w", created_at="2026-01-01T00:00:00+00:00")
+        await store.create(record)
+        await store.save(replace(record, mode="open"))
+        found = await store.get("t1")
+        assert found is not None and found.mode == "open"
+        assert await store.get("nobody") is None
+
+    async def test_listing_hides_archived_unless_asked(self) -> None:
+        from shadow_hdk.kernel import ThreadRecord
+
+        store = self.store()
+        await store.create(ThreadRecord(id="a", root="/w", created_at="2026-01-01T00:00:00+00:00"))
+        await store.create(ThreadRecord(id="b", root="/w", created_at="2026-01-01T00:00:01+00:00"))
+        await store.archive("b")
+        assert [t.id for t in await store.list()] == ["a"]
+        assert sorted(t.id for t in await store.list(include_archived=True)) == ["a", "b"]
 
 
 def an_observation() -> Observation:

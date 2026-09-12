@@ -50,6 +50,13 @@ ENFORCED_BY: dict[str, tuple[str, str]] = {
         "confined, and `Isolation` is set by a watched denial or an honest no, never by a wrapper",
         "tests/runtime/test_an_environment_has_a_mode.py",
     ),
+    "runtime:threads": (
+        "the turn step declares `writes: {provider-state}` — the provider's own transcript under "
+        "its home — and nothing else, because its file tools are withheld and every write to the "
+        "root goes through the run's environment, where it is judged; the turn itself is not what "
+        "writes to the world (D62)",
+        "tests/runtime/test_a_thread_is_turns_of_runs.py",
+    ),
 }
 # `environment` the adapter is deliberately absent: it declares no scope of its own. Every
 # profile it registers comes from the runtime's derivation above — the whole point of Phase 22, one

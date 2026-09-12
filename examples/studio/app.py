@@ -14,9 +14,10 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
-from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Event, Usage
+from examples.coder.thread import a_thread
+from shadow_hdk.kernel import Event
 from shadow_hdk.kernel.contracts import dump
+from shadow_hdk.providers import NoProvider
 from shadow_hdk.runtime import Approvals, Approve, Deny
 from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.items import Fold, as_json
@@ -36,7 +37,7 @@ class Studio:
     """Every event of the run, as JSON, in order — the page catches up from here."""
     watchers: list[asyncio.Queue[dict[str, Any]]] = field(default_factory=list)
     fold: Fold = field(default_factory=Fold)
-    talk: Any = None
+    thread: Any = None
     provider: str = ""
     busy: bool = False
     _conversation: Any = None
@@ -69,15 +70,11 @@ class Studio:
     # ------------------------------------------------------------------ the conversation
 
     async def open(self) -> None:
-        self._conversation = a_conversation(
-            self.root,
-            want=self.want,
-            mode=self.mode,
-            on_event=self.on_event,
-            approvals=self.approvals,
+        self._conversation = a_thread(
+            self.root, want=self.want, mode=self.mode, approvals=self.approvals
         )
-        self.talk = await self._conversation.__aenter__()
-        self.provider = getattr(self.talk, "provider", "") or "the provider signed in here"
+        self.thread = await self._conversation.__aenter__()
+        self.provider = self.thread.record.provider or "the provider signed in here"
         asyncio.create_task(self._relay_questions())
         asyncio.create_task(self._relay_withdrawals())
 
@@ -112,15 +109,17 @@ class Studio:
         self.busy = True
         self.note("you", text=text)
         try:
-            done = await self.talk.turn(text)
+            async for event in self.thread.turn(text):
+                self.on_event(event)
         finally:
             self.busy = False
-        usage = getattr(done, "usage", None)
+        turn = self.thread.record.turns[-1]
+        usage = _usage_of_turn(self.record, turn.run_id)
         answer = {
-            "text": done.text,
-            "failed": bool(done.failed),
-            "reasoning": done.reasoning,
-            "usage": json.loads(dump(usage, Usage)) if usage is not None else None,
+            "text": turn.text,
+            "failed": turn.outcome != "completed",
+            "reasoning": "",
+            "usage": usage,
         }
         self.note("agent", **answer)
         return answer
@@ -160,6 +159,16 @@ class Studio:
             return target.read_text(encoding="utf-8")[:200_000]
         except UnicodeDecodeError:
             return f"(binary, {target.stat().st_size} bytes)"
+
+
+def _usage_of_turn(record: list[dict[str, Any]], run_id: str) -> dict[str, Any] | None:
+    """The turn's cost, read off the record's `usage` events for that run."""
+    for line in reversed(record):
+        event = line.get("event") if line.get("kind") == "event" else None
+        if event and event.get("kind") == "usage" and event.get("run_id") == run_id:
+            usage: dict[str, Any] | None = event.get("usage")
+            return usage
+    return None
 
 
 def build_app(studio: Studio) -> Starlette:

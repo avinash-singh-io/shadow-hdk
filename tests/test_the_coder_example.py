@@ -18,9 +18,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from examples.coder.session import NoProvider, a_conversation
+from examples.coder.thread import a_thread
 
 from shadow_hdk.kernel import Event, Invoked, Observed
+from shadow_hdk.providers import NoProvider, ready
 
 pytestmark = [
     pytest.mark.live,
@@ -35,15 +36,17 @@ pytestmark = [
 async def test_it_writes_a_file_and_runs_it_through_our_tools(tmp_path: Path) -> None:
     seen: list[Event] = []
     try:
-        async with a_conversation(tmp_path, on_event=seen.append) as talk:
-            done = await talk.turn(
+        async with a_thread(tmp_path) as thread:
+            async for event in thread.turn(
                 "Write hello.py that prints exactly: hi\n"
                 "Then run it and tell me what it printed. Use only the tools you have."
-            )
+            ):
+                seen.append(event)
+            done = thread.record.turns[-1]
     except NoProvider as nothing:
         pytest.skip(str(nothing))
 
-    used = [e.component for e in seen if isinstance(e, Invoked) and e.step != "converse"]
+    used = [e.component for e in seen if isinstance(e, Invoked) and e.component != "turn"]
     assert "write_file" in used, f"it did not go through our workspace: {used}"
     assert any(t in used for t in ("run_shell", "run_python")), (
         f"it did not use our sandbox: {used}"
@@ -58,17 +61,15 @@ async def test_it_writes_a_file_and_runs_it_through_our_tools(tmp_path: Path) ->
     ]
     assert ran, "the sandbox's answer never reached the parent's stream"
 
-    assert not done.failed, done.text
+    assert done.outcome == "completed", done.text
     assert "hi" in done.text
 
 
 async def test_the_provider_is_told_what_this_machine_can_do_before_anything_starts() -> None:
     """Detection is not a formality: a run opened against a signed-out provider spends a turn to
     discover what a probe would have said for nothing."""
-    from examples.coder.session import ready_provider
-
     try:
-        available = await ready_provider()
+        available = await ready()
     except NoProvider as nothing:
         pytest.skip(str(nothing))
 

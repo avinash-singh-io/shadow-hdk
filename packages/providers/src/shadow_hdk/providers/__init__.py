@@ -11,9 +11,11 @@ from shadow_hdk.providers.probes import Asked, ask_auth, ask_version
 from shadow_hdk.providers.resolution import candidates, search_dirs
 from shadow_hdk.providers.surface import (
     Available,
+    NoProvider,
     NoSuchTransport,
     detect,
     open_with,
+    ready,
     register_transport,
     transports,
 )
@@ -21,6 +23,7 @@ from shadow_hdk.providers.surface import (
 __all__ = [
     "Asked",
     "Available",
+    "NoProvider",
     "NoSuchTransport",
     "MalformedProvider",
     "ask_auth",
@@ -31,6 +34,7 @@ __all__ = [
     "load_dir",
     "load_provider",
     "open_with",
+    "ready",
     "register_transport",
     "search_dirs",
     "shipped",

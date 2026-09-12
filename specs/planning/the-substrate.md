@@ -53,7 +53,7 @@ person. The record must stay what it is — durable, complete, checkpointed — 
 go on it* (a thousand per turn is noise on a record meant to be replayed). So the missing primitive
 is an **ephemeral activity stream beside the record**: partial thinking, partial text, a running
 command's output, "composing a tool call". And a **conversation** — thread and turn — is today an
-*example* (`examples/coder/session.py`) that the studio imports. It is the single most reused
+*example* (the coder example's former `session` module) that the studio imports. It is the single most reused
 thing and it is not in the harness.
 
 ### 1.3 Approvals are requests from the server to the client
@@ -163,7 +163,8 @@ Codex's protocol has those. At the *host-facing* surface, theirs is better shape
 first-class, items stream, approvals are requests, and a client developer can hold the whole thing
 in their head.
 
-**The decision that closes the gap without a new concept.** A conversation is a run; **a turn is a
+**The decision that closes the gap without a new concept.** (Built: a turn is a *run* of the
+thread, not a step — D62 says why.) A conversation is a run; **a turn is a
 step of that run**; the agent's tool calls are child steps under it (already so, by `parent`);
 activity streams beside each step. Then Thread → Turn → Item *is* Run → Step → child steps, the
 record gains turn boundaries for free, `steer` and `interrupt` are operations on the current step,
@@ -249,7 +250,7 @@ Each is generic; each is behind a port; each crosses the wire; each is configura
 
 ### 3.2 Conversation (a thread of turns)
 
-- Move `examples/coder/session.py`'s `a_conversation` into the harness as `Conversation`: opens a
+- Move the coder example's former `session` module's `a_conversation` into the harness as `Conversation`: opens a
   provider with a `Behaviour`, serves the registry, holds the step, `turn()`, `steer()`,
   `interrupt()`, `close()`; resumable by the provider's session id (`Dialect.resume_args`,
   already measured); listable and forkable through the host's checkpointer.
@@ -305,9 +306,10 @@ Each is generic; each is behind a port; each crosses the wire; each is configura
 
 ```python
 from shadow_hdk import Harness
+
 async with Harness.load("harness.toml") as h:
     async for part in h.turn("add a .gitignore and run the tests"):
-        ...            # activity and record, in order, as parts
+        ...  # activity and record, in order, as parts
 ```
 
 ```

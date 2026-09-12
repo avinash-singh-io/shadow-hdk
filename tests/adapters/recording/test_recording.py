@@ -81,8 +81,8 @@ async def test_a_call_on_an_exhausted_run_is_refused_before_it_is_attempted() ->
     async def spend_then_call(ctx: RunContext) -> types.CallToolResult:
         server = RecordingServer(ctx)
         for _ in range(4):
-            await server.call("look", {"topic": "x"})
-        return await server.call("look", {"topic": "x"})
+            await server.call_tool("look", {"topic": "x"})
+        return await server.call_tool("look", {"topic": "x"})
 
     result, _ = await with_a_run(spend_then_call, steps=4)
     assert result.is_error
@@ -93,7 +93,9 @@ async def test_a_call_on_an_exhausted_run_is_refused_before_it_is_attempted() ->
 
 
 async def test_a_call_runs_the_component_and_comes_back() -> None:
-    result, _ = await with_a_run(lambda ctx: RecordingServer(ctx).call("look", {"topic": "lathe"}))
+    result, _ = await with_a_run(
+        lambda ctx: RecordingServer(ctx).call_tool("look", {"topic": "lathe"})
+    )
     assert not result.is_error
     assert json.loads(text_of(result))["found"] == {"topic": "lathe"}
 
@@ -102,7 +104,7 @@ async def test_what_the_child_did_is_on_the_parents_record() -> None:
     """The whole point. A host watching the parent sees the child's step, because the child's call
     *was* a step — routed through `run()` as a child of the parent."""
     _result, events = await with_a_run(
-        lambda ctx: RecordingServer(ctx).call("look", {"topic": "lathe"})
+        lambda ctx: RecordingServer(ctx).call_tool("look", {"topic": "lathe"})
     )
     invoked = [e for e in events if isinstance(e, Invoked) and e.component == "look"]
     observed = [e for e in events if isinstance(e, Observed) and e.step != "s1"]
@@ -113,7 +115,7 @@ async def test_what_the_child_did_is_on_the_parents_record() -> None:
 
 async def test_a_refused_call_is_an_error_the_child_can_read() -> None:
     result, events = await with_a_run(
-        lambda ctx: RecordingServer(ctx).call("wipe", {}), governance=mode(READING)
+        lambda ctx: RecordingServer(ctx).call_tool("wipe", {}), governance=mode(READING)
     )
     assert result.is_error
     assert "reading" in text_of(result)
@@ -123,13 +125,13 @@ async def test_a_refused_call_is_an_error_the_child_can_read() -> None:
 
 
 async def test_a_component_that_breaks_is_an_error_and_not_a_crash() -> None:
-    result, _ = await with_a_run(lambda ctx: RecordingServer(ctx).call("breaks", {}))
+    result, _ = await with_a_run(lambda ctx: RecordingServer(ctx).call_tool("breaks", {}))
     assert result.is_error
     assert "unwell" in text_of(result)
 
 
 async def test_a_tool_the_child_invented_is_an_error() -> None:
-    result, _ = await with_a_run(lambda ctx: RecordingServer(ctx).call("no_such_tool", {}))
+    result, _ = await with_a_run(lambda ctx: RecordingServer(ctx).call_tool("no_such_tool", {}))
     assert result.is_error
 
 
@@ -141,7 +143,7 @@ async def test_the_parents_lease_bounds_the_child() -> None:
         server = RecordingServer(ctx)
         errors = 0
         for _ in range(40):
-            result = await server.call("look", {})
+            result = await server.call_tool("look", {})
             if result.is_error:
                 errors += 1
                 if errors > 2:

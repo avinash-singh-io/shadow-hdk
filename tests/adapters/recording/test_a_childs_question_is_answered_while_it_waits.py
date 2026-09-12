@@ -39,7 +39,7 @@ class AsksAboutWrites:
 
 async def _wipe_through(context: RunContext) -> Any:
     holder = RecordingServer(context)
-    return await holder.call("wipe", {})
+    return await holder.call_tool("wipe", {})
 
 
 async def test_the_question_reaches_the_host_and_an_allow_lets_the_call_through() -> None:

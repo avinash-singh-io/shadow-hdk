@@ -79,6 +79,7 @@ rather than remembered.
 | D59 | a question says what it is about | [`adhoc/studio-scenarios/record.md`](/adhoc/studio-scenarios/record.md) |
 | D60 | a connection's death is that connection's problem | [`adhoc/studio-scenarios/record.md`](/adhoc/studio-scenarios/record.md) |
 | D61 | the record speaks the industry's words | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
+| D62 | a thread is turns, and a turn is a run | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 
 ## Also here
 

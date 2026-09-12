@@ -81,8 +81,8 @@ async def offered_and_asked(
         assert context is not None
         server = RecordingServer(context, withhold={"watching"})
         found["offered"] = sorted(tool.name for tool in await server.tools())
-        found["wrote"] = await server.call("write_file", {"path": "a.txt", "content": "hi"})
-        found["ran"] = await server.call("run_shell", {"command": "ls"})
+        found["wrote"] = await server.call_tool("write_file", {"path": "a.txt", "content": "hi"})
+        found["ran"] = await server.call_tool("run_shell", {"command": "ls"})
         return Completed(None)
 
     environment = await LocalEnvironment.open(root, mode=environment_mode)

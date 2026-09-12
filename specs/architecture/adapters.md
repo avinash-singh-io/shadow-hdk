@@ -36,18 +36,26 @@ type: Architecture
 @dataclass(frozen=True)
 class Pattern:
     """An agent architecture, as data. Ships as a file; a team writes its own the same way."""
+
     name: str
-    system: str                                   # the role prompt
-    meta_tools: frozenset[str]                    # which of compose · propose · done · spawn · … exist
-    tool_names: frozenset[str] | None = None      # None → every component the policy leaves visible
-    ceiling: EffectProfile | None = None          # narrows this role, beyond the mode
+    system: str  # the role prompt
+    meta_tools: frozenset[str]  # which of compose · propose · done · spawn · … exist
+    tool_names: frozenset[str] | None = None  # None → every component the policy leaves visible
+    ceiling: EffectProfile | None = None  # narrows this role, beyond the mode
     max_turns: int = 12
 
-single              = Pattern("single", ROLE_SINGLE, meta_tools=frozenset({"propose", "done"}))
-plan_and_execute    = Pattern("plan-and-execute", ..., meta_tools=frozenset({"compose", "propose", "done"}))
-orchestrator_workers= Pattern("orchestrator-workers", ..., meta_tools=frozenset({"compose", "spawn", "send", "release", "propose", "done"}))
-critic_pair         = Pattern("critic-pair", ...)
-reflect_until       = Pattern("reflect-until", ...)
+
+single = Pattern("single", ROLE_SINGLE, meta_tools=frozenset({"propose", "done"}))
+plan_and_execute = Pattern(
+    "plan-and-execute", ..., meta_tools=frozenset({"compose", "propose", "done"})
+)
+orchestrator_workers = Pattern(
+    "orchestrator-workers",
+    ...,
+    meta_tools=frozenset({"compose", "spawn", "send", "release", "propose", "done"}),
+)
+critic_pair = Pattern("critic-pair", ...)
+reflect_until = Pattern("reflect-until", ...)
 ```
 
 `single` offers no `compose` and no `spawn`, so the model **cannot** change its shape: it sees its
@@ -59,19 +67,22 @@ class AgentComponent(ComponentPort):
     def __init__(
         self, *, pattern: Pattern, effects: EffectProfile, name="agent", skill: Skill | None = None
     ): ...
+
     # No `tools=`: an agent sees what the run's registry leaves visible, which is the same
     # computation the policy narrows — so *what the model was offered* and *what the runtime will
     # let it invoke* cannot drift apart. A `skill` is checked against that before the first turn.
 
     async def invoke(self, registration, inputs) -> Observation:
-        ctx = current_run()                                  # None → this agent is the root
+        ctx = current_run()  # None → this agent is the root
         messages = [system(self.pattern.system), user(inputs["brief"])]
         for turn in range(self.pattern.max_turns):
-            catalogue = self._visible(ctx) + self._meta()    # D13: filtered, then compacted
-            response  = await ports.model.complete(ModelRequest(tuple(messages), catalogue))
+            catalogue = self._visible(ctx) + self._meta()  # D13: filtered, then compacted
+            response = await ports.model.complete(ModelRequest(tuple(messages), catalogue))
             if not response.tool_calls:
                 return Completed({"text": response.text})
-            composition = self._compose(response.tool_calls) # n calls → FanOut; compose → as authored
+            composition = self._compose(
+                response.tool_calls
+            )  # n calls → FanOut; compose → as authored
             if composition is DONE:
                 return Completed({"text": response.text, "proposals": self._proposed})
             async for event in run(composition, ports, options=ctx.spawn_options(...)):
@@ -99,10 +110,11 @@ followed it. The `skill=` on `AgentComponent` (a fixed procedure for a role) sta
 
 ```python
 class LangChainModel(ModelPort):
-    def __init__(self, spec: str, **kw):          # "openai:gpt-…", "ollama:llama3.1", "huggingface:…"
+    def __init__(self, spec: str, **kw):  # "openai:gpt-…", "ollama:llama3.1", "huggingface:…"
         self._chat = init_chat_model(spec, **kw)
+
     async def complete(self, request) -> ModelResponse: ...
-    async def stream(self, request) -> AsyncIterator[ModelChunk]: ...   # kernel minor bump, Phase 1
+    async def stream(self, request) -> AsyncIterator[ModelChunk]: ...  # kernel minor bump, Phase 1
 ```
 
 Providers are LangChain's integrations, each an optional extra checked by the licence test:
@@ -120,20 +132,24 @@ noted fallback, not adopted: two libraries for one job is a smell.
 @dataclass(frozen=True)
 class Mode:
     name: str
-    ceiling: EffectProfile                      # the widest thing anything may do
-    ask_above: EffectProfile | None = None      # narrower than the ceiling → Ask instead of Allow
+    ceiling: EffectProfile  # the widest thing anything may do
+    ask_above: EffectProfile | None = None  # narrower than the ceiling → Ask instead of Allow
 
-READ  = Mode("read",  EffectProfile(reads=EVERYTHING))
+
+READ = Mode("read", EffectProfile(reads=EVERYTHING))
 BUILD = Mode("build", EffectProfile(reads=EVERYTHING, writes=ScopeSet.of("workspace")))
-ACT   = Mode("act",   ASSUME_WORST, ask_above=EffectProfile(reversible=True))
-AUTO  = Mode("auto",  ASSUME_WORST)
+ACT = Mode("act", ASSUME_WORST, ask_above=EffectProfile(reversible=True))
+AUTO = Mode("auto", ASSUME_WORST)
+
 
 class ModeGovernance(GovernancePort):
     def __init__(self, modes: Mapping[str, Mode], *, key="mode", default: str): ...
     async def judge(self, effects, context):
         mode = self._modes[context.attributes.get(self._key, self._default)]
-        if not effects.narrows(mode.ceiling):              return Refuse(f"{mode.name} does not permit this")
-        if mode.ask_above and not effects.narrows(mode.ask_above): return Ask(self._question(effects))
+        if not effects.narrows(mode.ceiling):
+            return Refuse(f"{mode.name} does not permit this")
+        if mode.ask_above and not effects.narrows(mode.ask_above):
+            return Ask(self._question(effects))
         return Allow()
 ```
 
@@ -184,8 +200,8 @@ false (BUG-018). They are **one environment with a mode** now:
 ```python
 Mode = "read-only" | "workspace-write" | "full"
 
-LocalEnvironment.open(root, mode=...)                  # this machine, inside the OS sandbox
-SandboxEnvironment.open(backend, root, mode=...)       # a box somebody else built, root mounted
+LocalEnvironment.open(root, mode=...)  # this machine, inside the OS sandbox
+SandboxEnvironment.open(backend, root, mode=...)  # a box somebody else built, root mounted
 #   six operations, every environment: read_file · write_file · delete_file · list_dir ·
 #                                      run_shell · run_python
 #   every profile from ONE derivation — runtime.environment.effects_of(isolation, mode, operation)

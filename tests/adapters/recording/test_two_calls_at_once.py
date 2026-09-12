@@ -30,7 +30,7 @@ pytestmark = pytest.mark.anyio
 async def test_two_allowed_calls_at_once_both_run() -> None:
     async def drive(context: RunContext) -> Any:
         holder = RecordingServer(context)
-        return await asyncio.gather(holder.call("look", {}), holder.call("look", {}))
+        return await asyncio.gather(holder.call_tool("look", {}), holder.call_tool("look", {}))
 
     (one, two), events = await with_a_run(drive, steps=40)
 
@@ -66,7 +66,7 @@ async def test_two_questions_at_once_answered_backwards() -> None:
         holder = RecordingServer(context)
         host = asyncio.create_task(the_host_answers_backwards())
         try:
-            return await asyncio.gather(holder.call("wipe", {}), holder.call("wipe", {}))
+            return await asyncio.gather(holder.call_tool("wipe", {}), holder.call_tool("wipe", {}))
         finally:
             await host
 

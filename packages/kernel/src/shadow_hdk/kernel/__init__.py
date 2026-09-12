@@ -79,6 +79,7 @@ from shadow_hdk.kernel.ports import (
     ObserverPort,
     Refuse,
     SinkPort,
+    ThreadStore,
     ToolCall,
     ToolSource,
     Turn,
@@ -92,6 +93,7 @@ from shadow_hdk.kernel.providers import (
     ProviderKind,
     ProviderStatus,
 )
+from shadow_hdk.kernel.threads import ThreadId, ThreadRecord, TurnId, TurnRecord
 
 __all__ = [
     "Reasoning",
@@ -167,5 +169,10 @@ __all__ = [
     "StepId",
     "ToolCall",
     "Until",
+    "ThreadId",
+    "ThreadRecord",
+    "ThreadStore",
+    "TurnId",
+    "TurnRecord",
     "Usage",
 ]

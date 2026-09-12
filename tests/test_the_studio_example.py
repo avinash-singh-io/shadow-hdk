@@ -26,34 +26,48 @@ pytestmark = pytest.mark.anyio
 class Scripted:
     """A conversation that writes one file through 'its tools' and answers."""
 
+    @property
+    def record(self) -> Any:
+        from shadow_hdk.kernel import ThreadRecord, TurnRecord
+
+        return ThreadRecord(
+            id="t",
+            root=str(self.studio.root),
+            created_at="t0",
+            provider=self.provider,
+            turns=tuple(
+                TurnRecord(
+                    id=f"turn-{i + 1}",
+                    run_id="r",
+                    prompt=p,
+                    at="t",
+                    outcome="completed",
+                    text=f"done: {p}",
+                )
+                for i, p in enumerate(self.prompts)
+            ),
+        )
+
     def __init__(self, studio: Studio) -> None:
         self.studio = studio
         self.provider = "scripted 0.0"
+        self.prompts: list[str] = []
 
     async def turn(self, prompt: str) -> Any:
+        """A scripted thread: yields the events a real turn would, writes the file for real."""
+        self.prompts.append(prompt)
         s = self.studio
-        s.on_event(Started(run_id="r", seq=1, at="t1", lease=None))  # type: ignore[arg-type]
-        s.on_event(
-            Invoked(run_id="r", seq=2, at="t2", step="w1", component="write_file", inputs={})
-        )
+        yield Started(run_id="r", seq=1, at="t1", lease=None)  # type: ignore[arg-type]
+        yield Invoked(run_id="r", seq=2, at="t2", step="w1", component="write_file", inputs={})
         (s.root / "hello.txt").write_text("hello")
-        s.on_event(
-            Observed(
-                run_id="r", seq=3, at="t3", step="w1", observation=Completed({"path": "hello.txt"})
-            )
+        yield Observed(
+            run_id="r", seq=3, at="t3", step="w1", observation=Completed({"path": "hello.txt"})
         )
-
-        class Done:
-            text = f"done: {prompt}"
-            failed = False
-            reasoning = ""
-
-        return Done()
 
 
 async def test_the_stream_carries_events_and_steps_and_the_turn_lands(tmp_path: Path) -> None:
     studio = Studio(root=tmp_path)
-    studio.talk = Scripted(studio)
+    studio.thread = Scripted(studio)
     app = build_app(studio)
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://s") as c:
         assert (await c.post("/say", json={"text": "make hello"})).status_code == 200

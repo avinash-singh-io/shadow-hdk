@@ -22,6 +22,7 @@ async def run(
     Raises only if a *port* fails, and even then the stream ends with Ended(reason="failed") first.
     """
 
+
 async def resume(
     run_id: RunId,
     answer: Judgement | JsonValue,
@@ -31,12 +32,16 @@ async def resume(
 ) -> AsyncIterator[Event]:
     """Continue a run parked on an Ask or an Await. Requires a checkpointer in options."""
 
+
 def current_run() -> RunContext | None:
     """The ambient run, if this code is executing inside a step. How a component proposes,
     reads its remaining lease, and spawns children (D2)."""
 
+
 @dataclass(frozen=True)
 class Ports: ...
+
+
 @dataclass(frozen=True)
 class RunOptions: ...
 ```
@@ -49,11 +54,12 @@ That is the whole API. Everything else in the package is internal.
 @dataclass(frozen=True)
 class Ports:
     model: ModelPort
-    components: tuple[ComponentPort, ...]          # the registry is their union
+    components: tuple[ComponentPort, ...]  # the registry is their union
     governance: GovernancePort
     sink: SinkPort
-    observer: ObserverPort | None = None           # D6 — optional; run() always yields
-    clock: ClockPort = SystemClock()               # D8 — a real default, replaceable for replay
+    observer: ObserverPort | None = None  # D6 — optional; run() always yields
+    clock: ClockPort = SystemClock()  # D8 — a real default, replaceable for replay
+
 
 @dataclass(frozen=True)
 class RunOptions:
@@ -61,8 +67,8 @@ class RunOptions:
     context: Mapping[str, JsonValue] = frozendict()  # opaque to the runtime; the adapter reads it
     principal: str | None = None
     checkpointer: BaseCheckpointSaver | None = None  # None → InMemorySaver, no durability
-    run_id: RunId | None = None                      # None → clock.new_id()
-    parent: RunContext | None = MISSING              # MISSING → ambient (D2); None → explicitly root
+    run_id: RunId | None = None  # None → clock.new_id()
+    parent: RunContext | None = MISSING  # MISSING → ambient (D2); None → explicitly root
 ```
 
 ## Class diagram
@@ -156,6 +162,8 @@ classDiagram
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
 | `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
 | `environment.py` | an environment has a mode: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48) |
+| `offer.py` | the run's registry offered to an agent that owns its own loop (D42, D62): one call routed as a child run under a carved ceiling, judged, recorded, the policy's question put to the host live; `InProcessOffer` for an agent in this process, the recording adapter's `SocketOffer` in front of it for a CLI |
+| `threads.py` | `Thread` — the container every product has (D62): a provider opened once and held across turns, the registry served for its lifetime under the host's name, each turn its own run under a ceiling carved from the thread's lease; `ThreadStore` port, `InMemoryThreads`; fork and rollback honest about the provider's transcript |
 | `items.py` | the event stream folded into the items a host renders — one pure fold, in-process and over the wire (D46, D61); `run_items(nested=True)` yields every item as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
 | `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006); every session leader the runtime starts is `hold`-ed and dies with the interpreter, by whichever door (D53, BUG-019) |
 | `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
@@ -232,9 +240,9 @@ def compile_composition(c: Composition, executor: StepExecutor, checkpointer) ->
 
 ```python
 class RunState(TypedDict):
-    handles:      Annotated[dict[StepId, JsonValue], merge_dicts]
+    handles: Annotated[dict[StepId, JsonValue], merge_dicts]
     observations: Annotated[dict[StepId, Observation], merge_dicts]
-    iterations:   Annotated[dict[StepId, int], merge_counts]
+    iterations: Annotated[dict[StepId, int], merge_counts]
 ```
 
 Reducers are commutative because `FanOut` writes concurrently — that is why they are dicts keyed by
@@ -247,26 +255,36 @@ shape, however often an agent re-authors it, compiles once per process.
 
 ```python
 async def run(composition, ports, *, options):
-    parent  = _resolve_parent(options)                        # D2
+    parent = _resolve_parent(options)  # D2
     session = Session.open(options, parent, clock=ports.clock)
     emitter = Emitter(session.run_id, ports.clock, ports.observer)
-    token   = _CURRENT.set(RunContext(session, emitter, ports))
+    token = _CURRENT.set(RunContext(session, emitter, ports))
     try:
         await emitter.emit(Started(lease=session.meter.lease, parent_run_id=session.parent_run_id))
         if parent:
             await parent.emit(Spawned(child_run_id=session.run_id, lease=session.meter.lease))
         await emitter.emit(Composed(composition=composition))
-        graph = compile_composition(composition, StepExecutor(session, emitter, ports), options.checkpointer or InMemorySaver())
+        graph = compile_composition(
+            composition,
+            StepExecutor(session, emitter, ports),
+            options.checkpointer or InMemorySaver(),
+        )
         reason = "completed"
         try:
-            async for _ in graph.astream({...}, config={"configurable": {"thread_id": session.run_id}}):
+            async for _ in graph.astream(
+                {...}, config={"configurable": {"thread_id": session.run_id}}
+            ):
                 pass
-        except LeaseExhausted as exc: reason = exc.reason
-        except Cancelled:             reason = "cancelled"
-        except PortFailure:           reason = "failed"
+        except LeaseExhausted as exc:
+            reason = exc.reason
+        except Cancelled:
+            reason = "cancelled"
+        except PortFailure:
+            reason = "failed"
         await emitter.emit(Ended(reason=reason, steps_taken=session.meter.steps))
         async for event in emitter.stream():
-            if parent: await parent.forward(event)             # D2 — children stream through parents
+            if parent:
+                await parent.forward(event)  # D2 — children stream through parents
             yield event
     finally:
         _CURRENT.reset(token)

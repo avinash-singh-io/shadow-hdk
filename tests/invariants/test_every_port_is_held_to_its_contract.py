@@ -33,6 +33,7 @@ PORTS = {
     "SinkPort": "SinkPortContract",
     "ObserverPort": "ObserverPortContract",
     "ClockPort": "ClockPortContract",
+    "ThreadStore": "ThreadStoreContract",
 }
 """Each port, and the suite that says what implementing it means."""
 
@@ -62,6 +63,10 @@ CONTRACTED: dict[str, str] = {
     "CallbackObserver": "tests/adapters/contract/test_the_doubles.py",
     "FixedClock": "tests/adapters/contract/test_the_doubles.py",
     "InMemoryComponents": "tests/adapters/contract/test_the_doubles.py",
+    # the thread's own turn component (D62)
+    "_TurnComponents": "tests/runtime/test_a_thread_is_turns_of_runs.py",
+    "SqliteThreads": "tests/adapters/basic/test_threads_survive_the_process.py",
+    "InMemoryThreads": "tests/runtime/test_a_thread_is_turns_of_runs.py",
     "Judge": "tests/adapters/contract/test_the_doubles.py",
     "ListObserver": "tests/adapters/contract/test_the_doubles.py",
     "ListSink": "tests/adapters/contract/test_the_doubles.py",

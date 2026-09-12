@@ -36,6 +36,7 @@ from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.threads import ThreadRecord
 from shadow_hdk.kernel.usage import Usage as Usage
 
 """Re-exported: `Usage` lived here until `events.UsageReported` needed it too, and `ports`
@@ -271,6 +272,20 @@ class AgentSession(Protocol):
         """
         done = await self.turn(prompt)
         yield TurnChunk(text=done.text, usage=done.usage, done=True)
+
+
+@runtime_checkable
+class ThreadStore(Protocol):
+    """Where threads live (D62). A port, so a product keeps them in its own tables — or does not
+    use threads at all and drives turns directly; the runtime never requires one."""
+
+    async def create(self, thread: ThreadRecord) -> None: ...
+
+    async def get(self, thread_id: str) -> ThreadRecord | None: ...
+
+    async def save(self, thread: ThreadRecord) -> None: ...
+
+    async def list(self, *, include_archived: bool = False) -> tuple[ThreadRecord, ...]: ...
 
 
 @runtime_checkable

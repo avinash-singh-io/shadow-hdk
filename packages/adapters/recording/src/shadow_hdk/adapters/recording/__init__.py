@@ -1,5 +1,6 @@
 """The run's registry, offered to a child agent — recording as a consequence of routing."""
 
+from shadow_hdk.adapters.recording.offer import RELAY, SocketOffer, relay_source
 from shadow_hdk.adapters.recording.pipes import serve_over_pipes
 from shadow_hdk.adapters.recording.server import RecordingServer
 from shadow_hdk.adapters.recording.socket import (
@@ -16,6 +17,9 @@ __all__ = [
     "mint",
     "RecordingServer",
     "relay",
+    "RELAY",
+    "SocketOffer",
+    "relay_source",
     "serve_over_pipes",
     "serve_over_socket",
 ]

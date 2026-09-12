@@ -12,10 +12,10 @@ phase: 25
 - [x] schemas republished; wire constants; invariants; 0.21.0 everywhere; `test_versions.py` says why
 
 ## Group 2 — Thread and Turn
-- [ ] `ThreadStore` port; sqlite and in-memory adapters
-- [ ] `Thread`: `turn()` is a step; `steer`, `interrupt`; resume, fork, rollback, list, archive
-- [ ] the provider session and the registry socket held for the thread's lifetime; registry name is the host's
-- [ ] `examples/coder/session.py` gone; coder and studio on `Thread`
+- [x] `ThreadStore` port; sqlite and in-memory adapters
+- [x] `Thread`: a turn is a run (D62); resume, fork, rollback, list, archive — `steer`/`interrupt` in group 3 with activity
+- [x] the provider session and the registry socket held for the thread's lifetime; registry name is the host's
+- [x] the coder example's former `session` module gone; coder and studio on `Thread`
 
 ## Group 3 — Activity
 - [ ] survey recorded (LangGraph stream modes)

@@ -147,12 +147,37 @@ async def open_with(
     return await opener(provider, binary=binary, env=env, **extra)
 
 
+class NoProvider(RuntimeError):
+    """No provider on this machine is ready. The message lists what was found and how to fix it."""
+
+
+async def ready(want: str | None = None) -> Available:
+    """The first provider this machine can actually use, or a refusal that says why not.
+
+    Detection is the whole of it — no credential is read, and nothing is installed (D41). A
+    provider that is present but signed out is reported as exactly that, with the command that
+    fixes it. `want` names one provider; without it, the shipped library in order.
+    """
+    from shadow_hdk.providers.library import shipped
+
+    library = shipped()
+    wanted = [library[want]] if want else list(library.values())
+    found = await detect(wanted)
+    for it in found:
+        if it.status == "ready" and it.provider.injects_tools:
+            return it
+    lines = [f"  {it.provider.called:12} {it.status:14} {it.provider.install_hint}" for it in found]
+    raise NoProvider("no provider on this machine is ready:\n" + "\n".join(lines))
+
+
 __all__ = [
     "TRANSPORT_GROUP",
     "Available",
+    "NoProvider",
     "NoSuchTransport",
     "detect",
     "open_with",
+    "ready",
     "register_transport",
     "transports",
 ]

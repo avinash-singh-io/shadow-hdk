@@ -26,7 +26,7 @@ phase: 25
   runs one **step** of the thread's run and streams its items; `steer(text)`, `interrupt()`;
   `resume`, `fork`, `rollback`. The registry socket served for the thread's lifetime. The
   registry's name is the host's (`name=`, default `"tools"`).
-- `examples/coder/session.py` deleted; the coder and the studio use `Thread`.
+- the coder example's former `session` module deleted; the coder and the studio use `Thread`.
 
 ## Group 3 — Activity
 
