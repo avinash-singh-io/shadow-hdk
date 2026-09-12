@@ -164,6 +164,8 @@ classDiagram
 | `environment.py` | an environment has a mode: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48) |
 | `offer.py` | the run's registry offered to an agent that owns its own loop (D42, D62): one call routed as a child run under a carved ceiling, judged, recorded, the policy's question put to the host live; `InProcessOffer` for an agent in this process, the recording adapter's `SocketOffer` in front of it for a CLI |
 | `threads.py` | `Thread` — the container every product has (D62): a provider opened once and held across turns, the registry served for its lifetime under the host's name, each turn its own run under a ceiling carved from the thread's lease; `ThreadStore` port, `InMemoryThreads`; fork and rollback honest about the provider's transcript |
+| `store.py` | `InMemoryStore` — the `Store` port (D66) for a process: collections of JSON rows, a version per collection |
+| `switched.py` | `Switched` — a component port minus what a store's switches say is off (D66), read at every refresh; `store_switches` |
 | `person.py` | `ask_person` — the agent's own question to the person as a component (D65): no effects, `InputRequested` on the record, the text through the host's handle; nobody there is a failure that says so |
 | `items.py` | the event stream folded into the items a host renders — one pure fold, in-process and over the wire (D46, D61); `run_items(nested=True)` yields every item as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
 | `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006); every session leader the runtime starts is `hold`-ed and dies with the interpreter, by whichever door (D53, BUG-019) |

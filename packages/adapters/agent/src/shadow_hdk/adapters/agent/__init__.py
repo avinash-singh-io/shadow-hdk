@@ -24,8 +24,10 @@ from shadow_hdk.adapters.agent.registry import (
     SkillComponents,
     SkillRegistry,
     SkillSource,
+    StoreSkills,
     kept_from,
     shipped_skills,
+    store_skills,
 )
 from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
 
@@ -50,6 +52,8 @@ __all__ = [
     "SkillComponents",
     "SkillRegistry",
     "SkillSource",
+    "StoreSkills",
+    "store_skills",
     "describe_for",
     "load_pattern",
     "load_skill",

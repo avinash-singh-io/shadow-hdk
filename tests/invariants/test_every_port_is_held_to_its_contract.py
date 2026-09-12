@@ -34,6 +34,7 @@ PORTS = {
     "ObserverPort": "ObserverPortContract",
     "ClockPort": "ClockPortContract",
     "ThreadStore": "ThreadStoreContract",
+    "Store": "StoreContract",
 }
 """Each port, and the suite that says what implementing it means."""
 
@@ -67,6 +68,9 @@ CONTRACTED: dict[str, str] = {
     "_TurnComponents": "tests/runtime/test_a_thread_is_turns_of_runs.py",
     "PersonComponents": "tests/runtime/test_approvals_add_rules_and_the_agent_asks_the_person.py",
     "SqliteThreads": "tests/adapters/basic/test_threads_survive_the_process.py",
+    "SqliteStore": "tests/adapters/basic/test_a_store_survives_the_process.py",
+    "InMemoryStore": "tests/runtime/test_a_store_makes_every_registry_live.py",
+    "Switched": "tests/runtime/test_a_store_makes_every_registry_live.py",
     "InMemoryThreads": "tests/runtime/test_a_thread_is_turns_of_runs.py",
     "Judge": "tests/adapters/contract/test_the_doubles.py",
     "ListObserver": "tests/adapters/contract/test_the_doubles.py",

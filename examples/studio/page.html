@@ -59,6 +59,8 @@
   .files li:hover, .files li.sel { background:var(--panel2) } .files li span { color:var(--dim); font-size:11px } .files li.changed { color:var(--ok) } .files li.changed::after { content:" ●"; color:var(--ok) }
   .file { margin:12px 0 0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); font-size:12px; white-space:pre-wrap; word-break:break-word; max-height:60vh; overflow:auto }
   .file .fn { color:var(--dim); margin-bottom:6px; font-family: ui-monospace, Menlo, monospace }
+  .admin { margin-top:14px; border-top:1px solid var(--line); padding-top:8px; font-size:12.5px } .admin summary { cursor:pointer; color:var(--dim) }
+  .admin form { display:flex; flex-direction:column; gap:6px; margin:10px 0 } .admin input, .admin select, .admin textarea { padding:5px 8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit; font-size:12px } .admin button { padding:5px 10px; border-radius:6px; border:1px solid var(--accent); background:var(--panel2); color:var(--fg); cursor:pointer; text-align:left } .admin .said { color:var(--ok); font-size:11.5px } .admin .rules { font-family: ui-monospace, Menlo, monospace; font-size:11.5px; color:var(--dim); white-space:pre-wrap }
 </style>
 </head>
 <body>
@@ -77,7 +79,22 @@
   </section>
   <section>
     <h2>Environment — <span id="env-title">the workspace</span></h2>
-    <div class="scroll files"><ul id="files"></ul><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div></div>
+    <div class="scroll files"><ul id="files"></ul><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div>
+      <details class="admin"><summary>Live data — modes and rules, no restart</summary>
+        <form id="new-mode"><b>New mode</b>
+          <input name="id" placeholder="id (e.g. reviewer)" required><input name="name" placeholder="name">
+          <select name="policy"><option value="read-only">policy: read-only</option><option value="workspace-write">policy: workspace-write</option><option value="full">policy: full</option></select>
+          <textarea name="append_system" placeholder="what this mode adds to the system prompt" rows="2"></textarea>
+          <button type="submit">Create — it is offered and judged from at the next turn</button><span class="said" id="mode-said"></span>
+        </form>
+        <form id="new-rule"><b>New rule</b>
+          <input name="component" placeholder="component (e.g. write_file)" required><input name="inputs" placeholder='inputs as JSON, e.g. {"path": "notes/*"}'>
+          <select name="decision"><option value="allow">allow without asking</option><option value="deny">deny without asking</option></select>
+          <button type="submit">Create — read at the next judgement</button><span class="said" id="rule-said"></span>
+        </form>
+        <div id="rules" class="rules"></div>
+      </details>
+    </div>
   </section>
 </main>
 <script>
@@ -312,18 +329,36 @@ async function showFile(path, quiet) {
   selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = j.content || j.error;
   if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.path === path));
 }
-let modesLoaded = false;
+let modesLoaded = '';
 async function status() {
   const r = await fetch('/status'); const j = await r.json();
   ROOT = j.root; $('provider').textContent = j.provider || '…'; $('root').textContent = j.root; $('env-title').textContent = j.root.split('/').slice(-1)[0] + ' · ' + j.mode;
   const sel = $('mode-select');
-  if (!modesLoaded && (j.modes || []).length) {
-    sel.innerHTML = j.modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + '">' + esc(m.name) + '</option>').join('');
+  const ids = (j.modes || []).map(m => m.id).join(',');
+  if (ids && ids !== modesLoaded) {
+    // The list is read live from the registry (D66): a mode created at runtime appears here.
+    sel.innerHTML = j.modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + (m.source && m.source !== 'shipped' ? ' (' + esc(m.source) + ')' : '') + '">' + esc(m.name) + (m.source && m.source !== 'shipped' ? ' ·' : '') + '</option>').join('');
     sel.onchange = async () => { await fetch('/mode', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({mode: sel.value})}); };
-    modesLoaded = true;
+    modesLoaded = ids;
   }
   if (sel.value !== j.mode) sel.value = j.mode;
   setBusy(j.busy);
+}
+$('new-mode').onsubmit = async ev => {
+  ev.preventDefault(); const f = new FormData(ev.target);
+  const document_ = {id: f.get('id'), name: f.get('name') || '', policy: f.get('policy'), behaviour: f.get('append_system') ? {append_system: f.get('append_system')} : {}};
+  const r = await fetch('/admin/modes', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(document_)});
+  const j = await r.json(); $('mode-said').textContent = j.ok ? 'created ' + j.detail : j.detail; if (j.ok) { status(); }
+};
+$('new-rule').onsubmit = async ev => {
+  ev.preventDefault(); const f = new FormData(ev.target); let inputs = {};
+  try { inputs = f.get('inputs') ? JSON.parse(f.get('inputs')) : {}; } catch (e) { $('rule-said').textContent = 'inputs must be JSON'; return; }
+  const r = await fetch('/admin/rules', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({component: f.get('component'), inputs, decision: f.get('decision')})});
+  const j = await r.json(); $('rule-said').textContent = j.ok ? 'kept' : j.detail; if (j.ok) refreshRules();
+};
+async function refreshRules() {
+  const r = await fetch('/admin/rules'); const j = await r.json();
+  $('rules').textContent = j.rules.length ? j.rules.map(x => x.decision + '  ' + x.component + '  ' + JSON.stringify(x.inputs) + (x.mode ? '  in ' + x.mode : '')).join('\n') : '(no rules yet)';
 }
 $('say').onsubmit = async ev => {
   ev.preventDefault(); const text = $('text').value.trim(); if (!text) return;
@@ -334,7 +369,7 @@ $('say').onsubmit = async ev => {
 $('text').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('say').requestSubmit(); } });
 const es = new EventSource('/stream');
 es.onmessage = ev => onLine(JSON.parse(ev.data));
-status(); refreshFiles(); setInterval(status, 5000);
+status(); refreshFiles(); refreshRules(); setInterval(status, 5000);
 </script>
 </body>
 </html>

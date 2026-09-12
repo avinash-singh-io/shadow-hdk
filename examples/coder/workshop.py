@@ -17,13 +17,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.adapters.agent import SkillComponents, SkillRegistry, shipped_skills
+from shadow_hdk.adapters.agent import (
+    SkillComponents,
+    SkillRegistry,
+    shipped_skills,
+    store_skills,
+)
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.modes import (
     Mode,
     ModeRegistry,
     governance_for,
+    modes_in,
     shipped_modes,
+    store_modes,
 )
 
 from shadow_hdk.adapters.environment import LocalEnvironment
@@ -31,6 +38,7 @@ from shadow_hdk.kernel import Ceiling, Floor, Lease
 from shadow_hdk.runtime import Ports
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.person import person_components
+from shadow_hdk.runtime.switched import Switched, store_switches
 
 # The three policies the harness ships, one per environment mode (D64) — the definitions live in
 # the modes adapter now, not here. Kept as names for the example and its tests; a product builds
@@ -47,8 +55,25 @@ POLICY_FOR: dict[EnvironmentMode, Mode] = {
 }
 
 
+def modes_for(store: Any = None, *, files: Path | None = None) -> ModeRegistry:
+    """The registry a thread reads modes from: shipped, then a `modes/` directory of files, then
+    a store (D66) — later shadowing earlier by id. Live: a row or a file written now is a mode at
+    the next read."""
+    sources: list[Any] = []
+    if files is not None:
+        sources.append(modes_in(files))
+    if store is not None:
+        sources.append(store_modes(store))
+    return ModeRegistry(shipped_modes(), sources=tuple(sources))
+
+
 async def workshop(
-    root: Path, *, mode: EnvironmentMode = "workspace-write", rules: Any = None
+    root: Path,
+    *,
+    mode: EnvironmentMode = "workspace-write",
+    rules: Any = None,
+    store: Any = None,
+    modes: ModeRegistry | None = None,
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
 
@@ -62,18 +87,25 @@ async def workshop(
     # The shipped skills, offered as a component (D55): the provider chooses one through the same
     # socket its file tools go through, and the choice is a step on the record. Choosing is pure,
     # so every mode offers it; minting writes the record, so `read-only` hides it — by effect.
+    skill_sources: tuple[Any, ...] = (shipped_skills(),)
+    if store is not None:
+        skill_sources = (*skill_sources, store_skills(store))  # a row is a skill (D66)
     skills = SkillComponents(
-        SkillRegistry((shipped_skills(),)), minting=True, at="2026-09-11T00:00:00+00:00"
+        SkillRegistry(skill_sources), minting=True, at="2026-09-11T00:00:00+00:00"
     )
+    offered: tuple[Any, ...] = (environment, skills, person_components())
+    if store is not None:
+        # Which components are on is the store's to say (D66): off at the next refresh.
+        offered = tuple(Switched(port, store_switches(store)) for port in offered)
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
         # The agent's own question to the person is a component like any other (D65): no
         # effects, so every mode offers it.
-        components=(environment, skills, person_components()),
+        components=offered,
         # Every shipped mode is judged from; the environment's mode is the one selected by default,
         # and `Thread.set_mode` flips between them live (D64). The host's act rules — "approve and
         # don't ask again" — are read after a mode says *ask* (D65).
-        governance=governance_for(MODES, default=mode, rules=rules),
+        governance=governance_for(modes or MODES, default=mode, rules=rules),
         sink=StdoutSink(),
         clock=SystemClock(),
     )

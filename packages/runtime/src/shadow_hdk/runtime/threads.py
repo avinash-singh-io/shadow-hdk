@@ -446,7 +446,8 @@ class Thread:
         is on the record (`ModeChanged`). An unknown mode raises and changes nothing.
         """
         if self._modes is not None:
-            spec = self._modes.get(mode_id)
+            find = getattr(self._modes, "find", None)
+            spec = await find(mode_id) if find is not None else self._modes.get(mode_id)
             if spec is None:
                 raise KeyError(f"no mode {mode_id!r} in the registry")
             behaviour = spec.behaviour

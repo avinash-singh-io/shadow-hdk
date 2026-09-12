@@ -43,18 +43,23 @@ def load_provider(path: Path) -> Provider:
         raw: dict[str, Any] = tomllib.loads(path.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError) as broken:
         raise MalformedProvider(f"{path.name}: {broken}") from broken
+    return provider_from_data(raw, where=path.name)
 
+
+def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
+    """A provider from the document a file or a store row carries (D66) — the same checks."""
+    raw = dict(raw)
     if unknown := sorted(set(raw) - KNOWN):
         raise MalformedProvider(
-            f"{path.name}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
+            f"{where}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
             f"that loads and does not work"
         )
     for required in ("id", "kind", "bin"):
         if not raw.get(required):
-            raise MalformedProvider(f"{path.name}: {required} is required")
+            raise MalformedProvider(f"{where}: {required} is required")
     if raw["kind"] not in KINDS:
         raise MalformedProvider(
-            f"{path.name}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
+            f"{where}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
         )
 
     made = dict(raw)
@@ -64,12 +69,10 @@ def load_provider(path: Path) -> Provider:
     if "dialect" in made:
         spoken = made["dialect"]
         if not isinstance(spoken, dict):
-            raise MalformedProvider(f"{path.name}: dialect must be a table")
+            raise MalformedProvider(f"{where}: dialect must be a table")
         unknown_here = sorted(set(spoken) - {f.name for f in fields(Dialect)})
         if unknown_here:
-            raise MalformedProvider(
-                f"{path.name}: unknown dialect field(s) {', '.join(unknown_here)}"
-            )
+            raise MalformedProvider(f"{where}: unknown dialect field(s) {', '.join(unknown_here)}")
         for name, value in list(spoken.items()):
             if isinstance(value, list):
                 spoken[name] = tuple(value)
@@ -80,7 +83,7 @@ def load_provider(path: Path) -> Provider:
                 )
             except (KeyError, TypeError) as wrong:
                 raise MalformedProvider(
-                    f"{path.name}: each dialect.behaviour_args entry needs field and flag"
+                    f"{where}: each dialect.behaviour_args entry needs field and flag"
                 ) from wrong
         if "deltas" in spoken:
             try:
@@ -89,7 +92,7 @@ def load_provider(path: Path) -> Provider:
                 )
             except (KeyError, TypeError) as wrong:
                 raise MalformedProvider(
-                    f"{path.name}: each dialect.deltas entry needs on, kind and at"
+                    f"{where}: each dialect.deltas entry needs on, kind and at"
                 ) from wrong
         made["dialect"] = Dialect(**spoken)
     if "set_env" in made:
@@ -98,13 +101,11 @@ def load_provider(path: Path) -> Provider:
                 EnvVar(name=e["name"], value=e["value"]) for e in made["set_env"]
             )
         except (KeyError, TypeError) as wrong:
-            raise MalformedProvider(
-                f"{path.name}: set_env wants name and value ({wrong})"
-            ) from wrong
+            raise MalformedProvider(f"{where}: set_env wants name and value ({wrong})") from wrong
     try:
         return Provider(**made)
     except TypeError as wrong:
-        raise MalformedProvider(f"{path.name}: {wrong}") from wrong
+        raise MalformedProvider(f"{where}: {wrong}") from wrong
 
 
 def shipped() -> dict[str, Provider]:
@@ -117,4 +118,59 @@ def load_dir(where: Path) -> dict[str, Provider]:
     return {p.id: p for p in (load_provider(f) for f in sorted(Path(where).glob("*.toml")))}
 
 
-__all__ = ["MalformedProvider", "load_dir", "load_provider", "shipped"]
+class StoreProviders:
+    """Providers from a `Store`'s `providers` collection (D66): the same document a file carries,
+    reloaded only when the collection's version moved. A malformed row is reported, not loaded."""
+
+    def __init__(self, store: Any, collection: str = "providers") -> None:
+        self._store = store
+        self._collection = collection
+        self._seen = -1
+        self._providers: dict[str, Provider] = {}
+        self._problems: tuple[str, ...] = ()
+
+    async def providers(self) -> dict[str, Provider]:
+        version = await self._store.version(self._collection)
+        if version != self._seen:
+            found: dict[str, Provider] = {}
+            problems: list[str] = []
+            for key, row in await self._store.list(self._collection):
+                if not isinstance(row, dict):
+                    problems.append(f"{self._collection}/{key}: not a table")
+                    continue
+                try:
+                    made = provider_from_data(row, where=f"{self._collection}/{key}")
+                except MalformedProvider as wrong:
+                    problems.append(str(wrong))
+                    continue
+                found[made.id] = made
+            self._providers, self._problems, self._seen = found, tuple(problems), version
+        return dict(self._providers)
+
+    async def problems(self) -> tuple[str, ...]:
+        await self.providers()
+        return self._problems
+
+
+def store_providers(store: Any, collection: str = "providers") -> StoreProviders:
+    return StoreProviders(store, collection)
+
+
+async def library_from(*sources: Any) -> dict[str, Provider]:
+    """The shipped library, then each source in order, later shadowing earlier by id."""
+    found = shipped()
+    for source in sources:
+        found.update(await source.providers())
+    return found
+
+
+__all__ = [
+    "MalformedProvider",
+    "StoreProviders",
+    "library_from",
+    "load_dir",
+    "load_provider",
+    "provider_from_data",
+    "shipped",
+    "store_providers",
+]

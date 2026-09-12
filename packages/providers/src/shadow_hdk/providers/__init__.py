@@ -6,7 +6,16 @@ the port — and it **imports no adapter** to do it, which is the whole of its d
 """
 
 from shadow_hdk.providers.environment import environment_for
-from shadow_hdk.providers.library import MalformedProvider, load_dir, load_provider, shipped
+from shadow_hdk.providers.library import (
+    MalformedProvider,
+    StoreProviders,
+    library_from,
+    load_dir,
+    load_provider,
+    provider_from_data,
+    shipped,
+    store_providers,
+)
 from shadow_hdk.providers.probes import Asked, ask_auth, ask_version
 from shadow_hdk.providers.resolution import candidates, search_dirs
 from shadow_hdk.providers.surface import (
@@ -21,6 +30,10 @@ from shadow_hdk.providers.surface import (
 )
 
 __all__ = [
+    "store_providers",
+    "provider_from_data",
+    "library_from",
+    "StoreProviders",
     "Asked",
     "Available",
     "NoProvider",

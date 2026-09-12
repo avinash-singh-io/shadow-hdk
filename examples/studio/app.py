@@ -9,20 +9,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.adapters.modes import ActRules
+from shadow_hdk.adapters.modes import ActRules, store_rules
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from examples.coder.thread import a_thread
-from examples.coder.workshop import MODES as _MODES
+from examples.coder.workshop import modes_for
 from shadow_hdk.kernel import ActRule, Event
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.providers import NoProvider
 from shadow_hdk.runtime import Approvals, Approve, ApproveAndAddRule, Deny
 from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.items import Fold, as_json
+from shadow_hdk.runtime.store import InMemoryStore
 
 PAGE = Path(__file__).parent / "page.html"
 
@@ -35,9 +36,12 @@ class Studio:
     mode: Mode = "workspace-write"
     want: str | None = None
     approvals: Approvals = field(default_factory=Approvals)
+    store: Any = None
+    """Where live data lives (D66): modes, rules, skills, switches. `None` is in memory."""
     rules: ActRules = field(default_factory=ActRules)
     """The person's "approve and don't ask again" rules (D65): read by governance at the next
-    judgement, kept for the studio's lifetime."""
+    judgement; written through to the store, so they outlive the process."""
+    modes: Any = None
     record: list[dict[str, Any]] = field(default_factory=list)
     """Every event of the run, as JSON, in order — the page catches up from here."""
     watchers: list[asyncio.Queue[dict[str, Any]]] = field(default_factory=list)
@@ -92,6 +96,10 @@ class Studio:
     # ------------------------------------------------------------------ the conversation
 
     async def open(self) -> None:
+        if self.store is None:
+            self.store = InMemoryStore()
+        self.rules = ActRules(sources=(store_rules(self.store),))
+        self.modes = modes_for(self.store, files=self.root / ".harness" / "modes")
         self._conversation = a_thread(
             self.root,
             want=self.want,
@@ -99,6 +107,7 @@ class Studio:
             approvals=self.approvals,
             observer=_Watching(self.on_activity),
             rules=self.rules,
+            store=self.store,
         )
         self.thread = await self._conversation.__aenter__()
         self.provider = self.thread.record.provider or "the provider signed in here"
@@ -152,13 +161,47 @@ class Studio:
         self.note("agent", **answer)
         return answer
 
-    def modes(self) -> list[dict[str, str]]:
-        """What the host offers, for the selector — id, name, description, and which is current."""
-        if self.thread is None:
+    async def mode_list(self) -> list[dict[str, str]]:
+        """What the host offers, for the selector — read live from the registry (D66)."""
+        if self.modes is None:
             return []
         return [
-            {"id": m.id, "name": m.name, "description": m.description} for m in _MODES.listing()
+            {"id": m.id, "name": m.name, "description": m.description, "source": m.source}
+            for m in await self.modes.all()
         ]
+
+    # ------------------------------------------------------------------ live data (D66)
+
+    async def create_mode(self, document: dict[str, Any]) -> tuple[bool, str]:
+        """A mode created at runtime through the store: judged from at the next step, offered in
+        the selector at the next read. Validated by the same function a file goes through."""
+        from shadow_hdk.adapters.modes import mode_from_document
+
+        try:
+            made = mode_from_document(document, source="store")
+        except ValueError as wrong:
+            return False, str(wrong)
+        await self.store.put("modes", made.id, document)
+        self.note("mode_created", mode=made.id)
+        return True, made.id
+
+    async def create_rule(self, document: dict[str, Any]) -> tuple[bool, str]:
+        try:
+            rule = ActRule(
+                component=str(document["component"]),
+                inputs=dict(document.get("inputs", {}) or {}),
+                decision=document.get("decision", "allow"),
+                mode=str(document.get("mode", "") or ""),
+                note=str(document.get("note", "") or ""),
+            )
+        except (KeyError, TypeError, ValueError) as wrong:
+            return False, f"a rule needs a component and inputs: {wrong}"
+        await self.rules.add_now(rule)
+        self.note("rule_created", component=rule.component)
+        return True, rule.component
+
+    async def rule_list(self) -> list[dict[str, Any]]:
+        return [json.loads(dump(r, ActRule)) for r in await self.rules.all_now()]
 
     @property
     def current_mode(self) -> str:
@@ -168,9 +211,11 @@ class Studio:
         if self.thread is None:
             return False
         try:
-            await self.thread.set_mode(mode_id)
+            changed = await self.thread.set_mode(mode_id)
         except KeyError:
             return False
+        for event in changed:
+            self.on_event(event)  # `ModeChanged` is on the record, between turns too (D64)
         self.note("mode", mode=mode_id)
         return True
 
@@ -275,7 +320,7 @@ def build_app(studio: Studio) -> Starlette:
             {
                 "root": str(studio.root),
                 "mode": studio.current_mode,
-                "modes": studio.modes(),
+                "modes": await studio.mode_list(),
                 "provider": studio.provider,
                 "busy": studio.busy,
                 "pending": [
@@ -334,6 +379,17 @@ def build_app(studio: Studio) -> Starlette:
         )
         return JSONResponse({"ok": done})
 
+    async def create_mode(request: Request) -> JSONResponse:
+        ok, said = await studio.create_mode(await request.json())
+        return JSONResponse({"ok": ok, "detail": said}, status_code=200 if ok else 400)
+
+    async def create_rule(request: Request) -> JSONResponse:
+        ok, said = await studio.create_rule(await request.json())
+        return JSONResponse({"ok": ok, "detail": said}, status_code=200 if ok else 400)
+
+    async def rules(_request: Request) -> JSONResponse:
+        return JSONResponse({"rules": await studio.rule_list()})
+
     async def files(_request: Request) -> JSONResponse:
         return JSONResponse({"files": studio.files()})
 
@@ -351,6 +407,9 @@ def build_app(studio: Studio) -> Starlette:
             Route("/say", say, methods=["POST"]),
             Route("/answer", answer, methods=["POST"]),
             Route("/mode", set_mode, methods=["POST"]),
+            Route("/admin/modes", create_mode, methods=["POST"]),
+            Route("/admin/rules", create_rule, methods=["POST"]),
+            Route("/admin/rules", rules),
             Route("/files", files),
             Route("/file", file),
         ]

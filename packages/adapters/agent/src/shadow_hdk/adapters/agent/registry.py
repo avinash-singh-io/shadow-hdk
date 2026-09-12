@@ -27,7 +27,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from importlib import resources
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
 from pydantic import JsonValue
@@ -62,6 +62,36 @@ class DirectorySkills:
         return tuple(
             load_skill(path, source=self.source) for path in sorted(self.where.glob("*.toml"))
         )
+
+
+class StoreSkills:
+    """Every row of a `Store`'s `skills` collection (D66), reloaded only when its version moved —
+    the same document a skill file carries: `name`, `prompt`, `description`, `needs`."""
+
+    def __init__(self, store: Any, collection: str = "skills") -> None:
+        self._store = store
+        self._collection = collection
+        self._seen = -1
+        self._skills: tuple[Skill, ...] = ()
+
+    async def skills(self) -> Sequence[Skill]:
+        version = await self._store.version(self._collection)
+        if version != self._seen:
+            found: list[Skill] = []
+            for key, row in await self._store.list(self._collection):
+                if isinstance(row, dict):
+                    try:
+                        found.append(
+                            skill_from(row, where=f"{self._collection}/{key}", source="store")
+                        )
+                    except (KeyError, ValueError, TypeError):
+                        continue  # a malformed row is skipped, never fatal to the registry
+            self._skills, self._seen = tuple(found), version
+        return self._skills
+
+
+def store_skills(store: Any, collection: str = "skills") -> StoreSkills:
+    return StoreSkills(store, collection)
 
 
 class MintedSkills:
@@ -310,6 +340,8 @@ def shipped_skills() -> DirectorySkills:
 
 
 __all__ = [
+    "StoreSkills",
+    "store_skills",
     "MINT_SKILL",
     "USE_SKILL",
     "DirectorySkills",

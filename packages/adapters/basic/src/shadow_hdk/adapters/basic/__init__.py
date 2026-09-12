@@ -6,6 +6,7 @@ from shadow_hdk.adapters.basic.governance import AllowAll, Controlled
 from shadow_hdk.adapters.basic.mailbox import Mailbox
 from shadow_hdk.adapters.basic.observers import CallbackObserver, StdoutObserver
 from shadow_hdk.adapters.basic.sinks import CallbackSink, FileSink, StdoutSink, proposals_in
+from shadow_hdk.adapters.basic.store import SqliteStore
 from shadow_hdk.adapters.basic.threads import SqliteThreads
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "CallbackSink",
     "Mailbox",
     "StdoutObserver",
+    "SqliteStore",
     "SqliteThreads",
     "StdoutSink",
     "SystemClock",

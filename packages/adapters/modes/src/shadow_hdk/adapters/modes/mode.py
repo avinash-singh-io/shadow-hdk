@@ -58,9 +58,15 @@ class ModeGovernance(GovernancePort):
         *ask* — a matching `allow` rule stands in for the person, a matching `deny` refuses without
         asking. Read at every judgement, so a rule added at answer time holds at the next step.
         A rule never widens a ceiling: what the mode refuses stays refused."""
-        if default not in modes:
-            raise ValueError(f"default mode {default!r} is not one of {sorted(modes)}")
-        self._modes = dict(modes)
+        self._registry = modes if hasattr(modes, "find") else None
+        self._modes: dict[str, Mode] = {} if self._registry is not None else dict(modes)
+        known = (
+            {spec.id for spec in self._registry.listing()}
+            if self._registry is not None
+            else set(self._modes)
+        )
+        if default not in known:
+            raise ValueError(f"default mode {default!r} is not one of {sorted(known)}")
         self._default = default
         self._key = key
         self._rules = rules
@@ -68,15 +74,15 @@ class ModeGovernance(GovernancePort):
     async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
         selected = context.attributes.get(self._key, self._default)
         name = selected if isinstance(selected, str) else self._default
-        mode = self._modes.get(name)
+        mode = await self._mode_named(name)
         if mode is None:
             # **Never fall back to a wider mode.** The dangerous failure is silent widening: a typo
             # resolving to whatever the default happens to be. Refuse, and say which name it was.
-            return Refuse(f"{name!r} is not a mode here; known modes are {sorted(self._modes)}")
+            return Refuse(f"{name!r} is not a mode here; known modes are {self.known}")
         if not effects.narrows(mode.ceiling):
             return Refuse(f"mode {mode.name!r} does not permit this")
         if mode.ask_above is not None and not effects.narrows(mode.ask_above):
-            ruled = self._ruled(context, name)
+            ruled = await self._ruled(context, name)
             if ruled == "allow":
                 return Allow()
             if ruled == "deny":
@@ -84,14 +90,37 @@ class ModeGovernance(GovernancePort):
             return Ask(f"mode {mode.name!r} asks before this: {_why(effects, mode.ask_above)}")
         return Allow()
 
-    def _ruled(self, context: Context, mode: str) -> str | None:
-        """What the host's rules say about this act, if they know it (D65)."""
+    async def _mode_named(self, name: str) -> Mode | None:
+        """The policy by mode id — from the registry, read now (D66), or the mapping handed in."""
+        if self._registry is None:
+            return self._modes.get(name)
+        spec = await self._registry.find(name)
+        if spec is None:
+            return None
+        from dataclasses import replace as _replace
+
+        policy: Mode = _replace(spec.policy, name=spec.id)
+        return policy
+
+    @property
+    def known(self) -> list[str]:
+        if self._registry is not None:
+            return sorted(spec.id for spec in self._registry.listing())
+        return sorted(self._modes)
+
+    async def _ruled(self, context: Context, mode: str) -> str | None:
+        """What the host's rules say about this act, if they know it (D65), read now (D66)."""
         if self._rules is None:
             return None
         component = context.attributes.get("component")
         if not isinstance(component, str):
             return None
-        decided = self._rules.decide(component, context.attributes.get("inputs"), mode=mode)
+        inputs = context.attributes.get("inputs")
+        decide_now = getattr(self._rules, "decide_now", None)
+        if decide_now is not None:
+            decided = await decide_now(component, inputs, mode=mode)
+        else:
+            decided = self._rules.decide(component, inputs, mode=mode)
         return decided if isinstance(decided, str) else None
 
 

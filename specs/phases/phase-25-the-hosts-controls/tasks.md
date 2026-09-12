@@ -32,8 +32,8 @@ phase: 25
 - [x] `ask_person` → `InputRequested`, answered with text through the handle; over the wire
 
 ## Group 6 — the Store
-- [ ] `Store` port; sqlite adapter; a source of every registry; refreshed at step boundaries
-- [ ] the invariant: every registry has a store source
+- [x] `Store` port; in-memory and sqlite under one contract; a source of modes, rules, skills, components (`Switched`), providers; read at every judgement / refresh; modes from files too
+- [x] the invariant: every registry has a store source (`test_every_registry_has_a_store_source.py`)
 
 ## Group 7 — the studio
 - [ ] collapsed item runs; deltas; mode selector; InputRequest item; approve-and-add-rule

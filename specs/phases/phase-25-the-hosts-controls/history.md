@@ -194,3 +194,44 @@ without asking: it called `ask_person`, got "Hindi", asked approval for the writ
 (a rule for another component; a prefix that should not match).
 
 ---
+
+### [DECISION] 2026-09-12 — D66: one `Store` port, and every registry reads it live
+
+Topics: store, registries, live-data, modes, rules, skills, switches, providers, principle-10
+Affects-phases: phase-25-the-hosts-controls
+Affects-specs: architecture/runtime.md#modules, architecture/adapters.md, planning/the-substrate.md#3.10
+
+Principle 10 — data changes live, code changes restart — as a mechanism. **`Store`** (kernel
+port): collections of JSON rows by key, and **a version per collection that moves on every
+write**, so a registry asks "has anything changed?" for one read and reloads only when it has.
+`InMemoryStore` (runtime) and `SqliteStore` (basic adapter) under one contract suite; a product
+implements it over its own database.
+
+Every registry takes a store as **one more source**, later shadowing earlier by id: `ModeRegistry`
+(`store_modes`; `find`/`all` read the sources every time; `ModeGovernance` now holds the registry
+and reads it at every judgement, so a mode row written now judges the next step); `ActRules`
+(`store_rules`; `decide_now` reads live; `add_now` writes the person's rule *through* to the store,
+so it outlives the process — `accept_answer` uses it); `SkillRegistry` (`store_skills`, a row is
+the same document a skill file carries); components (`Switched` over any port with
+`store_switches`: a component turned off is not offered at the next refresh and refused if
+invoked); the provider library (`library_from(store_providers(store))`, a row the same document
+a TOML file carries, checked by the same function — a malformed row is reported exactly as a
+malformed file would be). **Modes come from files too**, in the shape a person writes (OpenCode's):
+`reviewer.md` with frontmatter and the body as the prompt, or `builder.toml`; `modes_in(dir)`,
+read on every call. A mode document names a *shipped policy* (`policy: read-only`) — effect
+profiles are never authored by hand in a row or a file.
+
+An invariant holds the line: every class in the tree named `*Registry`/`*Rules` (and `Switched`)
+must have a store source and a test proving a write is read at the next read, or a recorded
+reason it is not a registry in this sense.
+
+Measured live on the subscription (two turns, sqlite store): a mode `pirate` created through the
+studio's admin endpoint appeared in the selector with `source: store`, was switched to (the
+provider reopened with its behaviour — "Arr…"), and its `read-only` policy left the agent no
+write tool; a rule for `treasure.txt` created the same way let the next write through with zero
+questions; both rows are in `live.sqlite`. Ten mutants killed.
+
+*Why:* a product manages its modes, rules, skills and tools from its database with CRUD, never
+by editing a file, redeploying or restarting (principle 10); only the substrate is code.
+
+---

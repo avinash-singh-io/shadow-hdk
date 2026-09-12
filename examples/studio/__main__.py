@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import uvicorn
+from shadow_hdk.adapters.basic import SqliteStore
 
 from examples.studio.app import NoProvider, Studio, build_app
 from shadow_hdk.runtime.environment import CannotEnforce, Mode
@@ -25,7 +26,9 @@ async def main() -> int:
     root.mkdir(parents=True, exist_ok=True)
     mode: Mode = flag("mode", "workspace-write")  # type: ignore[assignment]
     port = int(flag("port", "8765"))
-    studio = Studio(root=root, mode=mode, want=flag("provider", "") or None)
+    # Live data outlives the process when a store file is named (D66); in memory otherwise.
+    store = SqliteStore(flag("store", "")) if flag("store", "") else None
+    studio = Studio(root=root, mode=mode, want=flag("provider", "") or None, store=store)
     try:
         await studio.open()
     except NoProvider as nothing:

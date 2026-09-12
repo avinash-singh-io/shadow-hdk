@@ -83,6 +83,7 @@ rather than remembered.
 | D63 | the record is complete; the activity is live | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 | D64 | a mode is a policy, a behaviour and a presentation — data, live | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 | D65 | "approve and add a rule" is a rule the person makes; the agent's question is an item | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
+| D66 | one `Store` port, and every registry reads it live | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 
 ## Also here
 

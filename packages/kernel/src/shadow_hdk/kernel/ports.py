@@ -304,6 +304,25 @@ class AgentSession(Protocol):
 
 
 @runtime_checkable
+class Store(Protocol):
+    """Where a product's live data lives (D66, principle 10): collections of JSON rows by key,
+    and a **version per collection that moves on every write**, so a registry can ask "has
+    anything changed?" for the price of one read and reload only when it has. Modes, rules,
+    skills, which components are on, providers — each registry takes a store as one more source.
+    A product implements it over its own database or takes the shipped sqlite."""
+
+    async def put(self, collection: str, key: str, row: JsonValue) -> None: ...
+
+    async def get(self, collection: str, key: str) -> JsonValue | None: ...
+
+    async def delete(self, collection: str, key: str) -> None: ...
+
+    async def list(self, collection: str) -> tuple[tuple[str, JsonValue], ...]: ...
+
+    async def version(self, collection: str) -> int: ...
+
+
+@runtime_checkable
 class ThreadStore(Protocol):
     """Where threads live (D62). A port, so a product keeps them in its own tables — or does not
     use threads at all and drives turns directly; the runtime never requires one."""

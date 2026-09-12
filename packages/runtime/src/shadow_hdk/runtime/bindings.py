@@ -401,7 +401,11 @@ class RunContext:
                 rule = load(json.dumps(rule), ActRule)
             registry = self._session.rules
             if registry is not None:
-                registry.add(rule)
+                add_now = getattr(registry, "add_now", None)
+                if add_now is not None:
+                    await add_now(rule)  # through to the store, when the registry has one (D66)
+                else:
+                    registry.add(rule)
             from shadow_hdk.kernel import Provenance
 
             await self.propose(

@@ -306,6 +306,35 @@ class ThreadStoreContract:
         assert sorted(t.id for t in await store.list(include_archived=True)) == ["a", "b"]
 
 
+class StoreContract:
+    """Override `store` with a fresh, empty store each call (D66)."""
+
+    def store(self) -> Any:
+        raise NotImplementedError
+
+    async def test_rows_round_trip_and_versions_move_per_collection(self) -> None:
+        store = self.store()
+        assert await store.version("a") == 0
+        await store.put("a", "k", {"x": [1, 2, {"y": None}]})
+        assert await store.get("a", "k") == {"x": [1, 2, {"y": None}]}
+        assert await store.version("a") == 1 and await store.version("b") == 0
+        await store.put("a", "k", {"x": 2})
+        assert await store.get("a", "k") == {"x": 2}, "put replaces"
+        assert await store.version("a") == 2
+
+    async def test_list_delete_and_a_missing_row(self) -> None:
+        store = self.store()
+        await store.put("c", "one", 1)
+        await store.put("c", "two", 2)
+        assert sorted(await store.list("c")) == [("one", 1), ("two", 2)]
+        await store.delete("c", "one")
+        assert await store.list("c") == (("two", 2),)
+        assert await store.get("c", "one") is None
+        before = await store.version("c")
+        await store.delete("c", "nobody")
+        assert await store.version("c") == before, "deleting nothing changes nothing"
+
+
 def an_observation() -> Observation:
     return Completed({"ok": True})
 

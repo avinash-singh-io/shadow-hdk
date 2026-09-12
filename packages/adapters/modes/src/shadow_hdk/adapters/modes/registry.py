@@ -10,8 +10,8 @@ never imports this adapter, so a product may hand in its own.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field, replace
-from typing import Any
+from dataclasses import dataclass, field, fields, replace
+from typing import Any, Protocol
 
 from shadow_hdk.adapters.modes.mode import Mode as Policy
 from shadow_hdk.adapters.modes.mode import ModeGovernance
@@ -56,13 +56,47 @@ class ModeSpec:
         )
 
 
-class ModeRegistry:
-    """The modes a host offers, later shadowing earlier by id — shipped, files, a store."""
+class ModeSource(Protocol):
+    """Where modes come from beyond the ones handed in: files, a store (D66)."""
 
-    def __init__(self, specs: Iterable[ModeSpec] = ()) -> None:
-        self._by_id: dict[str, ModeSpec] = {}
-        for spec in specs:
-            self._by_id[spec.id] = spec
+    async def modes(self) -> tuple[ModeSpec, ...]: ...
+
+    async def problems(self) -> tuple[str, ...]: ...
+
+
+class ModeRegistry:
+    """The modes a host offers — the ones handed in, then each source in order, later shadowing
+    earlier by id. `find` reads the sources every time, which is what makes a row written now a
+    mode at the next read (principle 10); `get`/`listing`/`policies` are the last snapshot, for
+    callers that cannot await."""
+
+    def __init__(self, specs: Iterable[ModeSpec] = (), *, sources: Sequence[ModeSource] = ()):
+        self._handed: dict[str, ModeSpec] = {spec.id: spec for spec in specs}
+        self._by_id: dict[str, ModeSpec] = dict(self._handed)
+        self.sources: tuple[ModeSource, ...] = tuple(sources)
+        self._problems: tuple[str, ...] = ()
+
+    async def refresh(self) -> None:
+        merged = dict(self._handed)
+        problems: list[str] = []
+        for source in self.sources:
+            for spec in await source.modes():
+                merged[spec.id] = spec
+            problems.extend(await source.problems())
+        self._by_id = merged
+        self._problems = tuple(problems)
+
+    async def find(self, mode_id: str) -> ModeSpec | None:
+        await self.refresh()
+        return self._by_id.get(mode_id)
+
+    async def all(self) -> tuple[ModeSpec, ...]:
+        await self.refresh()
+        return tuple(self._by_id.values())
+
+    async def problems(self) -> tuple[str, ...]:
+        await self.refresh()
+        return self._problems
 
     def listing(self) -> Sequence[ModeSpec]:
         return list(self._by_id.values())
@@ -77,9 +111,93 @@ class ModeRegistry:
 def governance_for(
     registry: ModeRegistry, *, default: str, key: str = "mode", rules: Any = None
 ) -> ModeGovernance:
-    """`ModeGovernance` over a registry's policies — one selection, by the context key `mode` —
+    """`ModeGovernance` over the registry itself — one selection, by the context key `mode`,
+    read at every judgement so a mode added to a source is judged from at the next step (D66) —
     consulting the host's `ActRules` after it says *ask* (D65)."""
-    return ModeGovernance(registry.policies(), default=default, key=key, rules=rules)
+    return ModeGovernance(registry, default=default, key=key, rules=rules)
+
+
+SHIPPED_POLICY_IDS = ("read-only", "workspace-write", "full")
+
+
+def policy_named(name: str) -> Policy | None:
+    """A shipped policy by the mode id that carries it — what a file or a row names instead of
+    authoring effect profiles by hand (D66)."""
+    for spec in shipped_modes():
+        if spec.id == name:
+            return spec.policy
+    return None
+
+
+def mode_from_document(document: Any, *, source: str) -> ModeSpec:
+    """A mode from the JSON a file or a row carries: `id`, `name`, `description`, `policy` (the
+    id of a shipped policy — never effects by hand), `behaviour` (a `Behaviour`'s fields).
+    Raises `ValueError` naming what is wrong."""
+    if not isinstance(document, dict):
+        raise ValueError("a mode is a table")
+    mode_id = str(document.get("id", "") or "")
+    if not mode_id:
+        raise ValueError("a mode needs an id")
+    policy_name = str(document.get("policy", "") or "")
+    policy = policy_named(policy_name) if policy_name else None
+    if policy is None:
+        raise ValueError(
+            f"mode {mode_id!r} names policy {policy_name!r}, which is not one of "
+            f"{list(SHIPPED_POLICY_IDS)}"
+        )
+    raw = document.get("behaviour", {}) or {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"mode {mode_id!r}: behaviour is a table")
+    known = {f.name for f in fields(Behaviour)}
+    if unknown := sorted(set(raw) - known):
+        raise ValueError(f"mode {mode_id!r}: unknown behaviour field(s) {', '.join(unknown)}")
+    made: dict[str, Any] = dict(raw)
+    if "tools_offered" in made:
+        made["tools_offered"] = tuple(made["tools_offered"])
+    return ModeSpec.of(
+        mode_id,
+        policy=policy,
+        name=str(document.get("name", "") or ""),
+        description=str(document.get("description", "") or ""),
+        behaviour=Behaviour(**made),
+        source=source,
+    )
+
+
+class StoreModes:
+    """Modes from a `Store`'s `modes` collection, reloaded only when its version moved."""
+
+    def __init__(self, store: Any, collection: str = "modes") -> None:
+        self._store = store
+        self._collection = collection
+        self._seen = -1
+        self._modes: tuple[ModeSpec, ...] = ()
+        self._problems: tuple[str, ...] = ()
+
+    async def _load(self) -> None:
+        version = await self._store.version(self._collection)
+        if version == self._seen:
+            return
+        modes: list[ModeSpec] = []
+        problems: list[str] = []
+        for key, row in await self._store.list(self._collection):
+            try:
+                modes.append(mode_from_document(row, source="store"))
+            except ValueError as wrong:
+                problems.append(f"{self._collection}/{key}: {wrong}")
+        self._modes, self._problems, self._seen = tuple(modes), tuple(problems), version
+
+    async def modes(self) -> tuple[ModeSpec, ...]:
+        await self._load()
+        return self._modes
+
+    async def problems(self) -> tuple[str, ...]:
+        await self._load()
+        return self._problems
+
+
+def store_modes(store: Any, collection: str = "modes") -> StoreModes:
+    return StoreModes(store, collection)
 
 
 def _looking() -> Policy:
@@ -153,4 +271,14 @@ def shipped_modes() -> tuple[ModeSpec, ...]:
     )
 
 
-__all__ = ["ModeRegistry", "ModeSpec", "governance_for", "shipped_modes"]
+__all__ = [
+    "ModeRegistry",
+    "ModeSource",
+    "ModeSpec",
+    "StoreModes",
+    "governance_for",
+    "mode_from_document",
+    "policy_named",
+    "shipped_modes",
+    "store_modes",
+]

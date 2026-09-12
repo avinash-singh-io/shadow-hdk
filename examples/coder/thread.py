@@ -21,7 +21,7 @@ from typing import Any
 
 from shadow_hdk.adapters.recording import SocketOffer
 
-from examples.coder.workshop import MODES, a_lease, workshop
+from examples.coder.workshop import a_lease, modes_for, workshop
 from shadow_hdk.kernel import ThreadStore
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals
@@ -36,10 +36,11 @@ async def a_thread(
     want: str | None = None,
     mode: EnvironmentMode = "workspace-write",
     approvals: Approvals | None = None,
-    store: ThreadStore | None = None,
+    threads: ThreadStore | None = None,
     name: str = "tools",
     observer: Any = None,
     rules: Any = None,
+    store: Any = None,
 ) -> AsyncIterator[Thread]:
     """A thread on the provider signed in here, its tools this run's, inside the workshop.
 
@@ -57,16 +58,20 @@ async def a_thread(
         env=environment_for(available.provider, base={}, search=search_dirs()),
         workspace=root,
     )
+    modes = modes_for(store, files=root / ".harness" / "modes")  # live: rows and files (D66)
     thread = await Thread.open(
         agent=opened,
-        ports=replace(await workshop(root, mode=mode, rules=rules), observer=observer),
-        store=store or InMemoryThreads(),
+        ports=replace(
+            await workshop(root, mode=mode, rules=rules, store=store, modes=modes),
+            observer=observer,
+        ),
+        store=threads or InMemoryThreads(),
         root=root,
         lease=a_lease(),
         registry=SocketOffer(name=name, withhold={TURN}),
         approvals=approvals,
         rules=rules,
-        modes=MODES,
+        modes=modes,
         mode=mode,
         provider=f"{available.provider.called} {available.version or ''}".strip(),
     )
