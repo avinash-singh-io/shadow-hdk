@@ -102,7 +102,10 @@ async def test_the_constructor_is_the_file_without_the_file(tmp_path: Path) -> N
                 "workspace-write",
                 "full",
             ]
-            changed = await h.set_mode("full")
+            # A mode that differs from the one open: a no-op `set_mode` records nothing (D64),
+            # and on a machine that can only open `full`, `full` would be that no-op.
+            other = "read-only" if ENFORCEABLE != "read-only" else "full"
+            changed = await h.set_mode(other)
             assert [e.kind for e in changed] == ["mode_changed"]
     assert h.problems == (), "nothing was wanted that could not be had"
 
