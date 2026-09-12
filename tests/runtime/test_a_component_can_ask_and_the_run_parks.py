@@ -29,8 +29,8 @@ from shadow_hdk.kernel import (
     Lease,
     Observation,
 )
-from shadow_hdk.kernel.events import Asked as AskedEvent
-from shadow_hdk.kernel.observations import Asked, Refused
+from shadow_hdk.kernel.events import ApprovalRequested
+from shadow_hdk.kernel.observations import ApprovalRequest, Refused
 from shadow_hdk.kernel.ports import Allow, Refuse
 from shadow_hdk.runtime import Ports, RunOptions, current_run, resume, run
 from shadow_hdk.runtime.testing import (
@@ -65,7 +65,7 @@ class AsksOnce:
         )
         if back is None:
             await context.keep({"draft": "half done", "n": 3})
-            return Asked(question="may I finish?", handle="mine-1")
+            return ApprovalRequest(question="may I finish?", handle="mine-1")
         if isinstance(back.answer, Refuse):
             return Refused(back.answer.reason)
         return Completed({"finished": True, "from": back.kept})
@@ -104,7 +104,7 @@ async def test_a_component_that_asks_parks_the_run_with_its_question() -> None:
 
     parked = await _collect(run(PLAN, _ports(asker), options=_options(saver)))
 
-    asked = [e for e in parked if isinstance(e, AskedEvent)]
+    asked = [e for e in parked if isinstance(e, ApprovalRequested)]
     assert [a.question for a in asked] == ["may I finish?"]
     assert asked[0].step == "s1" and asked[0].handle == "asks:s1"
     assert not [e for e in parked if isinstance(e, Ended)], "a parked run must not report Ended"
@@ -195,6 +195,6 @@ async def test_a_step_that_runs_again_starts_a_fresh_leg() -> None:
     await _collect(run(plan, _ports(asker), options=options))
     second = await _collect(resume(plan, Allow(), _ports(asker), options=options))
 
-    questions = [e.question for e in second if isinstance(e, AskedEvent)]
+    questions = [e.question for e in second if isinstance(e, ApprovalRequested)]
     assert questions == ["may I finish?"], "the second run of s1 did not ask on its own account"
     assert [leg["answer"] for leg in asker.legs] == [None, Allow(), None]

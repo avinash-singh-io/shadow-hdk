@@ -1,8 +1,9 @@
 """What a call cost.
 
 Its own module because two things need it and one of them cannot import the other: `ports.Message`
-and friends describe a model call, and `events.Spent` records what one cost — and `ports` already
-imports `events` for `ObserverPort`. A value type shared by both belongs beneath both.
+and friends describe a model call, and `events.UsageReported` records what one cost — and
+`ports` already imports `events` for `ObserverPort`. A value type shared by both belongs beneath
+both.
 """
 
 from __future__ import annotations

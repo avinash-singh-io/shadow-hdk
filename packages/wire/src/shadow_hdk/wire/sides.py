@@ -34,20 +34,20 @@ from shadow_hdk.kernel.ports import (
     ModelResponse,
     Refuse,
 )
-from shadow_hdk.runtime import Ports, Questions, RunOptions
-from shadow_hdk.runtime.steps import Fold, Step, as_json
+from shadow_hdk.runtime import Approvals, Ports, RunOptions
+from shadow_hdk.runtime.items import Fold, Item, as_json
 from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     COMPLETE,
-    CONTEXT_ASK,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
     CONTEXT_PROPOSE,
-    CONTEXT_REASONED,
+    CONTEXT_REASONING,
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
+    CONTEXT_REQUEST_APPROVAL,
     CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
@@ -55,13 +55,13 @@ from shadow_hdk.wire.protocol import (
     EVENT,
     INITIALIZE,
     INVOKE,
+    ITEM,
     JUDGE,
     PROPOSE,
     PROTOCOL_VERSION,
     REGISTRATIONS,
     RESUME,
     RUN,
-    STEP,
     Agreed,
     VersionMismatch,
     WireError,
@@ -90,8 +90,8 @@ class RuntimeSide:
         self._clock = clock
         from langgraph.checkpoint.memory import InMemorySaver
 
-        self.questions = Questions()
-        """**A session owns a `Questions` handle** (D58): a live question from a component on the
+        self.approvals = Approvals()
+        """**A session owns a `Approvals` handle** (D58): a live question from a component on the
         host's side lands here, where the process serving the runtime can answer it — the same
         way it owns the checkpointer. A host in another language answers through its own process's
         surface on this object; the loopback tests reach it directly."""
@@ -108,7 +108,7 @@ class RuntimeSide:
         self.peer.serves(RESUME, self._resume)
         self.peer.serves(CONTEXT_PROPOSE, self._context_propose)
         self.peer.serves(CONTEXT_REMAINING, self._context_remaining)
-        self.peer.serves(CONTEXT_REASONED, self._context_reasoned)
+        self.peer.serves(CONTEXT_REASONING, self._context_reasoning)
         self.peer.serves(CONTEXT_VISIBLE, self._context_visible)
         self.peer.serves(CONTEXT_FLOOR_MET, self._context_floor_met)
         self.peer.serves(CONTEXT_SPAWN, self._context_spawn)
@@ -116,7 +116,7 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_RELEASE, self._context_release)
         self.peer.serves(CONTEXT_IS_HELD, self._context_is_held)
         self.peer.serves(CONTEXT_KEEP, self._context_keep)
-        self.peer.serves(CONTEXT_ASK, self._context_ask)
+        self.peer.serves(CONTEXT_REQUEST_APPROVAL, self._context_request_approval)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
 
     def ports(self) -> Ports:
@@ -136,10 +136,10 @@ class RuntimeSide:
         await self.live.propose(load(json.dumps(params["proposal"]), Proposal))
         return None
 
-    async def _context_reasoned(self, params: dict[str, Any]) -> Any:
+    async def _context_reasoning(self, params: dict[str, Any]) -> Any:
         if self.live is None:
             raise RuntimeError("nothing is running, so there is no record to think on")
-        await self.live.reasoned(str(params.get("text", "")), step=params.get("step"))
+        await self.live.reasoning(str(params.get("text", "")), step=params.get("step"))
         return None
 
     async def _context_visible(self, _params: dict[str, Any]) -> Any:
@@ -149,10 +149,10 @@ class RuntimeSide:
             "registrations": [json.loads(dump(r, Registration)) for r in await self.live.visible()]
         }
 
-    async def _context_ask(self, params: dict[str, Any]) -> Any:
+    async def _context_request_approval(self, params: dict[str, Any]) -> Any:
         if self.live is None:
             raise RuntimeError("nothing is running, so there is nobody to ask")
-        answer = await self.live.ask(
+        answer = await self.live.request_approval(
             str(params.get("question", "")),
             step=params.get("step"),
             about=(params.get("component"), params.get("inputs")),
@@ -259,7 +259,7 @@ class RuntimeSide:
             principal=params.get("principal"),
             run_id=params.get("run_id"),
             checkpointer=self._checkpointer,
-            questions=self.questions,
+            approvals=self.approvals,
         )
         ports = self.ports()
         stream = (
@@ -271,13 +271,13 @@ class RuntimeSide:
         # **One fold, both sides of the wire** (D46). The events cross as they always did; the
         # steps cross already folded, so a host in another language renders them without porting
         # the fold — and parity with in-process is by construction, because this is the same
-        # `Fold` that `steps()` and `run_steps()` use.
+        # `Fold` that `steps()` and `run_items()` use.
         fold = Fold()
         async for event in stream:
             count += 1
             await self.peer.notify(EVENT, {"event": json.loads(dump(event, Event))})
             for done in fold.feed(event):
-                await self.peer.notify(STEP, {"step": as_json(done)})
+                await self.peer.notify(ITEM, {"item": as_json(done)})
         return {"events": count}
 
 
@@ -288,7 +288,7 @@ class HostSide:
         self.peer = Peer(channel, name="host")
         self.ports = ports
         self.events: list[Event] = []
-        self.steps: list[Step] = []
+        self.items: list[Item] = []
         """The projection, as the runtime folded it — one entry per closed top-level step."""
         self.child_pid: int | None = None
         self.session_id: str | None = None
@@ -302,7 +302,7 @@ class HostSide:
         self.peer.serves(INVOKE, self._invoke)
         self.peer.serves(PROPOSE, self._propose)
         self.peer.hears(EVENT, self._event)
-        self.peer.hears(STEP, self._step)
+        self.peer.hears(ITEM, self._item)
 
     async def initialize(self, *, protocol_version: str = PROTOCOL_VERSION) -> Agreed:
         from shadow_hdk.wire.peer import RemoteError
@@ -408,8 +408,8 @@ class HostSide:
         if self.watching is not None:
             self.watching(event)
 
-    async def _step(self, params: dict[str, Any]) -> None:
-        self.steps.append(load(json.dumps(params["step"]), Step))
+    async def _item(self, params: dict[str, Any]) -> None:
+        self.items.append(load(json.dumps(params["item"]), Item))
 
 
 @asynccontextmanager

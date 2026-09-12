@@ -20,7 +20,7 @@ from shadow_hdk.adapters.recording import RecordingServer
 
 from shadow_hdk.kernel import EffectProfile, Ended, ScopeSet
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement
-from shadow_hdk.runtime import Questions, RunContext
+from shadow_hdk.runtime import Approvals, RunContext
 
 from .conftest import with_a_run
 
@@ -48,7 +48,7 @@ class AsksAboutWrites:
 
 
 async def test_two_questions_at_once_answered_backwards() -> None:
-    questions = Questions()
+    questions = Approvals()
     order: list[str] = []
 
     async def the_host_answers_backwards() -> None:
@@ -71,7 +71,7 @@ async def test_two_questions_at_once_answered_backwards() -> None:
             await host
 
     (one, two), _ = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
 
     assert order == ["second", "first"]
@@ -89,7 +89,7 @@ async def test_two_questions_over_the_socket_answered_backwards() -> None:
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
 
     async def the_host_answers_backwards() -> None:
         first = await asyncio.wait_for(questions.next(), 20)
@@ -122,7 +122,7 @@ async def test_two_questions_over_the_socket_answered_backwards() -> None:
                     await host
 
     (one, two), _ = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
     assert not one.is_error and not two.is_error, (one.content[0].text, two.content[0].text)
 
@@ -142,7 +142,7 @@ async def test_a_call_the_cli_cancels_does_not_end_the_conversation() -> None:
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
 
     async def drive(context: RunContext) -> Any:
         holder = RecordingServer(context)
@@ -178,7 +178,7 @@ async def test_a_call_the_cli_cancels_does_not_end_the_conversation() -> None:
                     return withdrawn, served
 
     (withdrawn, served), events = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
     assert withdrawn, "the cancelled call's question was still pending"
     assert not served.is_error and '"wiped": true' in served.content[0].text
@@ -199,7 +199,7 @@ async def test_a_relay_that_dies_mid_question_does_not_end_the_conversation() ->
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
 
     async def drive(context: RunContext) -> Any:
         holder = RecordingServer(context)
@@ -232,7 +232,7 @@ async def test_a_relay_that_dies_mid_question_does_not_end_the_conversation() ->
                     return await after
 
     served, events = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
     assert not served.is_error and '"wiped": true' in served.content[0].text
     assert not [e for e in events if e.kind == "observed" and e.observation.kind == "failed"], (
@@ -255,7 +255,7 @@ async def test_an_answer_to_a_connection_that_is_gone_does_not_end_the_conversat
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
 
     async def drive(context: RunContext) -> Any:
         holder = RecordingServer(context)
@@ -290,7 +290,7 @@ async def test_an_answer_to_a_connection_that_is_gone_does_not_end_the_conversat
                     return await after
 
     served, events = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
     assert not served.is_error and '"wiped": true' in served.content[0].text
     failed = [e for e in events if e.kind == "observed" and e.observation.kind == "failed"]
@@ -317,7 +317,7 @@ async def test_a_broken_connection_is_that_connections_problem_not_the_conversat
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
     initialize = (
         b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",'
         b'"capabilities":{},"clientInfo":{"name":"raw","version":"0"}}}\n'
@@ -359,7 +359,7 @@ async def test_a_broken_connection_is_that_connections_problem_not_the_conversat
                     return await after
 
     served, events = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40
     )
     assert not served.is_error and '"wiped": true' in served.content[0].text
     failed = [e for e in events if e.kind == "observed" and e.observation.kind == "failed"]
@@ -397,7 +397,7 @@ async def test_the_relay_waits_as_long_as_a_person_takes() -> None:
     from mcp.client.stdio import stdio_client
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
-    questions = Questions()
+    questions = Approvals()
 
     async def drive(context: RunContext) -> Any:
         holder = RecordingServer(context)
@@ -421,7 +421,7 @@ async def test_the_relay_waits_as_long_as_a_person_takes() -> None:
                     return await slow
 
     served, _ = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, steps=40, wall_seconds=600
+        drive, governance=AsksAboutWrites(), approvals=questions, steps=40, wall_seconds=600
     )
     assert not served.is_error, served.content[0].text
     assert '"wiped": true' in served.content[0].text

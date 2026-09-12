@@ -160,7 +160,7 @@ class JsonlSession:
                 for thought in texts_at(event, dialect.think_at):
                     thought_so_far.append(thought)
                     if (context := current_run()) is not None:
-                        await context.reasoned(thought)
+                        await context.reasoning(thought)
             if matches(event, kind, dialect.say_on, dialect.subtype_key):
                 said += texts_at(event, dialect.say_at)
             if dialect.session_id_at and (found := read_at(event, dialect.session_id_at)):

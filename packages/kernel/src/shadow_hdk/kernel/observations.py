@@ -28,7 +28,7 @@ class Refused:
 
 
 @dataclass(frozen=True)
-class Asked:
+class ApprovalRequest:
     """The step paused; whoever implements governance decides what asking means.
 
     `component` and `inputs` say what the question is about (BUG-026) — an agent surfacing a
@@ -38,7 +38,16 @@ class Asked:
     handle: Handle
     component: str | None = None
     inputs: JsonValue | None = None
-    kind: Literal["asked"] = "asked"
+    kind: Literal["approval_request"] = "approval_request"
+
+
+@dataclass(frozen=True)
+class InputRequest:
+    """The step paused for the person's answer to a question of the agent's own (D61)."""
+
+    question: str
+    handle: Handle
+    kind: Literal["input_request"] = "input_request"
 
 
 @dataclass(frozen=True)
@@ -74,7 +83,8 @@ class Pending:
 
 
 Observation = Annotated[
-    Completed | Refused | Asked | Failed | Pending | Acted, Field(discriminator="kind")
+    Completed | Refused | ApprovalRequest | InputRequest | Failed | Pending | Acted,
+    Field(discriminator="kind"),
 ]
 
 

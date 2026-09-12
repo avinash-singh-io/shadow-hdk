@@ -31,14 +31,14 @@ from pydantic import JsonValue
 from shadow_hdk.kernel.components import Posture, Registration
 from shadow_hdk.kernel.composition import Await, Invoke
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.events import Asked as AskedEvent
-from shadow_hdk.kernel.events import Event, Invoked, Observed
+from shadow_hdk.kernel.events import ApprovalRequested, Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
-from shadow_hdk.kernel.events import Spent as SpentEvent
+from shadow_hdk.kernel.events import UsageReported as SpentEvent
 from shadow_hdk.kernel.observations import (
-    Asked,
+    ApprovalRequest,
     Completed,
     Failed,
+    InputRequest,
     Observation,
     Pending,
     Refused,
@@ -180,7 +180,7 @@ class StepExecutor:
         finally:
             if self._context is not None:
                 self._context.resumed_done(step.id)
-        if isinstance(observation, Asked):
+        if isinstance(observation, ApprovalRequest | InputRequest):
             # **The component asked for itself** (D57): a question that is not the policy's and not
             # the component's own to answer — an agent whose tool call was asked about. The run
             # parks on it exactly as if governance had asked, carrying what the component kept so
@@ -257,10 +257,11 @@ class StepExecutor:
         """Park the step. Whoever implements governance decides what asking means; the runtime
         only stops, and LangGraph's checkpoint is what lets the process end here and come back.
 
-        **`Asked` is emitted only when the step actually parks.** LangGraph re-runs the whole node
-        on resume, so everything above `interrupt()` happens a second time — emitting the event
-        before the call put two asks in the record for one question. The contract is therefore
-        *raise to park, return to proceed*, and the event belongs on the raising path.
+        **`ApprovalRequested` is emitted only when the step actually parks.** LangGraph re-runs
+        the whole node on resume, so everything above `interrupt()` happens a second time —
+        emitting the event before the call put two asks in the record for one question. The
+        contract is therefore *raise to park, return to proceed*, and the event belongs on the
+        raising path.
         """
         handle = f"{self.session.run_id}:{step.id}"
         # `resume_seq` is where the record continues (D33). The checkpoint's own mark was written
@@ -285,7 +286,7 @@ class StepExecutor:
             return interrupt(payload)
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
             await self._emit(
-                lambda **k: AskedEvent(
+                lambda **k: ApprovalRequested(
                     step=step.id,
                     question=question,
                     handle=handle,

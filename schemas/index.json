@@ -5,6 +5,7 @@
     "Context",
     "EffectProfile",
     "Event",
+    "Item",
     "Judgement",
     "Lease",
     "ModelRequest",
@@ -12,8 +13,7 @@
     "Observation",
     "Proposal",
     "Provider",
-    "Registration",
-    "Step"
+    "Registration"
   ],
   "protocol_version": "1"
 }

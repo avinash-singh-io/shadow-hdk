@@ -134,7 +134,7 @@ async def test_an_ask_parks_the_run_and_a_resume_lets_it_through() -> None:
         judge=Judge(lambda e, c: Ask("may it reach the network?")),
         interruptible=True,
     )
-    assert [e.kind for e in events] == ["asked"]
+    assert [e.kind for e in events] == ["approval_requested"]
     after = await resume(Allow())
     assert [e.kind for e in after] == ["invoked", "observed"]
     assert after[-1].observation == Completed("sent")

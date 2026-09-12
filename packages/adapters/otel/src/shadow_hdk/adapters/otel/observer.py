@@ -2,11 +2,11 @@
 
 One span per run, one per step. `Started` opens the run span — a child's parented on its parent's
 — and `Ended` closes it with the reason; `Invoked` and `Observed` bracket a step span under it;
-`Spent` sets usage on the open step; `Composed`, `Proposed`, `Refused`, `Asked`, `Spawned` and
-`Held` are span events carrying their own fields. Names are the events' field names under
-`shadow_hdk.`. **Never on a span:** inputs, an observation's output, a proposal's payload, a
-composition, an act's grounds — the record has those, and a trace goes where the deployment
-pointed it.
+`UsageReported` sets usage on the open step; `Composed`, `Proposed`, `Refused`,
+`ApprovalRequested`, `InputRequested`, `Spawned` and `Held` are span events carrying their own
+fields. Names are the events' field names under `shadow_hdk.`. **Never on a span:** inputs, an
+observation's output, a proposal's payload, a composition, an act's grounds — the record has those,
+and a trace goes where the deployment pointed it.
 
 Spans open lazily on first sight of a run or a step, so a stream this process did not see start
 — a run parked elsewhere and resumed here — still traces. Only *recording* spans are kept: with no
@@ -54,11 +54,12 @@ class OpenTelemetryObserver(ObserverPort):
             "observed",
             "proposed",
             "refused",
-            "asked",
+            "approval_requested",
+            "input_requested",
             "spawned",
-            "spent",
+            "usage",
             "held",
-            "reasoned",
+            "reasoning",
             "ended",
         }
     )
@@ -112,9 +113,9 @@ class OpenTelemetryObserver(ObserverPort):
                 self._run(event.run_id, at).add_event(
                     "refused", {"shadow_hdk.step": event.step, "shadow_hdk.reason": event.reason}, at
                 )
-            case "asked":
+            case "approval_requested" | "input_requested":
                 self._run(event.run_id, at).add_event(
-                    "asked",
+                    event.kind,
                     {
                         "shadow_hdk.step": event.step,
                         "shadow_hdk.question": event.question,
@@ -128,13 +129,13 @@ class OpenTelemetryObserver(ObserverPort):
                     {"shadow_hdk.child_run_id": event.child_run_id, **_lease(event.lease)},
                     at,
                 )
-            case "reasoned":
+            case "reasoning":
                 # Length, never the text (D28): a trace carries the *shape* of a run, and a
                 # model's reasoning is a payload — often the most sensitive one on the record.
                 self._run(event.run_id, at).add_event(
-                    "reasoned", {"shadow_hdk.step": event.step, "shadow_hdk.chars": len(event.text)}, at
+                    "reasoning", {"shadow_hdk.step": event.step, "shadow_hdk.chars": len(event.text)}, at
                 )
-            case "spent":
+            case "usage":
                 self._innermost(event.run_id, at, step=event.step).set_attributes(
                     _usage(event.usage)
                 )

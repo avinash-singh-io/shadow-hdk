@@ -40,7 +40,7 @@ from shadow_hdk.kernel import (
     Invoke,
     Observation,
 )
-from shadow_hdk.runtime import Ports, Questions, RunOptions, current_run, run
+from shadow_hdk.runtime import Approvals, Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.testing import (
     FixedClock,
@@ -69,10 +69,10 @@ async def offered_and_asked(
     policy: Mode,
     environment_mode: EnvironmentMode = "full",
     *,
-    questions: Questions | None = None,
+    approvals: Approvals | None = None,
 ) -> dict[str, Any]:
     """What a child would be handed under `policy` over an environment in `environment_mode`, and
-    what happens if it calls the shell anyway. `questions` is who answers when the policy asks
+    what happens if it calls the shell anyway. `approvals` is who answers when the policy asks
     (D58); nobody, by default."""
     found: dict[str, Any] = {}
 
@@ -94,12 +94,12 @@ async def offered_and_asked(
         clock=FixedClock(),
     )
     plan = Composition((Invoke("watching", "watching"),))
-    async for _ in run(plan, ports, options=RunOptions(lease=a_lease(), questions=questions)):
+    async for _ in run(plan, ports, options=RunOptions(lease=a_lease(), approvals=approvals)):
         pass
     return found
 
 
-class SaysYes(Questions):
+class SaysYes(Approvals):
     """A person who allows everything the moment it is asked — the test's stand-in for `y`."""
 
     async def ask(self, pending: Any) -> Any:
@@ -140,7 +140,7 @@ async def test_the_open_policy_does_offer_it_and_asks_before_a_write(tmp_path: P
     """The anti-vacuity half: a registry that offered nothing under every policy would pass the
     tests above and mean nothing. `open` asks before a write (its ask line); with a person who
     says yes, the write goes through. (Written first with no ask line; the premise moved.)"""
-    seen = await offered_and_asked(tmp_path, OPEN, "full", questions=SaysYes())
+    seen = await offered_and_asked(tmp_path, OPEN, "full", approvals=SaysYes())
 
     assert "run_shell" in seen["offered"]
     assert seen["ran"].is_error is False

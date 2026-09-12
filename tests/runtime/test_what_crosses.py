@@ -8,7 +8,7 @@ names part of somebody else's deployment.
 
 **D20.** Phase 1 asked that tokens reach the observer. They did not: `_usage_of` dug them out of a
 `Completed` observation's output dict by convention, so anyone wanting to know what a run cost had
-to parse somebody else's payload. `Spent` says it.
+to parse somebody else's payload. `UsageReported` says it.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from shadow_hdk.kernel import (
     Lease,
     Observation,
     Observed,
-    Spent,
+    UsageReported,
 )
 from shadow_hdk.runtime import RunOptions, run
 from shadow_hdk.runtime.testing import ListObserver, make_registration
@@ -141,7 +141,7 @@ async def test_spent_reaches_the_observer_with_what_the_step_cost() -> None:
         Composition((Invoke("s1", COSTLY.id),)), ports, options=RunOptions(lease=a_lease())
     ):
         pass
-    spent = [e for e in watching.events if isinstance(e, Spent)]
+    spent = [e for e in watching.events if isinstance(e, UsageReported)]
     assert len(spent) == 1, "the observer was told nothing about what the step cost"
     assert spent[0].step == "s1"
     assert spent[0].usage.input_tokens == 11
@@ -157,4 +157,4 @@ async def test_a_step_that_cost_nothing_says_nothing() -> None:
         Composition((Invoke("s1", FREE.id),)), ports, options=RunOptions(lease=a_lease())
     ):
         pass
-    assert not [e for e in watching.events if isinstance(e, Spent)]
+    assert not [e for e in watching.events if isinstance(e, UsageReported)]

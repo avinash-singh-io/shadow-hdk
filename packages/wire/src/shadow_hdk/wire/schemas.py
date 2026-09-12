@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.kernel.contracts import adapter_for, all_schemas
-from shadow_hdk.runtime.steps import Step
+from shadow_hdk.runtime.items import Item
 from shadow_hdk.wire.protocol import PROTOCOL_VERSION
 
 HERE = Path(__file__).resolve()
@@ -38,7 +38,7 @@ def published() -> dict[str, dict[str, Any]]:
     client in another language needs its shape as much as any kernel type's.
     """
     contracts: dict[str, dict[str, Any]] = dict(all_schemas())
-    contracts["Step"] = adapter_for(Step).json_schema()
+    contracts["Item"] = adapter_for(Item).json_schema()
     return contracts
 
 

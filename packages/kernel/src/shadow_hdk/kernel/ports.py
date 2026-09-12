@@ -38,8 +38,9 @@ from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Observation, Proposal
 from shadow_hdk.kernel.usage import Usage as Usage
 
-"""Re-exported: `Usage` lived here until `events.Spent` needed it too, and `ports` already imports
-`events`. It moved beneath both rather than breaking every `from ...ports import Usage`."""
+"""Re-exported: `Usage` lived here until `events.UsageReported` needed it too, and `ports`
+already imports `events`. It moved beneath both rather than breaking every `from ...ports import
+Usage`."""
 
 # ---------------------------------------------------------------- model
 

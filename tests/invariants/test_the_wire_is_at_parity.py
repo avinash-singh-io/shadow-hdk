@@ -9,7 +9,7 @@ the walk that makes it a build failure.
 1. Every public method on `RunContext` is either **overridden** by `WireRunContext` to cross, or
    named below with the reason it does not. A new method on the context cannot be added without
    answering the question.
-2. Every kind in the `Event` union is in the wire's published schemas, and `Step` is published —
+2. Every kind in the `Event` union is in the wire's published schemas, and `Item` is published —
    a client in another language can read everything a run produces.
 3. No adapter calls a **synchronous-only** context method. `remaining()`, `floor_met()` and
    `spawn_options()` raise across a wire; their `_now` forms work on both sides, and an adapter
@@ -106,7 +106,7 @@ def test_every_event_kind_and_the_projection_are_published() -> None:
     kinds = {arm.__dataclass_fields__["kind"].default for arm in get_args(get_args(Event)[0])}
     schemas = published()
 
-    assert "Event" in schemas and "Step" in schemas
+    assert "Event" in schemas and "Item" in schemas
     event_schema = str(schemas["Event"])
     missing = sorted(
         k for k in kinds if f'"{k}"' not in event_schema and f"'{k}'" not in event_schema
@@ -130,7 +130,7 @@ def test_no_adapter_calls_a_synchronous_only_context_method() -> None:
 
 def test_the_walks_see_what_they_look_for(tmp_path: Path) -> None:
     assert len(_public(RunContext)) >= 8, _public(RunContext)
-    assert "visible" in _overridden() and "reasoned" in _overridden()
+    assert "visible" in _overridden() and "reasoning" in _overridden()
 
     offending = tmp_path / "m.py"
     offending.write_text(

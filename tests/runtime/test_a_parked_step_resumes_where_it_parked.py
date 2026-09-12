@@ -172,7 +172,7 @@ async def test_one_answer_resumes_every_step_that_was_asked_about() -> None:
     fan = Composition((FanOut("fan", (Invoke("a1", WORK.id), Invoke("a2", WORK.id))),))
     ports = _ports(Changes(Ask("may it?"), Ask("may it?"), ("a1", "a2")), work=work)
     first = [e async for e in run(fan, ports, options=_options(saver, "r4"))]
-    assert sorted(e.step for e in first if e.kind == "asked") == ["a1", "a2"]
+    assert sorted(e.step for e in first if e.kind == "approval_requested") == ["a1", "a2"]
     after = [e async for e in resume(fan, Allow(), ports, options=_options(saver, "r4"))]
     assert _ended(after), "one answer did not finish a fan-out that asked twice"
     assert _ended(after)[-1].reason == "completed"
@@ -222,7 +222,9 @@ async def test_a_step_resumes_once_even_when_it_runs_again_in_a_loop() -> None:
     )
     ports = _ports(Changes(Ask("may it?"), Allow(), ("a1",)), work=work)
     first = [e async for e in run(looping, ports, options=_options(saver, "r7"))]
-    assert [e.step for e in first if e.kind == "asked"] == ["a1"], "the first visit asked"
+    assert [e.step for e in first if e.kind == "approval_requested"] == ["a1"], (
+        "the first visit asked"
+    )
     after = [e async for e in resume(looping, Allow(), ports, options=_options(saver, "r7"))]
     assert _ended(after), "the loop never finished after its first step was answered"
     assert work.calls >= 2, f"the loop ran {work.calls} times; the later visits were not steps"

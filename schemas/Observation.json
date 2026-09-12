@@ -34,7 +34,7 @@
       "title": "Acted",
       "type": "object"
     },
-    "Asked": {
+    "ApprovalRequest": {
       "description": "The step paused; whoever implements governance decides what asking means.\n\n`component` and `inputs` say what the question is about (BUG-026) \u2014 an agent surfacing a\nchild's question passes on what that child was about to do, so the person sees it.",
       "properties": {
         "component": {
@@ -65,8 +65,8 @@
           "default": null
         },
         "kind": {
-          "const": "asked",
-          "default": "asked",
+          "const": "approval_request",
+          "default": "approval_request",
           "title": "Kind",
           "type": "string"
         },
@@ -79,7 +79,7 @@
         "question",
         "handle"
       ],
-      "title": "Asked",
+      "title": "ApprovalRequest",
       "type": "object"
     },
     "Completed": {
@@ -115,6 +115,31 @@
         "error"
       ],
       "title": "Failed",
+      "type": "object"
+    },
+    "InputRequest": {
+      "description": "The step paused for the person's answer to a question of the agent's own (D61).",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "input_request",
+          "default": "input_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "InputRequest",
       "type": "object"
     },
     "JsonValue": {},
@@ -161,9 +186,10 @@
   "discriminator": {
     "mapping": {
       "acted": "#/$defs/Acted",
-      "asked": "#/$defs/Asked",
+      "approval_request": "#/$defs/ApprovalRequest",
       "completed": "#/$defs/Completed",
       "failed": "#/$defs/Failed",
+      "input_request": "#/$defs/InputRequest",
       "pending": "#/$defs/Pending",
       "refused": "#/$defs/Refused"
     },
@@ -177,7 +203,10 @@
       "$ref": "#/$defs/Refused"
     },
     {
-      "$ref": "#/$defs/Asked"
+      "$ref": "#/$defs/ApprovalRequest"
+    },
+    {
+      "$ref": "#/$defs/InputRequest"
     },
     {
       "$ref": "#/$defs/Failed"

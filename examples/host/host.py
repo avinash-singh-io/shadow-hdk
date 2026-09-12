@@ -14,11 +14,11 @@ from examples.host.ledger import Ledger
 from examples.host.policy import Policy
 from examples.host.view import lines_for, thought
 from shadow_hdk.adapters.environment import LocalEnvironment
-from shadow_hdk.kernel import AskedEvent, Ceiling, Ended, Event, Floor, Lease, Reasoned
+from shadow_hdk.kernel import ApprovalRequested, Ceiling, Ended, Event, Floor, Lease, Reasoning
 from shadow_hdk.kernel.ports import Judgement
 from shadow_hdk.runtime import Ports, RunOptions, resume, run
 from shadow_hdk.runtime.environment import Mode
-from shadow_hdk.runtime.steps import run_steps
+from shadow_hdk.runtime.items import run_items
 
 
 @dataclass
@@ -102,16 +102,16 @@ async def _render(
         nonlocal question
         async for event in events:
             outcome.events.append(event)
-            if isinstance(event, Reasoned):
+            if isinstance(event, Reasoning):
                 # What it thought, as it thinks it — not when the step it belongs to closes.
                 on_line(thought(event.text, depth=0 if event.run_id == outcome.run_id else 1))
-            if isinstance(event, AskedEvent):
+            if isinstance(event, ApprovalRequested):
                 question = event.question
             if isinstance(event, Ended) and event.run_id == outcome.run_id:
                 outcome.ended = event.reason
             yield event
 
-    async for step in run_steps(tapped(), nested=True):
+    async for step in run_items(tapped(), nested=True):
         for line in lines_for(step, depth=1 if step.parent else 0, tree=False):
             on_line(line)
     return question

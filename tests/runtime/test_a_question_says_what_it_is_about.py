@@ -17,10 +17,10 @@ from typing import Any
 import pytest
 
 from shadow_hdk.kernel import Binding, Ceiling, Composition, EffectProfile, Floor, Invoke, Lease
-from shadow_hdk.kernel.events import Asked
+from shadow_hdk.kernel.events import ApprovalRequested
 from shadow_hdk.kernel.observations import Completed, Observation
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement
-from shadow_hdk.runtime import Ports, Questions, RunOptions, current_run, run
+from shadow_hdk.runtime import Approvals, Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.testing import (
     FixedClock,
     InMemoryComponents,
@@ -62,20 +62,20 @@ async def test_the_asked_event_names_the_component_and_carries_the_inputs() -> N
 
     events = [e async for e in run(plan, _ports(AsksAboutEverything()), options=options)]
 
-    asked = [e for e in events if isinstance(e, Asked)]
+    asked = [e for e in events if isinstance(e, ApprovalRequested)]
     assert len(asked) == 1
     assert asked[0].component == "work"
     assert asked[0].inputs == {"path": "sales.csv"}
 
 
 async def test_a_question_asked_live_says_what_it_is_about() -> None:
-    questions = Questions()
+    questions = Approvals()
     seen: list[Any] = []
 
     async def asker(_inputs: Any) -> Observation:
         context = current_run()
         assert context is not None
-        answer = await context.ask(
+        answer = await context.request_approval(
             "may it run this?", about=("run_shell", {"command": "pip install pandas"})
         )
         return Completed(str(answer))
@@ -87,7 +87,7 @@ async def test_a_question_asked_live_says_what_it_is_about() -> None:
 
     plan = Composition((Invoke("s2", "asker", ()),))
     options = RunOptions(
-        lease=Lease(Ceiling(5, 60, None), Floor(0)), run_id="q2", questions=questions
+        lease=Lease(Ceiling(5, 60, None), Floor(0)), run_id="q2", approvals=questions
     )
     task = asyncio.create_task(host())
     events = [e async for e in run(plan, _ports(Allowing(), (ASKER, asker)), options=options)]
@@ -95,7 +95,7 @@ async def test_a_question_asked_live_says_what_it_is_about() -> None:
 
     assert seen[0].component == "run_shell"
     assert seen[0].inputs == {"command": "pip install pandas"}
-    asked = [e for e in events if isinstance(e, Asked)][0]
+    asked = [e for e in events if isinstance(e, ApprovalRequested)][0]
     assert asked.component == "run_shell" and asked.inputs == {"command": "pip install pandas"}
 
 

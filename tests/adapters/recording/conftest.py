@@ -75,7 +75,7 @@ async def with_a_run[T](
     governance: GovernancePort | None = None,
     extra: Sequence[Registration] = (),
     steps: int = 20,
-    questions: Any = None,
+    approvals: Any = None,
     wall_seconds: int = 600,
 ) -> tuple[T, list[Event]]:
     """Run `what` inside a step, giving back its answer **and the parent's event stream**."""
@@ -103,7 +103,7 @@ async def with_a_run[T](
             Composition((Invoke("s1", DRIVER.id),)),
             ports,
             options=RunOptions(
-                lease=Lease(Ceiling(steps, wall_seconds, 10_000), Floor(0)), questions=questions
+                lease=Lease(Ceiling(steps, wall_seconds, 10_000), Floor(0)), approvals=approvals
             ),
         )
     ]

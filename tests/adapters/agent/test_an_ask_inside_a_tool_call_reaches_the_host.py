@@ -33,7 +33,7 @@ from shadow_hdk.kernel import (
     ScopeSet,
 )
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.events import Asked as AskedEvent
+from shadow_hdk.kernel.events import ApprovalRequested
 from shadow_hdk.kernel.ports import (
     Allow,
     Ask,
@@ -136,7 +136,7 @@ async def test_the_tool_calls_question_parks_the_whole_run_with_the_question() -
 
     parked = await _collect(run(PLAN, ports, options=_options(InMemorySaver())))
 
-    asked = [e for e in parked if isinstance(e, AskedEvent)]
+    asked = [e for e in parked if isinstance(e, ApprovalRequested)]
     assert [e.run_id for e in asked][-1] == "host", "the question must be the top run's to answer"
     assert "outside the workspace" in asked[-1].question
     assert not [e for e in parked if isinstance(e, Ended) and e.run_id == "host"]
@@ -238,7 +238,7 @@ async def test_a_question_two_levels_down_reaches_the_host_and_the_answer_reache
     plan = Composition((Invoke("top", "lead", (Binding(name="brief", value="go"),)),))
 
     parked = await _collect(run(plan, ports, options=_options(saver)))
-    asked = [e for e in parked if isinstance(e, AskedEvent) and e.run_id == "host"]
+    asked = [e for e in parked if isinstance(e, ApprovalRequested) and e.run_id == "host"]
     assert asked and "outside the workspace" in asked[-1].question
 
     after = await _collect(resume(plan, Allow(), ports, options=_options(saver)))
@@ -282,11 +282,15 @@ async def test_a_plan_whose_second_step_also_asks_parks_the_run_a_second_time() 
     ports = _ports(script, agents=(planner,))
 
     first = await _collect(run(PLAN, ports, options=_options(saver)))
-    assert [e.step for e in first if isinstance(e, AskedEvent) and e.run_id != "host"] == ["a"]
+    assert [e.step for e in first if isinstance(e, ApprovalRequested) and e.run_id != "host"] == [
+        "a"
+    ]
 
     second = await _collect(resume(PLAN, Allow(), ports, options=_options(saver)))
     assert written == ["/x/a"], "the first answer let only the first write through"
-    assert [e.step for e in second if isinstance(e, AskedEvent) and e.run_id != "host"] == ["b"]
+    assert [e.step for e in second if isinstance(e, ApprovalRequested) and e.run_id != "host"] == [
+        "b"
+    ]
     assert not [e for e in second if isinstance(e, Ended) and e.run_id == "host"], "parked again"
 
     third = await _collect(resume(PLAN, Allow(), ports, options=_options(saver)))

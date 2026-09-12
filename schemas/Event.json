@@ -34,6 +34,121 @@
       "title": "Acted",
       "type": "object"
     },
+    "ApprovalRequest": {
+      "description": "The step paused; whoever implements governance decides what asking means.\n\n`component` and `inputs` say what the question is about (BUG-026) \u2014 an agent surfacing a\nchild's question passes on what that child was about to do, so the person sees it.",
+      "properties": {
+        "component": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Component"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "inputs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "approval_request",
+          "default": "approval_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "ApprovalRequest",
+      "type": "object"
+    },
+    "ApprovalRequested": {
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "component": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Component"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "inputs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "const": "approval_requested",
+          "default": "approval_requested",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "question",
+        "handle"
+      ],
+      "title": "ApprovalRequested",
+      "type": "object"
+    },
     "Await": {
       "description": "Wait for something slow \u2014 a person, a job. Compiles to an interrupt.",
       "properties": {
@@ -428,6 +543,76 @@
       "title": "Held",
       "type": "object"
     },
+    "InputRequest": {
+      "description": "The step paused for the person's answer to a question of the agent's own (D61).",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "input_request",
+          "default": "input_request",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "handle"
+      ],
+      "title": "InputRequest",
+      "type": "object"
+    },
+    "InputRequested": {
+      "description": "The agent asked the person something \u2014 not for consent, for an answer (D61).\n\nEvery product that ships an agent has this item (Codex `requestUserInput`, Claude Code's\n`AskUserQuestion`, OpenCode's `question`); ours wrote the question into its prose. On the\nrecord it is its own kind, answered with text through the host's handle.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "input_requested",
+          "default": "input_requested",
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "question",
+        "handle"
+      ],
+      "title": "InputRequested",
+      "type": "object"
+    },
     "Invoke": {
       "properties": {
         "component": {
@@ -539,9 +724,10 @@
           "discriminator": {
             "mapping": {
               "acted": "#/$defs/Acted",
-              "asked": "#/$defs/shadow_hdk__kernel__observations__Asked",
+              "approval_request": "#/$defs/ApprovalRequest",
               "completed": "#/$defs/Completed",
               "failed": "#/$defs/Failed",
+              "input_request": "#/$defs/InputRequest",
               "pending": "#/$defs/Pending",
               "refused": "#/$defs/shadow_hdk__kernel__observations__Refused"
             },
@@ -555,7 +741,10 @@
               "$ref": "#/$defs/shadow_hdk__kernel__observations__Refused"
             },
             {
-              "$ref": "#/$defs/shadow_hdk__kernel__observations__Asked"
+              "$ref": "#/$defs/ApprovalRequest"
+            },
+            {
+              "$ref": "#/$defs/InputRequest"
             },
             {
               "$ref": "#/$defs/Failed"
@@ -752,16 +941,16 @@
       "title": "Provenance",
       "type": "object"
     },
-    "Reasoned": {
-      "description": "What the model thought, on the record beside what it did (D45).\n\nThe stream recorded what an agent did \u2014 invoked, observed, refused, asked, spent \u2014 and threw\naway what it thought. A model's reasoning is the one thing on a run a person most wants to\nread, and it was the one thing not there.\n\nSame rule `Spent` set: emitted only when there is something to say. A model that reports no\nreasoning emits none. `text` is the model's own words, unedited \u2014 the record is not the place\nto summarise.",
+    "Reasoning": {
+      "description": "What the model thought, on the record beside what it did (D45).\n\nThe stream recorded what an agent did \u2014 invoked, observed, refused, asked, spent \u2014 and threw\naway what it thought. A model's reasoning is the one thing on a run a person most wants to\nread, and it was the one thing not there.\n\nSame rule `UsageReported` set: emitted only when there is something to say. A model that\nreports no reasoning emits none. `text` is the model's own words, unedited \u2014 the record is not\nthe place to summarise.",
       "properties": {
         "at": {
           "title": "At",
           "type": "string"
         },
         "kind": {
-          "const": "reasoned",
-          "default": "reasoned",
+          "const": "reasoning",
+          "default": "reasoning",
           "title": "Kind",
           "type": "string"
         },
@@ -789,7 +978,7 @@
         "step",
         "text"
       ],
-      "title": "Reasoned",
+      "title": "Reasoning",
       "type": "object"
     },
     "Sequence": {
@@ -881,45 +1070,6 @@
         "lease"
       ],
       "title": "Spawned",
-      "type": "object"
-    },
-    "Spent": {
-      "description": "What a step cost, said out loud (D20).\n\nPhase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a\n`Completed` observation's output dict, by convention, and anyone wanting to know what a run cost\nhad to know that convention and parse somebody else's payload. Reporting and recording are\ndifferent jobs, and this is the record.\n\nEmitted only when there is something to say \u2014 a step that cost nothing emits none, because a\nkind that appears when there is nothing to report is a kind readers learn to skip.",
-      "properties": {
-        "at": {
-          "title": "At",
-          "type": "string"
-        },
-        "kind": {
-          "const": "spent",
-          "default": "spent",
-          "title": "Kind",
-          "type": "string"
-        },
-        "run_id": {
-          "title": "Run Id",
-          "type": "string"
-        },
-        "seq": {
-          "title": "Seq",
-          "type": "integer"
-        },
-        "step": {
-          "title": "Step",
-          "type": "string"
-        },
-        "usage": {
-          "$ref": "#/$defs/Usage"
-        }
-      },
-      "required": [
-        "run_id",
-        "seq",
-        "at",
-        "step",
-        "usage"
-      ],
-      "title": "Spent",
       "type": "object"
     },
     "Started": {
@@ -1070,47 +1220,17 @@
       "title": "Usage",
       "type": "object"
     },
-    "shadow_hdk__kernel__events__Asked": {
+    "UsageReported": {
+      "description": "What a step cost, said out loud (D20).\n\nPhase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a\n`Completed` observation's output dict, by convention, and anyone wanting to know what a run cost\nhad to know that convention and parse somebody else's payload. Reporting and recording are\ndifferent jobs, and this is the record.\n\nEmitted only when there is something to say \u2014 a step that cost nothing emits none, because a\nkind that appears when there is nothing to report is a kind readers learn to skip.",
       "properties": {
         "at": {
           "title": "At",
           "type": "string"
         },
-        "component": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Component"
-        },
-        "handle": {
-          "title": "Handle",
-          "type": "string"
-        },
-        "inputs": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/JsonValue"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "kind": {
-          "const": "asked",
-          "default": "asked",
+          "const": "usage",
+          "default": "usage",
           "title": "Kind",
-          "type": "string"
-        },
-        "question": {
-          "title": "Question",
           "type": "string"
         },
         "run_id": {
@@ -1124,6 +1244,9 @@
         "step": {
           "title": "Step",
           "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
         }
       },
       "required": [
@@ -1131,10 +1254,9 @@
         "seq",
         "at",
         "step",
-        "question",
-        "handle"
+        "usage"
       ],
-      "title": "Asked",
+      "title": "UsageReported",
       "type": "object"
     },
     "shadow_hdk__kernel__events__Refused": {
@@ -1177,54 +1299,6 @@
       "title": "Refused",
       "type": "object"
     },
-    "shadow_hdk__kernel__observations__Asked": {
-      "description": "The step paused; whoever implements governance decides what asking means.\n\n`component` and `inputs` say what the question is about (BUG-026) \u2014 an agent surfacing a\nchild's question passes on what that child was about to do, so the person sees it.",
-      "properties": {
-        "component": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Component"
-        },
-        "handle": {
-          "title": "Handle",
-          "type": "string"
-        },
-        "inputs": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/JsonValue"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "kind": {
-          "const": "asked",
-          "default": "asked",
-          "title": "Kind",
-          "type": "string"
-        },
-        "question": {
-          "title": "Question",
-          "type": "string"
-        }
-      },
-      "required": [
-        "question",
-        "handle"
-      ],
-      "title": "Asked",
-      "type": "object"
-    },
     "shadow_hdk__kernel__observations__Refused": {
       "properties": {
         "kind": {
@@ -1247,18 +1321,19 @@
   },
   "discriminator": {
     "mapping": {
-      "asked": "#/$defs/shadow_hdk__kernel__events__Asked",
+      "approval_requested": "#/$defs/ApprovalRequested",
       "composed": "#/$defs/Composed",
       "ended": "#/$defs/Ended",
       "held": "#/$defs/Held",
+      "input_requested": "#/$defs/InputRequested",
       "invoked": "#/$defs/Invoked",
       "observed": "#/$defs/Observed",
       "proposed": "#/$defs/Proposed",
-      "reasoned": "#/$defs/Reasoned",
+      "reasoning": "#/$defs/Reasoning",
       "refused": "#/$defs/shadow_hdk__kernel__events__Refused",
       "spawned": "#/$defs/Spawned",
-      "spent": "#/$defs/Spent",
-      "started": "#/$defs/Started"
+      "started": "#/$defs/Started",
+      "usage": "#/$defs/UsageReported"
     },
     "propertyName": "kind"
   },
@@ -1282,7 +1357,10 @@
       "$ref": "#/$defs/shadow_hdk__kernel__events__Refused"
     },
     {
-      "$ref": "#/$defs/shadow_hdk__kernel__events__Asked"
+      "$ref": "#/$defs/ApprovalRequested"
+    },
+    {
+      "$ref": "#/$defs/InputRequested"
     },
     {
       "$ref": "#/$defs/Spawned"
@@ -1291,10 +1369,10 @@
       "$ref": "#/$defs/Held"
     },
     {
-      "$ref": "#/$defs/Spent"
+      "$ref": "#/$defs/UsageReported"
     },
     {
-      "$ref": "#/$defs/Reasoned"
+      "$ref": "#/$defs/Reasoning"
     },
     {
       "$ref": "#/$defs/Ended"

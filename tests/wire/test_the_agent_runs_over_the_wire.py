@@ -6,7 +6,7 @@ already did, for the same reason: there is one registry, one meter and one recor
 the runtime's side.
 
 The claim is parity: a `single` pattern driven over the loopback wire produces the events it
-produces in-process — `Reasoned` and `Invoked` and `Observed` in the same order, the tool called
+produces in-process — `Reasoning` and `Invoked` and `Observed` in the same order, the tool called
 once, the answer the same — and an orchestrator that spawns a helper gets the helper's events back
 with the parent's record intact.
 """
@@ -30,7 +30,7 @@ from shadow_hdk.kernel import (
     Invoked,
     Lease,
     Observation,
-    Reasoned,
+    Reasoning,
 )
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall, Usage
 from shadow_hdk.runtime import Ports, RunOptions, run
@@ -92,7 +92,7 @@ async def test_a_single_agent_runs_over_the_wire_and_produces_the_same_events() 
         there = list(host.events)
 
     assert shape(there) == shape(here), (shape(here), shape(there))
-    assert [e.text for e in there if isinstance(e, Reasoned)] == ["the handbook will know"]
+    assert [e.text for e in there if isinstance(e, Reasoning)] == ["the handbook will know"]
     assert [e.component for e in there if isinstance(e, Invoked)] == ["agent", "look"]
 
 

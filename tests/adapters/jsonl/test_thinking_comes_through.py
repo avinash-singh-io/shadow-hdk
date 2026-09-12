@@ -85,7 +85,7 @@ async def test_inside_a_run_each_thought_lands_on_the_record_as_it_arrives(tmp_p
         Floor,
         Invoke,
         Lease,
-        Reasoned,
+        Reasoning,
     )
     from shadow_hdk.runtime import Ports, RunOptions, run
     from shadow_hdk.runtime.testing import (
@@ -122,7 +122,7 @@ async def test_inside_a_run_each_thought_lands_on_the_record_as_it_arrives(tmp_p
     finally:
         await session.close()
 
-    thoughts = [e for e in events if isinstance(e, Reasoned)]
+    thoughts = [e for e in events if isinstance(e, Reasoning)]
     assert [t.text for t in thoughts] == [
         "the handbook lists it by line; ",
         "line 3 is the lathe",

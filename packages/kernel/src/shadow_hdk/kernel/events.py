@@ -92,7 +92,7 @@ class Refused:
 
 
 @dataclass(frozen=True)
-class Asked:
+class ApprovalRequested:
     run_id: RunId
     seq: int
     at: str
@@ -104,7 +104,25 @@ class Asked:
     person answering can see what they are consenting to. A step is judged before it is invoked,
     so without these the question named a step id and a policy's sentence and nothing else."""
     inputs: JsonValue | None = None
-    kind: Literal["asked"] = "asked"
+    kind: Literal["approval_requested"] = "approval_requested"
+
+
+@dataclass(frozen=True)
+class InputRequested:
+    """The agent asked the person something — not for consent, for an answer (D61).
+
+    Every product that ships an agent has this item (Codex `requestUserInput`, Claude Code's
+    `AskUserQuestion`, OpenCode's `question`); ours wrote the question into its prose. On the
+    record it is its own kind, answered with text through the host's handle.
+    """
+
+    run_id: RunId
+    seq: int
+    at: str
+    step: StepId
+    question: str
+    handle: Handle
+    kind: Literal["input_requested"] = "input_requested"
 
 
 @dataclass(frozen=True)
@@ -118,7 +136,7 @@ class Spawned:
 
 
 @dataclass(frozen=True)
-class Spent:
+class UsageReported:
     """What a step cost, said out loud (D20).
 
     Phase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a
@@ -135,7 +153,7 @@ class Spent:
     at: str
     step: StepId
     usage: Usage
-    kind: Literal["spent"] = "spent"
+    kind: Literal["usage"] = "usage"
 
 
 @dataclass(frozen=True)
@@ -157,16 +175,16 @@ class Held:
 
 
 @dataclass(frozen=True)
-class Reasoned:
+class Reasoning:
     """What the model thought, on the record beside what it did (D45).
 
     The stream recorded what an agent did — invoked, observed, refused, asked, spent — and threw
     away what it thought. A model's reasoning is the one thing on a run a person most wants to
     read, and it was the one thing not there.
 
-    Same rule `Spent` set: emitted only when there is something to say. A model that reports no
-    reasoning emits none. `text` is the model's own words, unedited — the record is not the place
-    to summarise.
+    Same rule `UsageReported` set: emitted only when there is something to say. A model that
+    reports no reasoning emits none. `text` is the model's own words, unedited — the record is not
+    the place to summarise.
     """
 
     run_id: RunId
@@ -174,7 +192,7 @@ class Reasoned:
     at: str
     step: StepId
     text: str
-    kind: Literal["reasoned"] = "reasoned"
+    kind: Literal["reasoning"] = "reasoning"
 
 
 EndReason = Literal["completed", "lease_exhausted", "gave_up", "cancelled", "failed"]
@@ -200,11 +218,12 @@ Event = Annotated[
     | Observed
     | Proposed
     | Refused
-    | Asked
+    | ApprovalRequested
+    | InputRequested
     | Spawned
     | Held
-    | Spent
-    | Reasoned
+    | UsageReported
+    | Reasoning
     | Ended,
     Field(discriminator="kind"),
 ]

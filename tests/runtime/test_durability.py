@@ -70,7 +70,9 @@ async def test_a_run_parked_inside_a_subgraph_resumes_into_it() -> None:
     options = RunOptions(lease=a_lease(), run_id="parked-inside", checkpointer=saver)
 
     parked = await _collect(run(PARKS_INSIDE, _ports(), options=options))
-    assert [e.kind for e in parked if e.kind == "asked"], "the nested Ask never reached the top"
+    assert [e.kind for e in parked if e.kind == "approval_requested"], (
+        "the nested Ask never reached the top"
+    )
     assert not [e for e in parked if isinstance(e, Ended)], "a parked run must not report Ended"
 
     after = await _collect(resume(PARKS_INSIDE, Allow(), _ports(), options=options))
@@ -99,7 +101,7 @@ async def test_a_run_parked_on_a_file_resumes_after_the_saver_is_gone(tmp_path: 
                 options=RunOptions(lease=a_lease(), run_id="on-a-file", checkpointer=saver),
             )
         )
-    assert [e.kind for e in parked if e.kind == "asked"], "the run did not park"
+    assert [e.kind for e in parked if e.kind == "approval_requested"], "the run did not park"
     assert database.exists() and database.stat().st_size > 0, "nothing was written to the file"
 
     # A different saver object, over the same file. The first one is closed and unreachable.
@@ -155,8 +157,12 @@ async def test_two_runs_sharing_a_checkpointer_resume_into_their_own_park() -> N
         (Invoke("their_first", A.id), Sequence("their_inner", (Invoke("their_deep", B.id),)))
     )
 
-    assert [e for e in await park(mine, "run-a") if e.kind == "asked"], "run-a did not park"
-    assert [e for e in await park(theirs, "run-b") if e.kind == "asked"], "run-b did not park"
+    assert [e for e in await park(mine, "run-a") if e.kind == "approval_requested"], (
+        "run-a did not park"
+    )
+    assert [e for e in await park(theirs, "run-b") if e.kind == "approval_requested"], (
+        "run-b did not park"
+    )
 
     woken = await _collect(
         resume(

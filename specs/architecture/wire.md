@@ -59,10 +59,10 @@ host ──► runtime   resume(run_id, answer)       answer: a judgement, or {s
 - **Parity is an invariant, not a promise** (Phase 23, D51). Every `RunContext` method either
   crosses — `visible`, `floor_met_now`, `spawn_options_now`, `reasoned` with its step, the
   children's `spawn`/`send`/`release`/`is_held` through `WireChildren` — or is named in the parity
-  test's `NOT_CROSSING` table with a reason; and every kernel event kind, `Reasoned` and the `Step`
+  test's `NOT_CROSSING` table with a reason; and every kernel event kind, `Reasoning` and the `Step`
   projection included, is in the published schemas. The agent adapter spawns the plans its model
   authors *through the runtime*, so a sub-agent runs where the record is, whichever side the agent
   is on; the pattern's ceiling crosses as data and is applied there as a second gate (`Narrowed`).
-- **Questions cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Questions` handle the runtime side owns.
+- **Approvals cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Approvals` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
   environment, sent as the first line before MCP; the run token above is still the wire's own debt.

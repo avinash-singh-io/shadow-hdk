@@ -1,4 +1,8 @@
-"""The event stream, folded into what a person reads as agent steps (D46).
+"""The event stream, folded into the items a host renders (D46, D61).
+
+An item is what Codex, the Responses API and every agent UI call the unit a person sees: a tool
+call with its result, a refusal, a question, its reasoning and its cost. The kernel plans in
+`Item`s; a host reads `Item`s.
 
 Twelve raw kinds are the record. Nobody renders the record; every client renders **steps**: this is
 what it thought, this is what it reached for, this is what came back, this sub-agent went off and
@@ -24,25 +28,35 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Literal
 
 from shadow_hdk.kernel.events import (
-    Asked,
+    ApprovalRequested,
     Event,
+    InputRequested,
     Invoked,
     Observed,
-    Reasoned,
+    Reasoning,
     Refused,
     RunId,
     Spawned,
-    Spent,
     StepId,
+    UsageReported,
 )
 from shadow_hdk.kernel.observations import Observation
 from shadow_hdk.kernel.ports import Usage
 
-Outcome = Literal["running", "completed", "refused", "asked", "failed", "pending", "acted"]
+Outcome = Literal[
+    "running",
+    "completed",
+    "refused",
+    "approval_requested",
+    "input_requested",
+    "failed",
+    "pending",
+    "acted",
+]
 
 
 @dataclass(frozen=True)
-class Step:
+class Item:
     """One thing the agent did, with what it thought first and what it cost.
 
     `children` are the steps of every run spawned while this step was executing, in order, each
@@ -60,7 +74,7 @@ class Step:
     """A refusal's reason, or a question's text."""
     usage: Usage | None = None
     at: str | None = None
-    children: tuple[Step, ...] = ()
+    children: tuple[Item, ...] = ()
     parent: tuple[RunId, StepId] | None = None
     """The step whose run spawned this one, for a client hanging steps where they belong as they
     close (`run_steps(nested=True)`); `None` at the top."""
@@ -79,11 +93,11 @@ class _Open:
     reason: str | None = None
     usage: Usage | None = None
     at: str | None = None
-    children: list[Step] = field(default_factory=list)
+    children: list[Item] = field(default_factory=list)
     parent: tuple[RunId, StepId] | None = None
 
-    def frozen(self) -> Step:
-        return Step(
+    def frozen(self) -> Item:
+        return Item(
             run_id=self.run_id,
             step=self.step,
             component=self.component,
@@ -100,11 +114,16 @@ class _Open:
 
 def _outcome_of(observation: Observation) -> Outcome:
     kind = getattr(observation, "kind", "completed")
-    return (
-        kind
-        if kind in ("completed", "refused", "asked", "failed", "pending", "acted")
-        else "completed"
-    )  # type: ignore[return-value]
+    named: dict[str, Outcome] = {
+        "completed": "completed",
+        "refused": "refused",
+        "approval_request": "approval_requested",
+        "input_request": "input_requested",
+        "failed": "failed",
+        "pending": "pending",
+        "acted": "acted",
+    }
+    return named.get(kind, "completed")
 
 
 class Fold:
@@ -118,9 +137,9 @@ class Fold:
         self.open: dict[tuple[RunId, StepId], _Open] = {}
         self.current: dict[RunId, StepId] = {}
         self.parent_of: dict[RunId, tuple[RunId, StepId]] = {}
-        self.finished: list[Step] = []
+        self.finished: list[Item] = []
         self.order: list[tuple[RunId, StepId]] = []
-        self.closed_now: list[Step] = []
+        self.closed_now: list[Item] = []
         """Every step the last `feed` closed, nested or not — what a live host renders."""
 
     def _step(self, run_id: RunId, step: StepId) -> _Open:
@@ -131,13 +150,13 @@ class Fold:
         self.current[run_id] = step
         return self.open[key]
 
-    def feed(self, event: Event) -> list[Step]:
+    def feed(self, event: Event) -> list[Item]:
         """Fold one event; return any top-level steps that just closed. `closed_now` holds every
         step that closed, a nested one included."""
-        closed: list[Step] = []
+        closed: list[Item] = []
         self.closed_now = []
         match event:
-            case Reasoned():
+            case Reasoning():
                 self._step(event.run_id, event.step).reasoning.append(event.text)
             case Invoked():
                 opened = self._step(event.run_id, event.step)
@@ -153,12 +172,17 @@ class Fold:
                 opened.outcome = "refused"
                 opened.reason = event.reason
                 closed += self._close(event.run_id, event.step)
-            case Asked():
+            case ApprovalRequested():
                 opened = self._step(event.run_id, event.step)
-                opened.outcome = "asked"
+                opened.outcome = "approval_requested"
                 opened.reason = event.question
                 closed += self._close(event.run_id, event.step)
-            case Spent():
+            case InputRequested():
+                opened = self._step(event.run_id, event.step)
+                opened.outcome = "input_requested"
+                opened.reason = event.question
+                closed += self._close(event.run_id, event.step)
+            case UsageReported():
                 if (key := (event.run_id, event.step)) in self.open:
                     self.open[key].usage = event.usage
                 else:
@@ -168,9 +192,9 @@ class Fold:
                     self.parent_of[event.child_run_id] = (event.run_id, parent_step)
         return closed
 
-    def _late_usage(self, event: Spent) -> None:
-        """`Spent` arrives after `Observed` closed the step. Attach it to the frozen step wherever
-        it ended up — top level or under a parent — by rebuilding that one entry."""
+    def _late_usage(self, event: UsageReported) -> None:
+        """`UsageReported` arrives after `Observed` closed the step. Attach it to the frozen step
+        wherever it ended up — top level or under a parent — by rebuilding that one entry."""
         for i, done in enumerate(self.finished):
             if (done.run_id, done.step) == (event.run_id, event.step):
                 self.finished[i] = replace(done, usage=event.usage)
@@ -181,7 +205,7 @@ class Fold:
                     opened.children[j] = replace(child, usage=event.usage)
                     return
 
-    def _close(self, run_id: RunId, step: StepId) -> list[Step]:
+    def _close(self, run_id: RunId, step: StepId) -> list[Item]:
         opened = self.open.pop((run_id, step))
         opened.parent = self.parent_of.get(run_id)
         done = opened.frozen()
@@ -195,13 +219,13 @@ class Fold:
         self.finished.append(done)
         return [done]
 
-    def drain(self) -> list[Step]:
+    def drain(self) -> list[Item]:
         """Everything, closed or still running, in the order it started. For a stream that ended."""
         still_open = [self.open[key].frozen() for key in self.order]
         return [*self.finished, *[s for s in still_open if s.run_id not in self.parent_of]]
 
 
-def steps(events: Iterable[Event]) -> list[Step]:
+def items(events: Iterable[Event]) -> list[Item]:
     """Every top-level step in a recorded stream, children nested, running ones last."""
     fold = Fold()
     for event in events:
@@ -209,7 +233,7 @@ def steps(events: Iterable[Event]) -> list[Step]:
     return fold.drain()
 
 
-async def run_steps(events: AsyncIterator[Event], *, nested: bool = False) -> AsyncIterator[Step]:
+async def run_items(events: AsyncIterator[Event], *, nested: bool = False) -> AsyncIterator[Item]:
     """The same fold over a live stream, yielding each top-level step as it closes.
 
     Takes the event iterator `run(...)` returns, so a host that wants both the record and the
@@ -226,12 +250,12 @@ async def run_steps(events: AsyncIterator[Event], *, nested: bool = False) -> As
             yield done
 
 
-def as_json(step: Step) -> dict[str, Any]:
+def as_json(item: Item) -> dict[str, Any]:
     """The projection, as a client on the wire receives it."""
     from shadow_hdk.kernel.contracts import adapter_for
 
-    dumped: dict[str, Any] = adapter_for(Step).dump_python(step, mode="json")
+    dumped: dict[str, Any] = adapter_for(Item).dump_python(item, mode="json")
     return dumped
 
 
-__all__ = ["Fold", "Outcome", "Step", "as_json", "run_steps", "steps"]
+__all__ = ["Fold", "Item", "Outcome", "as_json", "items", "run_items"]

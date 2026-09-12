@@ -7,7 +7,7 @@ beside it: the root's files, the changed ones marked.
                                      [--mode=workspace-write|full|read-only] [--port=8765]
 
 Then open http://127.0.0.1:8765. Everything on the page is the run's own record: the events the
-runtime emits, folded into steps (D46) the same way any client would fold them, the `Reasoned`
+runtime emits, folded into steps (D46) the same way any client would fold them, the `Reasoning`
 lines ahead of the acts they led to (D45), the environment's answers as they land, and the
 policy's questions answered live while the provider waits (D58), saying what they are about (D59).
 Nothing here is drawn from anything but the stream — the page is a reader of the record, which is

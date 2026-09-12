@@ -14,8 +14,16 @@ import sys
 from pathlib import Path
 
 from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Ended, Event, Invoked, Observed, Reasoned, RefusedEvent, Spent
-from shadow_hdk.runtime import Questions
+from shadow_hdk.kernel import (
+    Ended,
+    Event,
+    Invoked,
+    Observed,
+    Reasoning,
+    RefusedEvent,
+    UsageReported,
+)
+from shadow_hdk.runtime import Approvals
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
@@ -49,7 +57,7 @@ def show(event: Event) -> None:
     """
     if not _conversation:
         _conversation.append(event.run_id)
-    if isinstance(event, Reasoned):
+    if isinstance(event, Reasoning):
         # What it thought, before what it did (D45) — the line a person most wants to read.
         thought = event.text.strip().replace("\n", " ")
         print(f"\033[36m  ∴ {thought[:200]}{OFF}", flush=True)
@@ -61,13 +69,13 @@ def show(event: Event) -> None:
         # The *event*, not the observation of the same name — the first cut checked the
         # observation and no refusal was ever shown.
         print(f"\033[31m  ✕ refused: {event.reason}{OFF}", flush=True)
-    elif isinstance(event, Spent):
+    elif isinstance(event, UsageReported):
         print(f"{DIM}    ({event.usage}){OFF}", flush=True)
     elif isinstance(event, Ended) and event.run_id == _conversation[0]:
         print(f"{DIM}  [conversation ended: {event.reason}]{OFF}", flush=True)
 
 
-async def answer_questions(questions: Questions) -> None:
+async def answer_questions(questions: Approvals) -> None:
     """The person's side of D58: a tool call the policy asks about waits here for a `y`/`n`.
 
     The provider is blocked on that call, so the question is put to the terminal as it arrives;
@@ -95,11 +103,11 @@ async def main() -> int:
         if flag.startswith("--provider="):
             want = flag.split("=", 1)[1]
     root = Path(argv[0] if argv else "./coder-workspace").resolve()
-    questions = Questions()
+    questions = Approvals()
     answering = asyncio.create_task(answer_questions(questions))
     try:
         async with a_conversation(
-            root, want=want, mode=mode, on_event=show, questions=questions
+            root, want=want, mode=mode, on_event=show, approvals=questions
         ) as talk:
             print(f"{BOLD}Workspace:{OFF} {root}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")

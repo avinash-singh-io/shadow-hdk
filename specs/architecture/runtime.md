@@ -150,13 +150,13 @@ classDiagram
 | `loop.py` | `run`, `resume` — Started … Ended, end reasons, child forwarding |
 | `errors.py` | `RuntimeStop` and its three — `LeaseExhausted`, `Cancelled`, `PortFailure` — plus `DanglingRef`. **A stop is a `BaseException`** (TD-006): every component adapter catches `Exception`, and it should, so a stop that was one got swallowed by whatever component was running |
 | `cancel.py` | the handle a host keeps and the check a step makes (D15) |
-| `questions.py` | the other handle a host keeps: a component asks the host **live** while its step runs, because a step holding a provider's session cannot park (D58) |
+| `approvals.py` | the other handle a host keeps: a component requests approval — or the person's input — **live** while its step runs, because a step holding a provider's session cannot park (D58); answered `Approve`, `Deny` or `ApproveAndAddRule` (D61) |
 | `children.py` | what a run is holding — spawn · send · release, and the records that survive a park (D16, D37); `Narrowed`, the pattern's ceiling applied as a second gate where the child is spawned, whichever side of the wire (D51) |
 | `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
 | `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
 | `environment.py` | an environment has a mode: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48) |
-| `steps.py` | the event stream folded into agent steps — one pure fold, in-process and over the wire (D46); `run_steps(nested=True)` yields every step as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
+| `items.py` | the event stream folded into the items a host renders — one pure fold, in-process and over the wire (D46, D61); `run_items(nested=True)` yields every item as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
 | `processes.py` | ending what a step started — shared by the leash and the ACP bridge (D35, TD-006); every session leader the runtime starts is `hold`-ed and dies with the interpreter, by whichever door (D53, BUG-019) |
 | `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
 | `testing/` | `InMemoryComponents`, `ScriptedModel`, `ListSink`, `ListObserver`, `FixedClock` (D8) |
@@ -194,7 +194,7 @@ async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
             return await self._observe(step, Refused(reason), emit=False)
         case Ask(question):
             handle = f"{self.session.run_id}:{step.id}"
-            await self.emit(lambda **k: AskedEvent(step=step.id, question=question, handle=handle, **k))
+            await self.emit(lambda **k: ApprovalRequested(step=step.id, question=question, handle=handle, **k))
             answer = _as_judgement(interrupt({"run_id": …, "step": step.id, "question": question}))
             if not isinstance(answer, Allow):
                 reason = getattr(answer, "reason", "not allowed")

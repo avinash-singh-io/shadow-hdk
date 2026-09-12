@@ -153,5 +153,7 @@ async def test_an_ask_inside_a_subgraph_parks_the_whole_run() -> None:
             options=RunOptions(lease=a_lease(), run_id="parked-in-a-subgraph"),
         )
     ]
-    assert [e.kind for e in events if e.kind == "asked"], "the nested Ask never reached the top"
+    assert [e.kind for e in events if e.kind == "approval_requested"], (
+        "the nested Ask never reached the top"
+    )
     assert not [e for e in events if isinstance(e, Ended)], "a parked run must not report Ended"

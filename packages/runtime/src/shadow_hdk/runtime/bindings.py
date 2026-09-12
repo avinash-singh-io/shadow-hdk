@@ -33,10 +33,10 @@ from shadow_hdk.kernel.ports import (
 )
 
 if TYPE_CHECKING:
+    from shadow_hdk.runtime.approvals import Approvals
     from shadow_hdk.runtime.cancel import Cancellation
     from shadow_hdk.runtime.children import Children
     from shadow_hdk.runtime.emit import Emitter
-    from shadow_hdk.runtime.questions import Questions
     from shadow_hdk.runtime.registry import Registry
     from shadow_hdk.runtime.session import Session
     from shadow_hdk.runtime.trust import Trust
@@ -85,7 +85,7 @@ class RunOptions:
     parent: Any = MISSING
     cancellation: Cancellation | None = None
     """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
-    questions: Questions | None = None
+    approvals: Approvals | None = None
     """Where a component asks the host **live** while its step is still running (D58) — a step
     that holds a provider's session cannot park. A child inherits its parent's. `None` means
     nobody is there to ask, and `ask()` says so."""
@@ -240,7 +240,7 @@ class RunContext:
         # The parent's handle by default: a child that outlived the run which spawned it is a leak
         # with a budget. `cancellation=` in the overrides makes the child its own to stop (D15).
         overrides.setdefault("cancellation", self._session.cancellation)
-        overrides.setdefault("questions", self._session.questions)
+        overrides.setdefault("approvals", self._session.approvals)
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:
@@ -304,7 +304,7 @@ class RunContext:
 
     # ------------------------------------------------------------------ asking for itself (D57)
 
-    async def ask(
+    async def request_approval(
         self,
         question: str,
         *,
@@ -317,15 +317,15 @@ class RunContext:
 
         `about` is the component and inputs the question concerns (BUG-026): what the person is
         being asked to consent to, on the event and on the pending question alike."""
-        from shadow_hdk.kernel.events import Asked as AskedEvent
-        from shadow_hdk.kernel.ports import Refuse
-        from shadow_hdk.runtime.questions import Pending
+        from shadow_hdk.kernel.events import ApprovalRequested
+        from shadow_hdk.kernel.ports import Allow, Refuse
+        from shadow_hdk.runtime.approvals import Approve, ApproveAndAddRule, Deny, Request
 
         where = step if step is not None else (self.step or "")
         handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
         component, inputs = about
         await self._emitter.emit(
-            lambda **k: AskedEvent(
+            lambda **k: ApprovalRequested(
                 step=where,
                 question=question,
                 handle=handle,
@@ -334,11 +334,11 @@ class RunContext:
                 **k,
             )
         )
-        questions = self._session.questions
-        if questions is None:
-            return Refuse("nobody was there to ask: the run has no Questions handle")
-        return await questions.ask(
-            Pending(
+        approvals = self._session.approvals
+        if approvals is None:
+            return Refuse("nobody was there to ask: the run has no Approvals handle")
+        answered = await approvals.ask(
+            Request(
                 handle=handle,
                 run_id=self.run_id,
                 step=where,
@@ -347,6 +347,13 @@ class RunContext:
                 inputs=inputs,
             )
         )
+        # The host's words become the loop's judgement. A rule that came with the approval is
+        # the host's to keep (group 5 proposes it through the sink); here it is an approval.
+        if isinstance(answered, Approve | ApproveAndAddRule):
+            return Allow()
+        if isinstance(answered, Deny):
+            return Refuse(answered.reason)
+        return answered
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
         """What this step wants back if it parks. Read by the executor when the component answers
@@ -377,7 +384,7 @@ class RunContext:
     def resumed_done(self, step: str) -> None:
         self._resumed.pop(step, None)
 
-    async def reasoned(self, text: str, *, step: str | None = None) -> None:
+    async def reasoning(self, text: str, *, step: str | None = None) -> None:
         """Put thinking on the record, beside what it led to (D45).
 
         The step is the one executing — the agent's own, so a projection folds the thought under
@@ -388,12 +395,12 @@ class RunContext:
         wire is answered on the peer's task, where nothing is executing, and the host-side context
         that sent it is the one that knows which step was thinking.
         """
-        from shadow_hdk.kernel.events import Reasoned
+        from shadow_hdk.kernel.events import Reasoning
 
         if not text:
             return
         where = step if step is not None else (self.step or "")
-        await self._emitter.emit(lambda **k: Reasoned(step=where, text=text, **k))
+        await self._emitter.emit(lambda **k: Reasoning(step=where, text=text, **k))
 
 
 _CURRENT: ContextVar[RunContext | None] = ContextVar("shadow_hdk_current_run", default=None)

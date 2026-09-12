@@ -34,7 +34,7 @@
       "title": "Acted",
       "type": "object"
     },
-    "Asked": {
+    "ApprovalRequest": {
       "description": "The step paused; whoever implements governance decides what asking means.\n\n`component` and `inputs` say what the question is about (BUG-026) \u2014 an agent surfacing a\nchild's question passes on what that child was about to do, so the person sees it.",
       "properties": {
         "component": {
@@ -65,8 +65,8 @@
           "default": null
         },
         "kind": {
-          "const": "asked",
-          "default": "asked",
+          "const": "approval_request",
+          "default": "approval_request",
           "title": "Kind",
           "type": "string"
         },
@@ -79,7 +79,7 @@
         "question",
         "handle"
       ],
-      "title": "Asked",
+      "title": "ApprovalRequest",
       "type": "object"
     },
     "Completed": {
@@ -117,47 +117,32 @@
       "title": "Failed",
       "type": "object"
     },
-    "JsonValue": {},
-    "Pending": {
-      "description": "The answer arrives later, under this handle.",
+    "InputRequest": {
+      "description": "The step paused for the person's answer to a question of the agent's own (D61).",
       "properties": {
         "handle": {
           "title": "Handle",
           "type": "string"
         },
         "kind": {
-          "const": "pending",
-          "default": "pending",
-          "title": "Kind",
-          "type": "string"
-        }
-      },
-      "required": [
-        "handle"
-      ],
-      "title": "Pending",
-      "type": "object"
-    },
-    "Refused": {
-      "properties": {
-        "kind": {
-          "const": "refused",
-          "default": "refused",
+          "const": "input_request",
+          "default": "input_request",
           "title": "Kind",
           "type": "string"
         },
-        "reason": {
-          "title": "Reason",
+        "question": {
+          "title": "Question",
           "type": "string"
         }
       },
       "required": [
-        "reason"
+        "question",
+        "handle"
       ],
-      "title": "Refused",
+      "title": "InputRequest",
       "type": "object"
     },
-    "Step": {
+    "Item": {
       "description": "One thing the agent did, with what it thought first and what it cost.\n\n`children` are the steps of every run spawned while this step was executing, in order, each\nwith children of its own. `observation` is the whole observation \u2014 a projection is not the\nplace to summarise; the offloading rule (Group 4) is where size is handled, before it gets here.",
       "properties": {
         "at": {
@@ -175,7 +160,7 @@
         "children": {
           "default": [],
           "items": {
-            "$ref": "#/$defs/Step"
+            "$ref": "#/$defs/Item"
           },
           "title": "Children",
           "type": "array"
@@ -198,9 +183,10 @@
               "discriminator": {
                 "mapping": {
                   "acted": "#/$defs/Acted",
-                  "asked": "#/$defs/Asked",
+                  "approval_request": "#/$defs/ApprovalRequest",
                   "completed": "#/$defs/Completed",
                   "failed": "#/$defs/Failed",
+                  "input_request": "#/$defs/InputRequest",
                   "pending": "#/$defs/Pending",
                   "refused": "#/$defs/Refused"
                 },
@@ -214,7 +200,10 @@
                   "$ref": "#/$defs/Refused"
                 },
                 {
-                  "$ref": "#/$defs/Asked"
+                  "$ref": "#/$defs/ApprovalRequest"
+                },
+                {
+                  "$ref": "#/$defs/InputRequest"
                 },
                 {
                   "$ref": "#/$defs/Failed"
@@ -240,7 +229,8 @@
             "running",
             "completed",
             "refused",
-            "asked",
+            "approval_requested",
+            "input_requested",
             "failed",
             "pending",
             "acted"
@@ -311,7 +301,47 @@
         "run_id",
         "step"
       ],
-      "title": "Step",
+      "title": "Item",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Pending": {
+      "description": "The answer arrives later, under this handle.",
+      "properties": {
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "kind": {
+          "const": "pending",
+          "default": "pending",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "title": "Pending",
+      "type": "object"
+    },
+    "Refused": {
+      "properties": {
+        "kind": {
+          "const": "refused",
+          "default": "refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Refused",
       "type": "object"
     },
     "Usage": {
@@ -358,5 +388,5 @@
       "type": "object"
     }
   },
-  "$ref": "#/$defs/Step"
+  "$ref": "#/$defs/Item"
 }

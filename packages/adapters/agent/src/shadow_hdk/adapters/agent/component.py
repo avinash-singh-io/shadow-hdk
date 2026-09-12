@@ -45,7 +45,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import (
     Acted,
-    Asked,
+    ApprovalRequest,
     Completed,
     Failed,
     Observation,
@@ -192,7 +192,7 @@ class _Turnwise:
             self.charge(response.usage)
             # **Why before what** (D45): the thought goes on the record ahead of the calls it led
             # to, so a reader — or a projection — sees the reasoning above the invocation.
-            await self.ctx.reasoned(response.reasoning)
+            await self.ctx.reasoning(response.reasoning)
             if not response.tool_calls:
                 self.messages.append(Message("assistant", response.text))
                 return self.finished("answered", text=response.text)
@@ -488,10 +488,12 @@ class _Turnwise:
         file it never wrote. Now the transcript is kept and the step answers `Asked`; the run parks
         at the top, where a host can see it.
         """
-        question = next((e for e in events if e.kind == "asked" and e.run_id == handle), None)
+        question = next(
+            (e for e in events if e.kind == "approval_requested" and e.run_id == handle), None
+        )
         if question is not None and await self.ctx.children.is_held(handle):
             await self.ctx.keep(self._snapshot(handle, composition, calls))
-            return Asked(
+            return ApprovalRequest(
                 question=getattr(question, "question", "may this continue?"),
                 handle=handle,
                 component=getattr(question, "component", None),
@@ -539,7 +541,7 @@ class _Turnwise:
             "messages": [json.loads(dump(m, Message)) for m in self.messages],
             "held": dict(self.held),
             "helpers": dict(self.helpers),
-            "spent": json.loads(dump(self.spent, Usage)),
+            "usage": json.loads(dump(self.spent, Usage)),
             "nudged": self.nudged,
             "proposed": self.proposed,
             "turns": self.turns,
@@ -551,7 +553,7 @@ class _Turnwise:
         self.messages = [load(json.dumps(m), Message) for m in kept.get("messages", [])]
         self.held = dict(kept.get("held", {}))
         self.helpers = dict(kept.get("helpers", {}))
-        self.spent = load(json.dumps(kept.get("spent", {})), Usage)
+        self.spent = load(json.dumps(kept.get("usage", {})), Usage)
         self.nudged = bool(kept.get("nudged", False))
         self.proposed = int(kept.get("proposed", 0))
         self.turns = int(kept.get("turns", 0))

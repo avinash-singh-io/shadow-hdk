@@ -36,14 +36,14 @@ from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.runtime import Ports, Resumed, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
-    CONTEXT_ASK,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
     CONTEXT_PROPOSE,
-    CONTEXT_REASONED,
+    CONTEXT_REASONING,
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
+    CONTEXT_REQUEST_APPROVAL,
     CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
@@ -92,11 +92,11 @@ class WireRunContext(RunContext):
             {"proposal": json.loads(dump(proposal, Proposal))},
         )
 
-    async def reasoned(self, text: str) -> None:
+    async def reasoning(self, text: str, *, step: str | None = None) -> None:
         """Crosses back for the same reason `propose` does: there is one record with one author,
         and a thought emitted host-side would land on a stream nobody reads."""
         if text:
-            await self._peer.call(CONTEXT_REASONED, {"text": text, "step": self._step})
+            await self._peer.call(CONTEXT_REASONING, {"text": text, "step": step or self._step})
 
     def remaining(self) -> Lease:
         raise WireOnlyAsync(
@@ -128,19 +128,19 @@ class WireRunContext(RunContext):
         answered = await self._peer.call(CONTEXT_FLOOR_MET, {})
         return bool(answered["floor_met"])
 
-    async def ask(
+    async def request_approval(
         self,
         question: str,
         *,
         step: str | None = None,
         about: tuple[str | None, JsonValue | None] = (None, None),
     ) -> Any:
-        """A live question crosses and waits: the host's `Questions` handle is on the runtime's
+        """A live question crosses and waits: the host's `Approvals` handle is on the runtime's
         side, where the record is (D58). The judgement comes back as JSON. What the question is
         about crosses with it (BUG-026)."""
         component, inputs = about
         answered = await self._peer.call(
-            CONTEXT_ASK,
+            CONTEXT_REQUEST_APPROVAL,
             {
                 "question": question,
                 "step": step or self._step,

@@ -1,7 +1,7 @@
-"""`ctx.ask()`: a question the host answers while the step is still running (D58).
+"""`ctx.request_approval()`: a question the host answers while the step is still running (D58).
 
 The other shape from D57's: no park, because the step cannot stop — it holds something alive. The
-question is on the record where it was raised; the host sees it on its `Questions` handle and
+question is on the record where it was raised; the host sees it on its `Approvals` handle and
 answers by handle; with no handle the answer is a refusal that says nobody was there.
 """
 
@@ -23,9 +23,9 @@ from shadow_hdk.kernel import (
     Lease,
     Observation,
 )
-from shadow_hdk.kernel.events import Asked as AskedEvent
+from shadow_hdk.kernel.events import ApprovalRequested
 from shadow_hdk.kernel.ports import Allow, Refuse
-from shadow_hdk.runtime import Ports, Questions, RunOptions, current_run, run
+from shadow_hdk.runtime import Approvals, Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.testing import (
     FixedClock,
     InMemoryComponents,
@@ -57,7 +57,7 @@ def _ports(asker: Any) -> Ports:
 async def asks_then_reports(_inputs: JsonValue) -> Observation:
     context = current_run()
     assert context is not None
-    answer = await context.ask("may I?")
+    answer = await context.request_approval("may I?")
     return Completed({"answer": answer.kind, "reason": getattr(answer, "reason", None)})
 
 
@@ -66,8 +66,8 @@ async def _collect(events: Any) -> list[Any]:
 
 
 async def test_the_question_is_on_the_record_and_the_host_answers_by_handle() -> None:
-    questions = Questions()
-    options = RunOptions(lease=Lease(Ceiling(5, 60, None), Floor(0)), questions=questions)
+    questions = Approvals()
+    options = RunOptions(lease=Lease(Ceiling(5, 60, None), Floor(0)), approvals=questions)
 
     async def the_host() -> None:
         pending = await asyncio.wait_for(questions.next(), 10)
@@ -80,7 +80,7 @@ async def test_the_question_is_on_the_record_and_the_host_answers_by_handle() ->
     events = await _collect(run(PLAN, _ports(asks_then_reports), options=options))
     await host
 
-    asked = [e for e in events if isinstance(e, AskedEvent)]
+    asked = [e for e in events if isinstance(e, ApprovalRequested)]
     assert [(a.step, a.question) for a in asked] == [("s1", "may I?")]
     done = [e for e in events if e.kind == "observed"][-1]
     assert done.observation == Completed({"answer": "allow", "reason": None})
@@ -96,12 +96,12 @@ async def test_with_nobody_to_ask_the_answer_is_a_refusal_that_says_so() -> None
     assert isinstance(output, dict)
     assert output["answer"] == "refuse"
     assert "nobody" in str(output["reason"])
-    assert [e for e in events if isinstance(e, AskedEvent)], "still on the record"
+    assert [e for e in events if isinstance(e, ApprovalRequested)], "still on the record"
 
 
 async def test_a_child_run_inherits_the_parents_handle() -> None:
-    questions = Questions()
-    options = RunOptions(lease=Lease(Ceiling(10, 60, None), Floor(0)), questions=questions)
+    questions = Approvals()
+    options = RunOptions(lease=Lease(Ceiling(10, 60, None), Floor(0)), approvals=questions)
 
     async def spawns_an_asker(_inputs: JsonValue) -> Observation:
         context = current_run()
@@ -134,11 +134,11 @@ async def test_a_question_the_asker_stopped_waiting_for_is_withdrawn() -> None:
     buttons that answer nothing."""
     import asyncio
 
-    from shadow_hdk.runtime import Questions
-    from shadow_hdk.runtime.questions import Pending
+    from shadow_hdk.runtime import Approvals
+    from shadow_hdk.runtime.approvals import Request
 
-    questions = Questions()
-    pending = Pending(handle="h", run_id="r", step="s", question="?")
+    questions = Approvals()
+    pending = Request(handle="h", run_id="r", step="s", question="?")
     asking = asyncio.create_task(questions.ask(pending))
     await asyncio.sleep(0)
     assert questions.pending() == (pending,)

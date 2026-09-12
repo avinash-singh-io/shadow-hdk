@@ -32,21 +32,20 @@ from shadow_hdk.kernel.effects import (
     ScopeSet,
 )
 from shadow_hdk.kernel.events import (
-    Asked as AskedEvent,
-)
-from shadow_hdk.kernel.events import (
+    ApprovalRequested,
     Composed,
     Ended,
     Event,
     Held,
+    InputRequested,
     Invoked,
     Observed,
     Proposed,
-    Reasoned,
+    Reasoning,
     RunId,
     Spawned,
-    Spent,
     Started,
+    UsageReported,
 )
 from shadow_hdk.kernel.events import (
     Refused as RefusedEvent,
@@ -54,9 +53,10 @@ from shadow_hdk.kernel.events import (
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
 from shadow_hdk.kernel.observations import (
     Acted,
-    Asked,
+    ApprovalRequest,
     Completed,
     Failed,
+    InputRequest,
     Observation,
     Pending,
     Proposal,
@@ -94,7 +94,7 @@ from shadow_hdk.kernel.providers import (
 )
 
 __all__ = [
-    "Reasoned",
+    "Reasoning",
     "Dialect",
     "TurnChunk",
     "Turn",
@@ -110,8 +110,10 @@ __all__ = [
     "Allow",
     "Ask",
     "Acted",
-    "Asked",
-    "AskedEvent",
+    "ApprovalRequest",
+    "ApprovalRequested",
+    "InputRequest",
+    "InputRequested",
     "Await",
     "Binding",
     "Ceiling",
@@ -159,7 +161,7 @@ __all__ = [
     "SinkPort",
     "Held",
     "Spawned",
-    "Spent",
+    "UsageReported",
     "Started",
     "Step",
     "StepId",

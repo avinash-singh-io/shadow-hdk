@@ -18,7 +18,7 @@ from examples.studio.app import Studio, build_app
 
 from shadow_hdk.kernel import Invoked, Observed, Started
 from shadow_hdk.kernel.observations import Completed
-from shadow_hdk.runtime.questions import Pending
+from shadow_hdk.runtime.approvals import Request
 
 pytestmark = pytest.mark.anyio
 
@@ -80,7 +80,7 @@ async def test_a_pending_question_reaches_the_page_and_the_answer_settles_it(
     relay = asyncio.create_task(studio._relay_questions())  # noqa: SLF001 — the task `open()` starts
     try:
         asking = asyncio.create_task(
-            studio.questions.ask(Pending(handle="h1", run_id="r", step="w1", question="write?"))
+            studio.approvals.ask(Request(handle="h1", run_id="r", step="w1", question="write?"))
         )
         for _ in range(50):
             if any(line.get("kind") == "question" for line in studio.record):
@@ -96,7 +96,7 @@ async def test_a_pending_question_reaches_the_page_and_the_answer_settles_it(
                 "ok"
             ] is False
         answer = await asyncio.wait_for(asking, 5)
-        assert answer.kind == "refuse"
+        assert answer.kind == "deny"  # the host answers in the industry's words (D61)
     finally:
         relay.cancel()
 

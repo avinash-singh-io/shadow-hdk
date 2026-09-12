@@ -196,7 +196,7 @@ async def test_an_ask_is_an_event_and_the_run_span_stays_open() -> None:
     )
     assert not [e for e in events if isinstance(e, Ended)]
     run_span = _one(tracer.named("shadow_hdk.run"))
-    asked = _one([e for e in run_span.events if e.name == "asked"])
+    asked = _one([e for e in run_span.events if e.name == "approval_requested"])
     assert asked.attributes["shadow_hdk.step"] == "s1"
     assert asked.attributes["shadow_hdk.question"] == "may it read?"
     assert isinstance(asked.attributes["shadow_hdk.handle"], str)
@@ -367,7 +367,7 @@ async def test_a_tracer_that_raises_does_not_fail_the_run_and_is_counted() -> No
 
 
 def test_every_event_kind_is_accounted_for() -> None:
-    """A new kind must say what the trace does with it, or this fails. The twelfth, `Reasoned`,
+    """A new kind must say what the trace does with it, or this fails. The twelfth, `Reasoning`,
     arrived in Phase 21 and this said so before anything else did: it carries length, never text
     (D28)."""
     import dataclasses
@@ -380,7 +380,7 @@ def test_every_event_kind_is_accounted_for() -> None:
         if isinstance(cls, type) and dataclasses.is_dataclass(cls) and hasattr(cls, "kind")
     }
     assert kinds == OpenTelemetryObserver.HANDLED
-    assert len(kinds) == 12
+    assert len(kinds) == 13  # the thirteenth: input_requested (D61)
 
 
 async def test_a_run_that_fails_mid_step_ends_the_step_span() -> None:

@@ -1,6 +1,6 @@
 """The projection, rendered — what a client shows as "agent steps".
 
-`run_steps` folds the event stream into `Step`s (Phase 21): one per step, with what the model
+`run_items` folds the event stream into `Item`s (Phase 21): one per step, with what the model
 thought first, what the step observed, what it cost, and the steps of every run it spawned nested
 under it. This renders each as it completes. A UI would draw the same object; the fold is the
 runtime's, the drawing is the host's.
@@ -8,16 +8,16 @@ runtime's, the drawing is the host's.
 
 from __future__ import annotations
 
-from shadow_hdk.runtime.steps import Step
+from shadow_hdk.runtime.items import Item
 
 DIM, OFF = "\033[2m", "\033[0m"
-MARK = {"completed": "✓", "failed": "✗", "refused": "✕", "asked": "?", "running": "…"}
+MARK = {"completed": "✓", "failed": "✗", "refused": "✕", "approval_requested": "?", "running": "…"}
 
 
-def lines_for(step: Step, *, depth: int = 0, tree: bool = True) -> list[str]:
+def lines_for(step: Item, *, depth: int = 0, tree: bool = True) -> list[str]:
     """One line per step — and, as a `tree`, its children indented under it with what it thought.
 
-    Live, a host renders each step as it closes (`run_steps(nested=True)`), the children before the
+    Live, a host renders each step as it closes (`run_items(nested=True)`), the children before the
     parent, and reasoning as it lands; `tree=False` is that one line. `tree=True` is the late
     reader's view of the finished projection.
     """
@@ -43,7 +43,7 @@ def lines_for(step: Step, *, depth: int = 0, tree: bool = True) -> list[str]:
 
 
 def thought(text: str, *, depth: int = 0) -> str:
-    """A `Reasoned` event as it lands — before the act it precedes, which is the whole point."""
+    """A `Reasoning` event as it lands — before the act it precedes, which is the whole point."""
     return f"{'  ' * depth}\033[36m∴ {text.strip().replace(chr(10), ' ')[:160]}{OFF}"
 
 

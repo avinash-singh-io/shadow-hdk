@@ -27,14 +27,14 @@ from shadow_hdk.kernel import (
     Invoked,
     Lease,
     Observed,
-    Reasoned,
+    Reasoning,
     Spawned,
-    Spent,
     Started,
+    UsageReported,
 )
-from shadow_hdk.kernel.events import Asked, Refused
+from shadow_hdk.kernel.events import ApprovalRequested, Refused
 from shadow_hdk.kernel.ports import Usage
-from shadow_hdk.runtime.steps import Step, steps
+from shadow_hdk.runtime.items import Item, items
 
 LEASE = Lease(Ceiling(10, 60, 100), Floor(0))
 
@@ -44,32 +44,34 @@ def a_stream() -> list[Event]:
     p, c = "parent", "child"
     return [
         Started(run_id=p, seq=1, at="t1", lease=LEASE),
-        Reasoned(run_id=p, seq=2, at="t2", step="lead", text="check the handbook"),
+        Reasoning(run_id=p, seq=2, at="t2", step="lead", text="check the handbook"),
         Invoked(run_id=p, seq=3, at="t3", step="lead", component="agent", inputs={}),
         Spawned(run_id=p, seq=4, at="t4", child_run_id=c, lease=LEASE),
         Started(run_id=c, seq=1, at="t5", lease=LEASE),
-        Reasoned(run_id=c, seq=2, at="t6", step="look", text="the handbook lists it"),
+        Reasoning(run_id=c, seq=2, at="t6", step="look", text="the handbook lists it"),
         Invoked(run_id=c, seq=3, at="t7", step="look", component="look_up", inputs={"topic": "x"}),
         Observed(run_id=c, seq=4, at="t8", step="look", observation=Completed({"mass": 12})),
-        Spent(run_id=c, seq=5, at="t9", step="look", usage=Usage(10, 5, 2)),
+        UsageReported(run_id=c, seq=5, at="t9", step="look", usage=Usage(10, 5, 2)),
         Ended(run_id=c, seq=6, at="t10", reason="completed", steps_taken=1),
         Observed(run_id=p, seq=5, at="t11", step="lead", observation=Completed({"answer": 12})),
-        Spent(run_id=p, seq=6, at="t12", step="lead", usage=Usage(100, 40, 5)),
+        UsageReported(run_id=p, seq=6, at="t12", step="lead", usage=Usage(100, 40, 5)),
         Invoked(run_id=p, seq=7, at="t13", step="wipe", component="rm", inputs={}),
         Refused(run_id=p, seq=8, at="t14", step="wipe", reason="mode 'looking' permits no writes"),
         Invoked(run_id=p, seq=9, at="t15", step="publish", component="post", inputs={}),
-        Asked(run_id=p, seq=10, at="t16", step="publish", question="publish it?", handle="h1"),
+        ApprovalRequested(
+            run_id=p, seq=10, at="t16", step="publish", question="publish it?", handle="h1"
+        ),
     ]
 
 
 def test_each_step_is_one_thing_the_agent_did() -> None:
-    folded = steps(a_stream())
+    folded = items(a_stream())
 
     assert [s.step for s in folded] == ["lead", "wipe", "publish"]
 
 
 def test_a_step_carries_what_it_thought_and_what_it_reached_for() -> None:
-    lead = steps(a_stream())[0]
+    lead = items(a_stream())[0]
 
     assert lead.reasoning == "check the handbook"
     assert lead.component == "agent"
@@ -78,22 +80,22 @@ def test_a_step_carries_what_it_thought_and_what_it_reached_for() -> None:
 
 
 def test_a_refusal_is_a_step_with_its_reason() -> None:
-    wipe = steps(a_stream())[1]
+    wipe = items(a_stream())[1]
 
     assert wipe.outcome == "refused"
     assert wipe.reason == "mode 'looking' permits no writes"
 
 
 def test_a_question_is_a_step_still_waiting() -> None:
-    publish = steps(a_stream())[2]
+    publish = items(a_stream())[2]
 
-    assert publish.outcome == "asked"
+    assert publish.outcome == "approval_requested"
     assert publish.reason == "publish it?"
 
 
 def test_a_child_folds_under_the_step_that_spawned_it() -> None:
     """The screenshot every host wants: the sub-agent's steps nested under the parent's."""
-    lead = steps(a_stream())[0]
+    lead = items(a_stream())[0]
 
     assert len(lead.children) == 1
     child = lead.children[0]
@@ -109,20 +111,20 @@ def test_the_fold_is_pure_and_total() -> None:
     step with no outcome yet is *running*, not an error."""
     partial = a_stream()[:3]
 
-    assert steps(a_stream()) == steps(a_stream())
-    assert steps(partial)[0].outcome == "running"
+    assert items(a_stream()) == items(a_stream())
+    assert items(partial)[0].outcome == "running"
 
 
 def test_a_step_folds_reasoning_that_arrived_in_pieces() -> None:
     p = "r"
     pieces: list[Event] = [
         Started(run_id=p, seq=1, at="t", lease=LEASE),
-        Reasoned(run_id=p, seq=2, at="t", step="s", text="the "),
-        Reasoned(run_id=p, seq=3, at="t", step="s", text="lathe"),
+        Reasoning(run_id=p, seq=2, at="t", step="s", text="the "),
+        Reasoning(run_id=p, seq=3, at="t", step="s", text="lathe"),
         Invoked(run_id=p, seq=4, at="t", step="s", component="c", inputs={}),
     ]
 
-    assert steps(pieces)[0].reasoning == "the lathe"
+    assert items(pieces)[0].reasoning == "the lathe"
 
 
 def test_a_step_is_data_a_client_can_serialise() -> None:
@@ -130,10 +132,10 @@ def test_a_step_is_data_a_client_can_serialise() -> None:
     render."""
     from shadow_hdk.kernel.contracts import round_trip
 
-    lead = steps(a_stream())[0]
+    lead = items(a_stream())[0]
 
-    assert isinstance(lead, Step)
-    assert round_trip(lead, Step) == lead
+    assert isinstance(lead, Item)
+    assert round_trip(lead, Item) == lead
 
 
 async def _replayed(events: list[Event]) -> Any:
@@ -142,13 +144,13 @@ async def _replayed(events: list[Event]) -> Any:
 
 
 async def test_a_host_can_watch_every_step_close_as_it_closes() -> None:
-    """`run_steps` yields a top-level step when it closes — and an orchestrator's step closes at
+    """`run_items` yields a top-level step when it closes — and an orchestrator's step closes at
     the very end, after every sub-agent's step it nested. A host rendering "agent steps" live saw
     nothing for the whole run. `nested=True` yields **every** step as it closes, the child's before
     the parent's, each naming its parent so a client can hang it where it belongs."""
-    from shadow_hdk.runtime.steps import run_steps
+    from shadow_hdk.runtime.items import run_items
 
-    seen = [step async for step in run_steps(_replayed(a_stream()), nested=True)]
+    seen = [step async for step in run_items(_replayed(a_stream()), nested=True)]
 
     assert [(s.run_id, s.step) for s in seen] == [
         ("child", "look"),
@@ -161,7 +163,7 @@ async def test_a_host_can_watch_every_step_close_as_it_closes() -> None:
     # The parent, when it closes, still carries the child — the tree is intact for a late reader.
     assert seen[1].children[0].step == "look"
 
-    default = [step async for step in run_steps(_replayed(a_stream()))]
+    default = [step async for step in run_items(_replayed(a_stream()))]
     assert [(s.run_id, s.step) for s in default] == [
         ("parent", "lead"),
         ("parent", "wipe"),

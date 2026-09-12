@@ -33,10 +33,10 @@ PROPOSE = "sink.propose"
 # host → runtime, from inside a component the host is running on the runtime's behalf
 CONTEXT_PROPOSE = "context.propose"
 CONTEXT_REMAINING = "context.remaining"
-CONTEXT_REASONED = "context.reasoned"
+CONTEXT_REASONING = "context.reasoning"
 CONTEXT_VISIBLE = "context.visible"
 CONTEXT_FLOOR_MET = "context.floor_met"
-CONTEXT_ASK = "context.ask"
+CONTEXT_REQUEST_APPROVAL = "context.request_approval"
 CONTEXT_KEEP = "context.keep"
 CONTEXT_RESUMED = "context.resumed"
 CONTEXT_SPAWN = "context.children.spawn"
@@ -49,7 +49,7 @@ there is one of each and it is on the runtime's side."""
 
 # runtime → host, one way
 EVENT = "event"
-STEP = "step"
+ITEM = "item"
 """The projection, folded runtime-side, one notification per closed step (D46) — so a host in
 another language renders agent steps without porting the fold."""
 

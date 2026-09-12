@@ -7,8 +7,8 @@ cannot park the way D57 parks an in-process agent: the step holding the conversa
 the CLI alive.
 
 So the question is asked **live**: `Asked` goes on the record, the call waits on the host's
-`Questions` handle, and when the host answers the nested run is resumed with the judgement and the
-CLI gets the result — allowed, the tool ran; refused, it is told refused. A run with no `Questions`
+`Approvals` handle, and when the host answers the nested run is resumed with the judgement and the
+CLI gets the result — allowed, the tool ran; refused, it is told refused. A run with no `Approvals`
 handle answers for itself: refused, and the record says nobody was there to ask.
 """
 
@@ -21,9 +21,9 @@ import pytest
 from shadow_hdk.adapters.recording import RecordingServer
 
 from shadow_hdk.kernel import EffectProfile, ScopeSet
-from shadow_hdk.kernel.events import Asked as AskedEvent
+from shadow_hdk.kernel.events import ApprovalRequested
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse
-from shadow_hdk.runtime import Questions, RunContext
+from shadow_hdk.runtime import Approvals, RunContext
 
 from .conftest import WORKSPACE, with_a_run
 
@@ -43,7 +43,7 @@ async def _wipe_through(context: RunContext) -> Any:
 
 
 async def test_the_question_reaches_the_host_and_an_allow_lets_the_call_through() -> None:
-    questions = Questions()
+    questions = Approvals()
 
     async def the_host_says_yes() -> None:
         pending = await asyncio.wait_for(questions.next(), 10)
@@ -57,15 +57,17 @@ async def test_the_question_reaches_the_host_and_an_allow_lets_the_call_through(
         finally:
             await host
 
-    result, events = await with_a_run(drive, governance=AsksAboutWrites(), questions=questions)
+    result, events = await with_a_run(drive, governance=AsksAboutWrites(), approvals=questions)
 
     assert not result.is_error, result.content[0].text
     assert '"wiped": true' in result.content[0].text
-    assert any(isinstance(e, AskedEvent) for e in events), "the question was not on the record"
+    assert any(isinstance(e, ApprovalRequested) for e in events), (
+        "the question was not on the record"
+    )
 
 
 async def test_a_refusal_tells_the_child_it_was_refused() -> None:
-    questions = Questions()
+    questions = Approvals()
 
     async def the_host_says_no() -> None:
         pending = await asyncio.wait_for(questions.next(), 10)
@@ -78,7 +80,7 @@ async def test_a_refusal_tells_the_child_it_was_refused() -> None:
         finally:
             await host
 
-    result, _ = await with_a_run(drive, governance=AsksAboutWrites(), questions=questions)
+    result, _ = await with_a_run(drive, governance=AsksAboutWrites(), approvals=questions)
 
     assert result.is_error
     assert "refused" in result.content[0].text and "not today" in result.content[0].text
@@ -91,7 +93,7 @@ async def test_a_person_who_takes_their_time_does_not_cost_the_call_its_lease() 
     thinking was more wall-clock than the parent had left — *a child lease cannot exceed its
     parent's ceiling* — and the provider was told the call had failed. The child is held and
     sent the answer now, with a ceiling clamped to what is left."""
-    questions = Questions()
+    questions = Approvals()
 
     async def the_host_thinks_first() -> None:
         pending = await asyncio.wait_for(questions.next(), 10)
@@ -106,7 +108,7 @@ async def test_a_person_who_takes_their_time_does_not_cost_the_call_its_lease() 
             await host
 
     result, _ = await with_a_run(
-        drive, governance=AsksAboutWrites(), questions=questions, wall_seconds=3
+        drive, governance=AsksAboutWrites(), approvals=questions, wall_seconds=3
     )
 
     assert not result.is_error, result.content[0].text

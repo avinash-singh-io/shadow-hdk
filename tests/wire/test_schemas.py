@@ -56,11 +56,12 @@ TWELVE = (
     "observed",
     "proposed",
     "refused",
-    "asked",
+    "approval_requested",
+    "input_requested",
     "spawned",
     "held",
-    "spent",
-    "reasoned",
+    "usage",
+    "reasoning",
     "ended",
 )
 

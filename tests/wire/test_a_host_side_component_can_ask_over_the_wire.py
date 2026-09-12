@@ -22,8 +22,8 @@ from shadow_hdk.kernel import (
     Lease,
     Observation,
 )
-from shadow_hdk.kernel.events import Asked as AskedEvent
-from shadow_hdk.kernel.observations import Asked
+from shadow_hdk.kernel.events import ApprovalRequested
+from shadow_hdk.kernel.observations import ApprovalRequest
 from shadow_hdk.kernel.ports import Allow
 from shadow_hdk.runtime import Ports, RunOptions, current_run
 from shadow_hdk.runtime.testing import (
@@ -51,7 +51,7 @@ class AsksOnce:
         )
         if back is None:
             await context.keep({"draft": 3})
-            return Asked(question="over the wire?", handle="h")
+            return ApprovalRequest(question="over the wire?", handle="h")
         return Completed({"from": back.kept})
 
 
@@ -71,7 +71,9 @@ async def test_a_host_side_component_asks_and_is_resumed_with_what_it_kept() -> 
         with anyio.fail_after(60):
             await host.run(PLAN, options)
         parked = list(host.events)
-        assert [e.question for e in parked if isinstance(e, AskedEvent)] == ["over the wire?"]
+        assert [e.question for e in parked if isinstance(e, ApprovalRequested)] == [
+            "over the wire?"
+        ]
         assert not [e for e in parked if isinstance(e, Ended)]
 
         with anyio.fail_after(60):
@@ -85,16 +87,18 @@ async def test_a_host_side_component_asks_and_is_resumed_with_what_it_kept() -> 
 
 
 async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None:
-    """`ask()` (D58): the component is on the host's side; the `Questions` handle is on the
+    """`ask()` (D58): the component is on the host's side; the `Approvals` handle is on the
     runtime's side, where the record is. The question crosses, waits, and the judgement returns."""
     import asyncio
 
-    from shadow_hdk.runtime import Questions
+    from shadow_hdk.runtime import Approvals
 
     async def asks_live(_inputs: JsonValue) -> Observation:
         context = current_run()
         assert context is not None
-        answer = await context.ask("live?", about=("run_shell", {"command": "rm -rf build"}))
+        answer = await context.request_approval(
+            "live?", about=("run_shell", {"command": "rm -rf build"})
+        )
         return Completed({"answer": answer.kind})
 
     ports = Ports(
@@ -104,9 +108,9 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
         sink=ListSink(),
         clock=FixedClock(),
     )
-    questions = Questions()
+    questions = Approvals()
     options = RunOptions(
-        lease=Lease(Ceiling(10, 60, None), Floor(0)), run_id="w2", questions=questions
+        lease=Lease(Ceiling(10, 60, None), Floor(0)), run_id="w2", approvals=questions
     )
 
     async with loopback(ports) as (host, runtime):
@@ -128,7 +132,7 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
 
     done = [e for e in after if e.kind == "observed" and e.step == "s1"]
     assert done[-1].observation == Completed({"answer": "refuse"})
-    asked = [e for e in after if isinstance(e, AskedEvent)]
+    asked = [e for e in after if isinstance(e, ApprovalRequested)]
     assert [e.question for e in asked] == ["live?"]
     # What the question is about crosses too (BUG-026): on the pending question and on the record.
     assert (seen[0].component, seen[0].inputs) == ("run_shell", {"command": "rm -rf build"})
@@ -136,5 +140,5 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
 
 
 def runtime_questions(runtime: Any) -> Any:
-    """The runtime side's `Questions`, where the host process holds it."""
-    return runtime.questions
+    """The runtime side's `Approvals`, where the host process holds it."""
+    return runtime.approvals

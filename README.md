@@ -146,7 +146,7 @@ Six observation kinds, which is what a step's outcome can be:
 `Completed` · `Refused` · `Asked` · `Failed` · `Pending` · `Acted`
 
 `Acted` is the receipt of a world-effect: it says the thing happened, and never carries the payload.
-`Reasoned` is what the model thought, on the record ahead of what it did — a model that reports no
+`Reasoning` is what the model thought, on the record ahead of what it did — a model that reports no
 reasoning emits none.
 
 ### The visible agent
@@ -156,9 +156,9 @@ for, what came back, which sub-agent went off and did what, what was refused, wh
 runtime folds the stream into `Step`s once, as a pure function over any event iterable:
 
 ```python
-from shadow_hdk.runtime.steps import run_steps, steps
+from shadow_hdk.runtime.items import run_items, steps
 
-async for step in run_steps(run(plan, ports, options=options)):
+async for step in run_items(run(plan, ports, options=options)):
     print(step.step, step.outcome, step.reasoning[:60], [c.step for c in step.children])
 ```
 

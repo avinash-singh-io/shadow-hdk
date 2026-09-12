@@ -27,8 +27,7 @@ from mcp import types
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import Binding, Composition, Invoke
-from shadow_hdk.kernel.events import Asked as AskedEvent
-from shadow_hdk.kernel.events import Observed
+from shadow_hdk.kernel.events import ApprovalRequested, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Completed, Failed, Observation, Refused
@@ -136,7 +135,9 @@ class RecordingServer:
             # nested run parked; this step cannot — it is what keeps the provider alive — so the
             # question is put to the host live and the held child sent the answer. A run with
             # nobody to ask is told so, and the answer is a refusal.
-            answer = await self._context.ask(question, about=(name, dict(arguments or {})))
+            answer = await self._context.request_approval(
+                question, about=(name, dict(arguments or {}))
+            )
             if not await self._context.children.is_held(handle):
                 break
             observation, question = _outcome_of(
@@ -195,7 +196,7 @@ def _outcome_of(events: list[Any], step: str) -> tuple[Observation | None, str |
             # that watches only for `Observed` misses every refusal, which is what the first
             # version of this did.
             observation = Refused(event.reason)
-        elif isinstance(event, AskedEvent) and event.step == step:
+        elif isinstance(event, ApprovalRequested) and event.step == step:
             question = event.question
     return observation, question
 

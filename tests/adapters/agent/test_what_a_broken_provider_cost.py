@@ -34,7 +34,7 @@ from shadow_hdk.kernel import (
     ScopeSet,
 )
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.events import Spent
+from shadow_hdk.kernel.events import UsageReported
 from shadow_hdk.kernel.ports import ModelRequest, ModelResponse, ToolCall, Usage
 from shadow_hdk.runtime import Ports, RunOptions, run
 from shadow_hdk.runtime.testing import FixedClock, ListSink
@@ -102,7 +102,7 @@ def outcome(events: list[Event]) -> dict[str, Any]:
 
 
 def spent(events: list[Event]) -> tuple[int, int]:
-    charged = [e for e in events if isinstance(e, Spent)]
+    charged = [e for e in events if isinstance(e, UsageReported)]
     return (
         sum(e.usage.input_tokens or 0 for e in charged),
         sum(e.usage.cost_cents or 0 for e in charged),
@@ -127,7 +127,7 @@ async def test_a_break_on_the_very_first_turn_charges_nothing() -> None:
     events = await drive(HangsUpOn(1, ConnectionError("the provider hung up")))
 
     assert spent(events) == (0, 0)
-    assert [e.usage.cost_cents for e in events if isinstance(e, Spent)] == [0]
+    assert [e.usage.cost_cents for e in events if isinstance(e, UsageReported)] == [0]
 
 
 async def test_the_run_says_the_provider_broke_and_says_what_broke() -> None:

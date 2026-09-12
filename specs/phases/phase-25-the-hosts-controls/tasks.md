@@ -6,10 +6,10 @@ phase: 25
 # Tasks — Phase 25
 
 ## Group 1 — the terminology
-- [ ] kernel events renamed: `reasoning`, `usage`, `approval_requested`; `input_requested` added
-- [ ] observations: `ApprovalRequest`, `InputRequest`
-- [ ] projection `Item`; `Approvals` handle with `ApprovalAnswer`
-- [ ] schemas republished; wire constants; invariants; 0.21.0 everywhere; `test_versions.py` says why
+- [x] kernel events renamed: `reasoning`, `usage`, `approval_requested`; `input_requested` added
+- [x] observations: `ApprovalRequest`, `InputRequest`
+- [x] projection `Item`; `Approvals` handle with `ApprovalAnswer`
+- [x] schemas republished; wire constants; invariants; 0.21.0 everywhere; `test_versions.py` says why
 
 ## Group 2 — Thread and Turn
 - [ ] `ThreadStore` port; sqlite and in-memory adapters

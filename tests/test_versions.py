@@ -18,15 +18,23 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.20.0"
-"""0.20.0 because the kernel's `Asked` — the event and the observation — grew `component` and
+EXPECTED = "0.21.0"
+"""0.21.0 because the record speaks the industry's words (D61): `reasoned` is `reasoning`, `spent`
+is `usage`, `asked` is `approval_requested`, and `input_requested` is a thirteenth kind — the
+agent's own question to the person. `Asked` the observation is `ApprovalRequest`; `InputRequest`
+joins it. What a host renders is an `Item` (`runtime.items`); the handle it answers through is
+`Approvals`, in the words `Approve`, `Deny`, `ApproveAndAddRule`; `RunContext.reasoned`/`ask` are
+`reasoning`/`request_approval`; the wire's `step` notification is `item`. Renames, so every host
+changes — once, to the words every product already uses.
+
+0.20.0 because the kernel's `Asked` — the event and the observation — grew `component` and
 `inputs` (D59): what a question is about, so the person answering can see what they are
-consenting to. `Questions.next_withdrawn` and `RunContext.ask(about=)` came with it, and the
+consenting to. `Approvals.next_withdrawn` and `RunContext.ask(about=)` came with it, and the
 wire's `context.ask` carries both. Additions all; a host reading `Asked` as before still can.
 
 0.19.0 because the runtime's contract with a component grew two ways to ask (D57, D58):
 `RunContext.keep`/`resumed` and a produced `Asked` observation that parks the run; `RunContext.ask`
-and `Questions` on `RunOptions` for a live question. `Dialect` grew `subtype_key`,
+and `Approvals` on `RunOptions` for a live question. `Dialect` grew `subtype_key`,
 `mcp_config_shape`, `allow_override` and `failed_text_at` (Codex, measured). Nothing a host held
 before changed shape; every one of these is an addition, and the wire's protocol grew three
 messages for them. A host that answered questions at the top only keeps working as it did.
@@ -38,7 +46,7 @@ and `shipped_skills` are new (D55, D56). No kernel type changed and `AgentCompon
 so a host that never held a `Skill` changes nothing; one with skill files adds a line to each.
 
 0.17.0 because a host's view of a run changed shape in two places and a host that served the
-registry over a socket has to change one line. `Step` grew `parent` and `run_steps` grew
+registry over a socket has to change one line. `Step` grew `parent` and `run_items` grew
 `nested=` (D51's example found that a host waiting for the orchestrator's step rendered nothing
 for the whole run); `serve_over_socket` yields `(port, token)` and the relay wants the token in
 its environment (D52) — a caller holding the old `port` breaks at unpacking, which is the right
@@ -50,7 +58,7 @@ where they were (D48–D50). No
 kernel type changed; a host that depended on any of the three has to change its imports, and
 pre-1.0 that is a minor.
 
-0.15.0 because the stream grew a **twelfth** kind, `Reasoned` — what the model thought, on the
+0.15.0 because the stream grew a **twelfth** kind, `Reasoning` — what the model thought, on the
 record beside what it did (D45) — and `ModelResponse`, `ModelChunk` and `Turn` grew a `reasoning`
 field to carry it there, each defaulting empty so an adapter that never heard of it produces a
 response that reads as *did not say* rather than failing to construct. Both cross the wire.
@@ -96,10 +104,10 @@ stream before needs to change.
 `signed_by` had been making since Phase 0 without anything reading it, and `Acted`, the receipt of
 a world-effect — foreign id, idempotency key, exit, grounds — as a sixth observation kind. Both are
 D27. Before that:
-0.6.0 because the stream grew an **eleventh** kind, `Spent` — what a step cost, said out loud
-instead of left in an output dict by convention (D20) — and `Usage` moved beneath both `ports` and
-`events`, which could not import each other. 0.5.0 was the tenth kind, `Held` — a child parked
-instead of ending and
+0.6.0 because the stream grew an **eleventh** kind, `UsageReported` (then `Spent`) — what a step
+cost, said out loud instead of left in an output dict by convention (D20) — and `Usage` moved
+beneath both `ports` and `events`, which could not import each other. 0.5.0 was the tenth kind,
+`Held` — a child parked instead of ending and
 its parent is keeping it, which a host would otherwise have to infer from the *absence* of `Ended`,
 and a child that died silently looks the same. 0.4.0 was `Ended.detail`; 0.3.0 was
 `Provenance.posture`; 0.2.0 was `ModelPort.stream`. Each is a contract change, so every package

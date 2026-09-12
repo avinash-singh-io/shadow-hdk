@@ -1,11 +1,11 @@
 """A component puts thinking on the record the way it puts a proposal there (D45).
 
-`RunContext.reasoned(text)` is the door — beside `propose` and `spawn` — and the agent adapter is
+`RunContext.reasoning(text)` is the door — beside `propose` and `spawn` — and the agent adapter is
 its first caller: after every model turn that carried reasoning, before the tool calls that
 reasoning led to, so a reader sees *why* before *what*.
 
-Empty text emits nothing. The rule is `Spent`'s: a kind that appears when there is nothing to say
-is a kind readers learn to skip.
+Empty text emits nothing. The rule is `UsageReported`'s: a kind that appears when there is
+nothing to say is a kind readers learn to skip.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from shadow_hdk.kernel import (
     Invoked,
     Lease,
     Observation,
-    Reasoned,
+    Reasoning,
 )
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall, Usage
 from shadow_hdk.runtime import Ports, RunOptions, run
@@ -73,20 +73,20 @@ async def test_a_models_reasoning_lands_on_the_stream() -> None:
         says(reasoning="the handbook will know", calls=(ToolCall("c1", "look", {}),)),
         says("12kg", reasoning="that settles it"),
     )
-    thoughts = [e for e in events if isinstance(e, Reasoned)]
+    thoughts = [e for e in events if isinstance(e, Reasoning)]
 
     assert [t.text for t in thoughts] == ["the handbook will know", "that settles it"]
 
 
 async def test_thinking_comes_before_the_call_it_led_to() -> None:
-    """A reader sees why before what: the `Reasoned` precedes the `Invoked` for the tool the
+    """A reader sees why before what: the `Reasoning` precedes the `Invoked` for the tool the
     reasoning reached for."""
     events = await a_run(
         says(reasoning="check the handbook", calls=(ToolCall("c1", "look", {}),)),
         says("done"),
     )
     kinds = [e.kind for e in events]
-    thought = kinds.index("reasoned")
+    thought = kinds.index("reasoning")
     looked = next(
         i for i, e in enumerate(events) if isinstance(e, Invoked) and e.component == "look"
     )
@@ -95,17 +95,17 @@ async def test_thinking_comes_before_the_call_it_led_to() -> None:
 
 
 async def test_a_model_that_did_not_reason_emits_nothing() -> None:
-    """`Spent`'s rule: nothing to say, no event."""
+    """`UsageReported`'s rule: nothing to say, no event."""
     events = await a_run(says("12kg"))
 
-    assert not [e for e in events if isinstance(e, Reasoned)]
+    assert not [e for e in events if isinstance(e, Reasoning)]
 
 
 async def test_the_thought_is_stamped_with_the_agents_step() -> None:
     """So a projection can fold it under the step that was thinking, not the one that ran the
     tool it led to."""
     events = await a_run(says("x", reasoning="hm"))
-    thought = next(e for e in events if isinstance(e, Reasoned))
+    thought = next(e for e in events if isinstance(e, Reasoning))
 
     assert thought.step == "agent"
     assert thought.run_id == events[0].run_id

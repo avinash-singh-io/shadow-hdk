@@ -464,7 +464,7 @@ class BridgeClient(acp.Client):
                 self.thought.append(text)
                 context = self._run or current_run()
                 if context is not None:
-                    await context.reasoned(text)
+                    await context.reasoning(text)
 
     async def ext_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         """An extension nobody vouched for. `ASSUME_WORST` and, by default, no."""

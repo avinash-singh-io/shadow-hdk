@@ -199,14 +199,14 @@ class Session:
         principal: str | None = None,
         parent_run_id: RunId | None = None,
         cancellation: Cancellation | None = None,
-        questions: Any = None,
+        approvals: Any = None,
     ) -> None:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
         self.principal = principal
         self.meter = LeaseMeter(lease, clock)
         self.cancellation = cancellation if cancellation is not None else Cancellation()
-        self.questions = questions
+        self.approvals = approvals
         """Where a component asks the host live (D58); `None` is nobody to ask."""
         self._context = dict(context or {})
         clashing = sorted(RESERVED_ATTRIBUTES & set(self._context))

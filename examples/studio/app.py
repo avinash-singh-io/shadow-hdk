@@ -15,11 +15,11 @@ from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from examples.coder.session import NoProvider, a_conversation
-from shadow_hdk.kernel import Allow, Event, Refuse, Usage
+from shadow_hdk.kernel import Event, Usage
 from shadow_hdk.kernel.contracts import dump
-from shadow_hdk.runtime import Questions
+from shadow_hdk.runtime import Approvals, Approve, Deny
 from shadow_hdk.runtime.environment import Mode
-from shadow_hdk.runtime.steps import Fold, as_json
+from shadow_hdk.runtime.items import Fold, as_json
 
 PAGE = Path(__file__).parent / "page.html"
 
@@ -31,7 +31,7 @@ class Studio:
     root: Path
     mode: Mode = "workspace-write"
     want: str | None = None
-    questions: Questions = field(default_factory=Questions)
+    approvals: Approvals = field(default_factory=Approvals)
     record: list[dict[str, Any]] = field(default_factory=list)
     """Every event of the run, as JSON, in order — the page catches up from here."""
     watchers: list[asyncio.Queue[dict[str, Any]]] = field(default_factory=list)
@@ -74,7 +74,7 @@ class Studio:
             want=self.want,
             mode=self.mode,
             on_event=self.on_event,
-            questions=self.questions,
+            approvals=self.approvals,
         )
         self.talk = await self._conversation.__aenter__()
         self.provider = getattr(self.talk, "provider", "") or "the provider signed in here"
@@ -89,7 +89,7 @@ class Studio:
         """A question the policy raises reaches the page as its own line, with the handle the page
         answers by. The `Asked` event is already on the record; this is the *pending* half."""
         while True:
-            pending = await self.questions.next()
+            pending = await self.approvals.next()
             self.note(
                 "question",
                 handle=pending.handle,
@@ -103,7 +103,7 @@ class Studio:
     async def _relay_withdrawals(self) -> None:
         """A question the asker stopped waiting for — the page takes its buttons away."""
         while True:
-            gone = await self.questions.next_withdrawn()
+            gone = await self.approvals.next_withdrawn()
             self.note("withdrawn", handle=gone.handle)
 
     async def say(self, text: str) -> dict[str, Any]:
@@ -126,8 +126,9 @@ class Studio:
         return answer
 
     def answer(self, handle: str, allow: bool, reason: str = "") -> bool:
-        judgement = Allow() if allow else Refuse(reason or "the person said no")
-        answered = self.questions.answer(handle, judgement)
+        answered = self.approvals.answer(
+            handle, Approve() if allow else Deny(reason or "the person said no")
+        )
         if answered:
             self.note("answered", handle=handle, allow=allow, reason=reason)
         return answered
@@ -176,7 +177,7 @@ def build_app(studio: Studio) -> Starlette:
                 "busy": studio.busy,
                 "pending": [
                     {"handle": p.handle, "question": p.question, "step": p.step}
-                    for p in studio.questions.pending()
+                    for p in studio.approvals.pending()
                 ],
             }
         )
