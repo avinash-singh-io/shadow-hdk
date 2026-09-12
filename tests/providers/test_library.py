@@ -171,6 +171,25 @@ def test_opencode_carries_what_was_measured_of_it() -> None:
     assert any(pair.name == "OPENCODE_DISABLE_PROJECT_CONFIG" for pair in opencode.set_env)
 
 
+def test_claude_code_starts_from_a_clean_scope() -> None:
+    """ENH-012, measured 2026-09-12 against claude 2.1.235 with a sentinel `CLAUDE.md` in the
+    workspace: as launched before, the model quoted the sentinel and said its instructions named a
+    memory directory to write to — a person's own `CLAUDE.md`, settings and auto-memory reaching a
+    governed run. `--setting-sources ""` dropped the sentinel and kept the claude.ai login;
+    `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` dropped the memory; `--bare` would drop both and the login
+    with them, so it is not used. A run's instructions are the mode's behaviour and nothing else."""
+    claude = shipped()["claude-code"]
+
+    assert "--setting-sources" in claude.launch_args
+    at = claude.launch_args.index("--setting-sources")
+    assert claude.launch_args[at + 1] == "", "no settings source at all, not a narrower one"
+    assert "--bare" not in claude.launch_args, "--bare never reads the keychain: it drops the login"
+    assert any(
+        pair.name == "CLAUDE_CODE_DISABLE_AUTO_MEMORY" and pair.value == "1"
+        for pair in claude.set_env
+    )
+
+
 def test_the_measured_environment_quirks_survive() -> None:
     """Two fields, each one a measurement, each one silently fatal if it goes.
 

@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.25.0"
-"""0.25.0 because the workspace, the modes and the wire grew (Phase 28, D73–D76): `Workspace`
+EXPECTED = "0.25.1"
+"""0.25.1 — a patch: two fixes with no contract change. A battery's MCP server is a held session
+leader ended with its group (BUG-033); Claude Code launched from a clean scope, no settings
+sources and no auto-memory (ENH-012). Every package moves together (D9).
+
+0.25.0 because the workspace, the modes and the wire grew (Phase 28, D73–D76): `Workspace`
 and `Root` in the kernel; `ThreadRecord.roots` and `.environment`; `WorkspaceChanged`, the
 fifteenth event kind; `AgentPort.open(resume=)`; `Environment.reopen`, `Environment(workspace=)`;
 `ModeSpec.environment` and the fourth shipped mode, `ask`; `Thread.tools`, `Thread.add_root`,

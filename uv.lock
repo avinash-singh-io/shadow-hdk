@@ -1337,7 +1337,7 @@ wheels = [
 
 [[package]]
 name = "shadow-hdk"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/runtime" }
 dependencies = [
     { name = "langgraph" },
@@ -1352,7 +1352,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-acp"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/acp" }
 dependencies = [
     { name = "agent-client-protocol" },
@@ -1369,7 +1369,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-agent"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/agent" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1384,7 +1384,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-basic"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/basic" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1399,7 +1399,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-derivation"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/derivation" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1414,7 +1414,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-devices"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/devices" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1429,7 +1429,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-environment"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/environment" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1451,7 +1451,7 @@ provides-extras = ["opensandbox"]
 
 [[package]]
 name = "shadow-hdk-adapters-jsonl"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/jsonl" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1466,7 +1466,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-langchain"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/langchain" }
 dependencies = [
     { name = "langchain" },
@@ -1502,7 +1502,7 @@ provides-extras = ["openai", "anthropic", "ollama", "huggingface"]
 
 [[package]]
 name = "shadow-hdk-adapters-mcp"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/mcp" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1519,7 +1519,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-modes"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/modes" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1534,7 +1534,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-mqtt"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/mqtt" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1551,7 +1551,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-otel"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/otel" }
 dependencies = [
     { name = "shadow-hdk-kernel" },
@@ -1566,7 +1566,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-adapters-recording"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/adapters/recording" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1583,7 +1583,7 @@ requires-dist = [
 
 [[package]]
 name = "shadow-hdk-kernel"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/kernel" }
 dependencies = [
     { name = "pydantic" },
@@ -1594,7 +1594,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
 
 [[package]]
 name = "shadow-hdk-providers"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/providers" }
 dependencies = [
     { name = "shadow-hdk-kernel" },
@@ -1605,7 +1605,7 @@ requires-dist = [{ name = "shadow-hdk-kernel", editable = "packages/kernel" }]
 
 [[package]]
 name = "shadow-hdk-serve"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/serve" }
 dependencies = [
     { name = "shadow-hdk" },
@@ -1649,7 +1649,7 @@ provides-extras = ["search", "providers"]
 
 [[package]]
 name = "shadow-hdk-wire"
-version = "0.25.0"
+version = "0.25.1"
 source = { editable = "packages/wire" }
 dependencies = [
     { name = "shadow-hdk" },

@@ -17,6 +17,7 @@ from collections.abc import Collection, Mapping, Sequence
 from contextlib import AsyncExitStack
 from typing import Any
 
+from shadow_hdk.adapters.mcp.held import held_stdio_client
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
@@ -30,7 +31,6 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort
 from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 from mcp.types import Tool
 
 
@@ -73,7 +73,9 @@ class McpComponents(ComponentPort):
 
     async def start(self) -> None:
         stack = AsyncExitStack()
-        read, write = await stack.enter_async_context(stdio_client(self._parameters))
+        # Over a process we hold (BUG-033): a server that ignores its stdin closing is ended
+        # with its group when these components close, and when the interpreter ends.
+        read, write = await stack.enter_async_context(held_stdio_client(self._parameters))
         session = await stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         self._stack, self._session = stack, session

@@ -13,9 +13,10 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,392 tests; mypy strict over 245 files; eighteen distributions at **0.25.0**, all MIT.
+> 1,395 tests; mypy strict over 246 files; eighteen distributions at **0.25.1**, all MIT.
 >
-> **Latest Release**: **v0.25.0**, released 2026-09-12 — Phase 28, the workspace (D73–D76).
+> **Latest Release**: **v0.25.1**, released 2026-09-12 — a patch: a battery's process is held
+> (BUG-033), Claude Code from a clean scope (ENH-012). Before it **v0.25.0** — Phase 28, the workspace (D73–D76).
 > Contract change (roots, `WorkspaceChanged`, `tools/list`, `skills/list`, `thread/add_root`,
 > `AgentPort.open(resume=)`, the `ask` mode, a child's context), so a *Pins* row. Before it
 > v0.24.0 (Phase 27, batteries and the facade, D70–D72), v0.23.0 (Phase 26, any language, D67–D69), v0.22.0
@@ -79,6 +80,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.25.1 | 2026-09-12 | patch | BUG-033 a battery's MCP server is a held session leader, ended with its group; ENH-012 Claude Code launched with no settings sources and no auto-memory — a run's instructions are the mode's behaviour only |
 | v0.25.0 | 2026-09-12 | phase 28 | the workspace: one or many roots per thread, added live; the environment and the provider follow the mode; the `ask` mode; the registries visible; a child judged in its parent's context (D73–D76) |
 | v0.24.0 | 2026-09-12 | phase 27 | batteries and the facade: a battery is a file (wigolo, ddgs), `Harness.load` and `harness.toml`, `budget`, the optimiser specified (D70–D72) |
 | v0.23.0 | 2026-09-12 | phase 26 | any language: the thread, the handles and the store over the wire; `shadow-hdk serve`; the TypeScript client; the studio on the wire (D67–D69) |
@@ -119,12 +121,12 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | ID | Type | Description |
 |----|------|-------------|
-| _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: BUG-033 (P3, not reproduced), ENH-005–008, ENH-012 (P2–P3) — see the backlog |
+| _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: ENH-005–008 (P2–P3) — see the backlog |
 
 ## Next Actions
 
 1. Phase 29 (context engineering) and 30 (collaboration), the owner's call
-2. Codex measured on `tools/list_changed` and `--resume` when a Codex turn is next spent; ENH-012 (a clean settings scope for the provider); BUG-033 watched for
+2. Codex measured on `tools/list_changed`, `--resume` and its clean scope (`AGENTS.md`, `config.toml`) when a Codex turn is next spent
 3. Owner-gated, unchanged: ADR-1, ADR-2, a Linux host for the containment proofs, a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
