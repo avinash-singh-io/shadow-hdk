@@ -110,6 +110,15 @@ async def open_batteries(
     return tuple(opened), problems
 
 
+def skills_for(store: Any = None) -> SkillRegistry:
+    """The registry a thread chooses skills from: shipped, then a store (D66) — a row written now
+    is a skill at the next read — and what its agents mint (D56), for as long as it lives."""
+    sources: tuple[Any, ...] = (shipped_skills(),)
+    if store is not None:
+        sources = (*sources, store_skills(store))
+    return SkillRegistry(sources)
+
+
 async def workshop(
     root: Path,
     *,
@@ -118,8 +127,13 @@ async def workshop(
     store: Any = None,
     modes: ModeRegistry | None = None,
     batteries: Sequence[Any] = (),
+    skills: SkillRegistry | None = None,
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
+
+    `skills` is the registry the agent chooses from and mints into; a host that hands one in
+    shares it across its threads, so a skill minted in one is offered in the next and listed on
+    the wire (`skills/list`). Without one, a thread gets its own — shipped, then the store.
 
     Raises `CannotEnforce` when this machine has no OS sandbox and a confined mode was asked for —
     the environment refuses to exist rather than quietly widen, and that reaches the person,
@@ -128,17 +142,16 @@ async def workshop(
     environment = await LocalEnvironment.open(
         root, mode=mode, timeout_s=60.0, output_limit=32_000, at="2026-09-11T00:00:00+00:00"
     )
-    skill_sources: tuple[Any, ...] = (shipped_skills(),)
-    if store is not None:
-        skill_sources = (*skill_sources, store_skills(store))  # a row is a skill (D66)
-    skills = SkillComponents(
-        SkillRegistry(skill_sources), minting=True, at="2026-09-11T00:00:00+00:00"
+    chosen_from = SkillComponents(
+        skills if skills is not None else skills_for(store),
+        minting=True,
+        at="2026-09-11T00:00:00+00:00",
     )
     # The agent's own question to the person is a component like any other (D65): no effects,
     # so every mode offers it.
     # Batteries (D70) are ports like any other, judged by the same modes: their profiles say what
     # they reach, so a confined mode hides them by itself.
-    offered: tuple[Any, ...] = (environment, skills, person_components(), *batteries)
+    offered: tuple[Any, ...] = (environment, chosen_from, person_components(), *batteries)
     if store is not None:
         # Which components are on is the store's to say (D66): off at the next refresh.
         offered = tuple(Switched(port, store_switches(store)) for port in offered)
@@ -192,6 +205,7 @@ class ServeHost:
         )
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
+        self.skills = skills_for(self.store)
         self.batteries = batteries_for(self.store, files=settings.batteries_dir)
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
@@ -294,6 +308,7 @@ class ServeHost:
             store=self.store,
             modes=self.modes,
             batteries=await self._battery_ports(),
+            skills=self.skills,
         )
         thread = await Thread.open(
             agent=agent,
@@ -326,6 +341,7 @@ class ServeHost:
             store=self.store,
             modes=self.modes,
             batteries=await self._battery_ports(),
+            skills=self.skills,
         )
         return await Thread.resume(
             thread_id,
@@ -443,5 +459,6 @@ __all__ = [
     "a_lease",
     "a_thread",
     "modes_for",
+    "skills_for",
     "workshop",
 ]

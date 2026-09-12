@@ -24,7 +24,7 @@ import asyncio
 import contextlib
 import json
 from collections.abc import AsyncIterator, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +54,13 @@ from shadow_hdk.kernel import (
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.kernel.events import Event, ModeChanged
 from shadow_hdk.kernel.events import Refused as RefusedEvent
-from shadow_hdk.kernel.ports import AgentPort, AgentSession, ComponentPort, ThreadStore
+from shadow_hdk.kernel.ports import (
+    AgentPort,
+    AgentSession,
+    ComponentPort,
+    Context,
+    ThreadStore,
+)
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.runtime.bindings import Ports, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
@@ -74,6 +80,17 @@ TURN_EFFECTS = EffectProfile(
     reversible=False,
     costs=True,
 )
+
+
+@dataclass(frozen=True)
+class Offered:
+    """One registration as the agent would be offered it now, and which port carried it."""
+
+    registration: Registration
+    judgement: str
+    """`allow` · `ask` · `refuse` — what the current mode says of its effects."""
+    source: str
+    """The port's class name: `LocalEnvironment`, `SkillComponents`, a battery's adapter."""
 
 
 class _TurnComponents(ComponentPort):
@@ -473,6 +490,44 @@ class Thread:
 
     # ------------------------------------------------------------------ mode and options
 
+    async def tools(self) -> list[Offered]:
+        """What the agent is offered *now*: every registration the ports carry, each with the
+        judgement the current mode gives its effects — `allow`, `ask`, or `refuse` (absent from
+        the model's catalogue, `09` §4). The same registry a turn resolves against and the same
+        policy, asked the same question, so what a host shows and what the run will do cannot
+        drift. The turn's own step is not among them: it is the thread's, not a tool."""
+        from shadow_hdk.kernel.ports import Ask, Refuse
+
+        offered: list[Offered] = []
+        for port in self._ports.components:
+            try:
+                registrations = await port.registrations()
+            except Exception:  # noqa: BLE001 — a catalogue that will not answer offers nothing
+                continue
+            for registration in registrations:
+                if registration.id == TURN:
+                    continue
+                attributes: dict[str, JsonValue] = {
+                    "thread": self.id,
+                    **({"mode": self._record.mode} if self._record.mode else {}),
+                    **self._options,
+                    "posture": registration.component.provenance.posture,
+                    "component": registration.id,
+                }
+                judged = await self._ports.governance.judge(
+                    registration.component.effects,
+                    Context(run_id="<catalogue>", step="<catalogue>", attributes=attributes),
+                )
+                kind = (
+                    "refuse"
+                    if isinstance(judged, Refuse)
+                    else "ask"
+                    if isinstance(judged, Ask)
+                    else "allow"
+                )
+                offered.append(Offered(registration, kind, type(port).__name__))
+        return offered
+
     async def set_mode(self, mode_id: str) -> list[Event]:
         """Change the run's mode mid-thread (D64; ACP's `session/set_mode`).
 
@@ -589,4 +644,4 @@ def _replace_turn(turn: TurnRecord, **changes: Any) -> TurnRecord:
     return replace(turn, **changes)
 
 
-__all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Thread"]
+__all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Offered", "Thread"]

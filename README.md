@@ -370,7 +370,8 @@ methods: `thread/start` · `thread/resume` · `thread/close` · `thread/list` ·
 `thread/rollback` · `thread/archive` · `thread/set_mode` · `thread/set_option` ·
 `thread/remaining` · `turn/start` · `turn/steer` · `turn/interrupt` · `approvals/pending` ·
 `approvals/answer` · `run/cancel` · `store/put|get|delete|list|version` · `modes/list` ·
-`rules/list` · `files/list` · `files/read` · `batteries/list`. Down the stream, tagged with the thread: `event`,
+`rules/list` · `files/list` · `files/read` · `batteries/list` · `tools/list` (what the agent is
+offered now, each with the mode's judgement) · `skills/list`. Down the stream, tagged with the thread: `event`,
 `item` (folded runtime-side, D46), `activity` (D63), `approval_request`, `input_request`,
 `request_withdrawn`; `turn/start` returns the turn's record when it ends. An invariant holds
 every public method of `Thread`, `Approvals` and `Store` to a name in `protocol.py`.

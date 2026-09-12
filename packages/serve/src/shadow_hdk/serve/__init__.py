@@ -12,6 +12,7 @@ from shadow_hdk.serve.host import (
     a_lease,
     a_thread,
     modes_for,
+    skills_for,
     workshop,
 )
 
@@ -30,5 +31,6 @@ __all__ = [
     "a_thread",
     "load_settings",
     "modes_for",
+    "skills_for",
     "workshop",
 ]

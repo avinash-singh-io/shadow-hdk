@@ -62,6 +62,10 @@
   .files li:hover, .files li.sel { background:var(--panel2) } .files li span { color:var(--dim); font-size:11px } .files li.changed { color:var(--ok) } .files li.changed::after { content:" ●"; color:var(--ok) }
   .file { margin:12px 0 0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); font-size:12px; white-space:pre-wrap; word-break:break-word; max-height:60vh; overflow:auto }
   .file .fn { color:var(--dim); margin-bottom:6px; font-family: ui-monospace, Menlo, monospace }
+  .reg .row { display:flex; gap:8px; align-items:baseline; padding:3px 0; border-bottom:1px solid var(--line) } .reg .row:last-child { border-bottom:0 }
+  .reg .nm { color:var(--fg); min-width:96px } .reg .ds { color:var(--dim); flex:1 } .reg .chip { font-size:10.5px; padding:0 5px; border-radius:4px; border:1px solid var(--line); color:var(--dim); white-space:nowrap }
+  .reg .chip.allow { color:var(--ok); border-color:var(--ok) } .reg .chip.ask { color:var(--ask); border-color:var(--ask) } .reg .chip.refuse { color:var(--bad); border-color:var(--bad); text-decoration:line-through }
+  .reg .row.refuse .nm, .reg .row.refuse .ds { opacity:.45 }
   .admin { margin-top:14px; border-top:1px solid var(--line); padding-top:8px; font-size:12.5px } .admin summary { cursor:pointer; color:var(--dim) }
   .admin form { display:flex; flex-direction:column; gap:6px; margin:10px 0 } .admin input, .admin select, .admin textarea { padding:5px 8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit; font-size:12px } .admin button { padding:5px 10px; border-radius:6px; border:1px solid var(--accent); background:var(--panel2); color:var(--fg); cursor:pointer; text-align:left } .admin .said { color:var(--ok); font-size:11.5px } .admin .rules { font-family: ui-monospace, Menlo, monospace; font-size:11.5px; color:var(--dim); white-space:pre-wrap }
 </style>
@@ -83,6 +87,8 @@
   <section>
     <h2>Environment — <span id="env-title">the workspace</span></h2>
     <div class="scroll files"><ul id="files"></ul><div class="file" id="file" hidden><div class="fn" id="fn"></div><div id="fc"></div></div>
+      <details class="admin reg" open><summary>Tools — what the agent is offered in this mode</summary><div id="tools" class="rules"></div></details>
+      <details class="admin reg"><summary>Skills — the procedures it can choose, and mint</summary><div id="skills" class="rules"></div></details>
       <details class="admin"><summary>Live data — modes and rules, no restart</summary>
         <form id="new-mode"><b>New mode</b>
           <input name="id" placeholder="id (e.g. reviewer)" required><input name="name" placeholder="name">
@@ -430,6 +436,7 @@ function offerModes(modes, current) {
     sel.onchange = async () => {
       const r = await call('thread/set_mode', {thread_id: THREAD, mode: sel.value});
       r.events.forEach(onEvent);   // `ModeChanged` is on the record, between turns too (D64)
+      refreshTools();              // the offer follows the mode
       $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + sel.value;
     };
     modesLoaded = ids;
@@ -454,6 +461,30 @@ $('new-rule').onsubmit = async ev => {
   await call('store/put', {collection: 'rules', key: row.component + ':' + Date.now(), row});
   $('rule-said').textContent = 'kept — read at the next judgement'; refreshRules();
 };
+// The registries are the harness's answer, not the page's guess: `tools/list` is every
+// registration the thread's ports carry with the judgement the current mode gives its effects
+// — a refused one is what the model is *not* offered — and `skills/list` is what it may choose.
+function scope(s) { return s.everything ? 'everything' : (s.names.length ? s.names.join(',') : '—'); }
+async function refreshTools() {
+  if (!THREAD) return;
+  const j = await call('tools/list', {thread_id: THREAD});
+  const rows = j.tools.map(t => {
+    const e = t.effects;
+    const chips = ['<span class="chip ' + t.judgement + '">' + t.judgement + '</span>',
+      '<span class="chip" title="what it can see">reads ' + esc(scope(e.reads)) + '</span>',
+      '<span class="chip" title="what it can change">writes ' + esc(scope(e.writes)) + '</span>',
+      e.reaches ? '<span class="chip" title="leaves the machine">reaches</span>' : '',
+      e.reversible ? '' : '<span class="chip" title="cannot be undone">irreversible</span>',
+      e.contained ? '<span class="chip" title="inside a proven boundary">contained</span>' : ''].join('');
+    return '<div class="row ' + t.judgement + '" title="' + esc(t.description) + '"><span class="nm">' + esc(t.name) + '</span><span class="ds">' + esc(t.source) + '</span>' + chips + '</div>';
+  });
+  $('tools').innerHTML = rows.join('') || '(nothing is offered)';
+  $('tools').previousElementSibling.textContent = 'Tools — ' + j.tools.filter(t => t.judgement !== 'refuse').length + ' of ' + j.tools.length + ' offered in this mode';
+}
+async function refreshSkills() {
+  const j = await call('skills/list', {});
+  $('skills').innerHTML = j.skills.map(s => '<div class="row" title="' + esc(s.description) + '"><span class="nm">' + esc(s.name) + '</span><span class="ds">' + esc(s.description) + '</span><span class="chip">' + esc(s.source) + '</span>' + (s.needs.length ? '<span class="chip">needs ' + esc(s.needs.join(',')) + '</span>' : '') + '</div>').join('') || '(no skills)';
+}
 async function refreshRules() {
   const j = await call('rules/list', {});
   $('rules').textContent = j.rules.length ? j.rules.map(x => x.decision + '  ' + x.component + '  ' + JSON.stringify(x.inputs) + (x.mode ? '  in ' + x.mode : '')).join('\n') : '(no rules yet)';
@@ -467,7 +498,7 @@ $('say').onsubmit = async ev => {
     const done = await call('turn/start', {thread_id: THREAD, text});
     settleLive(); addAnswer({text: done.turn.text, failed: done.turn.outcome !== 'completed', usage: usageOf[done.turn.run_id]});
   } catch (e) { settleLive(); addAnswer({text: e.message, failed: true}); }
-  refreshFiles(); setBusy(false);
+  refreshFiles(); refreshSkills(); setBusy(false);   // a skill minted this turn is listed now
 };
 $('text').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('say').requestSubmit(); } });
 
@@ -488,7 +519,7 @@ async function open() {
   $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + started.mode;
   offerModes(started.modes, started.mode);
   (started.turns || []).forEach(t => { addYou(t.prompt); addAnswer({text: t.text, failed: t.outcome !== 'completed'}); });
-  setBusy(false); refreshFiles(); refreshRules(); setInterval(refreshModes, 10000);
+  setBusy(false); refreshFiles(); refreshRules(); refreshTools(); refreshSkills(); setInterval(refreshModes, 10000);
 }
 open().catch(e => { $('provider').textContent = 'could not open a thread: ' + e.message; });
 </script>

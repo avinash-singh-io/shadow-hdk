@@ -124,6 +124,8 @@ def test_the_page_speaks_only_what_the_wire_serves() -> None:
         "rules/list",
         "files/list",
         "files/read",
+        "tools/list",
+        "skills/list",
     } <= called
     assert {
         "event",
@@ -246,3 +248,6 @@ def test_serve_takes_the_settings_from_flags_as_well_as_a_toml(tmp_path: Path) -
     assert overridden.root == (tmp_path / "other").resolve()
     bare = settings_from(["--http", f"--root={tmp_path}"])
     assert bare.root == tmp_path.resolve() and bare.mode == "workspace-write"
+    # `--flag value` is the form every CLI takes as well as `--flag=value`; the README uses it.
+    spaced = settings_from(["--http", "--root", str(tmp_path), "--mode", "full", "--port", "1"])
+    assert spaced.root == tmp_path.resolve() and spaced.mode == "full"

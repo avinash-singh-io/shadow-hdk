@@ -104,6 +104,7 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.set_mode": "THREAD_SET_MODE",
     "Thread.set_option": "THREAD_SET_OPTION",
     "Thread.remaining": "THREAD_REMAINING",
+    "Thread.tools": "TOOLS_LIST",
     # Approvals
     "Approvals.pending": "APPROVALS_PENDING",
     "Approvals.answer": "APPROVALS_ANSWER",

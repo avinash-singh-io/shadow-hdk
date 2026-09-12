@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Protocol
 
-from shadow_hdk.kernel import Event, Lease, ThreadRecord
+from shadow_hdk.kernel import EffectProfile, Event, Lease, ThreadRecord
 from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime.items import Fold, as_json
@@ -39,6 +39,7 @@ from shadow_hdk.wire.protocol import (
     REQUEST_WITHDRAWN,
     RULES_LIST,
     RUN_CANCEL,
+    SKILLS_LIST,
     STORE_DELETE,
     STORE_GET,
     STORE_LIST,
@@ -54,6 +55,7 @@ from shadow_hdk.wire.protocol import (
     THREAD_SET_MODE,
     THREAD_SET_OPTION,
     THREAD_START,
+    TOOLS_LIST,
     TURN_INTERRUPT,
     TURN_START,
     TURN_STEER,
@@ -68,6 +70,7 @@ class ThreadHost(Protocol):
     store: Any
     rules: Any
     modes: Any
+    skills: Any
 
     async def open(
         self, *, root: str, mode: str, want: str | None, name: str, observer: Any
@@ -131,6 +134,8 @@ class ThreadMethods:
             (FILES_LIST, self._files_list),
             (FILES_READ, self._files_read),
             (BATTERIES_LIST, self._batteries_list),
+            (TOOLS_LIST, self._tools_list),
+            (SKILLS_LIST, self._skills_list),
         ):
             peer.serves(method, handler)
         self._relays: list[asyncio.Task[None]] = []
@@ -415,6 +420,46 @@ class ThreadMethods:
         host = self._host_or_raise()
         listing = getattr(host, "battery_listing", None)
         return {"batteries": await listing() if listing is not None else []}
+
+    # ------------------------------------------------------------------ the registries (Phase 28)
+
+    async def _tools_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """What the thread's agent is offered now, with effects and the mode's judgement — the
+        harness's own answer (`Thread.tools`), so a page shows the registry rather than guessing."""
+        from shadow_hdk.kernel import Registration
+
+        offered = await self._thread(params).tools()
+        return {
+            "tools": [
+                {
+                    "id": o.registration.id,
+                    "name": o.registration.component.interface.name,
+                    "description": o.registration.component.interface.description,
+                    "effects": json.loads(dump(o.registration.component.effects, EffectProfile)),
+                    "judgement": o.judgement,
+                    "source": o.source,
+                    "registration": json.loads(dump(o.registration, Registration)),
+                }
+                for o in offered
+            ]
+        }
+
+    async def _skills_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        registry = getattr(host, "skills", None)
+        if registry is None:
+            return {"skills": []}
+        return {
+            "skills": [
+                {
+                    "name": s.name,
+                    "description": s.description,
+                    "needs": sorted(s.needs),
+                    "source": s.source,
+                }
+                for s in await registry.all()
+            ]
+        }
 
     async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
         registry = getattr(host, "modes", None)

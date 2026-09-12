@@ -76,6 +76,30 @@ export interface BatteryRow {
   problem: string | null;
 }
 
+export interface OfferedTool {
+  id: string;
+  name: string;
+  description: string;
+  effects: { reads: Scope; writes: Scope; reaches: boolean; reversible: boolean; contained: boolean; costs: boolean };
+  /** `allow` · `ask` · `refuse` — a refused one is absent from the model's catalogue. */
+  judgement: "allow" | "ask" | "refuse";
+  /** The port that carried it: `LocalEnvironment`, `SkillComponents`, a battery's adapter. */
+  source: string;
+  registration: JsonValue;
+}
+
+export interface Scope {
+  names: string[];
+  everything: boolean;
+}
+
+export interface SkillEntry {
+  name: string;
+  description: string;
+  needs: string[];
+  source: string;
+}
+
 export interface FileEntry {
   path: string;
   bytes: number;
@@ -318,6 +342,13 @@ export class HarnessClient {
     list: (thread_id: string) => this.call<{ files: FileEntry[] }>("files/list", { thread_id }),
     read: (thread_id: string, path: string) => this.call<{ content: string }>("files/read", { thread_id, path }),
   };
+
+  /** What the thread's agent is offered now — every registration with the mode's judgement (Phase 28). */
+  readonly tools = {
+    list: (thread_id: string) => this.call<{ tools: OfferedTool[] }>("tools/list", { thread_id }),
+  };
+  /** The skills the composition carries — shipped, from the store, minted — with their sources. */
+  readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
 
   readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */

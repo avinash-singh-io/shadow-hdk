@@ -97,6 +97,7 @@ class ScriptedThreads:
         self.agent = ScriptedAgent()
         self.rules: Any = None
         self.modes: Any = None
+        self.skills: Any = None
         self._tmp = tmp_path
 
     def _ports(self, observer: Any) -> Ports:
