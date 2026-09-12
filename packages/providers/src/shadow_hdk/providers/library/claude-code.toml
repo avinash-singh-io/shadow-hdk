@@ -63,6 +63,14 @@ launch_args = [
   # the MCP registry still arrives through `--mcp-config`. The deny list stays as the record of
   # what was found and as a belt for a CLI that ignores an empty `--tools`.
   "--tools", "",
+  # **Measured 2026-09-12 (ENH-012).** With a sentinel `CLAUDE.md` in the workspace, the model
+  # quoted it — a person's own `CLAUDE.md` (user and project), `settings.json`, hooks and plugins
+  # reach a governed run, whose only instructions should be the mode's behaviour. `--setting-
+  # sources ""` loads no settings source at all: the sentinel was gone and `claude auth status`
+  # still said claude.ai. (`--bare` would do the same and more, but *never reads the keychain* —
+  # it drops the subscription login with the settings, so it is not used.) Auto-memory is a
+  # separate switch, below.
+  "--setting-sources", "",
 ]
 
 # How the run's own registry reaches it, and therefore how D42's socket closes around it. A provider
@@ -113,6 +121,15 @@ install_hint = "install Claude Code, then `claude auth login` to attach your sub
 [[set_env]]
 name = "MCP_TOOL_TIMEOUT"
 value = "86400000"
+
+# **Measured 2026-09-12 (ENH-012).** With settings sources off the model still said its
+# instructions named a memory directory to write to — the CLI's own auto-memory, on by default.
+# The switch is this variable (read as a truthy flag in 2.1.235); with it the answer was
+# MEMORY-NO and the login untouched. A run remembers through the thread's record, not a file
+# beside a person's other conversations.
+[[set_env]]
+name = "CLAUDE_CODE_DISABLE_AUTO_MEMORY"
+value = "1"
 
 [dialect]
 resident = true
