@@ -80,6 +80,9 @@ RULES_LIST = "rules/list"
 # thread's root only, dotfiles and caches left out, never a path that resolves outside it
 FILES_LIST = "files/list"
 FILES_READ = "files/read"
+BATTERIES_LIST = "batteries/list"
+"""What the serving process has switched on (D70): every battery it knows, on, off or unavailable
+and why."""
 
 # runtime → host, one way
 EVENT = "event"
@@ -118,6 +121,7 @@ __all__ = [
     "APPROVALS_ANSWER",
     "APPROVALS_PENDING",
     "APPROVAL_REQUEST",
+    "BATTERIES_LIST",
     "INPUT_REQUEST",
     "MODES_LIST",
     "REQUEST_WITHDRAWN",

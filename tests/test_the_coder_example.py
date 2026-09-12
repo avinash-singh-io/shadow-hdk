@@ -18,10 +18,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from examples.coder.thread import a_thread
 
 from shadow_hdk.kernel import Event, Invoked, Observed
 from shadow_hdk.providers import NoProvider, ready
+from shadow_hdk.serve import a_thread
 
 pytestmark = [
     pytest.mark.live,

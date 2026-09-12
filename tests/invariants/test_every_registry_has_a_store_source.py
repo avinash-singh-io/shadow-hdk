@@ -19,6 +19,7 @@ LIVE: dict[str, tuple[str, str]] = {
     "ActRules": ("store_rules", "tests/runtime/test_a_store_makes_every_registry_live.py"),
     "SkillRegistry": ("store_skills", "tests/runtime/test_a_store_makes_every_registry_live.py"),
     "Switched": ("store_switches", "tests/runtime/test_a_store_makes_every_registry_live.py"),
+    "BatteryRegistry": ("store_batteries", "tests/serve/test_a_battery_is_a_file.py"),
 }
 """Registry → (the store source that feeds it, the test that proves the next read sees a write)."""
 

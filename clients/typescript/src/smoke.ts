@@ -24,6 +24,7 @@ for await (const line of client.turn.start(started.thread_id, "hello from typesc
 const changed = await client.thread.setMode(started.thread_id, "read-only");
 const files = await client.files.list(started.thread_id);
 const modes = await client.modes.list();
+const batteries = await client.batteries.list();
 const version = await client.store.version("modes");
 await client.thread.close(started.thread_id);
 client.close();
@@ -37,6 +38,7 @@ console.log(
     mode_events: changed.events.map((e) => e.kind),
     files: files.files.map((f) => f.path),
     modes: modes.modes.map((m) => m.id),
+    batteries: batteries.batteries.map((b) => `${b.id}:${b.status}`),
     version: version.version,
   }),
 );

@@ -26,7 +26,7 @@ from shadow_hdk.providers import NoProvider
 from shadow_hdk.runtime import Approvals
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
-from shadow_hdk.serve import a_thread
+from shadow_hdk.serve import Harness
 
 DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
 
@@ -101,10 +101,14 @@ async def main() -> int:
         if flag.startswith("--provider="):
             want = flag.split("=", 1)[1]
     root = Path(argv[0] if argv else "./coder-workspace").resolve()
-    questions = Approvals()
-    answering = asyncio.create_task(answer_questions(questions))
+    answering: asyncio.Task[None] | None = None
     try:
-        async with a_thread(root, want=want, mode=mode, approvals=questions) as thread:
+        # The facade (D71): the shipped composition behind three lines. Everything underneath —
+        # the thread, the handles — is reachable when this REPL wants it, and it wants one: the
+        # approvals handle, to answer the policy's questions at the terminal.
+        async with Harness(root, mode=mode, provider=want) as h:
+            thread = h.thread
+            answering = asyncio.create_task(answer_questions(h.approvals))
             print(f"{BOLD}Workspace:{OFF} {root}  {DIM}({thread.record.provider}){OFF}")
             print(f"{DIM}Its own tools are refused; the only ones it has are this run's.{OFF}")
             if mode == "workspace-write":
@@ -127,8 +131,9 @@ async def main() -> int:
                     return 0
                 if not said:
                     continue
-                async for event in thread.turn(said):
-                    show(event)
+                async for part in h.turn(said):
+                    if part.event is not None:
+                        show(part.event)
                 turn = thread.record.turns[-1]
                 print(f"\n{BOLD}agent ›{OFF} {turn.text}\n")
                 if turn.outcome != "completed":
@@ -142,7 +147,8 @@ async def main() -> int:
         print(f"\033[31m{cannot}{OFF}", file=sys.stderr)
         return 3
     finally:
-        answering.cancel()
+        if answering is not None:
+            answering.cancel()
 
 
 if __name__ == "__main__":

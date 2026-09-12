@@ -1,0 +1,29 @@
+# A battery is a file (D70): an MCP server consumed behind the component port, never built.
+#
+# wigolo — local-first web search and fetch, no API key, its own models (~1.5 GB on first use).
+# AGPL-3.0-only: it runs as its own process and is never linked, which is how the licence is
+# kept at arm's length from a product's code (a lawyer confirms — the owner's row). Install it
+# locally (`npm i wigolo`, never `-g`) and name the binary with WIGOLO_BIN, or put it on PATH.
+#
+# Its ten tools carry no MCP annotations, so the adapter would assume the worst of every one;
+# this file exposes two under the harness's names and vouches for what they do: they reach
+# the web from a process outside the environment's sandbox (`reaches`, not `contained`), and
+# write nothing of ours (wigolo's cache is its own).
+
+[battery]
+id = "wigolo"
+name = "Web search and fetch — wigolo"
+kind = "mcp"
+command = "wigolo"
+bin_env = "WIGOLO_BIN"
+args = []
+licence = "AGPL-3.0-only — its own process, never linked"
+install = "npm i wigolo   (locally; then WIGOLO_BIN=./node_modules/.bin/wigolo)"
+
+[tools.web_search]
+tool = "search"
+effects = { reaches = true, contained = false }
+
+[tools.web_fetch]
+tool = "fetch"
+effects = { reaches = true, contained = false }

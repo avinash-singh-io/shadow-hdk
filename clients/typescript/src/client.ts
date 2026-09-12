@@ -65,6 +65,17 @@ export interface Resumed extends Started {
   turns: TurnRecord[];
 }
 
+export interface BatteryRow {
+  id: string;
+  name: string;
+  kind: string;
+  source: string;
+  tools: string[];
+  licence: string;
+  status: "on" | "off" | "unavailable";
+  problem: string | null;
+}
+
 export interface FileEntry {
   path: string;
   bytes: number;
@@ -309,6 +320,8 @@ export class HarnessClient {
   };
 
   readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };
+  /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
+  readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
   readonly rules = { list: () => this.call<{ rules: JsonValue[] }>("rules/list", {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };
 }

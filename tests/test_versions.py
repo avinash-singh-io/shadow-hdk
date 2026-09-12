@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.23.0"
-"""0.23.0 because the wire's contract grew a second shape (Phase 26, D67–D69): `thread/*`,
+EXPECTED = "0.24.0"
+"""0.24.0 because the front door grew (Phase 27, D70–D72): `Harness`, `Part` and `Budget` in
+`shadow-hdk-serve`; `Settings` grew `batteries`, `batteries_dir` and `budget`;
+`ServeHost(governance=, sink=)`; `a_thread(agent=, batteries=, batteries_dir=)`;
+`McpComponents(only=, aliases=, effects=)` — a widened adapter constructor; and the wire's
+`batteries/list`. Additive all, but the wire is the contract a host compiles against and the
+facade is what a product imports first, so the join moves.
+
+0.23.0 because the wire's contract grew a second shape (Phase 26, D67–D69): `thread/*`,
 `turn/*`, `approvals/*`, `run/cancel`, `store/*`, `modes/list`, `rules/list`, `files/*` as
 methods; `activity`, `approval_request`, `input_request` and `request_withdrawn` as
 notifications; `ThreadHost` a port the serving process implements; `thread/start` and

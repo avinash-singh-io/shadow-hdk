@@ -1,6 +1,7 @@
 """`shadow-hdk serve` — the shipped composition, behind the wire, for a host in any language."""
 
-from shadow_hdk.serve.config import Settings, load_settings
+from shadow_hdk.serve.config import Budget, Settings, load_settings
+from shadow_hdk.serve.facade import Harness, Part
 from shadow_hdk.serve.host import (
     CONFINED,
     LOOKING,
@@ -15,7 +16,10 @@ from shadow_hdk.serve.host import (
 )
 
 __all__ = [
+    "Budget",
     "CONFINED",
+    "Harness",
+    "Part",
     "LOOKING",
     "MODES",
     "OPEN",

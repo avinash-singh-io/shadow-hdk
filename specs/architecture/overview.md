@@ -30,6 +30,14 @@ type: Architecture
 A host sits **above** all three as one more set of adapters plus its product. Nothing below the line
 knows it is there, and nothing below the line is written for a particular one.
 
+**One more package is the front door** (Phase 26–27, D67, D71): `serve` composes the shipped
+adapters — the local environment with a mode, the shipped skills, the mode and rule registries
+over files and a store, batteries (D70), the provider signed in here — and offers that one
+composition two ways: `Harness` in-process (three lines, `harness.toml`) and `shadow-hdk
+serve` over the wire for a host in any language. It depends on the adapters and on nothing
+depends on it; two invariants hold it to public names and to keys that map to ports, so a product
+that outgrows it composes the same objects itself.
+
 ## What each layer owns
 
 **Kernel.** Frozen dataclasses and protocols. No I/O, no clock, no logging, no framework. Every type

@@ -1,0 +1,18 @@
+# A battery is a file (D70): here a Python callable behind the same component port.
+#
+# ddgs — DuckDuckGo search from Python, no key, no models: the light alternative to wigolo where
+# a Node process or 1.5 GB of models is too much. An optional dependency of this package
+# (`shadow-hdk-serve[search]`); absent, the battery is reported, not silently missing. The
+# same terms-of-service risk as any scraper — it says so.
+
+[battery]
+id = "ddgs"
+name = "Web search — ddgs (DuckDuckGo)"
+kind = "python"
+callable = "shadow_hdk.serve.web:search"
+requires = "ddgs"
+licence = "MIT"
+install = "pip install 'shadow-hdk-serve[search]'"
+
+[tools.web_search]
+effects = { reaches = true, contained = false }

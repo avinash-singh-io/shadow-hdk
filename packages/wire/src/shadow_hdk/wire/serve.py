@@ -241,9 +241,20 @@ async def serve_http_forever(
     import uvicorn
 
     app = build_app(None, token=token, threads=threads, page=page)
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
+    # A page holds an SSE stream open, and uvicorn's graceful shutdown waits for open connections
+    # for ever by default — which kept this process, the provider's and the batteries' alive
+    # after a SIGTERM until the tab was closed (measured, twice). Two seconds, then it ends.
+    config = uvicorn.Config(
+        app, host="127.0.0.1", port=port, log_level="warning", timeout_graceful_shutdown=2
+    )
     server = uvicorn.Server(config)
-    await server.serve()
+    try:
+        await server.serve()
+    finally:
+        # What the host holds for the process — a battery's server (D70) — ends with it.
+        closer = getattr(threads, "aclose", None)
+        if closer is not None:
+            await closer()
 
 
 @asynccontextmanager
