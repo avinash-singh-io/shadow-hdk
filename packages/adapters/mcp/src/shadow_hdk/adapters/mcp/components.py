@@ -13,7 +13,7 @@ for is assumed to be the worst one.
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Collection, Mapping, Sequence
 from contextlib import AsyncExitStack
 from typing import Any
 
@@ -49,11 +49,22 @@ class McpComponents(ComponentPort):
         source: str = "mcp",
         at: str = "",
         prefix: str = "",
+        only: Collection[str] | None = None,
+        aliases: Mapping[str, str] | None = None,
+        effects: Mapping[str, EffectProfile] | None = None,
     ) -> None:
+        """`only` names the server's tools to expose (the rest are not registered at all);
+        `aliases` maps a server's tool name to the name the registry sees; `effects` is what a
+        deployment vouches for a tool — the *"until a deployment says otherwise"* the derivation
+        above always allowed for (a battery file, D70). All three are keyed by the server's own
+        tool names."""
         self._parameters = parameters
         self._source = source
         self._at = at
         self._prefix = prefix
+        self._only = frozenset(only) if only is not None else None
+        self._aliases = dict(aliases or {})
+        self._effects = dict(effects or {})
         self._stack: AsyncExitStack | None = None
         self._session: ClientSession | None = None
         self._tools: dict[RegistrationId, str] = {}
@@ -87,6 +98,8 @@ class McpComponents(ComponentPort):
         listed = await self._session.list_tools()
         found = []
         for tool in listed.tools:
+            if self._only is not None and tool.name not in self._only:
+                continue
             registration = self._registration(tool)
             self._tools[registration.id] = tool.name
             found.append(registration)
@@ -119,18 +132,23 @@ class McpComponents(ComponentPort):
 
     def _registration(self, tool: Tool) -> Registration:
         annotations = tool.annotations
+        name = f"{self._prefix}{self._aliases.get(tool.name, tool.name)}"
+        vouched = self._effects.get(tool.name)
         return Registration(
-            id=f"{self._prefix}{tool.name}",
+            id=name,
             component=Component(
                 interface=Interface(
-                    name=f"{self._prefix}{tool.name}",
+                    name=name,
                     description=tool.description or "",
                     input_schema=dict(tool.input_schema or {}),
                     output_schema=dict(tool.output_schema or {}),
                 ),
                 # **Derived, not trusted.** Absent annotations mean every hint is `None`, and the
-                # kernel reads that as the worst case — never as "probably harmless".
-                effects=EffectProfile.from_mcp_annotations(
+                # kernel reads that as the worst case — never as "probably harmless". A
+                # deployment that vouches (`effects=`) is the one thing that overrides it.
+                effects=vouched
+                if vouched is not None
+                else EffectProfile.from_mcp_annotations(
                     read_only_hint=getattr(annotations, "read_only_hint", None),
                     destructive_hint=getattr(annotations, "destructive_hint", None),
                     idempotent_hint=getattr(annotations, "idempotent_hint", None),

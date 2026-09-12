@@ -169,3 +169,24 @@ async def test_provenance_says_which_server_and_which_adapter() -> None:
         registration = next(iter(await components.registrations()))
     assert registration.component.provenance.registered_by == "reference-server"
     assert registration.component.provenance.adapter == "mcp"
+
+
+async def test_a_deployment_may_expose_only_some_tools_under_its_own_names_and_vouch() -> None:
+    """`only`, `aliases`, `effects` (D70): what a battery file says. The undeclared `mystery`
+    tool, exposed under a vouched profile, is judged by that profile rather than assumed the
+    worst — and the tools left out are not registered at all."""
+    vouched = EffectProfile(reaches=True, contained=False)
+    async with McpComponents(
+        PARAMS,
+        source="battery:test",
+        only=["mystery", "look_up"],
+        aliases={"mystery": "web_search"},
+        effects={"mystery": vouched},
+    ) as components:
+        registrations = {r.id: r for r in await components.registrations()}
+        assert set(registrations) == {"web_search", "look_up"}
+        assert registrations["web_search"].component.effects == vouched
+        assert registrations["web_search"].component.interface.name == "web_search"
+        assert registrations["look_up"].component.effects != vouched, "unvouched stays derived"
+        answer = await components.invoke("web_search", {"value": "?"})
+        assert answer.kind == "completed", answer

@@ -16,7 +16,11 @@ dependencies = [
     "shadow-hdk-adapters-basic==0.23.0",
     "shadow-hdk-adapters-environment==0.23.0",
     "shadow-hdk-adapters-agent==0.23.0",
+    "shadow-hdk-adapters-mcp==0.23.0",
 ]
+
+[project.optional-dependencies]
+search = ["ddgs>=9"]   # the ddgs battery's engine — optional, so the light alternative stays light
 
 [project.scripts]
 shadow-hdk = "shadow_hdk.serve.__main__:main"

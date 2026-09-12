@@ -6,7 +6,7 @@ phase: 27
 # Tasks — Phase 27
 
 ## Group 1 — a battery is a file
-- [ ] `Battery`, shipped battery files (`wigolo.toml`, `ddgs.toml`), `BatteryRegistry` with sources incl. `store_batteries`; `McpComponents(only=, aliases=, effects=)`; a battery that cannot start is a reported problem
+- [x] `Battery`, shipped battery files (`wigolo.toml`, `ddgs.toml`), `BatteryRegistry` with sources incl. `store_batteries`; `McpComponents(only=, aliases=, effects=)`; a battery that cannot start is a reported problem — D70; wigolo surveyed live (ten tools, no annotations); 8 + 1 tests; seven mutants killed
 
 ## Group 2 — batteries in the composition
 - [ ] `[tools] batteries` in `harness.toml`; `workshop(batteries=)`; `ServeHost`/`a_thread` carry them; live: wigolo (scratchpad install) or `ddgs`, recorded honestly
