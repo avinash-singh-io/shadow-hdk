@@ -8,7 +8,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Eighteen distributions at `0.25.2`, all MIT.** 1,404 tests; `mypy --strict` over 248 files;
+**Eighteen distributions at `0.25.3`, all MIT.** 1,407 tests; `mypy --strict` over 249 files;
 0.594 ms of runtime overhead per step.
 
 ---
