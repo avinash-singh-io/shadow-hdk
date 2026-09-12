@@ -18,7 +18,7 @@ import anyio
 import httpx
 import pytest
 
-from shadow_hdk.kernel import Turn
+from shadow_hdk.kernel import ActRule, Turn
 from shadow_hdk.kernel.ports import AgentSession
 from shadow_hdk.runtime import Ports
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
@@ -66,6 +66,9 @@ class StudioHost(ServeHost):
     def __init__(self, root: Path) -> None:
         self.writer = WritingProvider()
         super().__init__(Settings(root=root, mode=ENFORCEABLE), agent=cast(Any, self.writer))
+        # Where the machine can only open `full`, that mode asks before a write (D65) and nobody
+        # here answers — measured as a hang on CI. The person's rule pre-approves the one write.
+        self.rules.add(ActRule(component="write_file"))
 
     async def open(self, **kw: Any) -> Any:
         thread = await super().open(**kw)
