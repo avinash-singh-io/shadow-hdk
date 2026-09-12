@@ -15,7 +15,9 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 from shadow_hdk.adapters.recording import SocketOffer
 
@@ -36,12 +38,14 @@ async def a_thread(
     approvals: Approvals | None = None,
     store: ThreadStore | None = None,
     name: str = "tools",
+    observer: Any = None,
 ) -> AsyncIterator[Thread]:
     """A thread on the provider signed in here, its tools this run's, inside the workshop.
 
     `approvals` is where the policy's approval requests about the provider's tool calls go while
     the provider waits on them (D58). Without one, a call the policy asks about is refused: nobody
-    was there to ask.
+    was there to ask. `observer` hears the record and, through `on_activity`, what is happening
+    beside it (D63).
     """
     root.mkdir(parents=True, exist_ok=True)
     available = await ready(want)
@@ -54,7 +58,7 @@ async def a_thread(
     )
     thread = await Thread.open(
         agent=opened,
-        ports=await workshop(root, mode=mode),
+        ports=replace(await workshop(root, mode=mode), observer=observer),
         store=store or InMemoryThreads(),
         root=root,
         lease=a_lease(),

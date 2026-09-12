@@ -50,6 +50,16 @@ class EnvVar:
 
 
 @dataclass(frozen=True)
+class Delta:
+    """One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,
+    what activity kind it becomes, and where its text sits in the event."""
+
+    on: str
+    kind: str
+    at: str
+
+
+@dataclass(frozen=True)
 class Dialect:
     """How to read one CLI's line-delimited JSON event stream (D40).
 
@@ -109,6 +119,19 @@ class Dialect:
     think_at: str = ""
     """The event types carrying the model's thinking, and where it is inside them (D45). Empty is
     the conservative default — a provider file that did not say where thinking is, has none."""
+
+    delta_on: tuple[str, ...] = ()
+    delta_kind_at: str = ""
+    deltas: tuple[Delta, ...] = ()
+    """Streamed pieces (D63): the event types that carry them, the field naming which piece, and
+    one `Delta` per piece — Claude Code's `stream_event` with `event.delta.type` of
+    `thinking_delta` or `text_delta` (measured 2026-09-12 with `--include-partial-messages`).
+    Empty is the conservative default: a provider file that did not say streams nothing."""
+
+    interrupt_line: str = ""
+    """The line that tells a resident CLI to stop the running turn (D63) — a JSON control message
+    on Claude Code's stream-json input. Empty means it cannot be told, and a thread ends a turn by
+    closing the session instead. Measured before it is set, never transcribed."""
 
     failed_at: str = ""
     """A boolean saying the turn failed. Read rather than inferred from an exit code: these CLIs
@@ -241,4 +264,4 @@ class Provider:
         return self.name or self.id
 
 
-__all__ = ["Dialect", "EnvVar", "Provider", "ProviderKind", "ProviderStatus"]
+__all__ = ["Delta", "Dialect", "EnvVar", "Provider", "ProviderKind", "ProviderStatus"]

@@ -57,7 +57,10 @@ def cap(raw: bytes, limit: int) -> tuple[str, bool]:
 
 
 async def _read_capped(
-    stream: asyncio.StreamReader | None, limit: int, when_full: Callable[[], None]
+    stream: asyncio.StreamReader | None,
+    limit: int,
+    when_full: Callable[[], None],
+    on_chunk: Callable[[str], None] | None = None,
 ) -> tuple[str, bool]:
     """Collect up to the cap, then **keep reading and throw the rest away**.
 
@@ -78,6 +81,9 @@ async def _read_capped(
             break
         if len(collected) < limit:
             collected.extend(chunk)
+            if on_chunk is not None:
+                # What is happening (D63): the chunk as it printed, to whoever is listening.
+                on_chunk(chunk.decode(errors="replace"))
         elif not truncated:
             truncated = True
             when_full()
@@ -105,8 +111,12 @@ async def run_leashed(
     timeout_s: float,
     output_limit: int,
     memory_mb: int | None = None,
+    on_output: Callable[[str], None] | None = None,
 ) -> Observation:
-    """Run `argv` under the rules. A failure to start, or a timeout, is a `Failed`."""
+    """Run `argv` under the rules. A failure to start, or a timeout, is a `Failed`.
+
+    `on_output` hears each chunk of stdout or stderr as it arrives (D63) — the result is still the
+    whole, capped as before; this is the live half beside it."""
     environment = {name: os.environ[name] for name in KEPT_ENV if name in os.environ}
     environment["TMPDIR"] = str(cwd)
     try:
@@ -134,8 +144,8 @@ async def run_leashed(
                 # the program has finished saying what this step will not keep.
                 full = functools.partial(end_the_group, process)
                 (stdout, cut_out), (stderr, cut_err) = await asyncio.gather(
-                    _read_capped(process.stdout, output_limit, full),
-                    _read_capped(process.stderr, output_limit, full),
+                    _read_capped(process.stdout, output_limit, full, on_output),
+                    _read_capped(process.stderr, output_limit, full, on_output),
                 )
                 await process.wait()
         except TimeoutError:

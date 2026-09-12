@@ -78,8 +78,8 @@ async def test_the_stream_carries_events_and_steps_and_the_turn_lands(tmp_path: 
         kinds = [line["kind"] for line in studio.record]
         assert kinds[0] == "you" and kinds[-1] == "agent"
         assert "event" in kinds, "the run's events are on the record the page reads"
-        steps = [line for line in studio.record if line["kind"] == "step"]
-        assert steps == [] or steps[0]["step"]["component"] == "write_file"
+        steps = [line for line in studio.record if line["kind"] == "item"]
+        assert steps == [] or steps[0]["item"]["component"] == "write_file"
         files = (await c.get("/files")).json()["files"]
         assert [f["path"] for f in files] == ["hello.txt"]
         assert (await c.get("/file", params={"path": "hello.txt"})).json()["content"] == "hello"

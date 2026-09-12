@@ -44,14 +44,31 @@ class Studio:
 
     # ------------------------------------------------------------------ the record
 
+    def on_activity(self, activity: Any) -> None:
+        """What is happening (D63): a delta of thinking or text, a chunk a command printed. Live
+        to whoever is watching — and **not kept on the record the page replays**, because it is
+        not the record."""
+        self._tell(
+            {
+                "kind": "delta",
+                "run_id": activity.run_id,
+                "step": activity.step,
+                "delta": activity.kind,
+                "text": activity.text,
+                "i": -1,
+            }
+        )
+
     def on_event(self, event: Event) -> None:
         line = self.keep({"kind": "event", "event": json.loads(dump(event, Event))})
         self._tell(line)
         # **One fold, the runtime's** (D46): the page could fold the events itself, and a client in
         # another language would; this one is handed the runtime's steps so the two never differ.
         self.fold.feed(event)
-        for step in self.fold.closed_now:
-            self._tell({"kind": "step", "step": as_json(step)})
+        for item in self.fold.closed_now:
+            # Kept, not only told: a page that reloads replays the record and needs the items
+            # closed the way they closed — without this every part stayed "running" on reload.
+            self._tell(self.keep({"kind": "item", "item": as_json(item)}))
 
     def _tell(self, line: dict[str, Any]) -> None:
         for queue in list(self.watchers):
@@ -71,7 +88,11 @@ class Studio:
 
     async def open(self) -> None:
         self._conversation = a_thread(
-            self.root, want=self.want, mode=self.mode, approvals=self.approvals
+            self.root,
+            want=self.want,
+            mode=self.mode,
+            approvals=self.approvals,
+            observer=_Watching(self.on_activity),
         )
         self.thread = await self._conversation.__aenter__()
         self.provider = self.thread.record.provider or "the provider signed in here"
@@ -161,6 +182,19 @@ class Studio:
             return f"(binary, {target.stat().st_size} bytes)"
 
 
+class _Watching:
+    """The studio's observer: events come from the turn's own iterator; activity comes here."""
+
+    def __init__(self, on_activity: Any) -> None:
+        self._on_activity = on_activity
+
+    async def on(self, event: Event) -> None:
+        return None
+
+    async def on_activity(self, activity: Any) -> None:
+        self._on_activity(activity)
+
+
 def _usage_of_turn(record: list[dict[str, Any]], run_id: str) -> dict[str, Any] | None:
     """The turn's cost, read off the record's `usage` events for that run."""
     for line in reversed(record):
@@ -208,7 +242,7 @@ def build_app(studio: Studio) -> Starlette:
                     except TimeoutError:
                         yield b": keep-alive\n\n"
                         continue
-                    if int(line.get("i", caught_up)) < caught_up:
+                    if line.get("kind") != "delta" and int(line.get("i", caught_up)) < caught_up:
                         continue
                     yield f"data: {json.dumps(line)}\n\n".encode()
             finally:

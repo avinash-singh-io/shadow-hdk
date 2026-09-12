@@ -32,6 +32,7 @@ from typing import Annotated, Literal, Protocol, runtime_checkable
 
 from pydantic import Field, JsonValue
 
+from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
@@ -193,6 +194,18 @@ class ObserverPort(Protocol):
 
 
 @runtime_checkable
+class ActivityObserver(Protocol):
+    """An observer that also hears what is *happening*, beside the record (D63).
+
+    Its own protocol rather than a method on `ObserverPort`, so growing the seam breaks no
+    observer (D14): one that only knows `on` is still an `ObserverPort`, hears no activity, and
+    works; one that implements this hears it. The emitter checks which it was handed.
+    """
+
+    async def on_activity(self, activity: Activity) -> None: ...
+
+
+@runtime_checkable
 class ClockPort(Protocol):
     def now(self) -> str: ...
 
@@ -272,6 +285,21 @@ class AgentSession(Protocol):
         """
         done = await self.turn(prompt)
         yield TurnChunk(text=done.text, usage=done.usage, done=True)
+
+    async def steer(self, text: str) -> bool:
+        """Say something to the agent *while a turn is running* (Codex's `turn/steer`, D63).
+
+        `True` if the provider took it mid-turn; `False` if it cannot, in which case the thread
+        keeps the text for the next turn and says so. The default cannot.
+        """
+        return False
+
+    async def interrupt(self) -> bool:
+        """Stop the turn that is running (Codex's `turn/interrupt`). `True` if the provider was
+        told and stops on its own; `False` if it cannot be told, in which case the thread ends the
+        turn's run and the session is closed. The default cannot be told.
+        """
+        return False
 
 
 @runtime_checkable

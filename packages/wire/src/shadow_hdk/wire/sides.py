@@ -40,6 +40,7 @@ from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     COMPLETE,
+    CONTEXT_ACTIVITY,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
@@ -84,10 +85,15 @@ class RuntimeSide:
         clock: Any = None,
         checkpointer: Any = None,
         timeout: float | None = 300.0,
+        observer: Any = None,
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
         self._clock = clock
+        self._observer = observer
+        """The process serving the runtime may hand in an observer — an `ActivityObserver` hears
+        what is happening (D63) on the runtime's side, which is where a crossed component's
+        activity lands; Phase 26 puts it on the wire's own stream."""
         from langgraph.checkpoint.memory import InMemorySaver
 
         self.approvals = Approvals()
@@ -116,6 +122,7 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_RELEASE, self._context_release)
         self.peer.serves(CONTEXT_IS_HELD, self._context_is_held)
         self.peer.serves(CONTEXT_KEEP, self._context_keep)
+        self.peer.hears(CONTEXT_ACTIVITY, self._context_activity)
         self.peer.serves(CONTEXT_REQUEST_APPROVAL, self._context_request_approval)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
 
@@ -128,6 +135,7 @@ class RuntimeSide:
             governance=RemoteGovernance(self.peer),  # type: ignore[arg-type]
             sink=RemoteSink(self.peer),  # type: ignore[arg-type]
             clock=self._clock or SystemClock(),
+            observer=self._observer,
         )
 
     async def _context_propose(self, params: dict[str, Any]) -> Any:
@@ -160,6 +168,13 @@ class RuntimeSide:
         if isinstance(answer, Allow | Ask | Refuse):
             answer = json.loads(dump(answer, Judgement))
         return {"answer": answer}
+
+    async def _context_activity(self, params: dict[str, Any]) -> None:
+        if self.live is None:
+            return
+        await self.live.activity(
+            str(params.get("kind", "")), str(params.get("text", "")), step=params.get("step")
+        )
 
     async def _context_keep(self, params: dict[str, Any]) -> Any:
         if self.live is None:
@@ -418,6 +433,7 @@ async def loopback(
     *,
     watching: Callable[[str], None] | None = None,
     timeout: float | None = 300.0,
+    observer: Any = None,
 ) -> AsyncIterator[tuple[HostSide, RuntimeSide]]:
     """Both halves in one process, joined by a channel that carries JSON text."""
     from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
@@ -431,7 +447,7 @@ async def loopback(
     )
     async with channel_pair(watching=watching) as (host_end, runtime_end):
         host = HostSide(host_end, real)
-        runtime = RuntimeSide(runtime_end, clock=real.clock, timeout=timeout)
+        runtime = RuntimeSide(runtime_end, clock=real.clock, timeout=timeout, observer=observer)
         async with anyio.create_task_group() as group:
             group.start_soon(host.peer.serve_forever, group)
             group.start_soon(runtime.peer.serve_forever, group)

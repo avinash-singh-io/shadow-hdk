@@ -158,9 +158,25 @@ class JsonlSession:
                 # it arrives — when there is a run to put it on — and the whole comes back on the
                 # turn for a caller holding that instead.
                 for thought in texts_at(event, dialect.think_at):
+                    # **Measured 2026-09-12 with `--include-partial-messages`:** Claude Code
+                    # emits one `assistant` line per content block, each carrying the whole
+                    # message so far, so the same thinking block arrived twice and went on the
+                    # record twice. A thought is one thought.
+                    if thought in thought_so_far:
+                        continue
                     thought_so_far.append(thought)
                     if (context := current_run()) is not None:
                         await context.reasoning(thought)
+            if dialect.deltas and matches(event, kind, dialect.delta_on, dialect.subtype_key):
+                # **What is happening, beside the record** (D63). A streamed piece of thinking or
+                # text is activity — the observer hears it as it arrives; nothing lands on the
+                # record until the whole arrives, exactly as before.
+                which = read_at(event, dialect.delta_kind_at)
+                for delta in dialect.deltas:
+                    if delta.on == which:
+                        piece = read_at(event, delta.at)
+                        if piece and (context := current_run()) is not None:
+                            await context.activity(delta.kind, str(piece))
             if matches(event, kind, dialect.say_on, dialect.subtype_key):
                 said += texts_at(event, dialect.say_at)
             if dialect.session_id_at and (found := read_at(event, dialect.session_id_at)):
@@ -192,6 +208,30 @@ class JsonlSession:
                 cost_cents=_cents(read_at(event, dialect.cost_usd_at)),
             ),
         )
+
+    async def steer(self, text: str) -> bool:
+        """A resident CLI reads its stdin between and during turns: another user message written
+        while a turn runs is queued by the CLI and folded into the same turn (D63). A one-shot
+        dialect has no open stdin to take it."""
+        process = self._process
+        if not self._dialect.resident or process is None or process.stdin is None:
+            return False
+        if process.returncode is not None or process.stdin.is_closing():
+            return False
+        process.stdin.write(self._written(text))
+        await process.stdin.drain()
+        return True
+
+    async def interrupt(self) -> bool:
+        """A dialect that names an interrupt line sends it; one that does not cannot be told, and
+        the thread ends the turn by closing the session. Nothing is guessed."""
+        process = self._process
+        line = self._dialect.interrupt_line
+        if not line or process is None or process.stdin is None or process.stdin.is_closing():
+            return False
+        process.stdin.write(line.encode() + b"\n")
+        await process.stdin.drain()
+        return True
 
     async def close(self) -> None:
         """Ending the session ends the tree it started (D35)."""

@@ -20,6 +20,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from shadow_hdk.kernel import Activity
 from shadow_hdk.kernel.contracts import adapter_for, all_schemas
 from shadow_hdk.runtime.items import Item
 from shadow_hdk.wire.protocol import PROTOCOL_VERSION
@@ -39,6 +40,7 @@ def published() -> dict[str, dict[str, Any]]:
     """
     contracts: dict[str, dict[str, Any]] = dict(all_schemas())
     contracts["Item"] = adapter_for(Item).json_schema()
+    contracts["Activity"] = adapter_for(Activity).json_schema()
     return contracts
 
 

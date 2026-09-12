@@ -4,6 +4,7 @@ Everything an adapter or a host touches is defined here and nowhere else. The ru
 this package; this package depends on nothing but pydantic, and only for the published schemas.
 """
 
+from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -63,6 +64,7 @@ from shadow_hdk.kernel.observations import (
     Refused,
 )
 from shadow_hdk.kernel.ports import (
+    ActivityObserver,
     AgentPort,
     AgentSession,
     Allow,
@@ -87,6 +89,7 @@ from shadow_hdk.kernel.ports import (
     Usage,
 )
 from shadow_hdk.kernel.providers import (
+    Delta,
     Dialect,
     EnvVar,
     Provider,
@@ -96,7 +99,10 @@ from shadow_hdk.kernel.providers import (
 from shadow_hdk.kernel.threads import ThreadId, ThreadRecord, TurnId, TurnRecord
 
 __all__ = [
+    "Activity",
+    "ActivityObserver",
     "Reasoning",
+    "Delta",
     "Dialect",
     "TurnChunk",
     "Turn",

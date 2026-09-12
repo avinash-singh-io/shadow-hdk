@@ -55,6 +55,7 @@ from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import AgentPort, AgentSession, ComponentPort, ThreadStore
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.runtime.bindings import Ports, RunOptions, current_run
+from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
 from shadow_hdk.runtime.session import LeaseMeter
@@ -160,6 +161,12 @@ class Thread:
         self._session: AgentSession | None = None
         self._serving: Any = None
         self._turning: asyncio.Lock = asyncio.Lock()
+        self._sources: tuple[Any, ...] = ()
+        self._current: Cancellation | None = None
+        """The running turn's handle to stop it (D15), while one runs."""
+        self._interrupted = False
+        self._kept: list[str] = []
+        """Steering the provider could not take mid-turn: folded into the next prompt."""
 
     # ------------------------------------------------------------------ opening and closing
 
@@ -243,8 +250,8 @@ class Thread:
 
     async def _start(self) -> None:
         self._serving = self.registry.served()
-        sources = await self._serving.__aenter__()
-        self._session = await self._agent.open(tools=tuple(sources), workspace=self._record.root)
+        self._sources = tuple(await self._serving.__aenter__())
+        self._session = await self._agent.open(tools=self._sources, workspace=self._record.root)
 
     async def close(self) -> None:
         if self._session is not None:
@@ -278,10 +285,18 @@ class Thread:
         turn's duration, and are child runs under the step — so a host folds them under the
         turn's item (D62).
         """
-        if self._session is None:
+        if self._serving is None:
             raise RuntimeError("the thread is closed")
+        if self._session is None:
+            # An interrupted provider that could not be told was closed; a turn reopens it.
+            self._session = await self._agent.open(
+                tools=tuple(self._sources), workspace=self._record.root
+            )
         if (left := self._meter.remaining().ceiling).max_steps <= 0:
             raise RuntimeError("the thread has no steps left")
+        if self._kept:
+            text = "\n\n".join((*self._kept, text))
+            self._kept.clear()
         async with self._turning:
             number = len(self._record.turns) + 1
             turn_id = f"{TURN}-{number}"
@@ -294,6 +309,9 @@ class Thread:
             lease = self._meter.carve(reserved)
             session = self._session
             registry = self.registry
+            cancellation = Cancellation()
+            self._current = cancellation
+            self._interrupted = False
 
             async def turn_component(inputs: Any) -> Observation:
                 context = current_run()
@@ -329,6 +347,7 @@ class Thread:
                 run_id=run_id,
                 approvals=self._approvals,
                 checkpointer=self._checkpointer,
+                cancellation=cancellation,
                 context={"thread": self.id, "turn": turn_id, "mode": self._record.mode}
                 if self._record.mode
                 else {"thread": self.id, "turn": turn_id},
@@ -373,6 +392,11 @@ class Thread:
                             cost_known = False
                     yield event
             finally:
+                self._current = None
+                if self._interrupted:
+                    # The person stopped it. The run may still say `completed` — a provider that
+                    # was told returns what it had — but the turn was cut short, and says so.
+                    outcome = "cancelled"
                 self._meter.settle(
                     reserved, steps=steps_taken, cost_cents=spent_cents, cost_known=cost_known
                 )
@@ -380,6 +404,36 @@ class Thread:
                 turns[-1] = _replace_turn(turns[-1], outcome=outcome, text=said)
                 self._record = _replace(self._record, turns=tuple(turns))
                 await self._store.save(self._record)
+
+    # ------------------------------------------------------------------ steer and interrupt
+
+    async def steer(self, text: str) -> bool:
+        """Say something to the agent while a turn runs (Codex's `turn/steer`, D63).
+
+        `True` if the provider took it mid-turn. `False` if no turn is running or the provider
+        cannot take it, in which case the text is kept and folded ahead of the next prompt — the
+        record then shows it where it was actually heard.
+        """
+        session = self._session
+        if session is not None and self._current is not None and await session.steer(text):
+            return True
+        self._kept.append(text)
+        return False
+
+    async def interrupt(self) -> None:
+        """Stop the running turn (Codex's `turn/interrupt`): the provider is told if it can be,
+        and the turn's run is cancelled either way, so the record ends `cancelled` and the lease
+        settles. A provider that cannot be told is closed and reopened on the next turn."""
+        session = self._session
+        current = self._current
+        if current is None:
+            return
+        told = session is not None and await session.interrupt()
+        self._interrupted = True
+        current.cancel("interrupted by the person")
+        if not told and session is not None:
+            await session.close()
+            self._session = None
 
     # ------------------------------------------------------------------ fork and rollback
 

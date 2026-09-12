@@ -145,7 +145,7 @@ classDiagram
 | `__init__.py` | `run`, `resume`, `current_run`, `Ports`, `RunOptions`, `RunContext`, `Trust` |
 | `bindings.py` | `Ports`, `RunOptions`, `RunContext`, the contextvar (D2); `executing(step)` — the scope within which `current_run().step` is set, the component's invoke only |
 | `session.py` | `Session`, `LeaseMeter`, `Handles` |
-| `emit.py` | `Emitter` — seq, clock stamp, queue, observer task |
+| `emit.py` | `Emitter` — seq, clock stamp, queue, observer task; `activity`/`forward_activity` — what is happening, beside the record (D63): to an `ActivityObserver` if one listens, up to the parent if a child, dropped-oldest, never on the stream `run` yields |
 | `registry.py` | `Registry` — union of component ports, `resolve`, `visible`; with a `Trust`, a driver that cannot prove itself is refused at `refresh` — absent, reason in `refused` (D27) |
 | `trust.py` | `Trust(keys, revoked, must_sign)`, `sign`, `verify`, `signing_bytes` — HMAC-SHA256 over the registration's canonical form minus the signature (D27) |
 | `acting.py` | `exhausted(lease)`, `grounds(context, argv=, warrant=)` — what a driver reads at the moment of the act and what its `Acted` receipt carries (R9); the warrant is carried, not judged (ADR-1) |

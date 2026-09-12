@@ -10,6 +10,7 @@ thread's lease, and keeps the record through a `ThreadStore` the host may replac
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any, cast
@@ -359,3 +360,98 @@ async def test_a_refused_turn_is_recorded_as_refused_with_the_reason(tmp_path: P
     assert record is not None
     assert record.turns[0].outcome == "refused"
     assert "not this mode" in record.turns[0].text
+
+
+class SteerableAgent(ScriptedAgent):
+    """A provider that takes text mid-turn and can be told to stop."""
+
+    def __init__(self, turns: Any) -> None:
+        super().__init__(turns)
+        self.steered: list[str] = []
+        self.interrupted = 0
+        self.release = asyncio.Event()
+
+    async def open(self, *, tools: Any = (), workspace: Any = None) -> AgentSession:
+        self.opened_with = tools
+        return cast(AgentSession, _SteerableSession(self))
+
+
+class _SteerableSession(_ScriptedSession):
+    def __init__(self, agent: SteerableAgent) -> None:
+        super().__init__(agent)
+        self.steerable = agent
+
+    async def turn(self, prompt: str) -> Turn:
+        await self.steerable.release.wait()  # a turn that takes its time
+        return await super().turn(prompt)
+
+    async def steer(self, text: str) -> bool:
+        self.steerable.steered.append(text)
+        return True
+
+    async def interrupt(self) -> bool:
+        self.steerable.interrupted += 1
+        self.steerable.release.set()
+        return True
+
+
+async def test_steer_reaches_a_provider_that_takes_it_mid_turn(tmp_path: Path) -> None:
+    agent = SteerableAgent([([], "fine")])
+    thread = await open_thread(agent, InMemoryThreads(), tmp_path)
+    try:
+        turning = asyncio.ensure_future(_collect(thread.turn("start")))
+        await asyncio.sleep(0.05)
+        assert await thread.steer("also do this") is True
+        agent.release.set()
+        await turning
+    finally:
+        await thread.close()
+    assert agent.steered == ["also do this"]
+
+
+async def test_steer_with_no_turn_running_is_kept_for_the_next_turn(tmp_path: Path) -> None:
+    agent = ScriptedAgent([([], "ok")])
+    seen: list[str] = []
+    original = _ScriptedSession.turn
+
+    async def spying(self: Any, prompt: str) -> Turn:
+        seen.append(prompt)
+        return await original(self, prompt)
+
+    _ScriptedSession.turn = spying  # type: ignore[method-assign]
+    try:
+        thread = await open_thread(agent, InMemoryThreads(), tmp_path)
+        try:
+            assert await thread.steer("remember this") is False
+            [e async for e in thread.turn("now")]
+        finally:
+            await thread.close()
+    finally:
+        _ScriptedSession.turn = original  # type: ignore[method-assign]
+    assert seen == ["remember this\n\nnow"], "the steer is folded into the next prompt"
+
+
+async def test_interrupt_ends_the_running_turn_and_the_record_says_cancelled(
+    tmp_path: Path,
+) -> None:
+    agent = SteerableAgent([([], "never finished")])
+    store = InMemoryThreads()
+    thread = await open_thread(agent, store, tmp_path)
+    try:
+        turning = asyncio.ensure_future(_collect(thread.turn("start")))
+        await asyncio.sleep(0.05)
+        await thread.interrupt()
+        events = await turning
+    finally:
+        await thread.close()
+    assert agent.interrupted == 1
+    record = await store.get(thread.id)
+    assert record is not None
+    assert record.turns[-1].outcome == "cancelled", record.turns[-1]
+    # The run itself may still complete — a provider that was told returns what it had — so the
+    # turn's outcome is the thread's to say, and the run's `Ended` says what the run did.
+    assert events[-1].kind == "ended"
+
+
+async def _collect(events: Any) -> list[Any]:
+    return [e async for e in events]

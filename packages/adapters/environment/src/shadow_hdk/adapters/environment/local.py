@@ -30,7 +30,13 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.kernel.observations import Observation
-from shadow_hdk.runtime.environment import Environment, Isolation, Mode, requires
+from shadow_hdk.runtime.environment import (
+    Environment,
+    Isolation,
+    Mode,
+    output_activity,
+    requires,
+)
 from shadow_hdk.runtime.leash import run_leashed
 
 PROBE_TIMEOUT_S = 20.0
@@ -210,7 +216,11 @@ class LocalEnvironment(Environment):
     async def _run(self, argv: list[str]) -> Observation:
         wrapped = self._box.wrap(argv, root=self.root, mode=self.mode) if self._box else argv
         return await run_leashed(
-            wrapped, cwd=self.root, timeout_s=self._timeout_s, output_limit=self._output_limit
+            wrapped,
+            cwd=self.root,
+            timeout_s=self._timeout_s,
+            output_limit=self._output_limit,
+            on_output=output_activity(),
         )
 
 

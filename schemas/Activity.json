@@ -1,0 +1,33 @@
+{
+  "properties": {
+    "at": {
+      "title": "At",
+      "type": "string"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "step": {
+      "title": "Step",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "step",
+    "kind",
+    "text",
+    "at"
+  ],
+  "title": "Activity",
+  "type": "object"
+}

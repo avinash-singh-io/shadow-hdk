@@ -45,6 +45,8 @@ NOT_CROSSING: dict[str, str] = {
     "take_kept": "runtime-internal: the executor collects what a component kept before it parks",
     "resuming": "runtime-internal: the executor hands a resumed step its answer and what it kept",
     "resumed_done": "runtime-internal: the executor clears that after the invoke",
+    "activity_now": "synchronous convenience over `activity` for a reader task; `activity` crosses",
+    "forward_activity": "runtime-internal: the drive forwards a child's activity to the root",
 }
 """Method → why it does not cross. Every entry is a claim; an entry for a method that has since
 been made to cross is refused by the third test below."""

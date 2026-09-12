@@ -16,7 +16,7 @@ from dataclasses import fields
 from pathlib import Path
 from typing import Any, get_args
 
-from shadow_hdk.kernel import Dialect, EnvVar, Provider, ProviderKind
+from shadow_hdk.kernel import Delta, Dialect, EnvVar, Provider, ProviderKind
 
 HERE = Path(__file__).resolve().parent / "library"
 
@@ -73,6 +73,15 @@ def load_provider(path: Path) -> Provider:
         for name, value in list(spoken.items()):
             if isinstance(value, list):
                 spoken[name] = tuple(value)
+        if "deltas" in spoken:
+            try:
+                spoken["deltas"] = tuple(
+                    Delta(on=d["on"], kind=d["kind"], at=d["at"]) for d in spoken["deltas"]
+                )
+            except (KeyError, TypeError) as wrong:
+                raise MalformedProvider(
+                    f"{path.name}: each dialect.deltas entry needs on, kind and at"
+                ) from wrong
         made["dialect"] = Dialect(**spoken)
     if "set_env" in made:
         try:

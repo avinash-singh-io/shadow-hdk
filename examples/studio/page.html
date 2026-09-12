@@ -28,6 +28,7 @@
   .think .lead { cursor:pointer } .think .lead::before { content:"∴ "; opacity:.7 }
   .think .more { display:none; margin-top:4px; padding-left:16px; opacity:.9 } .think.open .more { display:block }
   .think.open .lead .ellipsis { display:none }
+  .live-think { opacity:.8; white-space:pre-wrap } .live-think::after, .live-text::after { content:"▍"; animation: pulse 1s infinite }
   .tool { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; border:1px solid var(--line); border-radius:8px; background:var(--panel) }
   .tool .head { display:flex; gap:10px; align-items:baseline; padding:6px 10px; cursor:pointer }
   .tool .head .mark { width:14px; display:inline-block } .tool .head .name { font-weight:600 } .tool .head .arg { color:var(--dim); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap } .tool .head .cost { color:var(--dim); font-size:11px }
@@ -81,8 +82,8 @@ const chat = $('chat'), files = $('files'), fileBox = $('file');
 let chatEmpty = true;
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 function scrollDown() { chat.scrollTop = chat.scrollHeight; }
-const MARK = {completed:'✓', failed:'✗', refused:'✕', asked:'?', running:'…'};
-const topRun = {id: null};
+const MARK = {completed:'✓', failed:'✗', refused:'✕', approval_requested:'?', input_requested:'?', running:'…'};
+const turnRuns = new Set();          // each turn is a run (D62); its tool calls are child runs under it
 let turn = null;                  // the assistant turn being rendered
 const parts = {};                 // (run_id + ':' + step) → tool part element, for filling and nesting
 const questions = {};             // handle → question card
@@ -132,10 +133,11 @@ function toolPart(e) {
   d.innerHTML = '<div class="head"><span class="mark">…</span><span class="name">' + esc(e.component) + '</span><span class="arg">' + esc(summarise(e.component, e.inputs)) + '</span><span class="cost"></span></div><div class="body"></div>';
   d.querySelector('.head').onclick = () => d.classList.toggle('open');
   parts[d.dataset.key] = d;
-  // A sub-agent's step nests under the step of the run that spawned it — the one still running.
+  // A tool call is a child run of the turn's run and sits in the turn; a sub-agent's step nests
+  // under the step of the run that spawned it — the one still running.
   const above = runParent[e.run_id];
   let parent = null;
-  if (above && above !== topRun.id) { const open = [...document.querySelectorAll('.tool.running')].filter(x => x.dataset.key.startsWith(above + ':')); parent = open[open.length - 1] || null; }
+  if (above && !turnRuns.has(above)) { const open = [...document.querySelectorAll('.tool.running')].filter(x => x.dataset.key.startsWith(above + ':')); parent = open[open.length - 1] || null; }
   if (parent) { let c = parent.querySelector(':scope > .children'); if (!c) { c = document.createElement('div'); c.className = 'children'; parent.appendChild(c); } c.appendChild(d); }
   else currentTurn().appendChild(d);
   scrollDown(); return d;
@@ -143,7 +145,7 @@ function toolPart(e) {
 function fillPart(step) {
   // A step that closed as "asked" with no tool part of its own is the question card already
   // shown — the live-ask path raises it on the conversation's step, which never gets a part.
-  if (!parts[toolKey(step.run_id, step.step)] && (step.outcome === 'asked' || !step.component)) return;
+  if (!parts[toolKey(step.run_id, step.step)] && (step.outcome === 'approval_requested' || step.outcome === 'input_requested' || !step.component)) return;
   const d = parts[toolKey(step.run_id, step.step)] || toolPart({run_id: step.run_id, step: step.step, component: step.component, inputs: {}});
   const outcome = step.outcome || 'running';
   d.className = 'part tool ' + outcome;
@@ -153,7 +155,7 @@ function fillPart(step) {
   if (o && o.kind === 'completed') out = typeof o.output === 'string' ? o.output : JSON.stringify(o.output, null, 1);
   else if (o && o.kind === 'failed') out = o.error;
   else if (o && o.kind === 'refused') out = 'refused: ' + o.reason;
-  if (step.reason && outcome !== 'completed') out = (outcome === 'asked' ? 'asked: ' : 'refused: ') + step.reason;
+  if (step.reason && outcome !== 'completed') out = (outcome === 'refused' ? 'refused: ' : 'asked: ') + step.reason;
   const body = d.querySelector('.body'); body.textContent = (out || '(nothing came back)').slice(0, 6000);
   if (step.usage) { d.querySelector('.cost').textContent = costOf(step.usage); }
   if (outcome === 'failed' || outcome === 'refused') d.classList.add('open');
@@ -223,23 +225,50 @@ function addAnswer(line) {
   scrollDown();
 }
 
+// ------------------------------------------------------------------ what is happening (D63)
+// Deltas are not the record: they render into live parts that the record's own events replace
+// when the whole arrives — a streamed thought is superseded by the `reasoning` event, streamed
+// text by the `agent` line, a command's output by its `Item`.
+let liveThought = null, liveText = null;
+function delta(line) {
+  const t = currentTurn();
+  if (line.delta === 'thinking') {
+    if (!liveThought) { liveThought = document.createElement('div'); liveThought.className = 'part think live-think'; liveThought.textContent = '∴ '; t.appendChild(liveThought); }
+    liveThought.textContent += line.text; scrollDown();
+  } else if (line.delta === 'text') {
+    if (!liveText) { liveText = document.createElement('div'); liveText.className = 'answer live-text'; t.appendChild(liveText); }
+    liveText.textContent += line.text; scrollDown();
+  } else if (line.delta === 'output') {
+    const on = parts[toolKey(line.run_id, line.step)];
+    if (on) { const body = on.querySelector('.body'); on.classList.add('open'); body.textContent = (body.dataset.live || '') + line.text; body.dataset.live = body.textContent; scrollDown(); }
+  } else {
+    const d = document.createElement('div'); d.className = 'part foot'; d.textContent = line.delta + (line.text ? ': ' + line.text : ''); t.appendChild(d);
+  }
+}
+function settleLive() {
+  if (liveThought) { liveThought.remove(); liveThought = null; }
+  if (liveText) { liveText.remove(); liveText = null; }
+}
+
 // ------------------------------------------------------------------ the stream
 function onLine(line) {
+  if (line.kind === 'delta') { delta(line); return; }
   if (line.kind === 'you') { addYou(line.text); setBusy(true); }
-  else if (line.kind === 'agent') { addAnswer(line); refreshFiles(); setBusy(false); }
+  else if (line.kind === 'agent') { settleLive(); addAnswer(line); refreshFiles(); setBusy(false); }
   else if (line.kind === 'question') addQuestion(line);
   else if (line.kind === 'answered') settle(line.handle, line.allow ? '✓ allowed' : '✕ refused');
   else if (line.kind === 'withdrawn') settle(line.handle, '↩ withdrawn: the agent stopped waiting');
   else if (line.kind === 'event') {
     const e = line.event;
-    if (topRun.id === null && e.kind === 'started') topRun.id = e.run_id;
+    const isTurn = typeof e.step === 'string' && e.step.startsWith('turn-');
+    if (e.kind === 'invoked' && isTurn) { turnRuns.add(e.run_id); return; }   // the turn is the container, not a part
     if (e.kind === 'spawned') runParent[e.child_run_id] = e.run_id;
-    else if (e.kind === 'reasoned') addThought(e.text);
-    else if (e.kind === 'invoked' && e.step !== 'converse') { toolPart(e); }
-    else if (e.kind === 'observed' && e.step !== 'converse') { refreshFiles(); }
-    else if (e.kind === 'ended' && e.run_id === topRun.id) { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the conversation ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
+    else if (e.kind === 'reasoning') { if (liveThought) { liveThought.remove(); liveThought = null; } addThought(e.text); }
+    else if (e.kind === 'invoked') { toolPart(e); }
+    else if (e.kind === 'observed' && !isTurn) { refreshFiles(); }
+    else if (e.kind === 'ended' && turnRuns.has(e.run_id) && e.reason !== 'completed') { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the turn ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
   }
-  else if (line.kind === 'step') { const s = line.step; if (s.step === 'converse') return; fillPart(s); }
+  else if (line.kind === 'item') { const s = line.item; if (typeof s.step === 'string' && s.step.startsWith('turn-')) return; fillPart(s); }
 }
 function setBusy(b) { $('dot').className = 'dot' + (b ? ' busy' : ''); $('send').disabled = b; }
 

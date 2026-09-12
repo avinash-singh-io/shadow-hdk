@@ -27,7 +27,7 @@ second environment never has to import the first, and rule 4 stays a property ra
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -296,6 +296,7 @@ def _completed(output: JsonValue) -> Observation:
 
 
 __all__ = [
+    "output_activity",
     "OPERATIONS",
     "CannotEnforce",
     "Environment",
@@ -306,3 +307,23 @@ __all__ = [
     "effects_of",
     "requires",
 ]
+
+
+def output_activity() -> Callable[[str], None] | None:
+    """A running command's output, as it prints, onto the run's activity (D63).
+
+    Bound to the run executing *now* — `run_leashed` calls back from its own reading tasks, where
+    no step is executing — so the context is captured here and the chunk goes to it. No run, no
+    activity: a command run outside a run prints to nobody, which is right.
+    """
+    from shadow_hdk.runtime.bindings import current_run
+
+    context = current_run()
+    if context is None:
+        return None
+    step = context.step or ""
+
+    def heard(chunk: str) -> None:
+        context.activity_now("output", chunk, step=step)
+
+    return heard

@@ -12,8 +12,9 @@ import contextlib
 from collections.abc import AsyncIterator, Callable
 from typing import Any, Final
 
+from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.events import Event, RunId
-from shadow_hdk.kernel.ports import ClockPort, ObserverPort
+from shadow_hdk.kernel.ports import ActivityObserver, ClockPort, ObserverPort
 
 _CLOSED: Final = object()
 
@@ -38,10 +39,20 @@ Four thousand is minutes of a busy run, so a healthy exporter never sees it.
 
 
 class Emitter:
-    def __init__(self, run_id: RunId, clock: ClockPort, observer: ObserverPort | None) -> None:
+    def __init__(
+        self,
+        run_id: RunId,
+        clock: ClockPort,
+        observer: ObserverPort | None,
+        *,
+        activity_to: Callable[[Activity], None] | None = None,
+    ) -> None:
         self._run_id = run_id
         self._clock = clock
         self._observer = observer
+        self._activity_to = activity_to
+        """Where a child's activity goes: its parent's emitter, which forwards up to the root's
+        observer — the same path its events take (D63)."""
         self._seq = 0
         self._stream: asyncio.Queue[Any] = asyncio.Queue()
         """**Unbounded, and it must be.** Filled and drained by the same task — a step emits, the
@@ -83,7 +94,20 @@ class Emitter:
         self._stream.put_nowait(event)
         self._offer(event)
 
-    def _offer(self, event: Event) -> None:
+    def activity(self, kind: str, text: str, *, step: str) -> Activity:
+        """What is happening, beside the record (D63): to the observer if there is one, up to the
+        parent if this is a child, dropped if nobody listens. Never on the stream `run` yields."""
+        item = Activity(run_id=self._run_id, step=step, kind=kind, text=text, at=self._clock.now())
+        self.forward_activity(item)
+        return item
+
+    def forward_activity(self, item: Activity) -> None:
+        if self._observer is not None:
+            self._offer(item)
+        elif self._activity_to is not None:
+            self._activity_to(item)
+
+    def _offer(self, event: Event | Activity) -> None:
         """Hand the observer an event, dropping the oldest rather than waiting (TD-005)."""
         if self._observer is None:
             return
@@ -102,7 +126,11 @@ class Emitter:
             if item is _CLOSED:
                 return
             try:
-                await self._observer.on(item)
+                if isinstance(item, Activity):
+                    if isinstance(self._observer, ActivityObserver):
+                        await self._observer.on_activity(item)
+                else:
+                    await self._observer.on(item)
             except Exception:  # noqa: BLE001 — an observer never fails a run (D6)
                 self.observer_failures += 1
 
@@ -120,6 +148,13 @@ class Emitter:
         if self._observer is None:
             return
         if wait:
+            # The sentinel must land even when the observer is `OBSERVER_BACKLOG_MAX` behind — a
+            # flood of activity filled the queue and `put_nowait` raised `QueueFull` at close,
+            # which the activity tests found. The oldest goes, as it would for any item.
+            if self._to_observer.full():
+                with contextlib.suppress(asyncio.QueueEmpty):
+                    self._to_observer.get_nowait()
+                    self.observer_dropped += 1
             self._to_observer.put_nowait(_CLOSED)
         elif self._pump is not None:
             self._pump.cancel()

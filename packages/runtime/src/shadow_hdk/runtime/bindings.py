@@ -282,6 +282,29 @@ class RunContext:
         the child's own sequence, so one consumer sees the whole tree and every event says whose."""
         await self._emitter.forward(event)
 
+    def activity_now(self, kind: str, text: str, *, step: str) -> None:
+        """`activity` for a caller that cannot await — a reader task, a callback — and that
+        captured the step it belongs to. Same channel, same rules."""
+        if not text:
+            return
+        self._emitter.activity(kind, text, step=step)
+
+    def forward_activity(self, activity: Any) -> None:
+        """A child's activity, up towards the root's observer — the path its events take (D63)."""
+        self._emitter.forward_activity(activity)
+
+    async def activity(self, kind: str, text: str, *, step: str | None = None) -> None:
+        """What is happening, beside the record (principle 6, D63): a delta of thinking or text, a
+        chunk a command printed, "composing". Never an event — the record is complete without it;
+        the observer hears it if one is listening, and a slow one loses the oldest rather than
+        holding the run (D11). Empty text is nothing happening and emits nothing.
+
+        `step` is for a caller that crossed a wire, where nothing executes on the peer's task."""
+        if not text:
+            return
+        where = step if step is not None else (self.step or "")
+        self._emitter.activity(kind, text, step=where)
+
     async def propose(self, proposal: Proposal) -> None:
         """Hand something to the sink, then say so. The runtime never decides whether it is kept.
 

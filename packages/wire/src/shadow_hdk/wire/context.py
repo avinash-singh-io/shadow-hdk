@@ -36,6 +36,7 @@ from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.runtime import Ports, Resumed, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
+    CONTEXT_ACTIVITY,
     CONTEXT_FLOOR_MET,
     CONTEXT_IS_HELD,
     CONTEXT_KEEP,
@@ -149,6 +150,15 @@ class WireRunContext(RunContext):
             },
         )
         return _as_answer(answered.get("answer"))
+
+    async def activity(self, kind: str, text: str, *, step: str | None = None) -> None:
+        """What is happening crosses as a notification (D63): fire-and-forget, because activity is
+        never required for correctness, and an answer would make it wait on the wire."""
+        if not text:
+            return
+        await self._peer.notify(
+            CONTEXT_ACTIVITY, {"kind": kind, "text": text, "step": step or self._step}
+        )
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
         """Crosses for the same reason `reasoned` does (D57): the interrupt that will carry this

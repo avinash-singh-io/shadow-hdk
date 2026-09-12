@@ -48,6 +48,11 @@ launch_args = [
   # record is the provider's own *summary* of its thinking, never the raw text. That is what it
   # gives, and D45 says the record carries what the model said rather than what we made up.
   "--thinking-display", "summarized",
+  # **Measured 2026-09-12.** With this the stream carries `stream_event` lines whose
+  # `event.delta.type` is `thinking_delta` or `text_delta` *before* the whole `assistant`
+  # message — nine thinking deltas and one text delta for a "think carefully" prompt. Each is
+  # activity beside the record (D63); the record still gets the whole, as before.
+  "--include-partial-messages",
   "--verbose",
 ]
 
@@ -112,6 +117,9 @@ say_at = "message.content[].text"
 # one-line question, arriving on the path below.
 think_on = ["assistant"]
 think_at = "message.content[].thinking"
+# Streamed pieces (D63), measured 2026-09-12 with `--include-partial-messages` above.
+delta_on = ["stream_event"]
+delta_kind_at = "event.delta.type"
 done_on = ["result"]
 done_at = "result"
 failed_at = "is_error"
@@ -141,3 +149,13 @@ disallow = [
   "WebFetch", "WebSearch",
   "Task",
 ]
+
+[[dialect.deltas]]
+on = "thinking_delta"
+kind = "thinking"
+at = "event.delta.thinking"
+
+[[dialect.deltas]]
+on = "text_delta"
+kind = "text"
+at = "event.delta.text"

@@ -80,3 +80,41 @@ recorded).
 and the loop is built once.
 
 ---
+
+### [DECISION] 2026-09-12 — D63: the record is complete; the activity is live
+
+Topics: activity, streaming, deltas, observer, leash, steer, interrupt, principle-6
+Affects-phases: phase-25-the-hosts-controls
+Affects-specs: architecture/runtime.md#modules, architecture/wire.md, architecture/adapters.md
+
+Everything that *happened* is on the record, once, replayable. Everything that is *happening* — a
+token of thinking, a token of text, a chunk a running command printed, "composing" — is
+**activity**: a kernel type (`Activity(run_id, step, kind, text, at)`, kinds open, four named)
+delivered through the emitter's observer channel to an `ActivityObserver` — its own protocol, so
+an observer that only knows `on` still works (D14) — bounded and dropped-oldest (D11), forwarded
+from a child run to the root the way its events are, **never** on `run()`'s stream and never in a
+checkpoint. Surveyed first: LangGraph's `custom` stream mode has exactly this shape (ephemeral,
+written from inside a node, not checkpointed); ours rides the emitter because that already owns the
+run↔host seam and the child-forwarding path. `RunContext.activity` and `activity_now` (for a
+reader task); `context.activity` crosses the wire as a fire-and-forget notification.
+
+Fed by: the jsonl transport from `--include-partial-messages` — `Delta(on, kind, at)` rows on the
+`Dialect`, measured on Claude Code (`stream_event` / `event.delta.type` of `thinking_delta` or
+`text_delta`); the leash's `on_output`, each chunk as it prints, turned into `output` activity by
+the local environment; `AgentSession.steer`/`interrupt` with defaults and `Thread.steer`
+(mid-turn if the provider takes it, folded into the next prompt if not) and `Thread.interrupt`
+(the provider told if it can be, the turn's run cancelled either way, the turn recorded
+`cancelled`).
+
+Measured live in the studio: 38 thinking deltas and 36 text deltas streamed into the page while
+the turn ran, and a command's lines `1`, `2`, `3`… arrived one by one as it printed; 27¢. Found on
+the way: with partial messages on, Claude Code emits an `assistant` line per content block, each
+carrying the whole message so far, so a thought went on the record twice — deduplicated within the
+turn and pinned. Also found: the emitter's `close()` raised `QueueFull` when the observer's backlog
+was full (a latent TD-005 bug the flood test reached); the sentinel now lands by dropping the
+oldest. And the studio never *kept* its item lines, so a reloaded page showed every part running.
+Five mutants killed.
+
+*Why:* a person watching a run should see it happen; the record should never pay for that.
+
+---

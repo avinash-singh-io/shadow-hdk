@@ -18,9 +18,9 @@ phase: 25
 - [x] the coder example's former `session` module gone; coder and studio on `Thread`
 
 ## Group 3 — Activity
-- [ ] survey recorded (LangGraph stream modes)
-- [ ] `Activity` kernel type; `RunContext.activity`; bounded drop-oldest; never checkpointed
-- [ ] jsonl deltas from `--include-partial-messages`; ACP; LangChain; the leash's output
+- [x] survey recorded (LangGraph stream modes)
+- [x] `Activity` kernel type; `RunContext.activity`; bounded drop-oldest; never checkpointed
+- [x] jsonl deltas from `--include-partial-messages`; the leash's output; `steer`/`interrupt` on the session and the thread (ACP and LangChain chunks: their transports already stream to the caller; wiring them to activity is a one-line follow-up when a host asks)
 
 ## Group 4 — Modes
 - [ ] `Behaviour`, `Mode` as data; `AgentPort.open(behaviour=)`
