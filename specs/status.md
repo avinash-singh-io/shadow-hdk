@@ -4,20 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 25 — the host's controls — landed)
-> **Current Phase**: **none — Phase 25 (the host's controls) is complete and released as
-> v0.22.0.** The host-facing vocabulary is the industry's (D61): `Thread` · `Turn` · `Item` ·
-> `Activity`; a turn is a run (D62); activity streams beside the record (D63); a mode is a policy,
-> a behaviour and a presentation, switched live (D64); "approve and add a rule" and the agent's
-> own question to the person (D65); one `Store` port and every registry reading it live (D66).
-> Every group was measured on the owner's subscription through the studio. Next: Phase 26 (any
-> language) and Phase 27 (batteries and the facade).
+> **Last Updated**: 2026-09-12 (Phase 26 — any language — landed)
+> **Current Phase**: **none — Phase 26 (any language) is complete and released as v0.23.0.**
+> The thread, the handles, the store and the composition cross the wire (D67): a host in any
+> language opens a thread, turns it, sees items and activity, answers approval and input
+> requests, switches modes, forks and resumes, reads and writes the store — over
+> `shadow-hdk serve --stdio|--http`, from the shipped composition (`shadow-hdk-serve`).
+> A TypeScript client generated from the schemas (D68) is proven against a live server; the
+> studio is a page `serve` itself serves, talking the wire and nothing local (D69). Next: Phase
+> 27 (batteries and the facade).
 >
-> 1,309 tests; mypy strict over 229 files; seventeen distributions at **0.22.0**, all MIT.
+> 1,338 tests; mypy strict over 233 files; eighteen distributions at **0.23.0**, all MIT.
 >
-> **Latest Release**: **v0.22.0**, released 2026-09-12 — Phase 25, the host's controls (D61–D66).
-> Contract change (threads, activity, behaviour, rules, the store), so a *Pins* row. Before it
-> v0.21.0 (the words, mid-phase), v0.20.0 (the studio inline; seven bugs found by using it, D59,
+> **Latest Release**: **v0.23.0**, released 2026-09-12 — Phase 26, any language (D67–D69).
+> Contract change (the wire's second shape, a new package), so a *Pins* row. Before it v0.22.0
+> (Phase 25, the host's controls, D61–D66), v0.21.0 (the words, mid-phase), v0.20.0 (the studio inline; seven bugs found by using it, D59,
 > D60), v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
 > the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
 > **Health**: On Track
@@ -31,8 +32,8 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. Three packages — kernel, runtime, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Twenty-six phases are built,
-merged and released**: 1,309 tests, mypy strict over 229 files, seventeen distributions at 0.22.0.
+that adopter, and it lives in the shared roadmap rather than here. **Twenty-seven phases are built,
+merged and released**: 1,338 tests, mypy strict over 233 files, eighteen distributions at 0.23.0.
 
 ## Completed Phases
 
@@ -69,11 +70,13 @@ merged and released**: 1,309 tests, mypy strict over 229 files, seventeen distri
 | 23 | A host, in-process and in any language | Complete, merged | **v0.17.0** |
 | 24 | The skill registry | Complete, merged | **v0.18.0** |
 | 25 | The host's controls | Complete, merged | **v0.22.0** |
+| 26 | Any language | Complete, merged | **v0.23.0** |
 
 ## Ad-hoc / Patch Releases
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.23.0 | 2026-09-12 | phase 26 | any language: the thread, the handles and the store over the wire; `shadow-hdk serve`; the TypeScript client; the studio on the wire (D67–D69) |
 | v0.22.0 | 2026-09-12 | phase 25 | the host's controls: Thread/Turn/Item/Activity, modes = policy + behaviour, rules and input, the Store (D61–D66) |
 | v0.21.0 | 2026-09-12 | phase 25 (mid) | the record speaks the industry's words (D61) |
 | v0.20.0 | 2026-09-12 | hardening | the studio inline; five scenarios; BUG-023–029 closed (D59, D60) |
@@ -83,7 +86,6 @@ merged and released**: 1,309 tests, mypy strict over 229 files, seventeen distri
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | — | — | Phases 0–25 are complete, merged and released. What each phase did is in its own `specs/phases/<phase>/history.md`; this table holds lanes that are **in flight** (Rule 15), and none are. |
 
 ## Upcoming Phases
 

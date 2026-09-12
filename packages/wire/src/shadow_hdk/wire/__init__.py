@@ -18,6 +18,7 @@ from shadow_hdk.wire.serve import (
     SESSION_HEADER,
     build_app,
     connect_to,
+    serve_http_forever,
     served_over_http,
 )
 from shadow_hdk.wire.sides import HostSide, RuntimeSide, drive, loopback
@@ -47,5 +48,6 @@ __all__ = [
     "loopback",
     "over_a_child_process",
     "serve_stdio",
+    "serve_http_forever",
     "served_over_http",
 ]

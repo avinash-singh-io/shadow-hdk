@@ -30,13 +30,25 @@ from tests.invariants.test_stands_alone import ADAPTERS, PACKAGES, _sources, ada
 
 WIRE = PACKAGES / "wire" / "src" / "shadow_hdk" / "wire"
 
-INTRA = ("shadow-hdk", "shadow-hdk-kernel", "shadow-hdk-wire")
+INTRA = (
+    "shadow-hdk",
+    "shadow-hdk-kernel",
+    "shadow-hdk-wire",
+    "shadow-hdk-providers",
+    "shadow-hdk-serve",
+)
 """Our own distributions. Anything else is somebody's release, pinned by range and not equality."""
 
 
 def _packages() -> list[Path]:
     return sorted(
-        [PACKAGES / "kernel", PACKAGES / "runtime", PACKAGES / "wire"]
+        [
+            PACKAGES / "kernel",
+            PACKAGES / "runtime",
+            PACKAGES / "wire",
+            PACKAGES / "providers",
+            PACKAGES / "serve",
+        ]
         + [p for p in ADAPTERS.glob("*") if p.is_dir()]
     )
 
@@ -77,7 +89,7 @@ def test_every_intra_workspace_dependency_is_pinned() -> None:
         f"{package.name}: {declared}"
         for package in _packages()
         for declared in _declared(package)
-        if _distribution(declared) in INTRA and declared != f"{_distribution(declared)}=={version}"
+        if _distribution(declared) in INTRA and not _pinned(declared, version)
     ]
 
     assert not loose, "an unpinned dependency on our own package:\n  " + "\n  ".join(loose)
@@ -93,6 +105,15 @@ def test_the_pin_check_reads_the_name_and_not_the_spelling() -> None:
     assert _distribution("shadow-hdk-kernel") == "shadow-hdk-kernel"
     assert _distribution("langgraph>=1.2,<2") == "langgraph"
     assert _distribution("shadow-hdk[serve]==0.12.0") == "shadow-hdk"
+
+
+def _pinned(requirement: str, version: str) -> bool:
+    """`name==X` or `name[extra]==X` — an extra is not a range."""
+    name = _distribution(requirement)
+    rest = requirement.strip()[len(name) :]
+    if rest.startswith("["):
+        rest = rest[rest.index("]") + 1 :]
+    return rest == f"=={version}"
 
 
 def _distribution(requirement: str) -> str:
@@ -135,7 +156,7 @@ def test_this_file_covers_every_package_the_gate_does() -> None:
 
     assert on_disk <= walked
     assert {"kernel", "runtime", "wire"} <= walked
-    assert len(walked) == len(on_disk) + 3
+    assert len(walked) == len(on_disk) + 5  # kernel, runtime, wire, providers, serve
 
 
 def _version() -> str:

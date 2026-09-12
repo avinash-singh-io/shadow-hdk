@@ -14,6 +14,10 @@ the walk that makes it a build failure.
 3. No adapter calls a **synchronous-only** context method. `remaining()`, `floor_met()` and
    `spawn_options()` raise across a wire; their `_now` forms work on both sides, and an adapter
    written once must run both sides.
+4. **Every host handle and every thread operation crosses** (Phase 26, D67, principle 7). Each
+   public method of `Thread` and of `Approvals`, and each `Store` operation, is a wire method
+   named in `protocol.py`, or is named below with the reason a host across the wire does not
+   need it. A handle added in-process without a wire method fails the build.
 """
 
 from __future__ import annotations
@@ -85,6 +89,76 @@ def _sync_only_calls(source: Path) -> list[str]:
 
 
 # --------------------------------------------------------------------------- the guards
+
+
+HANDLES_CROSSING: dict[str, str] = {
+    # Thread
+    "Thread.open": "THREAD_START",
+    "Thread.resume": "THREAD_RESUME",
+    "Thread.close": "THREAD_CLOSE",
+    "Thread.turn": "TURN_START",
+    "Thread.steer": "TURN_STEER",
+    "Thread.interrupt": "TURN_INTERRUPT",
+    "Thread.fork": "THREAD_FORK",
+    "Thread.rollback": "THREAD_ROLLBACK",
+    "Thread.set_mode": "THREAD_SET_MODE",
+    "Thread.set_option": "THREAD_SET_OPTION",
+    "Thread.remaining": "THREAD_REMAINING",
+    # Approvals
+    "Approvals.pending": "APPROVALS_PENDING",
+    "Approvals.answer": "APPROVALS_ANSWER",
+    "Approvals.next": "APPROVAL_REQUEST",
+    "Approvals.next_withdrawn": "REQUEST_WITHDRAWN",
+    # Store
+    "Store.put": "STORE_PUT",
+    "Store.get": "STORE_GET",
+    "Store.delete": "STORE_DELETE",
+    "Store.list": "STORE_LIST",
+    "Store.version": "STORE_VERSION",
+}
+"""Host handle or thread operation → the `protocol.py` name that carries it."""
+
+HANDLES_NOT_CROSSING: dict[str, str] = {
+    "Thread.turning": "a property read by the wire's own `turn/interrupt` and `run/cancel` to say "
+    "whether anything was running; the answer crosses inside those",
+    "Thread.id": "the id crosses as `thread_id` in every result and notification",
+    "Thread.record": "crosses as the result of `thread/resume` and `thread/list`",
+    "Approvals.ask": "the runtime's side of the handle — a component asks; the host answers",
+}
+
+
+def _public_methods(cls: type) -> set[str]:
+    """Methods, classmethods and properties a host calls; instance attributes set in `__init__`
+    (like `Thread.registry`) are not on this surface."""
+    found: set[str] = set()
+    for name, member in inspect.getmembers(cls):
+        if name.startswith("_"):
+            continue
+        raw = inspect.getattr_static(cls, name, None)
+        if isinstance(raw, classmethod | staticmethod | property) or inspect.isfunction(member):
+            found.add(name)
+    return found
+
+
+def test_every_handle_and_thread_operation_crosses_or_says_why() -> None:
+    from shadow_hdk.kernel.ports import Store
+    from shadow_hdk.runtime import Approvals
+    from shadow_hdk.runtime.threads import Thread
+    from shadow_hdk.wire import protocol
+
+    surface = {f"Thread.{m}" for m in _public_methods(Thread)}
+    surface |= {f"Approvals.{m}" for m in _public_methods(Approvals)}
+    surface |= {f"Store.{m}" for m in _public_methods(Store)}
+    unaccounted = sorted(surface - set(HANDLES_CROSSING) - set(HANDLES_NOT_CROSSING))
+    assert not unaccounted, (
+        f"these handles or thread operations neither cross the wire nor say why: {unaccounted}"
+    )
+    for operation, name in HANDLES_CROSSING.items():
+        assert hasattr(protocol, name), (
+            f"{operation} says it crosses as {name}, which protocol.py lacks"
+        )
+    stale = sorted((set(HANDLES_CROSSING) | set(HANDLES_NOT_CROSSING)) - surface)
+    assert not stale, f"listed but no longer on the surface: {stale}"
 
 
 def test_every_context_method_crosses_or_says_why() -> None:

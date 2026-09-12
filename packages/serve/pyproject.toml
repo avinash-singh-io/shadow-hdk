@@ -1,0 +1,29 @@
+[project]
+name = "shadow-hdk-serve"
+version = "0.23.0"
+description = "The shipped composition behind the wire: `shadow-hdk serve harness.toml --stdio|--http`."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "shadow-hdk-kernel==0.23.0",
+    "shadow-hdk==0.23.0",
+    "shadow-hdk-wire[serve]==0.23.0",
+    "shadow-hdk-providers==0.23.0",
+    "shadow-hdk-adapters-recording==0.23.0",
+    "shadow-hdk-adapters-modes==0.23.0",
+    "shadow-hdk-adapters-basic==0.23.0",
+    "shadow-hdk-adapters-environment==0.23.0",
+    "shadow-hdk-adapters-agent==0.23.0",
+]
+
+[project.scripts]
+shadow-hdk = "shadow_hdk.serve.__main__:main"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]

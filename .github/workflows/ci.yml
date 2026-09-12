@@ -15,6 +15,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --all-packages
+      # The TypeScript client (Phase 26, D68): generated types diffed against the schemas, the
+      # client type-checked and built, then proven against a live `serve --http` by the Python
+      # suite. Node here so the invariant runs rather than skips.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+        working-directory: clients/typescript
+      - run: npm run build
+        working-directory: clients/typescript
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy

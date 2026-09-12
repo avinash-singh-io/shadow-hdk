@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from examples.coder.workshop import LOOKING, OPEN, a_lease
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
 from shadow_hdk.adapters.recording import RecordingServer
 
@@ -48,6 +47,7 @@ from shadow_hdk.runtime.testing import (
     ListSink,
     make_registration,
 )
+from shadow_hdk.serve import LOOKING, OPEN, a_lease
 
 WATCHING = make_registration(
     "watching",

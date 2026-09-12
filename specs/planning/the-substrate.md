@@ -86,7 +86,7 @@ shape to copy.
 **Consequence for us.** We have the policy half (`Mode` over effect profiles — stronger than any
 of theirs, because it judges effects rather than tool names) and none of the rest: no behaviour,
 no switching mid-run, no declaration over the wire. And the three policies that match the
-environment's modes live in an example (`examples/coder/workshop.py`).
+environment's modes lived in the coder example's former `workshop` module (moved into the harness in Phase 25/26).
 
 ### 1.5 What a harness provides out of the box
 

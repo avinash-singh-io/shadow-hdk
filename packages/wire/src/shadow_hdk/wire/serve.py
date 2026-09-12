@@ -26,6 +26,7 @@ import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import anyio
@@ -63,15 +64,24 @@ class Session:
     events: MemoryObjectReceiveStream[str] | None = field(default=None)
 
 
-def build_app(clock: Any = None, *, token: str | None = None) -> Any:
+def build_app(
+    clock: Any = None,
+    *,
+    token: str | None = None,
+    threads: Any = None,
+    page: Path | None = None,
+) -> Any:
     """A Starlette app serving one runtime per connected host.
 
     Imported lazily and kept in one place, so the wire package's core has no web dependency: a host
     embedding the runtime in-process, or driving it over a pipe, installs nothing extra.
+
+    `threads` is a `ThreadHost` (D67), shared by every session this app serves — one process, one
+    composition. `page` is a file served at `/`, so a browser client needs no second server.
     """
     from starlette.applications import Starlette
     from starlette.requests import Request
-    from starlette.responses import JSONResponse, Response, StreamingResponse
+    from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
     from starlette.routing import Route
 
     from shadow_hdk.wire.sides import RuntimeSide
@@ -100,7 +110,7 @@ def build_app(clock: Any = None, *, token: str | None = None) -> Any:
         session = Session(id=session_id, to_host=to_host_send, from_host=from_host_send)
         # The runtime reads what the host POSTs and writes into the SSE stream.
         channel = QueueChannel(outbound=to_host_send, inbound=from_host_receive)
-        session.runtime = RuntimeSide(channel, clock=clock)
+        session.runtime = RuntimeSide(channel, clock=clock, threads=threads)
         sessions[session_id] = session
 
         async def frames() -> AsyncIterator[bytes]:
@@ -113,6 +123,10 @@ def build_app(clock: Any = None, *, token: str | None = None) -> Any:
                         yield f"data: {frame}\n\n".encode()
                 finally:
                     sessions.pop(session_id, None)
+                    # The session's threads go with it (D69) — shielded, because this runs as
+                    # the response is being cancelled and a close must still finish.
+                    with anyio.CancelScope(shield=True):
+                        await session.runtime.threads.close_all()
                     group.cancel_scope.cancel()
 
         return StreamingResponse(
@@ -136,8 +150,14 @@ def build_app(clock: Any = None, *, token: str | None = None) -> Any:
         # there is exactly one path for runtime-to-host traffic rather than two to keep in step.
         return Response(status_code=202)
 
+    async def the_page(_request: Request) -> Response:
+        if page is None:
+            return JSONResponse({"error": "no page is served here; talk to /rpc"}, status_code=404)
+        return HTMLResponse(page.read_text(encoding="utf-8"))
+
     return Starlette(
         routes=[
+            Route("/", the_page),
             Route("/rpc", open_session, methods=["GET"]),
             Route("/rpc", post_frame, methods=["POST"]),
         ]
@@ -149,7 +169,12 @@ LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 
 @asynccontextmanager
 async def served_over_http(
-    *, host: str = "127.0.0.1", clock: Any = None, token: str | None = None
+    *,
+    host: str = "127.0.0.1",
+    clock: Any = None,
+    token: str | None = None,
+    threads: Any = None,
+    page: Path | None = None,
 ) -> AsyncIterator[str]:
     """Listen on an ephemeral localhost port, and yield the address to connect to.
 
@@ -169,7 +194,10 @@ async def served_over_http(
             "not built, so serving beyond localhost would issue a session to anyone who asked"
         )
     config = uvicorn.Config(
-        build_app(clock=clock, token=token), host=host, port=0, log_level="warning"
+        build_app(clock=clock, token=token, threads=threads, page=page),
+        host=host,
+        port=0,
+        log_level="warning",
     )
     server = uvicorn.Server(config)
     finished = anyio.Event()
@@ -204,6 +232,18 @@ async def served_over_http(
             with anyio.move_on_after(5):
                 await finished.wait()
             group.cancel_scope.cancel()
+
+
+async def serve_http_forever(
+    threads: Any, port: int = 8765, token: str | None = None, page: Path | None = None
+) -> None:
+    """Listen on loopback at `port` until stopped — what `shadow-hdk serve --http` runs."""
+    import uvicorn
+
+    app = build_app(None, token=token, threads=threads, page=page)
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 @asynccontextmanager

@@ -1,6 +1,6 @@
 """Every package moves together until 1.0 (D9).
 
-Pre-1.0 the seventeen are one thing released seventeen ways: a contract change is a minor bump here
+Pre-1.0 the eighteen are one thing released eighteen ways: a contract change is a minor bump here
 *and* a row on `intent-ecosystem/lanes/board.md` under *Pins*, because the join with the product
 lane is the only place two lanes can break each other. *(It said **four** for nineteen phases, which
 was true at Phase 0 and has been wrong since Phase 1 added adapters.)*
@@ -18,8 +18,17 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.22.0"
-"""0.22.0 because the kernel grew the host's controls (Phase 25, D62–D66): `ThreadRecord` and
+EXPECTED = "0.23.0"
+"""0.23.0 because the wire's contract grew a second shape (Phase 26, D67–D69): `thread/*`,
+`turn/*`, `approvals/*`, `run/cancel`, `store/*`, `modes/list`, `rules/list`, `files/*` as
+methods; `activity`, `approval_request`, `input_request` and `request_withdrawn` as
+notifications; `ThreadHost` a port the serving process implements; `thread/start` and
+`thread/resume` results carry the root. A new package, `shadow-hdk-serve`, holds the shipped
+composition and the console script, and pins the others by equality — an eighteenth distribution
+in the lockstep set. Additive on the wire, but the wire is the contract a host in another language
+compiles against (the TypeScript client is generated from it), so the join moves.
+
+0.22.0 because the kernel grew the host's controls (Phase 25, D62–D66): `ThreadRecord` and
 `TurnRecord` with the `ThreadStore` port; `Activity` beside the record; `Behaviour` and
 `BehaviourArg` with `ModeChanged` a fourteenth event kind; `ActRule`; the `Store` port; and
 `AgentPort.open` takes a `behaviour`. New contracts and one widened port, so a host that

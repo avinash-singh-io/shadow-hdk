@@ -97,8 +97,9 @@ async def _close(stream: Any) -> None:
         await stream.aclose()
 
 
-async def serve_stdio() -> None:
-    """Be the runtime on the far end of somebody's pipe. This is what `--stdio` runs."""
+async def serve_stdio(threads: Any = None) -> None:
+    """Be the runtime on the far end of somebody's pipe. This is what `--stdio` runs. With a
+    `ThreadHost` (D67) the thread methods are served too; without one, `run`/`resume`."""
     import sys
 
     from shadow_hdk.wire.sides import RuntimeSide
@@ -107,9 +108,15 @@ async def serve_stdio() -> None:
         inbound=anyio.wrap_file(sys.stdin.buffer),
         outbound=anyio.wrap_file(sys.stdout.buffer),
     )
-    runtime = RuntimeSide(channel)
-    async with anyio.create_task_group() as group:
-        await runtime.peer.serve_forever(group)
+    runtime = RuntimeSide(channel, threads=threads)
+    try:
+        async with anyio.create_task_group() as group:
+            await runtime.peer.serve_forever(group)
+    finally:
+        # The pipe closed: what it opened closes with it (D69), before the process ends and a
+        # provider is left to notice on its own.
+        with anyio.CancelScope(shield=True):
+            await runtime.threads.close_all()
 
 
 @asynccontextmanager

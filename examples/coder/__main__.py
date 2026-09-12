@@ -13,7 +13,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-from examples.coder.thread import a_thread
 from shadow_hdk.kernel import (
     Ended,
     Event,
@@ -27,6 +26,7 @@ from shadow_hdk.providers import NoProvider
 from shadow_hdk.runtime import Approvals
 from shadow_hdk.runtime.environment import CannotEnforce
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
+from shadow_hdk.serve import a_thread
 
 DIM, BOLD, OFF = "\033[2m", "\033[1m", "\033[0m"
 

@@ -102,6 +102,47 @@
 </main>
 <script>
 const $ = id => document.getElementById(id);
+
+// ------------------------------------------------------------------ the wire
+// JSON-RPC over `POST /rpc`; the runtime's replies and notifications down SSE from `GET /rpc`.
+// Opening the stream *is* the session: its id comes back in a header and travels on every POST.
+// The same methods the TypeScript client speaks — this page could be that client.
+let session = null, nextId = 1, THREAD = null;
+const pending = new Map(), listeners = {};
+function hear(method, fn) { (listeners[method] ||= []).push(fn); }
+async function post(frame) {
+  const r = await fetch('/rpc', {method: 'POST', headers: {'content-type': 'application/json', 'x-shadow-hdk-session': session}, body: JSON.stringify(frame)});
+  if (r.status !== 202) throw new Error('posting a frame: ' + r.status);
+}
+function call(method, params) {
+  const id = nextId++;
+  return new Promise((resolve, reject) => { pending.set(id, {resolve, reject}); post({jsonrpc: '2.0', id, method, params: params || {}}).catch(reject); });
+}
+function onFrame(m) {
+  if (m.method) {
+    // The runtime asks *us* only when a port sits on this side; none does here.
+    if (m.id !== undefined) { post({jsonrpc: '2.0', id: m.id, error: {code: -32000, message: 'no handler on this side for ' + m.method}}); return; }
+    (listeners[m.method] || []).forEach(fn => fn(m.params || {})); return;
+  }
+  const w = pending.get(m.id); if (!w) return; pending.delete(m.id);
+  if (m.error) w.reject(new Error(m.error.message || JSON.stringify(m.error))); else w.resolve(m.result);
+}
+async function connect() {
+  // Read with fetch rather than EventSource: the session id is a response header, which
+  // EventSource cannot see.
+  const r = await fetch('/rpc'); if (!r.ok) throw new Error('opening the session: ' + r.status);
+  session = r.headers.get('x-shadow-hdk-session');
+  const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+  (async () => {
+    for (;;) {
+      const {value, done} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream: true}); let cut;
+      while ((cut = buf.indexOf('\n\n')) >= 0) { const frame = buf.slice(0, cut); buf = buf.slice(cut + 2); for (const line of frame.split('\n')) if (line.startsWith('data: ')) onFrame(JSON.parse(line.slice(6))); }
+    }
+    $('provider').textContent = 'disconnected — reload'; $('dot').className = 'dot busy';
+  })();
+  await call('initialize', {protocol_version: '1'});
+}
 const chat = $('chat'), files = $('files'), fileBox = $('file');
 let chatEmpty = true;
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
@@ -223,7 +264,7 @@ function addQuestion(q) {
   // What is being asked about comes first — the tool and what it would do — then the policy's reason.
   const about = q.component ? '<div class="about"><b>' + esc(q.component) + '</b> <code>' + esc(summarise(q.component, q.inputs)) + '</code></div>' : '';
   const full = q.inputs && typeof q.inputs === 'object' ? '<pre class="args">' + esc(JSON.stringify(q.inputs, null, 1).slice(0, 3000)) + '</pre>' : '';
-  if (q.request === 'input') {
+  if (q.kind === 'input') {
     // The agent's own question (D65): the person answers with text.
     d.classList.add('input');
     d.innerHTML = '<div class="q">' + esc(q.question) + '</div><div class="reply"><input type="text" placeholder="Your answer…"><button class="yes">Send</button></div>';
@@ -244,17 +285,31 @@ function addQuestion(q) {
   // one names the tool's own step. Hang the card under the part if there is one, else in the turn.
   const on = parts[toolKey(q.run_id, q.step)];
   if (on) { on.insertAdjacentElement('afterend', d); const r = on.closest('.tools-run'); if (r) r.classList.add('open'); } else currentTurn().appendChild(d);
+  if (q.component) d.dataset.component = q.component; d._inputs = q.inputs;
   questions[q.handle] = d; scrollDown();
 }
 function settle(handle, how) {
   const d = questions[handle]; if (!d) return;
   d.classList.add('answered'); d.innerHTML = '<div class="q">' + how + ' — ' + esc(d.dataset.q || '') + '</div>';
 }
+function ruleFor(component, inputs) {
+  // What "don't ask again" means here — the studio's vocabulary, not the harness's (principle
+  // 8): a write or a read to a *path* is the same act whatever the content; a command is the
+  // exact command. Measured: a rule on every input asked again for the same file with different
+  // text, which is not what a person meant by the button.
+  const given = inputs && typeof inputs === 'object' ? inputs : {};
+  return {component, inputs: 'path' in given ? {path: given.path} : given};
+}
 async function answer(handle, allow, addRule) {
-  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow, add_rule: !!addRule, reason: allow ? '' : 'the person refused'})});
+  const q = questions[handle]; if (!q) return;
+  const reply = allow ? (addRule && q.dataset.component ? {kind: 'approve_and_add_rule', rule: ruleFor(q.dataset.component, q._inputs)} : {kind: 'approve'}) : {kind: 'deny', reason: 'the person refused'};
+  const r = await call('approvals/answer', {handle, answer: reply});
+  if (r.answered) settle(handle, allow ? (addRule ? '✓ approved, and a rule kept' : '✓ approved') : '✕ denied');
+  if (addRule) refreshRules();
 }
 async function answerText(handle, text) {
-  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow: true, text})});
+  const r = await call('approvals/answer', {handle, answer: {text}});
+  if (r.answered) settle(handle, '↩ ' + esc(text));
 }
 function md(text) {
   // Enough markdown for an agent's answer: fences, inline code, bold, headings, lists, paragraphs.
@@ -318,33 +373,35 @@ function settleLive() {
   if (liveText) { liveText.remove(); liveText = null; }
 }
 
-// ------------------------------------------------------------------ the stream
-function onLine(line) {
-  if (line.kind === 'delta') { delta(line); return; }
-  if (line.kind === 'you') { addYou(line.text); setBusy(true); }
-  else if (line.kind === 'agent') { settleLive(); addAnswer(line); refreshFiles(); setBusy(false); }
-  else if (line.kind === 'mode') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— mode changed to ' + line.mode + ' —'; currentTurn().appendChild(d); }
-  else if (line.kind === 'question') addQuestion(line);
-  else if (line.kind === 'answered') settle(line.handle, line.text != null ? '↩ ' + esc(line.text) : (line.allow ? (line.rule ? '✓ approved, and a rule kept' : '✓ approved') : '✕ denied'));
-  else if (line.kind === 'withdrawn') settle(line.handle, '↩ withdrawn: the agent stopped waiting');
-  else if (line.kind === 'event') {
-    const e = line.event;
-    const isTurn = typeof e.step === 'string' && e.step.startsWith('turn-');
-    if (e.kind === 'invoked' && isTurn) { turnRuns.add(e.run_id); return; }   // the turn is the container, not a part
-    if (e.kind === 'spawned') runParent[e.child_run_id] = e.run_id;
-    else if (e.kind === 'reasoning') { if (liveThought) { liveThought.remove(); liveThought = null; } addThought(e.text); }
-    else if (e.kind === 'invoked') { toolPart(e); }
-    else if (e.kind === 'observed' && !isTurn) { refreshFiles(); }
-    else if (e.kind === 'ended' && turnRuns.has(e.run_id) && e.reason !== 'completed') { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the turn ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
-  }
-  else if (line.kind === 'item') { const s = line.item; if (typeof s.step === 'string' && s.step.startsWith('turn-')) return; fillPart(s); }
+// ------------------------------------------------------------------ the record, as it crosses
+// Events, items and activity arrive as notifications tagged with the thread; the turn's own
+// record comes back as the result of `turn/start`. Nothing here is drawn from anything but
+// the wire — the page is a reader of the record, which is the point of having one.
+const usageOf = {};               // run id → the last usage event of that run
+function onEvent(e) {
+  const isTurn = typeof e.step === 'string' && e.step.startsWith('turn-');
+  if (e.kind === 'invoked' && isTurn) { turnRuns.add(e.run_id); return; }   // the turn is the container, not a part
+  if (e.kind === 'spawned') runParent[e.child_run_id] = e.run_id;
+  else if (e.kind === 'usage') usageOf[e.run_id] = e.usage;
+  else if (e.kind === 'reasoning') { if (liveThought) { liveThought.remove(); liveThought = null; } addThought(e.text); }
+  else if (e.kind === 'invoked') { toolPart(e); }
+  else if (e.kind === 'observed' && !isTurn) { refreshFiles(); }
+  else if (e.kind === 'mode_changed') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— mode changed to ' + e.mode + ' —'; currentTurn().appendChild(d); }
+  else if (e.kind === 'ended' && turnRuns.has(e.run_id) && e.reason !== 'completed') { const t = currentTurn(); const d = document.createElement('div'); d.className = 'foot'; d.textContent = 'the turn ended: ' + e.reason + (e.detail ? ' — ' + e.detail : ''); t.appendChild(d); }
 }
+hear('event', p => { if (p.thread_id === THREAD) onEvent(p.event); });
+hear('item', p => { if (p.thread_id !== THREAD) return; const s = p.item; if (typeof s.step === 'string' && s.step.startsWith('turn-')) return; fillPart(s); });
+hear('activity', p => { if (p.thread_id !== THREAD) return; const a = p.activity; delta({delta: a.kind, text: a.text, run_id: a.run_id, step: a.step}); });
+hear('approval_request', p => addQuestion(p.request));
+hear('input_request', p => addQuestion(p.request));
+hear('request_withdrawn', p => settle(p.handle, '↩ withdrawn: the agent stopped waiting'));
 function setBusy(b) { $('dot').className = 'dot' + (b ? ' busy' : ''); $('send').disabled = b; }
 
 // ------------------------------------------------------------------ the environment
 let selected = null;
 async function refreshFiles() {
-  const r = await fetch('/files'); const j = await r.json();
+  if (!THREAD) return;
+  const j = await call('files/list', {thread_id: THREAD});
   const fresh = {};
   files.innerHTML = j.files.length ? j.files.map(f => {
     fresh[f.path] = f.mtime;
@@ -356,51 +413,84 @@ async function refreshFiles() {
   if (selected && fresh[selected] !== undefined) showFile(selected, true);
 }
 async function showFile(path, quiet) {
-  const r = await fetch('/file?path=' + encodeURIComponent(path)); const j = await r.json();
-  selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = j.content || j.error;
+  let content;
+  try { content = (await call('files/read', {thread_id: THREAD, path})).content; } catch (e) { content = e.message; }
+  selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = content;
   if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.path === path));
 }
+
+// ------------------------------------------------------------------ the modes and the rules (live data, D66)
 let modesLoaded = '';
-async function status() {
-  const r = await fetch('/status'); const j = await r.json();
-  ROOT = j.root; $('provider').textContent = j.provider || '…'; $('root').textContent = j.root; $('env-title').textContent = j.root.split('/').slice(-1)[0] + ' · ' + j.mode;
+function offerModes(modes, current) {
   const sel = $('mode-select');
-  const ids = (j.modes || []).map(m => m.id).join(',');
+  const ids = (modes || []).map(m => m.id).join(',');
   if (ids && ids !== modesLoaded) {
     // The list is read live from the registry (D66): a mode created at runtime appears here.
-    sel.innerHTML = j.modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + (m.source && m.source !== 'shipped' ? ' (' + esc(m.source) + ')' : '') + '">' + esc(m.name) + (m.source && m.source !== 'shipped' ? ' ·' : '') + '</option>').join('');
-    sel.onchange = async () => { await fetch('/mode', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({mode: sel.value})}); };
+    sel.innerHTML = modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + (m.source && m.source !== 'shipped' ? ' (' + esc(m.source) + ')' : '') + '">' + esc(m.name) + (m.source && m.source !== 'shipped' ? ' ·' : '') + '</option>').join('');
+    sel.onchange = async () => {
+      const r = await call('thread/set_mode', {thread_id: THREAD, mode: sel.value});
+      r.events.forEach(onEvent);   // `ModeChanged` is on the record, between turns too (D64)
+      $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + sel.value;
+    };
     modesLoaded = ids;
   }
-  if (sel.value !== j.mode) sel.value = j.mode;
-  setBusy(j.busy);
+  if (current && sel.value !== current) sel.value = current;
 }
+async function refreshModes() { if (THREAD) offerModes((await call('modes/list', {})).modes); }
 $('new-mode').onsubmit = async ev => {
   ev.preventDefault(); const f = new FormData(ev.target);
   const document_ = {id: f.get('id'), name: f.get('name') || '', policy: f.get('policy'), behaviour: f.get('append_system') ? {append_system: f.get('append_system')} : {}};
-  const r = await fetch('/admin/modes', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(document_)});
-  const j = await r.json(); $('mode-said').textContent = j.ok ? 'created ' + j.detail : j.detail; if (j.ok) { status(); }
+  // A row is a mode at the next read: written through the store, then read back from the registry.
+  await call('store/put', {collection: 'modes', key: document_.id, row: document_});
+  const offered = (await call('modes/list', {})).modes;
+  const there = offered.some(m => m.id === document_.id);
+  $('mode-said').textContent = there ? 'created ' + document_.id + ' — offered' : 'kept, but not offered: the registry refused the document';
+  offerModes(offered);
 };
 $('new-rule').onsubmit = async ev => {
   ev.preventDefault(); const f = new FormData(ev.target); let inputs = {};
   try { inputs = f.get('inputs') ? JSON.parse(f.get('inputs')) : {}; } catch (e) { $('rule-said').textContent = 'inputs must be JSON'; return; }
-  const r = await fetch('/admin/rules', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({component: f.get('component'), inputs, decision: f.get('decision')})});
-  const j = await r.json(); $('rule-said').textContent = j.ok ? 'kept' : j.detail; if (j.ok) refreshRules();
+  const row = {component: f.get('component'), inputs, decision: f.get('decision'), mode: '', note: ''};
+  await call('store/put', {collection: 'rules', key: row.component + ':' + Date.now(), row});
+  $('rule-said').textContent = 'kept — read at the next judgement'; refreshRules();
 };
 async function refreshRules() {
-  const r = await fetch('/admin/rules'); const j = await r.json();
+  const j = await call('rules/list', {});
   $('rules').textContent = j.rules.length ? j.rules.map(x => x.decision + '  ' + x.component + '  ' + JSON.stringify(x.inputs) + (x.mode ? '  in ' + x.mode : '')).join('\n') : '(no rules yet)';
 }
+
+// ------------------------------------------------------------------ the turn
 $('say').onsubmit = async ev => {
-  ev.preventDefault(); const text = $('text').value.trim(); if (!text) return;
-  $('text').value = ''; setBusy(true);
-  const r = await fetch('/say', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({text})});
-  if (!r.ok) { const j = await r.json(); addAnswer({text: j.error, failed: true}); setBusy(false); }
+  ev.preventDefault(); const text = $('text').value.trim(); if (!text || !THREAD) return;
+  $('text').value = ''; addYou(text); setBusy(true);
+  try {
+    const done = await call('turn/start', {thread_id: THREAD, text});
+    settleLive(); addAnswer({text: done.turn.text, failed: done.turn.outcome !== 'completed', usage: usageOf[done.turn.run_id]});
+  } catch (e) { settleLive(); addAnswer({text: e.message, failed: true}); }
+  refreshFiles(); setBusy(false);
 };
 $('text').addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('say').requestSubmit(); } });
-const es = new EventSource('/stream');
-es.onmessage = ev => onLine(JSON.parse(ev.data));
-status(); refreshFiles(); refreshRules(); setInterval(status, 5000);
+
+// ------------------------------------------------------------------ the thread
+// One thread per page: started at load, or resumed when the address names one — a reload is a
+// new session that resumes the same thread, its turns replayed from the record.
+async function open() {
+  await connect();
+  const wanted = new URLSearchParams(location.search).get('thread');
+  let started = null;
+  if (wanted) {
+    try { started = await call('thread/resume', {thread_id: wanted}); }
+    catch (e) { started = null; }
+  }
+  if (!started) { started = await call('thread/start', {}); history.replaceState(null, '', '?thread=' + encodeURIComponent(started.thread_id)); }
+  THREAD = started.thread_id; ROOT = started.root;
+  $('provider').textContent = started.provider || 'the provider signed in here'; $('root').textContent = ROOT;
+  $('env-title').textContent = ROOT.split('/').slice(-1)[0] + ' · ' + started.mode;
+  offerModes(started.modes, started.mode);
+  (started.turns || []).forEach(t => { addYou(t.prompt); addAnswer({text: t.text, failed: t.outcome !== 'completed'}); });
+  setBusy(false); refreshFiles(); refreshRules(); setInterval(refreshModes, 10000);
+}
+open().catch(e => { $('provider').textContent = 'could not open a thread: ' + e.message; });
 </script>
 </body>
 </html>

@@ -40,6 +40,32 @@ host ──► runtime   resume(run_id, answer)       answer: a judgement, or {s
 > not a judgement is refused rather than read as consent nobody gave. One judgement settles every
 > step parked in that superstep; a map keyed by step id answers them one at a time.
 
+## The second shape — threads served (Phase 26, D67, D69)
+
+The direction above inverts the ports. The other shape keeps them **runtime-side**: the process
+serving the wire hands in a `ThreadHost` (`shadow_hdk.serve.ServeHost` — the shipped
+composition, a store, the provider signed in there), and the host across the wire drives *threads*
+by method, the way Codex's app server is driven. Both shapes are served on one peer; a host uses
+whichever it is.
+
+```
+host ──► runtime   thread/start · resume · close · list · fork · rollback · archive
+host ──► runtime   thread/set_mode · set_option · remaining
+host ──► runtime   turn/start                    → the turn's record, when it ends
+host ──► runtime   turn/steer · turn/interrupt · run/cancel
+host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · {text})
+host ──► runtime   store/put · get · delete · list · version · modes/list · rules/list
+host ──► runtime   files/list · files/read       under the thread's root only (D69)
+host ◄── runtime   event · item · activity       (tagged with the thread; one fold, runtime-side — D46)
+host ◄── runtime   approval_request · input_request · request_withdrawn
+```
+
+Rules: every public method of `Thread`, `Approvals` and `Store` crosses under a `protocol.py`
+name or is named in the parity test's `HANDLES_NOT_CROSSING` with a reason; a session that ends
+closes every thread it opened; a thread's offer is held by one task for its lifetime, so any
+method may be called from any task; a page the server serves (`--page`) is a client of these
+methods and nothing else — the studio is that page.
+
 ## Rules already fixed
 
 > **Corrected 2026-09-10 (BUG-006).** This section listed the run token as fixed; it is **not

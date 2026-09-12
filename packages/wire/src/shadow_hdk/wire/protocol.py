@@ -49,11 +49,50 @@ CONTEXT_IS_HELD = "context.children.is_held"
 registry, the meter, the children — and crosses back rather than being answered locally, because
 there is one of each and it is on the runtime's side."""
 
+# the thread, crossed (D67) — the host's controls of Phase 25 for a host in any language. The
+# runtime side holds the ports in this shape (a `ThreadHost` the serving process hands in).
+THREAD_START = "thread/start"
+THREAD_RESUME = "thread/resume"
+THREAD_CLOSE = "thread/close"
+THREAD_LIST = "thread/list"
+THREAD_FORK = "thread/fork"
+THREAD_ROLLBACK = "thread/rollback"
+THREAD_ARCHIVE = "thread/archive"
+THREAD_SET_MODE = "thread/set_mode"
+THREAD_SET_OPTION = "thread/set_option"
+THREAD_REMAINING = "thread/remaining"
+TURN_START = "turn/start"
+TURN_STEER = "turn/steer"
+TURN_INTERRUPT = "turn/interrupt"
+# the handles (principle 7): what a person does during a run, from any language
+APPROVALS_PENDING = "approvals/pending"
+APPROVALS_ANSWER = "approvals/answer"
+RUN_CANCEL = "run/cancel"
+# the store (D66), crossed
+STORE_PUT = "store/put"
+STORE_GET = "store/get"
+STORE_DELETE = "store/delete"
+STORE_LIST = "store/list"
+STORE_VERSION = "store/version"
+MODES_LIST = "modes/list"
+RULES_LIST = "rules/list"
+# the thread's workspace, read (D69): what a page shows beside the conversation — under the
+# thread's root only, dotfiles and caches left out, never a path that resolves outside it
+FILES_LIST = "files/list"
+FILES_READ = "files/read"
+
 # runtime → host, one way
 EVENT = "event"
 ITEM = "item"
 """The projection, folded runtime-side, one notification per closed step (D46) — so a host in
 another language renders agent steps without porting the fold."""
+ACTIVITY = "activity"
+"""What is happening beside the record (D63), as a notification — never on the record."""
+APPROVAL_REQUEST = "approval_request"
+INPUT_REQUEST = "input_request"
+REQUEST_WITHDRAWN = "request_withdrawn"
+"""A request the host must answer, pushed as it becomes pending — and withdrawn when the asker
+stopped waiting (D59) — so a client need not poll `approvals/pending`."""
 
 HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAINING})
 RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})
@@ -75,10 +114,39 @@ class Agreed:
 
 
 __all__ = [
+    "ACTIVITY",
+    "APPROVALS_ANSWER",
+    "APPROVALS_PENDING",
+    "APPROVAL_REQUEST",
+    "INPUT_REQUEST",
+    "MODES_LIST",
+    "REQUEST_WITHDRAWN",
+    "RULES_LIST",
+    "RUN_CANCEL",
+    "STORE_DELETE",
+    "STORE_GET",
+    "STORE_LIST",
+    "STORE_PUT",
+    "STORE_VERSION",
+    "THREAD_ARCHIVE",
+    "THREAD_CLOSE",
+    "THREAD_FORK",
+    "THREAD_LIST",
+    "THREAD_REMAINING",
+    "THREAD_RESUME",
+    "THREAD_ROLLBACK",
+    "THREAD_SET_MODE",
+    "THREAD_SET_OPTION",
+    "THREAD_START",
+    "TURN_INTERRUPT",
+    "TURN_START",
+    "TURN_STEER",
     "COMPLETE",
     "CONTEXT_PROPOSE",
     "CONTEXT_REMAINING",
     "EVENT",
+    "FILES_LIST",
+    "FILES_READ",
     "HOST_DRIVES",
     "INITIALIZE",
     "INVOKE",
