@@ -12,7 +12,7 @@ phase: 27
 - [x] `[tools] batteries` + `dir` in `harness.toml`; `workshop(batteries=)`; `ServeHost` opens them once per process (held by one task each), `battery_listing`, `aclose`; `a_thread(batteries=, batteries_dir=, agent=)`; `batteries/list` on the wire and in the TS client; **live on wigolo** through the studio in read-only: `web_search` found the npm page, `web_fetch` of npmjs.com blocked by bot protection (reported, not hidden), `web_fetch` of the registry JSON succeeded — 0.2.1, AGPL-3.0-only, sources cited, no files written, 3 tool calls · 27¢; wigolo ended with serve. Found: `serve --http` outlived SIGTERM with a page open (uvicorn's graceful wait) — `timeout_graceful_shutdown=2`, held by a test. Five mutants killed
 
 ## Group 3 — the facade
-- [ ] `Harness.load` / `Harness(...)`; `turn()` yields parts; `[budget]`; the two invariants
+- [x] `Harness.load` / `Harness(...)`; `turn()` yields parts in order, the record last; `[budget]` → `Lease`; `governance=`/`sink=`/`observer=`/`agent=` one step deeper; the two invariants (`test_the_facade_reaches_only_public_apis`, `test_every_harness_toml_key_maps_to_a_port_or_a_profile`) — D71; five tests + six; four mutants against the invariants killed
 
 ## Group 4 — the examples reduced
 - [ ] coder and host on the facade; README three lines run for real

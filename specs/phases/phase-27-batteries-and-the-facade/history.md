@@ -82,3 +82,47 @@ lesson the studio's own server had learned (`timeout_graceful_shutdown=2`) and t
 open and requires the process gone within eight seconds (RED: outlived it).
 
 ---
+
+### [DECISION] 2026-09-12 — D71: one package is the host's front door — `Harness` in `shadow-hdk-serve`, three lines by default, one step deeper without leaving it
+
+Topics: facade, harness-toml, budget, serve, invariants, examples
+Affects-phases: phase-27-batteries-and-the-facade
+Affects-specs: planning/the-substrate.md#3.7, architecture/overview.md
+
+**Where the facade lives.** `shadow-hdk-serve` already held the shipped composition
+(`ServeHost`, `a_thread`) and the console script; the facade is the same composition with a
+product's front door on it, in-process — so it lives there too, and one package is the door
+whichever way a product comes in: `Harness.load("harness.toml")` in Python, `shadow-hdk serve
+harness.toml` from anywhere else, the same file in both hands. A separate `shadow-hdk`
+umbrella package was considered and refused: the kernel/runtime/adapters split is what keeps the
+stands-alone rule checkable, and a package that only re-exports is one more thing to version.
+
+**Three lines.** `async with Harness.load(path) as h:` opens a thread on the provider signed in
+here inside the workshop; `async for part in h.turn(text):` yields every part of what happens,
+in order — the record's events by their own kind, `activity` beside them (D63), `item` as each
+step folds closed (D46, one fold, the runtime's), and `turn` last with the record. `Harness(root,
+mode=…, batteries=…, budget=…)` is the file without the file. The thread's record stays readable
+after close.
+
+**One step deeper, without leaving.** `governance=`, `sink=`, `observer=` and `agent=` hand a
+product's own port in for the shipped one and keep the rest; `.thread`, `.host`, `.approvals`,
+`.modes`, `.rules`, `.store` are the objects underneath, for everything else. Two invariants hold
+the promise that nothing done through the facade is closed to a product that goes deeper: the
+facade imports only names in the `__all__` of the packages it composes and touches nothing spelled
+private (an AST walk; a private import and a private attribute both measured to fail it), and
+every `harness.toml` key maps to a port, a port's argument or a kernel profile (a table walked
+against the loader's `KNOWN` and the tree; a key with no meaning measured to fail it).
+
+**`budget`.** The file and the facade say `[budget] steps · seconds · cents` — the owner's word —
+and the kernel says `Lease(Ceiling, Floor)` underneath; `Budget.lease()` is the whole translation.
+
+**The examples.** The coder is the facade now — its REPL over `Harness`. The host example
+stays what it is: the demonstration of composing the ports yourself (its own policy, ledger,
+checkpointer, a brief parked and resumed from the next process) — the level the facade's
+invariants promise stays open. Reducing it to the facade would have removed the thing it shows.
+
+*Why:* principle 9 — simple by default, deep by choice — is only true if the simple path is a
+few lines *and* the deep path is the same objects; the invariants are what keep the second half
+from drifting.
+
+---

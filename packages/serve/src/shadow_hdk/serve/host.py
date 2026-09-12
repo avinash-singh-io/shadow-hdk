@@ -37,7 +37,7 @@ from shadow_hdk.adapters.modes import (
 from shadow_hdk.adapters.recording import SocketOffer
 
 from shadow_hdk.adapters.environment import LocalEnvironment
-from shadow_hdk.kernel import Ceiling, Floor, Lease, ThreadStore
+from shadow_hdk.kernel import Lease, ThreadStore
 from shadow_hdk.kernel.ports import AgentPort
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals, Ports
@@ -54,7 +54,7 @@ from shadow_hdk.serve.batteries import (
     shipped_batteries,
     store_batteries,
 )
-from shadow_hdk.serve.config import Settings
+from shadow_hdk.serve.config import Budget, Settings
 
 MODES = ModeRegistry(shipped_modes())
 _POLICY = {spec.id: spec.policy for spec in MODES.listing()}
@@ -154,10 +154,11 @@ async def workshop(
     )
 
 
-def a_lease() -> Lease:
-    """What one thread may spend. A ceiling on steps, wall-clock and money — the money being the
-    subscription's, which is why it is small enough to notice."""
-    return Lease(Ceiling(max_steps=400, max_wall_seconds=3600, max_cost_cents=500), Floor(0))
+def a_lease(budget: Budget | None = None) -> Lease:
+    """What one thread may spend — `[budget]` in the file, a `Lease` underneath: a ceiling on
+    steps, wall-clock and money, the money being the subscription's, which is why the default is
+    small enough to notice."""
+    return (budget or Budget()).lease()
 
 
 class ServeHost:
@@ -169,8 +170,19 @@ class ServeHost:
     was handed in (`agent=`), which is what a test does.
     """
 
-    def __init__(self, settings: Settings, *, agent: AgentPort | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        agent: AgentPort | None = None,
+        governance: Any = None,
+        sink: Any = None,
+    ) -> None:
+        """`governance` and `sink` handed in replace the shipped ones for every thread this host
+        opens — one step deeper (D71) without composing the rest again."""
         self.settings = settings
+        self._governance = governance
+        self._sink = sink
         self.approvals = Approvals()
         self.store: Any = SqliteStore(settings.store) if settings.store else InMemoryStore()
         self.threads: ThreadStore = (
@@ -285,10 +297,10 @@ class ServeHost:
         )
         thread = await Thread.open(
             agent=agent,
-            ports=replace(ports, observer=observer) if observer is not None else ports,
+            ports=self._handed(ports, observer),
             store=self.threads,
             root=where,
-            lease=a_lease(),
+            lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=name or self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
             rules=self.rules,
@@ -318,14 +330,25 @@ class ServeHost:
         return await Thread.resume(
             thread_id,
             agent=agent,
-            ports=replace(ports, observer=observer) if observer is not None else ports,
+            ports=self._handed(ports, observer),
             store=self.threads,
-            lease=a_lease(),
+            lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
             rules=self.rules,
             modes=self.modes,
         )
+
+    def _handed(self, ports: Ports, observer: Any) -> Ports:
+        """The shipped ports, with whatever this host was handed in their place."""
+        handed: dict[str, Any] = {}
+        if observer is not None:
+            handed["observer"] = observer
+        if self._governance is not None:
+            handed["governance"] = self._governance
+        if self._sink is not None:
+            handed["sink"] = self._sink
+        return replace(ports, **handed) if handed else ports
 
     async def list(self) -> Any:
         return await self.threads.list()
