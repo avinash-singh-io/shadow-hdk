@@ -197,6 +197,48 @@ gets the whole thing either way — offloading is about the model's context, nev
 
 ## Using it
 
+### Three lines
+
+Simple by default, deep by choice (D71). A product that wants defaults writes a `harness.toml`
+and three lines; every port underneath is what it always was, and one step deeper is the same
+objects.
+
+```toml
+# harness.toml
+[environment]
+root = "."
+mode = "workspace-write"     # read-only · workspace-write · full · a mode of your own
+
+[provider]
+want = "claude-code"         # or codex · opencode — whichever is signed in here; omit for the first found
+
+[tools]
+batteries = ["wigolo"]       # web_search · web_fetch, consumed as an MCP server (D70)
+
+[budget]
+steps = 400
+seconds = 3600
+cents = 500
+```
+
+```python
+from shadow_hdk.serve import Harness
+
+async with Harness.load("harness.toml") as h:
+    async for part in h.turn("add a .gitignore and run the tests"):
+        print(part.kind, part.item.component if part.item else part.activity.text if part.activity else "")
+    print(h.thread.record.turns[-1].text)
+```
+
+`turn()` yields every part of what happens, in order: the record's events by their own kind,
+`activity` beside them (thinking and text as they stream, a command's output as it prints),
+`item` as each step folds closed, and `turn` — last — with the record. `Harness(root, mode=…,
+batteries=…, budget=…)` is the file without the file; `governance=`, `sink=`, `observer=`,
+`agent=` hand your own port in for the shipped one; `h.thread`, `h.approvals`, `h.modes`,
+`h.rules`, `h.store` are the objects underneath. Two invariants hold the promise: the facade
+reaches only public names, and every key in the file maps to a port or a profile. The same file
+serves a host in any language: `shadow-hdk serve harness.toml --stdio|--http`.
+
 ### The smallest real thing
 
 ```python

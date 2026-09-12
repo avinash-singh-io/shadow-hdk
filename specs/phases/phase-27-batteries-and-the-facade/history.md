@@ -126,3 +126,28 @@ few lines *and* the deep path is the same objects; the invariants are what keep 
 from drifting.
 
 ---
+
+### [DECISION] 2026-09-12 — D72: the optimiser is a port over documents with slots, gated by the sink, and its evaluator is locked before any loop
+
+Topics: optimiser, dspy, evaluator, rule-11, proposals
+Affects-phases: phase-27-batteries-and-the-facade, phase-28-context-engineering
+Affects-specs: architecture/optimiser.md
+
+Specified in `architecture/optimiser.md`, not built. What an optimiser may change is already data
+— a mode's behaviour, a skill's text, a pattern's prompts, a battery's descriptions — so a
+*program* is a document with the slots it may rewrite, and fields governance reads (a mode's
+policy, a battery's effects) are never slots. `OptimiserPort.improve(program, evaluator, budget)
+→ Improved` carries before/after scores and the evaluator's version; the result is a
+`Proposal(kind="optimisation")` through the sink, kept by the host like a minted skill (D56) —
+never an edit to a running registry. The evaluator is `(version, corpus, score)`, locked before
+the first loop (Rule 11), affordable through the recorded model port (Phase 8) and the scripted
+doubles; `v1` is a commit that precedes any implementation. DSPy is the reference behind it —
+instruction ↔ the `system` slot, trainset ↔ corpus, metric ↔ score — consumed as one adapter that
+imports nothing of ours but the kernel and the runtime; a `HillClimb` in `basic` is what makes the
+port's contract suite run without it.
+
+*Why:* an optimisation loop with a mutable evaluator measures motion, not progress (Rule 11);
+settling the port's shapes first means the loop, when it is built, is measured against something
+not written to flatter it.
+
+---

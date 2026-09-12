@@ -93,11 +93,13 @@ async def test_serve_host_opens_a_thread_on_the_shipped_composition(tmp_path: Pa
 
 
 async def test_the_studio_composition_is_the_harnesss_now() -> None:
-    """The coder and the studio import the composition; nothing of it stays in the examples."""
-    import examples.coder.thread as coder
-
-    assert coder.a_thread.__module__.startswith("shadow_hdk.serve"), coder.a_thread.__module__
-    assert not (Path("examples/coder/workshop.py")).exists(), "the workshop moved into the harness"
+    """The coder is the facade (D71) and the studio is the wire's page (D69); nothing of the
+    composition stays in the examples."""
+    source = Path("examples/coder/__main__.py").read_text(encoding="utf-8")
+    assert "from shadow_hdk.serve import Harness" in source
+    assert "Harness(root" in source and "a_thread(" not in source and "workshop(" not in source
+    assert not Path("examples/coder/thread.py").exists(), "the coder's own thread module is gone"
+    assert not Path("examples/studio/app.py").exists(), "the studio's own server is gone"
 
 
 async def test_over_http_a_client_starts_a_thread_and_turns_it(tmp_path: Path) -> None:

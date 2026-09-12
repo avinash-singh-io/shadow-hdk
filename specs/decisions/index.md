@@ -89,6 +89,7 @@ rather than remembered.
 | D69 | the studio is a page `serve` itself serves; a session's threads close with it | [`phases/phase-26-any-language/history.md`](/phases/phase-26-any-language/history.md) |
 | D70 | a battery is a file — an MCP server or a callable consumed behind the component port, its effects vouched for | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
 | D71 | one package is the host's front door — `Harness` in `shadow-hdk-serve`, three lines by default, one step deeper without leaving it | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
+| D72 | the optimiser is a port over documents with slots, gated by the sink; its evaluator is locked before any loop | [`phases/phase-27-batteries-and-the-facade/history.md`](/phases/phase-27-batteries-and-the-facade/history.md) |
 
 ## Also here
 

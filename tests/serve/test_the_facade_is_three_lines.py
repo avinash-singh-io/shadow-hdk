@@ -154,3 +154,51 @@ async def test_a_battery_that_cannot_run_is_a_problem_the_facade_reports(tmp_pat
         ) as h:
             pass
     assert h.problems and "nowhere" in h.problems[0]
+
+
+async def test_the_readme_three_lines_run_for_real(tmp_path: Path) -> None:
+    """The README's `harness.toml` and Python snippet, run as printed — with the provider handed
+    in, since a README cannot assume a subscription, and the file's root and mode this machine's."""
+    import re
+
+    readme = (Path(__file__).resolve().parents[2] / "README.md").read_text(encoding="utf-8")
+    toml_block = re.search(r"```toml\n# harness.toml\n(.*?)```", readme, re.S)
+    py_block = re.search(
+        r"```python\nfrom shadow_hdk.serve import Harness\n(.*?)```", readme, re.S
+    )
+    assert toml_block and py_block, "the README has the three lines and their file"
+    toml = toml_block.group(1)
+    toml = re.sub(r'mode = "workspace-write"', f'mode = "{ENFORCEABLE}"', toml)
+    toml = re.sub(r'batteries = \["wigolo"\]', "batteries = []", toml)  # not installed here
+    (tmp_path / "harness.toml").write_text(toml, encoding="utf-8")
+    provider = TalkingProvider()
+    snippet = py_block.group(1).replace(
+        'Harness.load("harness.toml")', "Harness.load(path, agent=provider)"
+    )
+    printed: list[str] = []
+    scope: dict[str, Any] = {
+        "Harness": Harness,
+        "path": tmp_path / "harness.toml",
+        "provider": provider,
+        "print": lambda *a: printed.append(" ".join(str(x) for x in a)),
+    }
+    # The snippet is a top-level `async with`; it becomes the body of one coroutine, verbatim.
+    body = "\n".join("    " + line for line in snippet.rstrip("\n").split("\n"))
+    exec(f"async def _snippet():\n{body}\n", scope)  # noqa: S102 — the README, run
+    # The scripted provider calls tools through the thread's registry, which the three lines
+    # never expose (a real provider reaches it over the socket): wire it once the thread opens.
+    original_open = Harness.open
+
+    async def open_and_wire(self: Harness) -> None:
+        await original_open(self)
+        provider.reach = self.thread.registry.call
+
+    Harness.open = open_and_wire  # type: ignore[method-assign]
+    try:
+        with anyio.fail_after(60):
+            await scope["_snippet"]()
+    finally:
+        Harness.open = original_open  # type: ignore[method-assign]
+    assert printed[-1] == "the answer to add a .gitignore and run the tests"
+    assert any(line.startswith("item list_dir") for line in printed), printed[:5]
+    assert any(line.startswith("activity") for line in printed)

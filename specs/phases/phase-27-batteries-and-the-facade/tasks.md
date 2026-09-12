@@ -15,10 +15,10 @@ phase: 27
 - [x] `Harness.load` / `Harness(...)`; `turn()` yields parts in order, the record last; `[budget]` → `Lease`; `governance=`/`sink=`/`observer=`/`agent=` one step deeper; the two invariants (`test_the_facade_reaches_only_public_apis`, `test_every_harness_toml_key_maps_to_a_port_or_a_profile`) — D71; five tests + six; four mutants against the invariants killed
 
 ## Group 4 — the examples reduced
-- [ ] coder and host on the facade; README three lines run for real
+- [x] the coder on the facade (its own `thread` module gone); the host example kept as the deep demonstration (D71); README `harness.toml` + three lines, run for real by a test (a wrong line measured to fail it)
 
 ## Group 5 — the optimiser port, specified
-- [ ] the `optimiser` architecture document — the port, the locked evaluator, what DSPy would sit behind
+- [x] `specs/architecture/optimiser.md` — programs are documents with slots; `improve(program, evaluator, budget) → Improved` as a proposal through the sink; the evaluator locked first (Rule 11) over the recorded model port; DSPy mapped, a `HillClimb` for the contract suite; not built (D72)
 
 ## Close
 - [ ] decisions; index; status/roadmap/changelog/README; version; landed; board
