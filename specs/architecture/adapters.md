@@ -17,10 +17,10 @@ type: Architecture
 | `agent` | component | 0 | the model loop as a component (D1); patterns decide its meta-tools (D3) |
 | `langchain` | model | 1 | one adapter over LangChain's integrations; `stream` for tokens |
 | `mcp` | component | 1 | an MCP server's tools become components; annotations fill half a profile |
-| `modes` | governance | 1 | a mode is a ceiling profile plus an ask line — data |
-| `workspace` | component | 3 | files within a root; `writes: {workspace}` |
-| `sandbox_subprocess` | component | 3 | run code with limits; `contained` only where the deployment says so |
-| `acp` | model + component | 4 | Codex or Claude Code driven over Zed's Agent Client Protocol |
+| `modes` | governance | 1 · 25 · 28 | a mode is a ceiling profile plus an ask line — data; since D64 a `ModeSpec` is policy + behaviour + presentation, and since D76 it names the environment mode it needs; four ship — `read-only`, `ask`, `workspace-write`, `full` — and the rest are files or store rows |
+| `environment` | component | 22 · 28 | where effects land, with a mode, on one or many roots — the `workspace` and `sandbox_subprocess` adapters of Phase 3 folded into it (D48–D50, D76) |
+| `acp` | model + component | 4 | OpenCode, or anything Zed-compatible, driven over the Agent Client Protocol |
+| `jsonl` | agent | 20 | a CLI answering in line-delimited JSON — Claude Code, Codex — resident or per turn, resumed on its own session id (D76) |
 | `recording` | component | 5 · 20 · 23 | an MCP server exposing our registry to a child agent; every call an observation. Served over a loopback socket through a relay console script (D44), and **nothing reaches it without the token the serve minted** — first line, constant time, refusals counted and never logged (D52). A call the policy asks about runs as a held child and the question is put to the host **live** while the CLI waits (D58) |
 | `effect_rules` | governance | 10 | rules as rows over profiles, composed by intersection, with the narrowing check |
 | `sandbox_gvisor`, `sandbox_firecracker` | component | 11 | contained execution |
@@ -157,6 +157,24 @@ Two modes, ten, or one called `auto`: a different mapping, the same adapter. Lay
 `EffectProfile.meet`, so a team's layer can only narrow — proven by the kernel's property tests, not
 by review. The full rules-as-rows engine with mode *files* checked in CI is `effect_rules`, Phase 10.
 
+**What ships now** (D64, D75, D76). A `ModeSpec` is a policy, a behaviour (who the model is — a
+system prompt, a model, an effort, mapped to the CLI's flags by the provider file), a
+presentation (id, name, description) and the **environment mode it needs**. Four ship:
+
+| mode | environment | judges |
+|---|---|---|
+| `read-only` | read-only | reads, the skills, the person, the web; nothing written or run |
+| `ask` | workspace-write | the workspace is the ceiling; every write, run or delete inside it is asked about — Claude Code's *default*, Codex's *on-request* |
+| `workspace-write` | workspace-write | writes and commands inside the roots, silently; the web hidden (it reaches, uncontained) |
+| `full` | full | everything; a write outside the workspace, or a command that reaches, is asked about |
+
+Yours are files (`modes/reviewer.md`) or store rows naming a shipped policy — never effects by
+hand. When the policy asks, the host's `ActRules` (D65) are read after the mode says *ask* — a
+rule never widens a ceiling. `Thread.set_mode` flips the policy, re-opens the environment when
+the named environment mode differs, and reopens the provider on its own session so its
+catalogue is the new mode's (BUG-032). A child run is judged in its parent's context (D74): the
+mode a host set reaches every tool call, not only the turn's own step.
+
 ## Plugging your record in — the twenty lines a host writes
 
 A host's memory, record or database is two things: **components** to read and write it, and a
@@ -199,7 +217,14 @@ takes `only=`, `aliases=`, `effects=` for exactly this; a server that annotates 
 the worst of until a file says otherwise. `wigolo` (web search and fetch; AGPL, its own process,
 never linked) and `ddgs` (the light alternative, an optional extra) ship. A battery's profile is
 honest — it reaches the web from a process outside the sandbox, `contained = false` — and the
-modes judge it by that: `workspace-write` hides it, `read-only` and `full` offer it; no rule.
+modes judge it by that: `workspace-write` and `ask` hide it, `read-only` and `full` offer it; no
+rule. A battery's process is a session leader the runtime holds (`start_held`, D53, BUG-033):
+the MCP adapter's `held_stdio_client` is the SDK's transport with the process ours, ended with its
+group on close and when the interpreter ends. What a run proposes for keeping — a minted skill —
+is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offered after a
+restart with source `store`; every proposal still reaches the sink behind it. The composition
+installs with the shipped providers' transports as an extra: `shadow-hdk-serve[providers]`
+(`jsonl` for Claude Code and Codex, `acp` for OpenCode).
 
 ## The environment — where the agent's effects land (Phase 22, D48–D50)
 
@@ -212,6 +237,7 @@ false (BUG-018). They are **one environment with a mode** now:
 Mode = "read-only" | "workspace-write" | "full"
 
 LocalEnvironment.open(root, mode=...)  # this machine, inside the OS sandbox
+LocalEnvironment.open(workspace=Workspace((Root("finance", "…"), Root("sales", "…"))), mode=...)
 SandboxEnvironment.open(backend, root, mode=...)  # a box somebody else built, root mounted
 #   six operations, every environment: read_file · write_file · delete_file · list_dir ·
 #                                      run_shell · run_python
@@ -231,11 +257,23 @@ must fail, a socket must fail, a write inside must succeed. What it declares is 
 found. Measured 2026-09-11 on macOS 26: *Operation not permitted*, denied, runs. Where no OS
 sandbox exists, a confined mode refuses naming the fix; `full` always constructs.
 
+**A workspace is one or many roots** (D76). `Workspace`/`Root` are kernel data — a name and a
+path, the first the primary; VS Code's multi-root, Claude Code's `--add-dir`, Codex's
+`writable_roots`. The environment opens on it: the OS profile allows writes under every root, the
+proof writes inside *each* and outside *all*, and `inside()` resolves a path by the rule the
+tools describe — another root's name wins (`sales/notes.md`), the primary's own name is not an
+address (a relative path is relative to it), and an entry of the primary spelled like another
+root is refused when that root is named, never guessed at per path (D77). `Environment.reopen`
+takes a new workspace or a new mode, proves again, and refuses unchanged where it cannot; a
+thread's `add_root` and a mode's `environment` go through it. The policy's scope stays
+`workspace`; a rule that wants to tell roots apart names the path (D65).
+
 `SandboxEnvironment` takes an `IsolationBackend` that can open a `Box` — run, read, write, delete,
 list, close — and proves the box with **two** denials (D50): a socket, as Phase 11 did, and a write
 outside the mount, which is the boundary BUG-018 was about. The first backend is OpenSandbox
 (Docker locally; gVisor, Kata, Firecracker on a cluster; needs a server, and says so). E2B and
-Daytona are the same seam, one adapter each.
+Daytona are the same seam, one adapter each. A box mounts one root and is proven for one mode;
+it refuses a re-open honestly — a second root or another mode there is another box.
 
 Every command runs on the runtime's leash inside the box — a timeout, a capped output, the
 operator's environment withheld, the process tree killed with the step (D35). Widening — *may I

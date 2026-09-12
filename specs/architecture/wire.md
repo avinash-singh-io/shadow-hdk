@@ -49,13 +49,20 @@ by method, the way Codex's app server is driven. Both shapes are served on one p
 whichever it is.
 
 ```
-host ──► runtime   thread/start · resume · close · list · fork · rollback · archive
-host ──► runtime   thread/set_mode · set_option · remaining
+host ──► runtime   thread/start {root | roots: [{name, path}…], mode, provider, name}
+                       → thread_id · root (the primary) · roots · environment (the sandbox's mode) · mode · modes
+host ──► runtime   thread/resume · close · list · fork · rollback · archive
+host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
+host ──► runtime   thread/add_root {name, path} → events · roots  (added live, re-proven — D76)
+host ──► runtime   thread/set_option · remaining
 host ──► runtime   turn/start                    → the turn's record, when it ends
 host ──► runtime   turn/steer · turn/interrupt · run/cancel
 host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · {text})
-host ──► runtime   store/put · get · delete · list · version · modes/list · rules/list
-host ──► runtime   files/list · files/read       under the thread's root only (D69)
+host ──► runtime   store/put · get · delete · list · version · modes/list · rules/list · batteries/list
+host ──► runtime   tools/list {thread_id}        what the agent is offered now, each with the mode's
+                                                 judgement (allow · ask · refuse) and its source (D73)
+host ──► runtime   skills/list                   the composition's skills, with their sources (D73)
+host ──► runtime   files/list · files/read {root, path}   under the thread's roots only (D69, D76)
 host ◄── runtime   event · item · activity       (tagged with the thread; one fold, runtime-side — D46)
 host ◄── runtime   approval_request · input_request · request_withdrawn
 ```
@@ -63,8 +70,13 @@ host ◄── runtime   approval_request · input_request · request_withdrawn
 Rules: every public method of `Thread`, `Approvals` and `Store` crosses under a `protocol.py`
 name or is named in the parity test's `HANDLES_NOT_CROSSING` with a reason; a session that ends
 closes every thread it opened; a thread's offer is held by one task for its lifetime, so any
-method may be called from any task; a page the server serves (`--page`) is a client of these
-methods and nothing else — the studio is that page.
+method may be called from any task; a change between turns (`set_mode`, `add_root`) is on the
+record and goes down the stream as an `event` like any other, and comes back in the result for
+the one that asked; a page the server serves (`--page`) is a client of these methods and nothing
+else — the studio is that page. A resident provider is told the catalogue changed
+(`notifications/tools/list_changed`) and, because Claude Code was measured to keep its list
+anyway (BUG-032), is reopened on its own session after a mode change or a root added — its list
+fresh, its memory kept (`AgentPort.open(resume=)`).
 
 ## Rules already fixed
 

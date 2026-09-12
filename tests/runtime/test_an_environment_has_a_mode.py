@@ -106,3 +106,15 @@ def test_an_unproven_confinement_does_not_count() -> None:
 
     with pytest.raises(CannotEnforce, match="proven"):
         requires(claimed, "workspace-write")
+
+
+def test_a_mode_that_is_not_one_of_the_three_is_refused_by_name() -> None:
+    """Found by the spec sync: `requires(confined, "nope")` passed — a confined isolation
+    satisfies any name that is not `full` — so an unknown mode reached the sandbox as a confined
+    one. The name is checked first."""
+    import pytest
+
+    from shadow_hdk.runtime.environment import requires
+
+    with pytest.raises(ValueError, match="nope"):
+        requires(CONFINED, "nope")  # type: ignore[arg-type]

@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 28 — the workspace — closed as v0.25.0)
+> **Last Updated**: 2026-09-13 (the specs synced to 0.25.2; BUG-034 closed)
 > **Current Phase**: **none — Phase 28 (the workspace) is complete and released as v0.25.0.**
 > Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
@@ -13,10 +13,11 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,404 tests; mypy strict over 248 files; eighteen distributions at **0.25.2**, all MIT.
+> 1,407 tests; mypy strict over 249 files; eighteen distributions at **0.25.3**, all MIT.
 >
-> **Latest Release**: **v0.25.2**, released 2026-09-12 — a patch: one rule, one implementation
-> (D77 — `start_held`, `LineBuffer`, the root-name rule). Before it v0.25.1 (a battery's process
+> **Latest Release**: **v0.25.3**, released 2026-09-13 — a patch: the mode in settings is a mode
+> id, `ask` included (BUG-034); the specs synced. Before it v0.25.2 (D77 — `start_held`,
+> `LineBuffer`, the root-name rule), v0.25.1 (a battery's process
 > held, BUG-033; Claude Code from a clean scope, ENH-012) and **v0.25.0** — Phase 28, the workspace (D73–D76).
 > Contract change (roots, `WorkspaceChanged`, `tools/list`, `skills/list`, `thread/add_root`,
 > `AgentPort.open(resume=)`, the `ask` mode, a child's context), so a *Pins* row. Before it
@@ -81,6 +82,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.25.3 | 2026-09-13 | patch | BUG-034 the mode in `harness.toml`/`--mode`/`Harness(mode=)` is a mode id (`ask` included), refused by name at open; `requires` refuses an unknown environment name; the architecture specs synced to the tree |
 | v0.25.2 | 2026-09-12 | patch | D77 one rule, one implementation: `start_held` the one place a session leader is started (an invariant refuses the next copy); `LineBuffer` the one framing; a root's name a rule, not an `exists()` guess |
 | v0.25.1 | 2026-09-12 | patch | BUG-033 a battery's MCP server is a held session leader, ended with its group; ENH-012 Claude Code launched with no settings sources and no auto-memory — a run's instructions are the mode's behaviour only |
 | v0.25.0 | 2026-09-12 | phase 28 | the workspace: one or many roots per thread, added live; the environment and the provider follow the mode; the `ask` mode; the registries visible; a child judged in its parent's context (D73–D76) |

@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-agent"
-version = "0.25.2"
+version = "0.25.3"
 description = "The model-driven loop as a component, and agent architectures as data."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.2", "shadow-hdk==0.25.2"]
+dependencies = ["shadow-hdk-kernel==0.25.3", "shadow-hdk==0.25.3"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

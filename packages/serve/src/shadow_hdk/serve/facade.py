@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.kernel import Activity, Event, TurnRecord
-from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.items import Fold, Item
 from shadow_hdk.serve.config import Budget, Settings, load_settings
 from shadow_hdk.serve.host import ServeHost
@@ -77,7 +76,7 @@ class Harness:
         self,
         root: Path | str = ".",
         *,
-        mode: Mode = "workspace-write",
+        mode: str = "workspace-write",
         provider: str | None = None,
         store: Path | str | None = None,
         modes_dir: Path | str | None = None,

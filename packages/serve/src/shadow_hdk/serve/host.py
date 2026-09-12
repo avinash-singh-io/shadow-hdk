@@ -41,6 +41,7 @@ from shadow_hdk.kernel import Lease, ThreadStore, Workspace
 from shadow_hdk.kernel.ports import AgentPort
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals, Ports
+from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.person import person_components
 from shadow_hdk.runtime.store import InMemoryStore
@@ -350,13 +351,19 @@ class ServeHost:
         return thread
 
     async def _environment_for(self, policy_mode: str) -> EnvironmentMode:
-        """The sandbox mode a policy mode needs (D76): from its spec, or the mode itself where
-        the two vocabularies coincide, or the settings' default."""
+        """The sandbox mode a mode needs (D76), from its spec in the registry read now (D66).
+        An unknown mode is refused by name, with the known ones; a mode whose spec names no
+        environment is refused too — silence never widens to `full`."""
         spec = await self.modes.find(policy_mode)
-        wanted = (spec.environment if spec is not None else "") or (
-            policy_mode if policy_mode in ("read-only", "workspace-write", "full") else ""
-        )
-        chosen: EnvironmentMode = wanted or self.settings.mode  # type: ignore[assignment]
+        if spec is None:
+            known = [m.id for m in await self.modes.all()]
+            raise KeyError(f"no mode {policy_mode!r}; the modes here are {known}")
+        if spec.environment not in ENVIRONMENT_MODES:
+            raise ValueError(
+                f"mode {policy_mode!r} names no environment mode; "
+                f"give it one of {list(ENVIRONMENT_MODES)}"
+            )
+        chosen: EnvironmentMode = spec.environment  # type: ignore[assignment]
         return chosen
 
     async def resume(self, thread_id: str, *, observer: Any = None) -> Thread:
@@ -366,9 +373,9 @@ class ServeHost:
         workspace = Workspace(record.roots) if record.roots else Workspace.of(record.root)
         where = Path(workspace.primary.path)
         # The policy's mode is the record's; the environment's is the one it was proven in last
-        # (D76), or the settings' where a record predates that field.
+        # (D76), or the one the record's mode names where a record predates that field.
         environment_mode: EnvironmentMode = (  # type: ignore[assignment]
-            record.environment or self.settings.mode
+            record.environment or await self._environment_for(record.mode or self.settings.mode)
         )
         agent, _called = await self._provider(None, where)
         ports = await workshop(

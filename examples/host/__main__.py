@@ -1,7 +1,7 @@
 """Run a brief through the host.
 
     uv run python -m examples.host "brief" [--brain=script|key|subscription] [--root=DIR]
-                                          [--mode=workspace-write|full|read-only] [--yes]
+                                          [--mode=read-only|ask|workspace-write|full] [--yes]
 
 `--yes` answers every question the policy raises with Allow; without it the person is asked at the
 terminal. A run left unanswered is parked in the store — `<root>.runs.sqlite`, **beside** the

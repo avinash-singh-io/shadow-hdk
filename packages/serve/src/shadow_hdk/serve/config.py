@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.kernel import Ceiling, Floor, Lease
-from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
 KNOWN: dict[str, set[str]] = {
     "environment": {"root", "mode"},
@@ -45,7 +44,10 @@ class Budget:
 @dataclass(frozen=True)
 class Settings:
     root: Path
-    mode: EnvironmentMode = "workspace-write"
+    mode: str = "workspace-write"
+    """The thread's default mode id (D64, D76): a shipped one — `read-only`, `ask`,
+    `workspace-write`, `full` — or one from files or the store. The sandbox mode follows from it;
+    an unknown id is refused at `open`, against the registry read then."""
     want: str | None = None
     store: Path | None = None
     modes_dir: Path | None = None
@@ -74,9 +76,12 @@ def load_settings(path: Path | str) -> Settings:
                 f"known: {sorted(KNOWN[table])}"
             )
     environment = raw.get("environment", {})
+    # The thread's default *mode id* (D64, D76) — a shipped one (`read-only`, `ask`,
+    # `workspace-write`, `full`) or one from files or the store; the sandbox mode follows from
+    # it. Unknown ids are refused at `open`, against the registry read then (D66), not here.
     mode = str(environment.get("mode", "workspace-write"))
-    if mode not in ("read-only", "workspace-write", "full"):
-        raise ValueError(f"{where.name}: mode {mode!r} is not read-only, workspace-write or full")
+    if not mode:
+        raise ValueError(f"{where.name}: mode is empty; name a mode id")
     root = (base / str(environment.get("root", "."))).resolve()
     store = raw.get("store", {}).get("path")
     modes_dir = raw.get("modes", {}).get("dir")
@@ -97,7 +102,7 @@ def load_settings(path: Path | str) -> Settings:
     )
     return Settings(
         root=root,
-        mode=mode,  # type: ignore[arg-type]
+        mode=mode,
         want=str(want) if want else None,
         store=(base / str(store)).resolve() if store else None,
         modes_dir=(base / str(modes_dir)).resolve() if modes_dir else None,

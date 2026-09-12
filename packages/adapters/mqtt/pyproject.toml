@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-mqtt"
-version = "0.25.2"
+version = "0.25.3"
 description = "MQTT topics as sensors, actuators and witnesses, over the device contract."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.2", "shadow-hdk==0.25.2", "paho-mqtt>=2.1,<3"]
+dependencies = ["shadow-hdk-kernel==0.25.3", "shadow-hdk==0.25.3", "paho-mqtt>=2.1,<3"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

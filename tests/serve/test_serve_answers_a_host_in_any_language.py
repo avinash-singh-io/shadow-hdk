@@ -169,6 +169,33 @@ def test_settings_read_the_minimal_harness_toml(tmp_path: Path) -> None:
     assert settings.registry_name == "workspace"
 
 
+def test_the_mode_in_settings_is_a_mode_id_not_an_environment_name(tmp_path: Path) -> None:
+    """Since a mode names the environment it needs (D76), `[environment] mode` and `--mode` are
+    the *thread's* mode — `ask` included, or one from a file or the store — and the sandbox mode
+    follows from it. Found by the spec sync: both were still checked against the three
+    environment names."""
+    from shadow_hdk.serve.__main__ import settings_from
+
+    (tmp_path / "harness.toml").write_text(
+        '[environment]\nroot = "."\nmode = "ask"\n', encoding="utf-8"
+    )
+    assert load_settings(tmp_path / "harness.toml").mode == "ask"
+    assert settings_from(["--http", "--mode", "ask", f"--root={tmp_path}"]).mode == "ask"
+    with pytest.raises(ValueError, match="mode"):
+        load_settings(tmp_path / "harness.toml") if False else _refuse_empty(tmp_path)
+
+
+def _refuse_empty(tmp_path: Path) -> None:
+    (tmp_path / "empty.toml").write_text('[environment]\nmode = ""\n', encoding="utf-8")
+    load_settings(tmp_path / "empty.toml")
+
+
+async def test_an_unknown_mode_is_refused_at_open_naming_the_known_ones(tmp_path: Path) -> None:
+    host = ServeHost(Settings(root=tmp_path, mode="nope"), agent=ScriptedProvider())
+    with pytest.raises(KeyError, match="nope.*read-only"):
+        await host.open(root=str(tmp_path), mode="", want=None, name="tools", observer=None)
+
+
 def test_settings_refuse_an_unknown_key(tmp_path: Path) -> None:
     (tmp_path / "harness.toml").write_text(
         '[environment]\nroot = "."\nmoode = "full"\n', encoding="utf-8"
