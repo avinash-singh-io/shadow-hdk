@@ -19,6 +19,7 @@ KNOWN: dict[str, set[str]] = {
     "store": {"path"},
     "modes": {"dir"},
     "registry": {"name"},
+    "tools": {"batteries", "dir"},
 }
 
 
@@ -30,6 +31,10 @@ class Settings:
     store: Path | None = None
     modes_dir: Path | None = None
     registry_name: str = "tools"
+    batteries: tuple[str, ...] = ()
+    """Battery ids switched on (D70): `[tools] batteries = ["wigolo"]`."""
+    batteries_dir: Path | None = None
+    """A directory of battery files read beside the shipped ones: `[tools] dir = "batteries"`."""
 
 
 def load_settings(path: Path | str) -> Settings:
@@ -54,6 +59,11 @@ def load_settings(path: Path | str) -> Settings:
     store = raw.get("store", {}).get("path")
     modes_dir = raw.get("modes", {}).get("dir")
     want = raw.get("provider", {}).get("want") or None
+    tools = raw.get("tools", {})
+    wanted = tools.get("batteries", [])
+    if not isinstance(wanted, list) or not all(isinstance(b, str) for b in wanted):
+        raise ValueError(f"{where.name}: [tools] batteries must be a list of battery ids")
+    batteries_dir = tools.get("dir")
     return Settings(
         root=root,
         mode=mode,  # type: ignore[arg-type]
@@ -61,6 +71,8 @@ def load_settings(path: Path | str) -> Settings:
         store=(base / str(store)).resolve() if store else None,
         modes_dir=(base / str(modes_dir)).resolve() if modes_dir else None,
         registry_name=str(raw.get("registry", {}).get("name", "tools") or "tools"),
+        batteries=tuple(wanted),
+        batteries_dir=(base / str(batteries_dir)).resolve() if batteries_dir else None,
     )
 
 

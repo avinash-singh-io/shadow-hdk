@@ -50,6 +50,7 @@ async def test_the_typescript_client_starts_a_thread_and_turns_it(tmp_path: Path
     assert seen["version"] == 0
     assert seen["root"] == str(tmp_path) and seen["files"] == [], "the workspace, read (D69)"
     assert seen["mode_events"] == ["mode_changed"], "set_mode returned the record's own event"
+    assert sorted(seen["batteries"]) == ["ddgs:off", "wigolo:off"], "shipped, none wanted (D70)"
 
 
 def test_the_readme_snippet_is_what_the_smoke_run_runs(tmp_path: Path) -> None:

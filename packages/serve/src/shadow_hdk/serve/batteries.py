@@ -15,6 +15,7 @@ whose command is absent is a problem naming what would install it, never a silen
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import json
 import os
@@ -341,14 +342,37 @@ async def open_battery(
         aliases={tool.tool: name for name, tool in battery.tools.items()},
         effects={tool.tool: tool.effects for tool in battery.tools.values()},
     )
-    try:
-        await server.start()
-    except Exception as failed:  # noqa: BLE001 — a server that will not start is a report
-        return OpenedBattery(
-            battery,
-            problem=f"battery {battery.id!r} did not start: {type(failed).__name__}: {failed}",
-        )
-    return OpenedBattery(battery, port=server, _close=server.stop)
+    # **Held by one task for its lifetime** (D67's lesson, again): the MCP client is an anyio
+    # cancel scope, and the task that opens a battery — a `thread/start` handler — is never the
+    # one that closes it. So a holder task enters and leaves it, and `close` only asks.
+    ready: asyncio.Future[str | None] = asyncio.get_running_loop().create_future()
+    let_go = asyncio.Event()
+
+    async def hold() -> None:
+        try:
+            await server.start()
+        except Exception as failed:  # noqa: BLE001 — a server that will not start is a report
+            ready.set_result(f"{type(failed).__name__}: {failed}")
+            return
+        ready.set_result(None)
+        try:
+            await let_go.wait()
+        finally:
+            # Not shielded: a shield is a cancel scope of its own, and the client's task group
+            # must find *its* scope current when it leaves (measured).
+            await server.stop()
+
+    holder = asyncio.create_task(hold())
+    why = await ready
+    if why is not None:
+        await holder
+        return OpenedBattery(battery, problem=f"battery {battery.id!r} did not start: {why}")
+
+    async def close() -> None:
+        let_go.set()
+        await holder
+
+    return OpenedBattery(battery, port=server, _close=close)
 
 
 __all__ = [

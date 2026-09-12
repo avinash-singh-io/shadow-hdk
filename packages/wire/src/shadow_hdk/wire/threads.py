@@ -29,6 +29,7 @@ from shadow_hdk.wire.protocol import (
     APPROVAL_REQUEST,
     APPROVALS_ANSWER,
     APPROVALS_PENDING,
+    BATTERIES_LIST,
     EVENT,
     FILES_LIST,
     FILES_READ,
@@ -129,6 +130,7 @@ class ThreadMethods:
             (RULES_LIST, self._rules_list),
             (FILES_LIST, self._files_list),
             (FILES_READ, self._files_read),
+            (BATTERIES_LIST, self._batteries_list),
         ):
             peer.serves(method, handler)
         self._relays: list[asyncio.Task[None]] = []
@@ -408,6 +410,11 @@ class ThreadMethods:
             return {"content": target.read_text(encoding="utf-8")[:200_000]}
         except UnicodeDecodeError:
             return {"content": f"(binary, {target.stat().st_size} bytes)"}
+
+    async def _batteries_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        listing = getattr(host, "battery_listing", None)
+        return {"batteries": await listing() if listing is not None else []}
 
     async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
         registry = getattr(host, "modes", None)

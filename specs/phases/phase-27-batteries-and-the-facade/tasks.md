@@ -9,7 +9,7 @@ phase: 27
 - [x] `Battery`, shipped battery files (`wigolo.toml`, `ddgs.toml`), `BatteryRegistry` with sources incl. `store_batteries`; `McpComponents(only=, aliases=, effects=)`; a battery that cannot start is a reported problem — D70; wigolo surveyed live (ten tools, no annotations); 8 + 1 tests; seven mutants killed
 
 ## Group 2 — batteries in the composition
-- [ ] `[tools] batteries` in `harness.toml`; `workshop(batteries=)`; `ServeHost`/`a_thread` carry them; live: wigolo (scratchpad install) or `ddgs`, recorded honestly
+- [x] `[tools] batteries` + `dir` in `harness.toml`; `workshop(batteries=)`; `ServeHost` opens them once per process (held by one task each), `battery_listing`, `aclose`; `a_thread(batteries=, batteries_dir=, agent=)`; `batteries/list` on the wire and in the TS client; **live on wigolo** through the studio in read-only: `web_search` found the npm page, `web_fetch` of npmjs.com blocked by bot protection (reported, not hidden), `web_fetch` of the registry JSON succeeded — 0.2.1, AGPL-3.0-only, sources cited, no files written, 3 tool calls · 27¢; wigolo ended with serve. Found: `serve --http` outlived SIGTERM with a page open (uvicorn's graceful wait) — `timeout_graceful_shutdown=2`, held by a test. Five mutants killed
 
 ## Group 3 — the facade
 - [ ] `Harness.load` / `Harness(...)`; `turn()` yields parts; `[budget]`; the two invariants

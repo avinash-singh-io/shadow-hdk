@@ -117,6 +117,9 @@ async def serve_stdio(threads: Any = None) -> None:
         # provider is left to notice on its own.
         with anyio.CancelScope(shield=True):
             await runtime.threads.close_all()
+            closer = getattr(threads, "aclose", None)
+            if closer is not None:
+                await closer()
 
 
 @asynccontextmanager

@@ -62,3 +62,23 @@ and twenty lines for ddgs; and principle 10 — a battery written now is a batte
 read.
 
 ---
+
+### [NOTE] 2026-09-12 — Group 2 measured: wigolo live through the studio; serve outlived its SIGTERM
+
+Topics: batteries, wigolo, serve, shutdown
+Affects-phases: phase-27-batteries-and-the-facade
+Affects-specs: none
+Detail: `[tools] batteries = ["wigolo"]`, `WIGOLO_BIN` naming the scratchpad install, the thread in
+`read-only` (the mode whose ceiling offers a battery — `workspace-write` hides it by its own
+profile, measured in a test with the sandbox). One turn on Claude Code through the page over the
+wire: `web_search` (wigolo, ~1.5 s to warm) returned the npm page with the version in its snippet;
+`web_fetch` of npmjs.com came back `blocked_by_challenge` — the battery's honest failure, shown
+as a failed item; `web_fetch` of `registry.npmjs.org/wigolo/latest` succeeded; the agent answered
+0.2.1 / AGPL-3.0-only with both sources and wrote nothing. 3 tool calls · 27¢. `batteries/list`
+said `wigolo:on`, `ddgs:off`. Stopping the preview found `serve --http` alive minutes later with
+its provider and wigolo: uvicorn's graceful shutdown waits for the page's open SSE stream — the
+lesson the studio's own server had learned (`timeout_graceful_shutdown=2`) and the move to
+`serve` had lost. Fixed where `serve` builds its server; a test sends SIGTERM with a stream held
+open and requires the process gone within eight seconds (RED: outlived it).
+
+---
