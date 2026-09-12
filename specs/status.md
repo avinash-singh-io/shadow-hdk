@@ -88,7 +88,7 @@ merged and released**: 1,201 tests, mypy strict over 213 files, seventeen distri
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 25 — the host's controls | `phase-25-the-hosts-controls` | in progress | Group 1 (the terminology) started 2026-09-12; `planning/the-substrate.md` is the plan |
+| 25 — the host's controls | `phase-25-the-hosts-controls` | in progress | Group 1 done (D61, 0.21.0); Group 2 (Thread and Turn) next; `planning/the-substrate.md` is the plan |
 
 ## Upcoming Phases
 
