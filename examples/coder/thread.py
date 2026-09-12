@@ -21,7 +21,7 @@ from typing import Any
 
 from shadow_hdk.adapters.recording import SocketOffer
 
-from examples.coder.workshop import POLICY_FOR, a_lease, workshop
+from examples.coder.workshop import MODES, a_lease, workshop
 from shadow_hdk.kernel import ThreadStore
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals
@@ -64,7 +64,8 @@ async def a_thread(
         lease=a_lease(),
         registry=SocketOffer(name=name, withhold={TURN}),
         approvals=approvals,
-        mode=POLICY_FOR[mode].name,
+        modes=MODES,
+        mode=mode,
         provider=f"{available.provider.called} {available.version or ''}".strip(),
     )
     try:

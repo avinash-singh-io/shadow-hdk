@@ -38,6 +38,7 @@ from shadow_hdk.kernel import (
     EffectProfile,
     Ended,
     Failed,
+    Floor,
     Interface,
     Invoke,
     Lease,
@@ -50,7 +51,7 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.contracts import dump
-from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.events import Event, ModeChanged
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import AgentPort, AgentSession, ComponentPort, ThreadStore
 from shadow_hdk.kernel.usage import Usage
@@ -149,6 +150,7 @@ class Thread:
         registry: Offer,
         approvals: Any = None,
         checkpointer: Any = None,
+        modes: Any = None,
     ) -> None:
         self._record = record
         self._agent = agent
@@ -162,6 +164,12 @@ class Thread:
         self._serving: Any = None
         self._turning: asyncio.Lock = asyncio.Lock()
         self._sources: tuple[Any, ...] = ()
+        self._modes = modes
+        """A `ModeRegistry`, structurally (`get(id) -> ModeSpec`): the runtime never imports the
+        modes adapter, so a host hands in its own. `None` means the thread has no behaviours to
+        apply and `set_mode` only flips the policy the governance selects by."""
+        self._behaviour: Any = None
+        self._options: dict[str, JsonValue] = {}
         self._current: Cancellation | None = None
         """The running turn's handle to stop it (D15), while one runs."""
         self._interrupted = False
@@ -183,6 +191,7 @@ class Thread:
         name: str = "tools",
         approvals: Any = None,
         checkpointer: Any = None,
+        modes: Any = None,
         mode: str = "",
         provider: str = "",
         thread_id: str | None = None,
@@ -212,7 +221,10 @@ class Thread:
             registry=registry or InProcessOffer(name=name, withhold={TURN}),
             approvals=approvals,
             checkpointer=checkpointer,
+            modes=modes,
         )
+        if modes is not None and (spec := modes.get(mode)) is not None:
+            thread._behaviour = spec.behaviour
         await thread._start()
         return thread
 
@@ -229,6 +241,7 @@ class Thread:
         name: str = "tools",
         approvals: Any = None,
         checkpointer: Any = None,
+        modes: Any = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued."""
@@ -244,14 +257,19 @@ class Thread:
             registry=registry or InProcessOffer(name=name, withhold={TURN}),
             approvals=approvals,
             checkpointer=checkpointer,
+            modes=modes,
         )
+        if modes is not None and (spec := modes.get(record.mode)) is not None:
+            thread._behaviour = spec.behaviour
         await thread._start()
         return thread
 
     async def _start(self) -> None:
         self._serving = self.registry.served()
         self._sources = tuple(await self._serving.__aenter__())
-        self._session = await self._agent.open(tools=self._sources, workspace=self._record.root)
+        self._session = await self._agent.open(
+            tools=self._sources, workspace=self._record.root, behaviour=self._behaviour
+        )
 
     async def close(self) -> None:
         if self._session is not None:
@@ -290,7 +308,9 @@ class Thread:
         if self._session is None:
             # An interrupted provider that could not be told was closed; a turn reopens it.
             self._session = await self._agent.open(
-                tools=tuple(self._sources), workspace=self._record.root
+                tools=tuple(self._sources),
+                workspace=self._record.root,
+                behaviour=self._behaviour,
             )
         if (left := self._meter.remaining().ceiling).max_steps <= 0:
             raise RuntimeError("the thread has no steps left")
@@ -348,9 +368,12 @@ class Thread:
                 approvals=self._approvals,
                 checkpointer=self._checkpointer,
                 cancellation=cancellation,
-                context={"thread": self.id, "turn": turn_id, "mode": self._record.mode}
-                if self._record.mode
-                else {"thread": self.id, "turn": turn_id},
+                context={
+                    "thread": self.id,
+                    "turn": turn_id,
+                    **({"mode": self._record.mode} if self._record.mode else {}),
+                    **self._options,
+                },
             )
             self._record = _replace(
                 self._record,
@@ -404,6 +427,58 @@ class Thread:
                 turns[-1] = _replace_turn(turns[-1], outcome=outcome, text=said)
                 self._record = _replace(self._record, turns=tuple(turns))
                 await self._store.save(self._record)
+
+    # ------------------------------------------------------------------ mode and options
+
+    async def set_mode(self, mode_id: str) -> list[Event]:
+        """Change the run's mode mid-thread (D64; ACP's `session/set_mode`).
+
+        The policy the governance selects by changes at the next step; if the mode carries a
+        different **behaviour**, the provider is reopened with it, resuming the thread. The change
+        is on the record (`ModeChanged`). An unknown mode raises and changes nothing.
+        """
+        if self._modes is not None:
+            spec = self._modes.get(mode_id)
+            if spec is None:
+                raise KeyError(f"no mode {mode_id!r} in the registry")
+            behaviour = spec.behaviour
+        else:
+            spec, behaviour = None, self._behaviour
+        if mode_id == self._record.mode and behaviour == self._behaviour:
+            return []
+        self._record = _replace(self._record, mode=mode_id)
+        await self._store.save(self._record)
+        if spec is not None and behaviour != self._behaviour:
+            self._behaviour = behaviour
+            if self._session is not None:
+                await self._session.close()
+            self._session = await self._agent.open(
+                tools=tuple(self._sources),
+                workspace=self._record.root,
+                behaviour=self._behaviour,
+            )
+        return await self._announce(lambda **k: ModeChanged(mode=mode_id, **k))
+
+    async def set_option(self, key: str, value: JsonValue) -> None:
+        """A per-thread governance option, read at the next step's `Context` (ACP's
+        `set_config_option`). Kept beside `mode` and passed into every turn's run."""
+        self._options[key] = value
+
+    async def _announce(self, make: Any) -> list[Event]:
+        """One event on the thread's own short run, so the change is on the record even between
+        turns — a mode changed while nobody was turning still happened."""
+        options = RunOptions(
+            lease=Lease(Ceiling(1, 1, 0), Floor(0)),
+            run_id=self._ports.clock.new_id(),
+            checkpointer=None,
+        )
+        from shadow_hdk.runtime.emit import Emitter
+
+        emitter = Emitter(options.run_id, self._ports.clock, self._ports.observer)
+        event = await emitter.emit(make)
+        emitter.close()
+        await emitter.drained()
+        return [event]
 
     # ------------------------------------------------------------------ steer and interrupt
 

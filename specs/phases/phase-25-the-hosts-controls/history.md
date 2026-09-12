@@ -118,3 +118,38 @@ Five mutants killed.
 *Why:* a person watching a run should see it happen; the record should never pay for that.
 
 ---
+
+### [DECISION] 2026-09-12 — D64: a mode is a policy, a behaviour and a presentation — data, live
+
+Topics: modes, behaviour, presentation, set_mode, registry, provider-file, mode_changed
+Affects-phases: phase-25-the-hosts-controls
+Affects-specs: architecture/adapters.md#modes, architecture/runtime.md#modules, planning/the-substrate.md#3.3
+
+Every product that ships an agent has modes, and every one of them is two things wearing one name
+(the-substrate §1.4): an approval policy, and who the model is. Ours had the policy half only —
+and its three defaults lived in an example. Now: `Behaviour` (kernel) — `system`, `append_system`,
+`model`, `effort`, `temperature`, `tools_offered`, every field optional so a mode carries only what
+it means to change; `ModeSpec` (modes adapter) = the policy (`Mode` over effect profiles, as
+before) + a `Behaviour` + a presentation (`id`, `name`, `description` — ACP's `SessionMode` shape);
+`ModeRegistry` the set, with `shipped_modes()`: **`read-only`, `workspace-write`, `full`** — the
+same words as the environment's modes, so the two vocabularies that collided at group 2's first
+live turn are one vocabulary. `AgentPort.open(tools, workspace, behaviour)`.
+
+**A provider file maps a behaviour to that CLI's flags** — `[[dialect.behaviour_args]]`, `field →
+flag`; Claude Code's are measured (`--system-prompt`, `--append-system-prompt`, `--model`,
+`--effort`); a field the file does not map is **reported** (`unmapped_behaviour`), never silently
+dropped — a mode that asks for a temperature a CLI cannot take is told so. Codex and OpenCode map
+nothing yet and say so the same way.
+
+**`set_mode` on the thread**: the policy the governance selects by changes at the next step (the
+context key); if the new mode's *behaviour* differs, the provider is reopened with it, resuming
+the thread by its session id; `ModeChanged` goes on the record — a fact a replay needs; setting
+the mode a thread already has records nothing (a mutant that announced a change for a no-op
+survived until the test said so). `set_option` for a product's own knobs. The runtime reads a
+registry structurally and never imports the modes adapter, so a product hands in its own.
+
+*Why:* the mode a person picks in the input box must be one thing that carries the role and the
+permission together, switchable without a restart (principle 10), with the harness's uniqueness —
+governance by effects — underneath.
+
+---

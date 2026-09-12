@@ -58,9 +58,14 @@ class ScriptedAgent:
         self.closed = 0
 
     async def open(
-        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
+        self,
+        *,
+        tools: tuple[ToolSource, ...] = (),
+        workspace: str | None = None,
+        behaviour: Any = None,
     ) -> AgentSession:
         self.opened_with = tools
+        self.behaviour = behaviour
         return cast(AgentSession, _ScriptedSession(self))
 
 
@@ -112,7 +117,7 @@ async def open_thread(
     agent: ScriptedAgent, store: InMemoryThreads, tmp_path: Path, **kw: Any
 ) -> Thread:
     thread = await Thread.open(
-        agent=agent, ports=ports(), store=store, root=tmp_path, lease=a_lease(), **kw
+        agent=cast(Any, agent), ports=ports(), store=store, root=tmp_path, lease=a_lease(), **kw
     )
     agent.reach = thread.registry.call
     return thread
@@ -187,7 +192,7 @@ async def test_turns_draw_on_one_lease_and_a_spent_thread_refuses_a_turn(tmp_pat
     agent = ScriptedAgent([([], "a"), ([], "b"), ([], "c")])
     store = InMemoryThreads()
     thread = await Thread.open(
-        agent=agent, ports=ports(), store=store, root=tmp_path, lease=a_lease(steps=2)
+        agent=cast(Any, agent), ports=ports(), store=store, root=tmp_path, lease=a_lease(steps=2)
     )
     agent.reach = thread.registry.call
     try:
@@ -210,7 +215,7 @@ async def test_a_thread_resumes_from_its_store_and_the_provider_is_reopened(tmp_
 
     second_agent = ScriptedAgent([([], "again")])
     resumed = await Thread.resume(
-        thread.id, agent=second_agent, ports=ports(), store=store, lease=a_lease()
+        thread.id, agent=cast(Any, second_agent), ports=ports(), store=store, lease=a_lease()
     )
     second_agent.reach = resumed.registry.call
     try:
@@ -255,7 +260,9 @@ def _ended(events: list[Event]) -> Ended:
 
 async def test_a_turn_that_ends_badly_is_recorded_as_such(tmp_path: Path) -> None:
     class Broken(ScriptedAgent):
-        async def open(self, *, tools: Any = (), workspace: Any = None) -> AgentSession:
+        async def open(
+            self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None
+        ) -> AgentSession:
             self.opened_with = tools
             return cast(AgentSession, _BrokenSession())
 
@@ -272,7 +279,7 @@ async def test_a_turn_that_ends_badly_is_recorded_as_such(tmp_path: Path) -> Non
 
     store = InMemoryThreads()
     thread = await Thread.open(
-        agent=Broken([]), ports=ports(), store=store, root=tmp_path, lease=a_lease()
+        agent=cast(Any, Broken([])), ports=ports(), store=store, root=tmp_path, lease=a_lease()
     )
     try:
         events = [e async for e in thread.turn("hi")]
@@ -345,7 +352,7 @@ async def test_a_refused_turn_is_recorded_as_refused_with_the_reason(tmp_path: P
     from dataclasses import replace as _replace_ports
 
     thread = await Thread.open(
-        agent=agent,
+        agent=cast(Any, agent),
         ports=_replace_ports(base, governance=RefusesTurns()),
         store=store,
         root=tmp_path,
@@ -371,7 +378,9 @@ class SteerableAgent(ScriptedAgent):
         self.interrupted = 0
         self.release = asyncio.Event()
 
-    async def open(self, *, tools: Any = (), workspace: Any = None) -> AgentSession:
+    async def open(
+        self, *, tools: Any = (), workspace: Any = None, behaviour: Any = None
+    ) -> AgentSession:
         self.opened_with = tools
         return cast(AgentSession, _SteerableSession(self))
 

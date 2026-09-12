@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from shadow_hdk.adapters.jsonl.session import JsonlSession
-from shadow_hdk.kernel import AgentPort, AgentSession, Dialect, Provider, ToolSource
+from shadow_hdk.kernel import AgentPort, AgentSession, Behaviour, Dialect, Provider, ToolSource
 
 
 class UngovernableProvider(ValueError):
@@ -80,10 +80,48 @@ def server_names(tools: tuple[ToolSource, ...]) -> set[str]:
     return {f"shadow-hdk-{i}" if i else "shadow-hdk" for i in range(len(tools))}
 
 
-def argv_for(provider: Provider, tools: tuple[ToolSource, ...]) -> list[str]:
-    """The launch arguments, with the registry wired in and the CLI's own tools refused."""
+def _behaviour_flags(dialect: Dialect, behaviour: Behaviour | None) -> list[str]:
+    """A behaviour's set fields as this CLI's flags (D64); an unset field adds nothing."""
+    if behaviour is None:
+        return []
+    by_field = {a.field: a.flag for a in dialect.behaviour_args}
+    flags: list[str] = []
+    for name, flag in by_field.items():
+        value = getattr(behaviour, name, None)
+        if name == "tools_offered":
+            continue  # offered-set narrowing is the registry's, not a launch flag
+        if value not in (None, "", ()):
+            flags += [flag, str(value)]
+    return flags
+
+
+def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[str]:
+    """Behaviour fields this provider has no flag for, that the behaviour set. Named, not dropped
+    (D64) — a host learns its mode asked for something this CLI cannot do."""
+    if behaviour is None:
+        return []
     dialect = provider.dialect or Dialect()
-    argv = list(provider.launch_args)
+    mapped = {a.field for a in dialect.behaviour_args} | {"tools_offered"}
+    unmapped: list[str] = []
+    for name in ("system", "append_system", "model", "effort", "temperature"):
+        if name in mapped:
+            continue
+        value = getattr(behaviour, name, None)
+        if value not in (None, "", ()):
+            unmapped.append(name)
+    return unmapped
+
+
+def argv_for(
+    provider: Provider,
+    tools: tuple[ToolSource, ...],
+    *,
+    behaviour: Behaviour | None = None,
+) -> list[str]:
+    """The launch arguments, with the registry wired in, the CLI's own tools refused, and the
+    behaviour's flags (D64) added."""
+    dialect = provider.dialect or Dialect()
+    argv = list(provider.launch_args) + _behaviour_flags(dialect, behaviour)
     if not tools:
         return argv
     if not dialect.mcp_config_arg:
@@ -119,11 +157,18 @@ class JsonlProvider(AgentPort):
         self._extra = extra
 
     async def open(
-        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
+        self,
+        *,
+        tools: tuple[ToolSource, ...] = (),
+        workspace: str | None = None,
+        behaviour: Behaviour | None = None,
     ) -> AgentSession:
-        # `replace`, not `__class__(**__dict__)` — see the note in `examples/coder/session.py`:
-        # copying a frozen dataclass around its own constructor discards every argument's type.
-        launched = replace(self._provider, launch_args=tuple(argv_for(self._provider, tools)))
+        # `replace`, not `__class__(**__dict__)`: copying a frozen dataclass around its own
+        # constructor discards every argument's type.
+        launched = replace(
+            self._provider,
+            launch_args=tuple(argv_for(self._provider, tools, behaviour=behaviour)),
+        )
         return JsonlSession(
             launched,
             binary=self._binary,
@@ -142,6 +187,7 @@ async def open_agent(
 
 __all__ = [
     "JsonlProvider",
+    "unmapped_behaviour",
     "UngovernableProvider",
     "argv_for",
     "mcp_config_for",

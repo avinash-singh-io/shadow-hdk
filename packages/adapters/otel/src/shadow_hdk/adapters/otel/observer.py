@@ -60,6 +60,7 @@ class OpenTelemetryObserver(ObserverPort):
             "usage",
             "held",
             "reasoning",
+            "mode_changed",
             "ended",
         }
     )
@@ -128,6 +129,10 @@ class OpenTelemetryObserver(ObserverPort):
                     "spawned",
                     {"shadow_hdk.child_run_id": event.child_run_id, **_lease(event.lease)},
                     at,
+                )
+            case "mode_changed":
+                self._run(event.run_id, at).add_event(
+                    "mode_changed", {"shadow_hdk.mode": event.mode}, at
                 )
             case "reasoning":
                 # Length, never the text (D28): a trace carries the *shape* of a run, and a

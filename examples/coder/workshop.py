@@ -18,90 +18,31 @@ from pathlib import Path
 
 from shadow_hdk.adapters.agent import SkillComponents, SkillRegistry, shipped_skills
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
-from shadow_hdk.adapters.modes import Mode, ModeGovernance
+from shadow_hdk.adapters.modes import (
+    Mode,
+    ModeRegistry,
+    governance_for,
+    shipped_modes,
+)
 
 from shadow_hdk.adapters.environment import LocalEnvironment
-from shadow_hdk.kernel import Ceiling, EffectProfile, Floor, Lease, ScopeSet
+from shadow_hdk.kernel import Ceiling, Floor, Lease
 from shadow_hdk.runtime import Ports
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 
-EVERYTHING = ScopeSet(everything=True)
-WORKSPACE = ScopeSet.of("workspace")
-PROVIDER = ScopeSet.of("provider-state")
-"""The provider's own bookkeeping — its session files under its home. Holding a conversation
-writes that much whatever the mode, and no mode is about that."""
-OURS = ScopeSet.of("workspace", "record", "provider-state")
-"""The root, the run's own record — a minted skill proposed through the sink writes the latter,
-and this example's sink is stdout — and the provider's own state. A mode that permits only the
-last is `read-only`."""
-
-CONFINED = Mode(
-    "confined",
-    # Writes stay in the root; nothing reaches the network *from a tool*. This is what an
-    # environment in `workspace-write` declares, because it is what the OS sandbox makes true.
-    #
-    # `reaches=True` is deliberate and has to be: holding the conversation open is itself a step,
-    # and talking to a provider reaches out — that is what a subscription *is*. What this mode
-    # narrows is what the agent's **tools** may do, and the environment's tools declare
-    # `reaches=False` in `workspace-write`, which fits inside this.
-    ceiling=EffectProfile(
-        reads=EVERYTHING,
-        writes=OURS,
-        reaches=True,
-        reversible=False,
-        contained=True,
-        costs=True,
-    ),
-)
-"""Files and commands, confined to the root by the operating system."""
-
-OPEN = Mode(
-    "open",
-    # `full` mode on an ordinary host: a command reaches the machine, and the environment says so
-    # (BUG-018). This is uncomfortable to read, which is the point — a policy that permits
-    # `full` is permitting the machine, and the honest way to write that is `everything`.
-    ceiling=EffectProfile(
-        reads=EVERYTHING,
-        writes=EVERYTHING,
-        reaches=True,
-        reversible=False,
-        contained=False,
-        costs=True,
-    ),
-    # **Asked, not waved through.** Inside this line the agent goes ahead; between it and the
-    # ceiling — a write anywhere on the machine, in this mode every write, because an unconfined
-    # environment cannot say where a write lands — the person is asked, live, while the provider
-    # waits on the call (D58). The honest setting for a laptop with no sandbox.
-    ask_above=EffectProfile(
-        reads=EVERYTHING, writes=OURS, reaches=True, reversible=False, contained=False, costs=True
-    ),
-)
-"""Everything, said out loud — and every write asked about. What `--mode full` gets."""
-
-LOOKING = Mode(
-    "looking",
-    # `reversible=False`: a conversation cannot be un-had — money is spent and the provider's
-    # state moves. Nothing in the root can be written, so nothing in the root is irreversible.
-    EffectProfile(
-        reads=EVERYTHING,
-        writes=PROVIDER,
-        reaches=True,
-        reversible=False,
-        contained=False,
-        costs=True,
-    ),
-)
-"""Nothing in the root may be written or run — what `--mode read-only` gets. The conversation
-itself is permitted: the provider keeps its own state, and that is all it writes."""
-
+# The three policies the harness ships, one per environment mode (D64) — the definitions live in
+# the modes adapter now, not here. Kept as names for the example and its tests; a product builds
+# its own registry the same way.
+MODES = ModeRegistry(shipped_modes())
+_POLICY = {spec.id: spec.policy for spec in MODES.listing()}
+LOOKING: Mode = _POLICY["read-only"]
+CONFINED: Mode = _POLICY["workspace-write"]
+OPEN: Mode = _POLICY["full"]
 POLICY_FOR: dict[EnvironmentMode, Mode] = {
     "read-only": LOOKING,
     "workspace-write": CONFINED,
     "full": OPEN,
 }
-"""The policy that matches each environment mode. A policy narrower than the environment refuses
-tools the environment offers; one wider admits what the environment cannot do anyway — so the
-pairing is the honest one, and the mode on the command line chooses both."""
 
 
 async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> Ports:
@@ -114,7 +55,6 @@ async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> 
     environment = await LocalEnvironment.open(
         root, mode=mode, timeout_s=60.0, output_limit=32_000, at="2026-09-11T00:00:00+00:00"
     )
-    policy = POLICY_FOR[mode]
     # The shipped skills, offered as a component (D55): the provider chooses one through the same
     # socket its file tools go through, and the choice is a step on the record. Choosing is pure,
     # so every mode offers it; minting writes the record, so `read-only` hides it — by effect.
@@ -124,7 +64,9 @@ async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> 
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
         components=(environment, skills),
-        governance=ModeGovernance({policy.name: policy}, default=policy.name),
+        # Every shipped mode is judged from; the environment's mode is the one selected by default,
+        # and `Thread.set_mode` flips between them live (D64).
+        governance=governance_for(MODES, default=mode),
         sink=StdoutSink(),
         clock=SystemClock(),
     )
@@ -136,4 +78,4 @@ def a_lease() -> Lease:
     return Lease(Ceiling(max_steps=400, max_wall_seconds=3600, max_cost_cents=500), Floor(0))
 
 
-__all__ = ["CONFINED", "LOOKING", "OPEN", "POLICY_FOR", "a_lease", "workshop"]
+__all__ = ["CONFINED", "LOOKING", "MODES", "OPEN", "POLICY_FOR", "a_lease", "workshop"]

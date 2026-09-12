@@ -50,6 +50,32 @@ class EnvVar:
 
 
 @dataclass(frozen=True)
+class Behaviour:
+    """Who the model should be for a mode (D64): a role, a model, an effort, a temperature, and
+    which of the run's tools it is offered. Data, mapped to a CLI's flags by
+    `Dialect.behaviour_args` — a product authors a mode with a behaviour, not launch args.
+
+    Every field optional: an unset field changes nothing, so a mode carries only what it means to
+    change. `tools_offered` is empty for *all of the run's* (the default); a tuple names a subset.
+    """
+
+    system: str = ""
+    append_system: str = ""
+    model: str = ""
+    effort: str = ""
+    temperature: float | None = None
+    tools_offered: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class BehaviourArg:
+    """One behaviour field, and the flag the CLI takes it as (D64)."""
+
+    field: str
+    flag: str
+
+
+@dataclass(frozen=True)
 class Delta:
     """One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,
     what activity kind it becomes, and where its text sits in the event."""
@@ -123,6 +149,10 @@ class Dialect:
     delta_on: tuple[str, ...] = ()
     delta_kind_at: str = ""
     deltas: tuple[Delta, ...] = ()
+
+    behaviour_args: tuple[BehaviourArg, ...] = ()
+    """How a `Behaviour`'s fields become this CLI's flags (D64). A field with no entry has no flag,
+    and setting it is reported by `unmapped_behaviour` rather than dropped."""
     """Streamed pieces (D63): the event types that carry them, the field naming which piece, and
     one `Delta` per piece — Claude Code's `stream_event` with `event.delta.type` of
     `thinking_delta` or `text_delta` (measured 2026-09-12 with `--include-partial-messages`).

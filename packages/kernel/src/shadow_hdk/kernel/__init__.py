@@ -40,6 +40,7 @@ from shadow_hdk.kernel.events import (
     Held,
     InputRequested,
     Invoked,
+    ModeChanged,
     Observed,
     Proposed,
     Reasoning,
@@ -89,6 +90,8 @@ from shadow_hdk.kernel.ports import (
     Usage,
 )
 from shadow_hdk.kernel.providers import (
+    Behaviour,
+    BehaviourArg,
     Delta,
     Dialect,
     EnvVar,
@@ -101,7 +104,10 @@ from shadow_hdk.kernel.threads import ThreadId, ThreadRecord, TurnId, TurnRecord
 __all__ = [
     "Activity",
     "ActivityObserver",
+    "ModeChanged",
     "Reasoning",
+    "Behaviour",
+    "BehaviourArg",
     "Delta",
     "Dialect",
     "TurnChunk",

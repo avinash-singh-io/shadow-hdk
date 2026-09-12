@@ -40,7 +40,11 @@ class Provider(AgentPort):
         self.session = Recorded()
 
     async def open(
-        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
+        self,
+        *,
+        tools: tuple[ToolSource, ...] = (),
+        workspace: str | None = None,
+        behaviour: object | None = None,
     ) -> AgentSession:
         self.opened_with.append(tools)
         return self.session

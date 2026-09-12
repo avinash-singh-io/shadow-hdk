@@ -47,9 +47,18 @@ class AcpProvider(AgentPort):
         self._extra = extra
 
     async def open(
-        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
+        self,
+        *,
+        tools: tuple[ToolSource, ...] = (),
+        workspace: str | None = None,
+        behaviour: Any = None,
     ) -> AgentSession:
         """Start the provider and hand back the resident session.
+
+        `behaviour` is accepted so this opener satisfies the port (D64); ACP carries a system
+        prompt and model in `session/new` rather than as launch flags, so mapping it is a
+        follow-up when a host asks — until then a set behaviour is reported by the thread, not
+        dropped.
 
         `tools` is where D42's socket closes: whoever called this built the registry's address, and
         it travels through here into the child's `session/new`. This adapter never learns whose

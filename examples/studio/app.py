@@ -15,6 +15,7 @@ from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from examples.coder.thread import a_thread
+from examples.coder.workshop import MODES as _MODES
 from shadow_hdk.kernel import Event
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.providers import NoProvider
@@ -145,6 +146,28 @@ class Studio:
         self.note("agent", **answer)
         return answer
 
+    def modes(self) -> list[dict[str, str]]:
+        """What the host offers, for the selector — id, name, description, and which is current."""
+        if self.thread is None:
+            return []
+        return [
+            {"id": m.id, "name": m.name, "description": m.description} for m in _MODES.listing()
+        ]
+
+    @property
+    def current_mode(self) -> str:
+        return self.thread.record.mode if self.thread is not None else self.mode
+
+    async def change_mode(self, mode_id: str) -> bool:
+        if self.thread is None:
+            return False
+        try:
+            await self.thread.set_mode(mode_id)
+        except KeyError:
+            return False
+        self.note("mode", mode=mode_id)
+        return True
+
     def answer(self, handle: str, allow: bool, reason: str = "") -> bool:
         answered = self.approvals.answer(
             handle, Approve() if allow else Deny(reason or "the person said no")
@@ -215,7 +238,8 @@ def build_app(studio: Studio) -> Starlette:
         return JSONResponse(
             {
                 "root": str(studio.root),
-                "mode": studio.mode,
+                "mode": studio.current_mode,
+                "modes": studio.modes(),
                 "provider": studio.provider,
                 "busy": studio.busy,
                 "pending": [
@@ -258,6 +282,11 @@ def build_app(studio: Studio) -> Starlette:
         asyncio.create_task(studio.say(text))
         return JSONResponse({"ok": True})
 
+    async def set_mode(request: Request) -> JSONResponse:
+        body = await request.json()
+        done = await studio.change_mode(str(body.get("mode", "")))
+        return JSONResponse({"ok": done})
+
     async def answer(request: Request) -> JSONResponse:
         body = await request.json()
         done = studio.answer(
@@ -281,6 +310,7 @@ def build_app(studio: Studio) -> Starlette:
             Route("/stream", stream),
             Route("/say", say, methods=["POST"]),
             Route("/answer", answer, methods=["POST"]),
+            Route("/mode", set_mode, methods=["POST"]),
             Route("/files", files),
             Route("/file", file),
         ]

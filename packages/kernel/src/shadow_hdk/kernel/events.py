@@ -199,6 +199,18 @@ EndReason = Literal["completed", "lease_exhausted", "gave_up", "cancelled", "fai
 
 
 @dataclass(frozen=True)
+class ModeChanged:
+    """The host changed the run's mode mid-thread (D64) — the record says when, and to what, so a
+    reader knows which policy judged the turns that follow."""
+
+    run_id: RunId
+    seq: int
+    at: str
+    mode: str
+    kind: Literal["mode_changed"] = "mode_changed"
+
+
+@dataclass(frozen=True)
 class Ended:
     run_id: RunId
     seq: int
@@ -224,6 +236,7 @@ Event = Annotated[
     | Held
     | UsageReported
     | Reasoning
+    | ModeChanged
     | Ended,
     Field(discriminator="kind"),
 ]

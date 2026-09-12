@@ -62,6 +62,7 @@ TWELVE = (
     "held",
     "usage",
     "reasoning",
+    "mode_changed",
     "ended",
 )
 

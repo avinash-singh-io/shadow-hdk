@@ -1,5 +1,24 @@
 {
   "$defs": {
+    "BehaviourArg": {
+      "description": "One behaviour field, and the flag the CLI takes it as (D64).",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "flag": {
+          "title": "Flag",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "flag"
+      ],
+      "title": "BehaviourArg",
+      "type": "object"
+    },
     "Delta": {
       "description": "One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,\nwhat activity kind it becomes, and where its text sits in the event.",
       "properties": {
@@ -41,6 +60,14 @@
           "default": "",
           "title": "Allow Tool Prefix",
           "type": "string"
+        },
+        "behaviour_args": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BehaviourArg"
+          },
+          "title": "Behaviour Args",
+          "type": "array"
         },
         "cost_usd_at": {
           "default": "",

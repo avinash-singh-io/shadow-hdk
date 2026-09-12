@@ -50,6 +50,13 @@ ENFORCED_BY: dict[str, tuple[str, str]] = {
         "confined, and `Isolation` is set by a watched denial or an honest no, never by a wrapper",
         "tests/runtime/test_an_environment_has_a_mode.py",
     ),
+    "modes": (
+        "a mode's scopes are a **ceiling the policy permits**, not a claim about what any adapter "
+        "does: `confined` allows `{workspace}` and refuses what exceeds it; whether a component "
+        "declaring `{workspace}` really is confined is the environment's derivation (D48) — the "
+        "shipped modes only narrow, never widen, so a false claim cannot originate here",
+        "tests/test_a_mode_reaches_the_child.py",
+    ),
     "runtime:threads": (
         "the turn step declares `writes: {provider-state}` — the provider's own transcript under "
         "its home — and nothing else, because its file tools are withheld and every write to the "

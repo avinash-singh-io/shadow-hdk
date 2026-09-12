@@ -159,3 +159,20 @@ at = "event.delta.thinking"
 on = "text_delta"
 kind = "text"
 at = "event.delta.text"
+
+# A mode's behaviour becomes these flags (D64), measured 2026-09-12 from `claude --help`.
+[[dialect.behaviour_args]]
+field = "system"
+flag = "--system-prompt"
+
+[[dialect.behaviour_args]]
+field = "append_system"
+flag = "--append-system-prompt"
+
+[[dialect.behaviour_args]]
+field = "model"
+flag = "--model"
+
+[[dialect.behaviour_args]]
+field = "effort"
+flag = "--effort"

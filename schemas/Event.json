@@ -707,6 +707,41 @@
       "title": "Lease",
       "type": "object"
     },
+    "ModeChanged": {
+      "description": "The host changed the run's mode mid-thread (D64) \u2014 the record says when, and to what, so a\nreader knows which policy judged the turns that follow.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "mode_changed",
+          "default": "mode_changed",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mode": {
+          "title": "Mode",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "mode"
+      ],
+      "title": "ModeChanged",
+      "type": "object"
+    },
     "Observed": {
       "description": "What a step observed, and the **posture** of what produced it (D30): `controlled` is *we\ngated it before it happened*; `observed` is *evidence recorded after something else acted* \u2014\nattributable, never pre-authorised by us. Stamped by the runtime from the registration, so a\ncomponent cannot claim a posture it does not have.",
       "properties": {
@@ -1327,6 +1362,7 @@
       "held": "#/$defs/Held",
       "input_requested": "#/$defs/InputRequested",
       "invoked": "#/$defs/Invoked",
+      "mode_changed": "#/$defs/ModeChanged",
       "observed": "#/$defs/Observed",
       "proposed": "#/$defs/Proposed",
       "reasoning": "#/$defs/Reasoning",
@@ -1373,6 +1409,9 @@
     },
     {
       "$ref": "#/$defs/Reasoning"
+    },
+    {
+      "$ref": "#/$defs/ModeChanged"
     },
     {
       "$ref": "#/$defs/Ended"

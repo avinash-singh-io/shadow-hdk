@@ -10,6 +10,7 @@
   body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
   header { display:flex; gap:18px; align-items:center; padding:9px 16px; border-bottom:1px solid var(--line); background:var(--panel); font-size:12.5px; color:var(--dim) }
   header b { color:var(--fg); font-weight:600 } header code { color:var(--fg) }
+  header select { background:var(--panel2); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:2px 6px; font:inherit; font-size:12px }
   .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:6px } .dot.busy { background:var(--ask); animation: pulse 1s infinite }
   @keyframes pulse { 50% { opacity:.3 } }
   main { display:grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr); min-height:0 }
@@ -61,7 +62,7 @@
 <header>
   <b>shadow-hdk studio</b>
   <span><i class="dot" id="dot"></i><span id="provider">connecting…</span></span>
-  <span>mode <code id="mode">…</code></span>
+  <span>mode <select id="mode-select" title="switch the agent's mode — the policy that judges its tools, live"></select></span>
   <span>root <code id="root">…</code></span>
   <span id="spend"></span>
 </header>
@@ -255,6 +256,7 @@ function onLine(line) {
   if (line.kind === 'delta') { delta(line); return; }
   if (line.kind === 'you') { addYou(line.text); setBusy(true); }
   else if (line.kind === 'agent') { settleLive(); addAnswer(line); refreshFiles(); setBusy(false); }
+  else if (line.kind === 'mode') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— mode changed to ' + line.mode + ' —'; currentTurn().appendChild(d); }
   else if (line.kind === 'question') addQuestion(line);
   else if (line.kind === 'answered') settle(line.handle, line.allow ? '✓ allowed' : '✕ refused');
   else if (line.kind === 'withdrawn') settle(line.handle, '↩ withdrawn: the agent stopped waiting');
@@ -291,9 +293,17 @@ async function showFile(path, quiet) {
   selected = path; fileBox.hidden = false; $('fn').textContent = path; $('fc').textContent = j.content || j.error;
   if (!quiet) files.querySelectorAll('li').forEach(li => li.classList.toggle('sel', li.dataset.path === path));
 }
+let modesLoaded = false;
 async function status() {
   const r = await fetch('/status'); const j = await r.json();
-  ROOT = j.root; $('provider').textContent = j.provider || '…'; $('mode').textContent = j.mode; $('root').textContent = j.root; $('env-title').textContent = j.root.split('/').slice(-1)[0] + ' · ' + j.mode;
+  ROOT = j.root; $('provider').textContent = j.provider || '…'; $('root').textContent = j.root; $('env-title').textContent = j.root.split('/').slice(-1)[0] + ' · ' + j.mode;
+  const sel = $('mode-select');
+  if (!modesLoaded && (j.modes || []).length) {
+    sel.innerHTML = j.modes.map(m => '<option value="' + esc(m.id) + '" title="' + esc(m.description) + '">' + esc(m.name) + '</option>').join('');
+    sel.onchange = async () => { await fetch('/mode', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({mode: sel.value})}); };
+    modesLoaded = true;
+  }
+  if (sel.value !== j.mode) sel.value = j.mode;
   setBusy(j.busy);
 }
 $('say').onsubmit = async ev => {

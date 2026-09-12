@@ -34,6 +34,7 @@ INDUSTRY_KINDS = {
     "held",
     "usage",
     "reasoning",
+    "mode_changed",
     "ended",
 }
 

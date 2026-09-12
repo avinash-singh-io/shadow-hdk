@@ -42,9 +42,7 @@ def test_there_are_twelve_kinds() -> None:
     kinds = {member.__dataclass_fields__["kind"].default for member in members}
 
     assert "reasoning" in kinds
-    assert len(kinds) == 13, sorted(
-        kinds
-    )  # reasoning was the twelfth; input_requested (D61) the thirteenth
+    assert len(kinds) == 14, sorted(kinds)  # + input_requested (D61), mode_changed (D64)
 
 
 def test_a_response_carries_reasoning_and_defaults_to_none() -> None:

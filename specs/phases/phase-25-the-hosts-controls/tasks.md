@@ -23,9 +23,9 @@ phase: 25
 - [x] jsonl deltas from `--include-partial-messages`; the leash's output; `steer`/`interrupt` on the session and the thread (ACP and LangChain chunks: their transports already stream to the caller; wiring them to activity is a one-line follow-up when a host asks)
 
 ## Group 4 — Modes
-- [ ] `Behaviour`, `Mode` as data; `AgentPort.open(behaviour=)`
-- [ ] provider TOML `behaviour_args`; an unmapped field is reported
-- [ ] `ModeRegistry` with shipped defaults from the environment's mode; files; `set_mode`/`set_option`; the change on the record
+- [x] `Behaviour`, `Mode` as data; `AgentPort.open(behaviour=)`
+- [x] provider TOML `behaviour_args`; an unmapped field is reported
+- [x] `ModeRegistry` with shipped defaults named as the environment's modes; `set_mode`/`set_option`; `ModeChanged` on the record (modes authored from files: group 6, with the store)
 
 ## Group 5 — Approvals and input
 - [ ] `approve_and_add_rule` → a rule through the sink → `RuleRegistry` → governance, live

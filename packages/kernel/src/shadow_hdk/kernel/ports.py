@@ -37,6 +37,7 @@ from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.providers import Behaviour
 from shadow_hdk.kernel.threads import ThreadRecord
 from shadow_hdk.kernel.usage import Usage as Usage
 
@@ -325,5 +326,13 @@ class AgentPort(Protocol):
     """
 
     async def open(
-        self, *, tools: tuple[ToolSource, ...] = (), workspace: str | None = None
-    ) -> AgentSession: ...
+        self,
+        *,
+        tools: tuple[ToolSource, ...] = (),
+        workspace: str | None = None,
+        behaviour: Behaviour | None = None,
+    ) -> AgentSession:
+        """Open a session. `behaviour` (D64) is who the model should be — mapped to this CLI's
+        flags by the provider file; a default of `None` keeps every existing opener working
+        (D14)."""
+        ...

@@ -124,7 +124,7 @@ async def test_it_is_refused_even_if_the_child_asks_anyway(tmp_path: Path) -> No
 
     assert seen["wrote"].is_error is True
     assert seen["ran"].is_error is True
-    assert "looking" in str(seen["ran"].content), seen["ran"].content
+    assert "read-only" in str(seen["ran"].content), seen["ran"].content
 
 
 async def test_the_refusal_names_the_mode_and_not_the_tool(tmp_path: Path) -> None:

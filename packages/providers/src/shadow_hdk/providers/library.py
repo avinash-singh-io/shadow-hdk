@@ -16,7 +16,7 @@ from dataclasses import fields
 from pathlib import Path
 from typing import Any, get_args
 
-from shadow_hdk.kernel import Delta, Dialect, EnvVar, Provider, ProviderKind
+from shadow_hdk.kernel import BehaviourArg, Delta, Dialect, EnvVar, Provider, ProviderKind
 
 HERE = Path(__file__).resolve().parent / "library"
 
@@ -73,6 +73,15 @@ def load_provider(path: Path) -> Provider:
         for name, value in list(spoken.items()):
             if isinstance(value, list):
                 spoken[name] = tuple(value)
+        if "behaviour_args" in spoken:
+            try:
+                spoken["behaviour_args"] = tuple(
+                    BehaviourArg(field=a["field"], flag=a["flag"]) for a in spoken["behaviour_args"]
+                )
+            except (KeyError, TypeError) as wrong:
+                raise MalformedProvider(
+                    f"{path.name}: each dialect.behaviour_args entry needs field and flag"
+                ) from wrong
         if "deltas" in spoken:
             try:
                 spoken["deltas"] = tuple(
