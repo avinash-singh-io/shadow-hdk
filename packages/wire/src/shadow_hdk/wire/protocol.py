@@ -49,11 +49,29 @@ CONTEXT_IS_HELD = "context.children.is_held"
 registry, the meter, the children — and crosses back rather than being answered locally, because
 there is one of each and it is on the runtime's side."""
 
+# the thread, crossed (D67) — the host's controls of Phase 25 for a host in any language. The
+# runtime side holds the ports in this shape (a `ThreadHost` the serving process hands in).
+THREAD_START = "thread/start"
+THREAD_RESUME = "thread/resume"
+THREAD_CLOSE = "thread/close"
+THREAD_LIST = "thread/list"
+THREAD_FORK = "thread/fork"
+THREAD_ROLLBACK = "thread/rollback"
+THREAD_ARCHIVE = "thread/archive"
+THREAD_SET_MODE = "thread/set_mode"
+THREAD_SET_OPTION = "thread/set_option"
+THREAD_REMAINING = "thread/remaining"
+TURN_START = "turn/start"
+TURN_STEER = "turn/steer"
+TURN_INTERRUPT = "turn/interrupt"
+
 # runtime → host, one way
 EVENT = "event"
 ITEM = "item"
 """The projection, folded runtime-side, one notification per closed step (D46) — so a host in
 another language renders agent steps without porting the fold."""
+ACTIVITY = "activity"
+"""What is happening beside the record (D63), as a notification — never on the record."""
 
 HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAINING})
 RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})
@@ -75,6 +93,20 @@ class Agreed:
 
 
 __all__ = [
+    "ACTIVITY",
+    "THREAD_ARCHIVE",
+    "THREAD_CLOSE",
+    "THREAD_FORK",
+    "THREAD_LIST",
+    "THREAD_REMAINING",
+    "THREAD_RESUME",
+    "THREAD_ROLLBACK",
+    "THREAD_SET_MODE",
+    "THREAD_SET_OPTION",
+    "THREAD_START",
+    "TURN_INTERRUPT",
+    "TURN_START",
+    "TURN_STEER",
     "COMPLETE",
     "CONTEXT_PROPOSE",
     "CONTEXT_REMAINING",

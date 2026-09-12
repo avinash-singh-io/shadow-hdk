@@ -87,6 +87,7 @@ class RuntimeSide:
         checkpointer: Any = None,
         timeout: float | None = 300.0,
         observer: Any = None,
+        threads: Any = None,
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
@@ -127,6 +128,11 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_REQUEST_APPROVAL, self._context_request_approval)
         self.peer.serves(CONTEXT_REQUEST_INPUT, self._context_request_input)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
+        from shadow_hdk.wire.threads import ThreadMethods
+
+        self.threads = ThreadMethods(self.peer, threads, self._clock)
+        """The thread, crossed (D67): served when the process handed in a `ThreadHost`, refused
+        with a reason when it did not."""
 
     def ports(self) -> Ports:
         from shadow_hdk.runtime.clock import SystemClock
@@ -445,6 +451,7 @@ async def loopback(
     watching: Callable[[str], None] | None = None,
     timeout: float | None = 300.0,
     observer: Any = None,
+    threads: Any = None,
 ) -> AsyncIterator[tuple[HostSide, RuntimeSide]]:
     """Both halves in one process, joined by a channel that carries JSON text."""
     from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
@@ -458,7 +465,9 @@ async def loopback(
     )
     async with channel_pair(watching=watching) as (host_end, runtime_end):
         host = HostSide(host_end, real)
-        runtime = RuntimeSide(runtime_end, clock=real.clock, timeout=timeout, observer=observer)
+        runtime = RuntimeSide(
+            runtime_end, clock=real.clock, timeout=timeout, observer=observer, threads=threads
+        )
         async with anyio.create_task_group() as group:
             group.start_soon(host.peer.serve_forever, group)
             group.start_soon(runtime.peer.serve_forever, group)

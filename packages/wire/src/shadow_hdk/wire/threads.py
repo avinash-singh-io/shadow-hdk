@@ -1,0 +1,252 @@
+"""The thread, crossed (D67): the host's controls of Phase 25 for a host in any language.
+
+The wire's other shape (`run`/`resume`) inverts the ports — the host keeps judge, components and
+sink, the runtime calls back. This shape holds the ports **runtime-side**: the process serving the
+wire hands in a `ThreadHost` that composes them (the shipped adapters, a store, a provider), and
+the host across the wire drives threads by method — `thread/start`, `turn/start`, and the rest —
+the way a TypeScript product would. Events, items and activity cross as notifications tagged with
+the thread id; the turn's record comes back as the result.
+
+The wire package cannot import an adapter (the stands-alone rule), so the composition is not
+here: `ThreadHost` is a port, and `shadow_hdk.serve` implements it.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Protocol
+
+from shadow_hdk.kernel import Event, Lease, ThreadRecord
+from shadow_hdk.kernel.activity import Activity
+from shadow_hdk.kernel.contracts import dump
+from shadow_hdk.runtime.items import Fold, as_json
+from shadow_hdk.runtime.threads import Thread
+from shadow_hdk.wire.protocol import (
+    ACTIVITY,
+    EVENT,
+    ITEM,
+    THREAD_ARCHIVE,
+    THREAD_CLOSE,
+    THREAD_FORK,
+    THREAD_LIST,
+    THREAD_REMAINING,
+    THREAD_RESUME,
+    THREAD_ROLLBACK,
+    THREAD_SET_MODE,
+    THREAD_SET_OPTION,
+    THREAD_START,
+    TURN_INTERRUPT,
+    TURN_START,
+    TURN_STEER,
+)
+
+
+class ThreadHost(Protocol):
+    """What the process serving the wire composes and hands in: how to open and resume a thread,
+    and the handles a host across the wire answers through."""
+
+    approvals: Any
+    store: Any
+    rules: Any
+    modes: Any
+
+    async def open(
+        self, *, root: str, mode: str, want: str | None, name: str, observer: Any
+    ) -> Thread: ...
+
+    async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
+
+    async def list(self) -> Any: ...
+
+
+class ActivityToWire:
+    """The observer a thread's ports carry: events are on the turn's own iterator; activity goes
+    to the peer as a notification, tagged with the thread."""
+
+    def __init__(self, peer: Any, thread_id: str) -> None:
+        self._peer = peer
+        self._thread_id = thread_id
+
+    async def on(self, event: Event) -> None:
+        return None
+
+    async def on_activity(self, activity: Activity) -> None:
+        await self._peer.notify(
+            ACTIVITY,
+            {"thread_id": self._thread_id, "activity": json.loads(dump(activity, Activity))},
+        )
+
+
+class ThreadMethods:
+    """The thread methods, served on a peer over a `ThreadHost`."""
+
+    def __init__(self, peer: Any, host: ThreadHost | None, clock: Any) -> None:
+        self._peer = peer
+        self._host = host
+        self._clock = clock
+        self.threads: dict[str, Thread] = {}
+        for method, handler in (
+            (THREAD_START, self._start),
+            (THREAD_RESUME, self._resume),
+            (THREAD_CLOSE, self._close),
+            (THREAD_LIST, self._list),
+            (THREAD_FORK, self._fork),
+            (THREAD_ROLLBACK, self._rollback),
+            (THREAD_ARCHIVE, self._archive),
+            (THREAD_SET_MODE, self._set_mode),
+            (THREAD_SET_OPTION, self._set_option),
+            (THREAD_REMAINING, self._remaining),
+            (TURN_START, self._turn),
+            (TURN_STEER, self._steer),
+            (TURN_INTERRUPT, self._interrupt),
+        ):
+            peer.serves(method, handler)
+
+    # ------------------------------------------------------------------ lookups
+
+    def _host_or_raise(self) -> ThreadHost:
+        if self._host is None:
+            raise RuntimeError(
+                "no thread host: the process serving this wire handed in none, so threads "
+                "cannot be opened here — `run`/`resume` with host-side ports still work"
+            )
+        return self._host
+
+    def _thread(self, params: dict[str, Any]) -> Thread:
+        thread_id = str(params.get("thread_id", ""))
+        found = self.threads.get(thread_id)
+        if found is None:
+            raise KeyError(f"no thread {thread_id!r} is open on this wire")
+        return found
+
+    # ------------------------------------------------------------------ the thread
+
+    async def _start(self, params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        thread_id_hint = str(params.get("thread_id", "") or "")
+        # The observer needs the id before the thread exists; the id is the clock's next.
+        thread_id = thread_id_hint or self._clock.new_id()
+        thread = await host.open(
+            root=str(params.get("root", "") or ""),
+            mode=str(params.get("mode", "") or ""),
+            want=params.get("provider") or None,
+            name=str(params.get("name", "") or "tools"),
+            observer=ActivityToWire(self._peer, thread_id),
+        )
+        # The thread minted its own id; keep ours in step with it by re-tagging the observer.
+        observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged
+        if isinstance(observer, ActivityToWire):
+            observer._thread_id = thread.id  # noqa: SLF001
+        self.threads[thread.id] = thread
+        return {
+            "thread_id": thread.id,
+            "provider": thread.record.provider,
+            "mode": thread.record.mode,
+            "modes": await self._modes(host),
+        }
+
+    async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        thread_id = str(params.get("thread_id", ""))
+        thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
+        self.threads[thread.id] = thread
+        return {
+            "thread_id": thread.id,
+            "provider": thread.record.provider,
+            "mode": thread.record.mode,
+            "turns": [_turn_json(t) for t in thread.record.turns],
+        }
+
+    async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
+        thread = self._thread(params)
+        await thread.close()
+        del self.threads[thread.id]
+        return {"closed": thread.id}
+
+    async def _list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        return {"threads": [_thread_json(t) for t in await host.list()]}
+
+    async def _fork(self, params: dict[str, Any]) -> dict[str, Any]:
+        return {"thread": _thread_json(await self._thread(params).fork())}
+
+    async def _rollback(self, params: dict[str, Any]) -> dict[str, Any]:
+        rolled = await self._thread(params).rollback(to_turn=int(params.get("to_turn", 0)))
+        return {"thread": _thread_json(rolled)}
+
+    async def _archive(self, params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        thread_id = str(params.get("thread_id", ""))
+        store = getattr(host, "threads", None)
+        archive = getattr(store, "archive", None)
+        if archive is None:
+            raise RuntimeError("this thread host's store cannot archive")
+        await archive(thread_id)
+        return {"archived": thread_id}
+
+    async def _set_mode(self, params: dict[str, Any]) -> dict[str, Any]:
+        changed = await self._thread(params).set_mode(str(params.get("mode", "")))
+        return {"events": [json.loads(dump(e, Event)) for e in changed]}
+
+    async def _set_option(self, params: dict[str, Any]) -> dict[str, Any]:
+        await self._thread(params).set_option(str(params.get("key", "")), params.get("value"))
+        return {"ok": True}
+
+    async def _remaining(self, params: dict[str, Any]) -> dict[str, Any]:
+        return {"lease": json.loads(dump(self._thread(params).remaining(), Lease))}
+
+    # ------------------------------------------------------------------ the turn
+
+    async def _turn(self, params: dict[str, Any]) -> dict[str, Any]:
+        thread = self._thread(params)
+        text = str(params.get("text", ""))
+        fold = Fold()
+        count = 0
+        # **One fold, both sides of the wire** (D46) — the same one `run` uses.
+        async for event in thread.turn(text):
+            count += 1
+            await self._peer.notify(
+                EVENT, {"thread_id": thread.id, "event": json.loads(dump(event, Event))}
+            )
+            fold.feed(event)
+            for done in fold.closed_now:
+                await self._peer.notify(ITEM, {"thread_id": thread.id, "item": as_json(done)})
+        return {"events": count, "turn": _turn_json(thread.record.turns[-1])}
+
+    async def _steer(self, params: dict[str, Any]) -> dict[str, Any]:
+        taken = await self._thread(params).steer(str(params.get("text", "")))
+        return {"taken": "now" if taken else "next"}
+
+    async def _interrupt(self, params: dict[str, Any]) -> dict[str, Any]:
+        thread = self._thread(params)
+        was = thread.turning
+        await thread.interrupt()
+        return {"interrupted": was}
+
+    async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
+        registry = getattr(host, "modes", None)
+        if registry is None:
+            return []
+        return [
+            {"id": m.id, "name": m.name, "description": m.description, "source": m.source}
+            for m in await registry.all()
+        ]
+
+
+def _turn_json(turn: Any) -> dict[str, Any]:
+    return {
+        "id": turn.id,
+        "run_id": turn.run_id,
+        "prompt": turn.prompt,
+        "at": turn.at,
+        "outcome": turn.outcome,
+        "text": turn.text,
+    }
+
+
+def _thread_json(record: ThreadRecord) -> dict[str, Any]:
+    loaded: dict[str, Any] = json.loads(dump(record, ThreadRecord))
+    return loaded
+
+
+__all__ = ["ActivityToWire", "ThreadHost", "ThreadMethods"]

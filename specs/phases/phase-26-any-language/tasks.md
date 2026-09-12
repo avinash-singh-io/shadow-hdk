@@ -6,8 +6,8 @@ phase: 26
 # Tasks — Phase 26
 
 ## Group 1 — threads over the wire
-- [ ] `ThreadHost` port on the runtime side; `thread/start`, `turn/start` streaming events, items, activity
-- [ ] `thread/resume`, `list`, `fork`, `rollback`, `archive`, `set_mode`, `set_option`; `turn/steer`, `turn/interrupt`
+- [x] `ThreadHost` port on the runtime side; `thread/start`, `turn/start` streaming events, items, activity (tagged with the thread)
+- [x] `thread/resume`, `close`, `list`, `fork`, `rollback`, `archive`, `set_mode`, `set_option`, `remaining`; `turn/steer`, `turn/interrupt`
 
 ## Group 2 — handles over the wire
 - [ ] `approvals/pending`, `approvals/answer` (three answers, and text), withdrawn as a notification; `run/cancel`

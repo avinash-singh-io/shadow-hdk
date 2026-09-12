@@ -300,6 +300,11 @@ class Thread:
         """What the thread may still spend across its turns."""
         return self._meter.remaining()
 
+    @property
+    def turning(self) -> bool:
+        """Whether a turn is running right now."""
+        return self._current is not None
+
     # ------------------------------------------------------------------ turning
 
     async def turn(self, text: str) -> AsyncIterator[Event]:
