@@ -145,8 +145,8 @@ async def test_governance_is_told_the_posture_and_the_component() -> None:
     recording = Recording()
     await _run(recording, Invoke("s1", THERMOMETER.id), Invoke("s2", VALVE.id))
     by_step = {c.step: c.attributes for c in recording.seen if c.step in {"s1", "s2"}}
-    assert by_step["s1"] == {"posture": "observed", "component": "thermometer"}
-    assert by_step["s2"] == {"posture": "controlled", "component": "valve"}
+    assert by_step["s1"] == {"posture": "observed", "component": "thermometer", "inputs": {}}
+    assert by_step["s2"] == {"posture": "controlled", "component": "valve", "inputs": {}}
 
 
 async def test_the_catalogue_omits_what_controlled_would_always_refuse() -> None:

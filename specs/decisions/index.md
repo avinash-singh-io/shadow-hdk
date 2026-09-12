@@ -82,6 +82,7 @@ rather than remembered.
 | D62 | a thread is turns, and a turn is a run | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 | D63 | the record is complete; the activity is live | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 | D64 | a mode is a policy, a behaviour and a presentation — data, live | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
+| D65 | "approve and add a rule" is a rule the person makes; the agent's question is an item | [`phases/phase-25-the-hosts-controls/history.md`](/phases/phase-25-the-hosts-controls/history.md) |
 
 ## Also here
 

@@ -153,3 +153,44 @@ permission together, switchable without a restart (principle 10), with the harne
 governance by effects — underneath.
 
 ---
+
+### [DECISION] 2026-09-12 — D65: "approve and add a rule" is a rule the person makes; the agent's question is an item
+
+Topics: approvals, act-rules, rules, input-request, ask_person, governance, sink
+Affects-phases: phase-25-the-hosts-controls
+Affects-specs: architecture/runtime.md#modules, architecture/adapters.md#modes, planning/the-substrate.md#3.5
+
+Every product has "yes, and don't ask again" (Claude Code, per repository and command; Codex's
+`acceptWithExecpolicyAmendment`). Ours is an **`ActRule`** (kernel): a component, the inputs it
+applies to (exact on every key it names; a string ending `*` by prefix; none for every act of the
+component), a decision `allow | deny`, and optionally the mode it holds in. The host keeps them in
+an **`ActRules`** registry (modes adapter) handed in as `RunOptions.rules` — a host handle like
+`Approvals` and `Cancellation` (principle 7), inherited by children — and **`ModeGovernance`
+consults it after its own judgement says *ask*, never before**: a rule stands in for the person
+or refuses for them, and cannot widen a ceiling. Governance sees the act because the context now
+carries the step's resolved `inputs` beside `component` and `posture` (reserved — a host cannot
+set it, so a driver cannot shape a rule's view).
+
+**Both answer paths make the rule the same way.** `RunContext.accept_answer` turns the host's
+words into the loop's judgement — live through the handle (D58) or on resume of a parked step —
+and on `ApproveAndAddRule` adds the rule to the run's registry the moment it is given and proposes
+it through the sink (`Proposal(kind="rule")`, provenance `person`), so the record says a rule was
+made, about what. The wire's JSON answer vocabulary (`approve`, `deny`, `approve_and_add_rule`
+with its rule) is accepted there too.
+
+**`ask_person`** (runtime `person.py`): the agent's own question as a component — declares no
+effects, so every mode offers it; `RunContext.request_input` puts `InputRequested` on the record
+where it was asked and waits on the same handle for text (`Request.kind == "input"`); nobody
+there is a failure that says so. It crosses the wire (`context.request_input`).
+
+Measured live on the subscription (two turns, 30¢): the first write in `full` mode asked; answered
+*approve and don't ask again*; the second write to the same path ran on the rule with no question
+— after one correction: the studio had built the rule from every input, and the same file with
+different text asked again, which is not what the button means. **What a rule names is the
+product's vocabulary** (principle 8): the studio makes it the `path` for a file act and the exact
+command otherwise; the harness's `ActRule` stays general. Then a task the agent could not finish
+without asking: it called `ask_person`, got "Hindi", asked approval for the write, and wrote
+`नमस्ते!`. Nine mutants killed, two after the tests were widened to cross the bounds they had not
+(a rule for another component; a prefix that should not match).
+
+---

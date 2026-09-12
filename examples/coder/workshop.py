@@ -15,6 +15,7 @@ below is written against what the environment *declares* — which is what the p
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from shadow_hdk.adapters.agent import SkillComponents, SkillRegistry, shipped_skills
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
@@ -29,6 +30,7 @@ from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.kernel import Ceiling, Floor, Lease
 from shadow_hdk.runtime import Ports
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
+from shadow_hdk.runtime.person import person_components
 
 # The three policies the harness ships, one per environment mode (D64) — the definitions live in
 # the modes adapter now, not here. Kept as names for the example and its tests; a product builds
@@ -45,7 +47,9 @@ POLICY_FOR: dict[EnvironmentMode, Mode] = {
 }
 
 
-async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> Ports:
+async def workshop(
+    root: Path, *, mode: EnvironmentMode = "workspace-write", rules: Any = None
+) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
 
     Raises `CannotEnforce` when this machine has no OS sandbox and a confined mode was asked for —
@@ -63,10 +67,13 @@ async def workshop(root: Path, *, mode: EnvironmentMode = "workspace-write") -> 
     )
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
-        components=(environment, skills),
+        # The agent's own question to the person is a component like any other (D65): no
+        # effects, so every mode offers it.
+        components=(environment, skills, person_components()),
         # Every shipped mode is judged from; the environment's mode is the one selected by default,
-        # and `Thread.set_mode` flips between them live (D64).
-        governance=governance_for(MODES, default=mode),
+        # and `Thread.set_mode` flips between them live (D64). The host's act rules — "approve and
+        # don't ask again" — are read after a mode says *ask* (D65).
+        governance=governance_for(MODES, default=mode, rules=rules),
         sink=StdoutSink(),
         clock=SystemClock(),
     )

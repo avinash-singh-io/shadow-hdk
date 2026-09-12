@@ -67,6 +67,10 @@ ApprovalAnswer = Approve | Deny | ApproveAndAddRule
 
 
 class Approvals:
+    """The host's handle: requests arrive on `next()`, answers go in through `answer()`. A rule
+    that comes with an answer is kept by the run's registry (`RunOptions.rules`, D65) — the
+    runtime adds it on either answer path, live or on resume, and proposes it through the sink."""
+
     """A handle the host keeps. Passed in `RunOptions`, inherited by children unless replaced."""
 
     def __init__(self) -> None:

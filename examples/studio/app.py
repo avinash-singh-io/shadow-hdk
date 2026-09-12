@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from shadow_hdk.adapters.modes import ActRules
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -16,10 +17,10 @@ from starlette.routing import Route
 
 from examples.coder.thread import a_thread
 from examples.coder.workshop import MODES as _MODES
-from shadow_hdk.kernel import Event
+from shadow_hdk.kernel import ActRule, Event
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.providers import NoProvider
-from shadow_hdk.runtime import Approvals, Approve, Deny
+from shadow_hdk.runtime import Approvals, Approve, ApproveAndAddRule, Deny
 from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.items import Fold, as_json
 
@@ -34,6 +35,9 @@ class Studio:
     mode: Mode = "workspace-write"
     want: str | None = None
     approvals: Approvals = field(default_factory=Approvals)
+    rules: ActRules = field(default_factory=ActRules)
+    """The person's "approve and don't ask again" rules (D65): read by governance at the next
+    judgement, kept for the studio's lifetime."""
     record: list[dict[str, Any]] = field(default_factory=list)
     """Every event of the run, as JSON, in order — the page catches up from here."""
     watchers: list[asyncio.Queue[dict[str, Any]]] = field(default_factory=list)
@@ -94,6 +98,7 @@ class Studio:
             mode=self.mode,
             approvals=self.approvals,
             observer=_Watching(self.on_activity),
+            rules=self.rules,
         )
         self.thread = await self._conversation.__aenter__()
         self.provider = self.thread.record.provider or "the provider signed in here"
@@ -117,6 +122,7 @@ class Studio:
                 question=pending.question,
                 component=pending.component,
                 inputs=pending.inputs,
+                request=pending.kind,
             )
 
     async def _relay_withdrawals(self) -> None:
@@ -168,12 +174,31 @@ class Studio:
         self.note("mode", mode=mode_id)
         return True
 
-    def answer(self, handle: str, allow: bool, reason: str = "") -> bool:
-        answered = self.approvals.answer(
-            handle, Approve() if allow else Deny(reason or "the person said no")
-        )
+    def answer(
+        self,
+        handle: str,
+        allow: bool,
+        reason: str = "",
+        *,
+        add_rule: bool = False,
+        text: str | None = None,
+    ) -> bool:
+        """The person's answer: approve, deny, approve-and-add-rule (D65) — or, for an input
+        request, their text."""
+        pending = next((p for p in self.approvals.pending() if p.handle == handle), None)
+        if text is not None:
+            answered = self.approvals.answer(handle, text)
+            if answered:
+                self.note("answered", handle=handle, allow=True, reason="", text=text)
+            return answered
+        judgement: Any
+        if allow and add_rule and pending is not None and pending.component:
+            judgement = ApproveAndAddRule(_rule_for(pending.component, pending.inputs))
+        else:
+            judgement = Approve() if allow else Deny(reason or "the person said no")
+        answered = self.approvals.answer(handle, judgement)
         if answered:
-            self.note("answered", handle=handle, allow=allow, reason=reason)
+            self.note("answered", handle=handle, allow=allow, reason=reason, rule=add_rule)
         return answered
 
     # ------------------------------------------------------------------ the workspace
@@ -216,6 +241,17 @@ class _Watching:
 
     async def on_activity(self, activity: Any) -> None:
         self._on_activity(activity)
+
+
+def _rule_for(component: str, inputs: Any) -> ActRule:
+    """What "don't ask again" means here — the studio's vocabulary, not the harness's (principle
+    8). A write or a read to a *path* is the same act whatever the content; a command is the
+    exact command. Measured: a rule on every input asked again for the same file with different
+    text, which is not what a person meant by the button."""
+    given = inputs if isinstance(inputs, dict) else {}
+    if "path" in given:
+        return ActRule(component=component, inputs={"path": given["path"]})
+    return ActRule(component=component, inputs=dict(given))
 
 
 def _usage_of_turn(record: list[dict[str, Any]], run_id: str) -> dict[str, Any] | None:
@@ -290,7 +326,11 @@ def build_app(studio: Studio) -> Starlette:
     async def answer(request: Request) -> JSONResponse:
         body = await request.json()
         done = studio.answer(
-            str(body.get("handle", "")), bool(body.get("allow")), str(body.get("reason", ""))
+            str(body.get("handle", "")),
+            bool(body.get("allow")),
+            str(body.get("reason", "")),
+            add_rule=bool(body.get("add_rule")),
+            text=body.get("text"),
         )
         return JSONResponse({"ok": done})
 

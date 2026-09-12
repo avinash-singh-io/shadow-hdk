@@ -68,4 +68,4 @@ async def test_a_host_may_still_say_anything_else() -> None:
 def test_the_reserved_names_are_the_ones_the_runtime_writes() -> None:
     """The pair must stay in step with `context_for`, or the guard protects the wrong words while
     the real ones are still overwritten in silence."""
-    assert set(RESERVED_ATTRIBUTES) == {"posture", "component"}
+    assert set(RESERVED_ATTRIBUTES) == {"posture", "component", "inputs"}

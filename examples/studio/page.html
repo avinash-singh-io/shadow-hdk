@@ -43,6 +43,9 @@
   .question .args { margin:0 0 8px; padding:6px 8px; border-radius:6px; background:var(--bg); font-size:11.5px; max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-word }
   .question button { margin-right:8px; padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel2); color:var(--fg); cursor:pointer } .question button.yes { border-color:var(--ok) } .question button.no { border-color:var(--bad) }
   .question.answered { border-color:var(--line); color:var(--dim); background:var(--panel) }
+  .question .reply { display:flex; gap:8px } .question .reply input { flex:1; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit }
+  .question button.rule { border-color:var(--accent) }
+  .question.input { border-color:var(--accent); background:#221f2e } .question.input .q { color:var(--fg) }
   .answer { margin-top:10px; padding:4px 14px; border-radius:12px; background:var(--panel); max-width:92% } .answer.failed { border:1px solid var(--bad) }
   .answer p { margin:8px 0; white-space:pre-wrap } .answer pre { margin:8px 0; padding:8px 10px; border-radius:8px; background:var(--bg); font-size:12px; overflow:auto } .answer code { background:var(--bg); padding:1px 4px; border-radius:4px; font-size:12.5px } .answer ul, .answer ol { margin:6px 0; padding-left:22px } .answer h3, .answer h4, .answer h5, .answer h6 { margin:10px 0 4px; font-size:14px }
   .answer table { border-collapse:collapse; margin:8px 0; font-size:13px } .answer th, .answer td { border:1px solid var(--line); padding:4px 8px; text-align:left }
@@ -173,10 +176,23 @@ function addQuestion(q) {
   // What is being asked about comes first — the tool and what it would do — then the policy's reason.
   const about = q.component ? '<div class="about"><b>' + esc(q.component) + '</b> <code>' + esc(summarise(q.component, q.inputs)) + '</code></div>' : '';
   const full = q.inputs && typeof q.inputs === 'object' ? '<pre class="args">' + esc(JSON.stringify(q.inputs, null, 1).slice(0, 3000)) + '</pre>' : '';
-  d.innerHTML = about + '<div class="q">? ' + esc(q.question) + '</div>' + full + '<button class="yes">Allow</button><button class="no">Refuse</button>';
-  d.dataset.q = (q.component ? q.component + ' ' + summarise(q.component, q.inputs) + ' — ' : '') + q.question;
-  d.querySelector('.yes').onclick = () => answer(q.handle, true);
-  d.querySelector('.no').onclick = () => answer(q.handle, false);
+  if (q.request === 'input') {
+    // The agent's own question (D65): the person answers with text.
+    d.classList.add('input');
+    d.innerHTML = '<div class="q">' + esc(q.question) + '</div><div class="reply"><input type="text" placeholder="Your answer…"><button class="yes">Send</button></div>';
+    d.dataset.q = q.question;
+    const box = d.querySelector('input');
+    const send = () => { const text = box.value.trim(); if (text) answerText(q.handle, text); };
+    d.querySelector('.yes').onclick = send;
+    box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); send(); } });
+    setTimeout(() => box.focus(), 0);
+  } else {
+    d.innerHTML = about + '<div class="q">? ' + esc(q.question) + '</div>' + full + '<button class="yes">Approve</button><button class="rule">Approve &amp; don\'t ask again</button><button class="no">Deny</button>';
+    d.dataset.q = (q.component ? q.component + ' ' + summarise(q.component, q.inputs) + ' — ' : '') + q.question;
+    d.querySelector('.yes').onclick = () => answer(q.handle, true);
+    d.querySelector('.rule').onclick = () => answer(q.handle, true, true);
+    d.querySelector('.no').onclick = () => answer(q.handle, false);
+  }
   // A question on a live step (D58) is asked on the step holding the conversation; a parked
   // one names the tool's own step. Hang the card under the part if there is one, else in the turn.
   const on = parts[toolKey(q.run_id, q.step)];
@@ -187,8 +203,11 @@ function settle(handle, how) {
   const d = questions[handle]; if (!d) return;
   d.classList.add('answered'); d.innerHTML = '<div class="q">' + how + ' — ' + esc(d.dataset.q || '') + '</div>';
 }
-async function answer(handle, allow) {
-  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow, reason: allow ? '' : 'the person refused'})});
+async function answer(handle, allow, addRule) {
+  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow, add_rule: !!addRule, reason: allow ? '' : 'the person refused'})});
+}
+async function answerText(handle, text) {
+  await fetch('/answer', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({handle, allow: true, text})});
 }
 function md(text) {
   // Enough markdown for an agent's answer: fences, inline code, bold, headings, lists, paragraphs.
@@ -258,7 +277,7 @@ function onLine(line) {
   else if (line.kind === 'agent') { settleLive(); addAnswer(line); refreshFiles(); setBusy(false); }
   else if (line.kind === 'mode') { const d = document.createElement('div'); d.className = 'foot'; d.style.textAlign = 'center'; d.textContent = '— mode changed to ' + line.mode + ' —'; currentTurn().appendChild(d); }
   else if (line.kind === 'question') addQuestion(line);
-  else if (line.kind === 'answered') settle(line.handle, line.allow ? '✓ allowed' : '✕ refused');
+  else if (line.kind === 'answered') settle(line.handle, line.text != null ? '↩ ' + esc(line.text) : (line.allow ? (line.rule ? '✓ approved, and a rule kept' : '✓ approved') : '✕ denied'));
   else if (line.kind === 'withdrawn') settle(line.handle, '↩ withdrawn: the agent stopped waiting');
   else if (line.kind === 'event') {
     const e = line.event;

@@ -39,6 +39,7 @@ async def a_thread(
     store: ThreadStore | None = None,
     name: str = "tools",
     observer: Any = None,
+    rules: Any = None,
 ) -> AsyncIterator[Thread]:
     """A thread on the provider signed in here, its tools this run's, inside the workshop.
 
@@ -58,12 +59,13 @@ async def a_thread(
     )
     thread = await Thread.open(
         agent=opened,
-        ports=replace(await workshop(root, mode=mode), observer=observer),
+        ports=replace(await workshop(root, mode=mode, rules=rules), observer=observer),
         store=store or InMemoryThreads(),
         root=root,
         lease=a_lease(),
         registry=SocketOffer(name=name, withhold={TURN}),
         approvals=approvals,
+        rules=rules,
         modes=MODES,
         mode=mode,
         provider=f"{available.provider.called} {available.version or ''}".strip(),

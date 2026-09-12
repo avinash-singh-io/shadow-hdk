@@ -49,6 +49,7 @@ from shadow_hdk.wire.protocol import (
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
     CONTEXT_REQUEST_APPROVAL,
+    CONTEXT_REQUEST_INPUT,
     CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
@@ -124,6 +125,7 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_KEEP, self._context_keep)
         self.peer.hears(CONTEXT_ACTIVITY, self._context_activity)
         self.peer.serves(CONTEXT_REQUEST_APPROVAL, self._context_request_approval)
+        self.peer.serves(CONTEXT_REQUEST_INPUT, self._context_request_input)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
 
     def ports(self) -> Ports:
@@ -167,6 +169,15 @@ class RuntimeSide:
         )
         if isinstance(answer, Allow | Ask | Refuse):
             answer = json.loads(dump(answer, Judgement))
+        return {"answer": answer}
+
+    async def _context_request_input(self, params: dict[str, Any]) -> Any:
+        """The agent's own question crosses and waits (D65); the text comes back, or `None`."""
+        if self.live is None:
+            raise RuntimeError("nothing is running, so there is nobody to ask")
+        answer = await self.live.request_input(
+            str(params.get("question", "")), step=params.get("step")
+        )
         return {"answer": answer}
 
     async def _context_activity(self, params: dict[str, Any]) -> None:

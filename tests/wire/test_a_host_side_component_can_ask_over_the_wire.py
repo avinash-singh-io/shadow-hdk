@@ -139,6 +139,46 @@ async def test_a_live_question_crosses_and_the_hosts_answer_comes_back() -> None
     assert (asked[0].component, asked[0].inputs) == ("run_shell", {"command": "rm -rf build"})
 
 
+async def test_the_agents_own_question_crosses_and_the_text_comes_back() -> None:
+    """`request_input` (D65): `ask_person` runs host-side; the `InputRequested` goes on the record
+    where it was asked, and the runtime side's handle carries the person's text back."""
+    import asyncio
+
+    from shadow_hdk.kernel import Binding, Composition, Invoke
+    from shadow_hdk.kernel.events import InputRequested
+    from shadow_hdk.runtime.person import person_components
+
+    ports = Ports(
+        model=None,
+        components=(person_components(),),
+        governance=AllowAll(),
+        sink=ListSink(),
+        clock=FixedClock(),
+    )
+    options = RunOptions(lease=Lease(Ceiling(10, 60, None), Floor(0)), run_id="w3")
+    plan = Composition((Invoke("q1", "ask_person", (Binding("question", value="hue?"),)),))
+
+    async with loopback(ports) as (host, runtime):
+        await host.initialize()
+        seen: list[Any] = []
+
+        async def answer_it() -> None:
+            pending = await asyncio.wait_for(runtime_questions(runtime).next(), 20)
+            seen.append(pending)
+            runtime_questions(runtime).answer(pending.handle, "purple")
+
+        task = asyncio.create_task(answer_it())
+        with anyio.fail_after(60):
+            await host.run(plan, options)
+        await task
+        after = list(host.events)
+
+    assert [e.question for e in after if isinstance(e, InputRequested)] == ["hue?"]
+    assert seen[0].kind == "input"
+    done = [e for e in after if e.kind == "observed" and e.step == "q1"]
+    assert done[-1].observation == Completed({"answer": "purple"})
+
+
 def runtime_questions(runtime: Any) -> Any:
     """The runtime side's `Approvals`, where the host process holds it."""
     return runtime.approvals

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 from shadow_hdk.adapters.modes.mode import Mode as Policy
 from shadow_hdk.adapters.modes.mode import ModeGovernance
@@ -73,9 +74,12 @@ class ModeRegistry:
         return {spec.id: replace(spec.policy, name=spec.id) for spec in self._by_id.values()}
 
 
-def governance_for(registry: ModeRegistry, *, default: str, key: str = "mode") -> ModeGovernance:
-    """`ModeGovernance` over a registry's policies — one selection, by the context key `mode`."""
-    return ModeGovernance(registry.policies(), default=default, key=key)
+def governance_for(
+    registry: ModeRegistry, *, default: str, key: str = "mode", rules: Any = None
+) -> ModeGovernance:
+    """`ModeGovernance` over a registry's policies — one selection, by the context key `mode` —
+    consulting the host's `ActRules` after it says *ask* (D65)."""
+    return ModeGovernance(registry.policies(), default=default, key=key, rules=rules)
 
 
 def _looking() -> Policy:

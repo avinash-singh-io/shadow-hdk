@@ -233,6 +233,7 @@ async def _stream(
         parent_run_id=parent.run_id if parent is not None else None,
         cancellation=options.cancellation,
         approvals=options.approvals,
+        rules=options.rules,
     )
     # Only the **root** feeds the observer. A child forwards its events to its parent, which
     # forwards them on, so the observer is reached exactly once however deep the tree; a child that

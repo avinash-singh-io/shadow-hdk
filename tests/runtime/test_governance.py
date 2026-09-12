@@ -64,8 +64,14 @@ async def test_the_policy_is_judged_on_effects_and_told_who_is_asking() -> None:
     effects, context = judge.calls[0]
     assert effects == reg.component.effects
     assert (context.step, context.principal) == ("s1", "person:7")
-    # The run's own context, and — since D30 — what is being judged: its id and its posture.
-    assert context.attributes == {"mode": "build", "posture": "controlled", "component": "write"}
+    # The run's own context, and — since D30 — what is being judged: its id and its posture; and
+    # since D65 the act's inputs, for a rule to match on.
+    assert context.attributes == {
+        "mode": "build",
+        "posture": "controlled",
+        "component": "write",
+        "inputs": {},
+    }
     assert context.run_id == "run-under-test"
 
 

@@ -182,7 +182,7 @@ class LeaseMeter:
             self._cost_known = False
 
 
-RESERVED_ATTRIBUTES = frozenset({"posture", "component"})
+RESERVED_ATTRIBUTES = frozenset({"posture", "component", "inputs"})
 """What `context_for` writes itself, and a host may not (TD-007, D30)."""
 
 
@@ -200,6 +200,7 @@ class Session:
         parent_run_id: RunId | None = None,
         cancellation: Cancellation | None = None,
         approvals: Any = None,
+        rules: Any = None,
     ) -> None:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
@@ -208,6 +209,8 @@ class Session:
         self.cancellation = cancellation if cancellation is not None else Cancellation()
         self.approvals = approvals
         """Where a component asks the host live (D58); `None` is nobody to ask."""
+        self.rules = rules
+        """The host's act-rule registry (D65); `None` when rules are not kept."""
         self._context = dict(context or {})
         clashing = sorted(RESERVED_ATTRIBUTES & set(self._context))
         if clashing:
@@ -216,7 +219,12 @@ class Session:
                 "setting one here would be overwritten silently on every step — rename them"
             )
 
-    def context_for(self, step: StepId, registration: Registration | None = None) -> Context:
+    def context_for(
+        self,
+        step: StepId,
+        registration: Registration | None = None,
+        inputs: JsonValue | None = None,
+    ) -> Context:
         """What governance is told. Opaque to the runtime; the adapter interprets it.
 
         With a registration, the policy is also told **what** it is judging: the component's id
@@ -232,6 +240,11 @@ class Session:
         if registration is not None:
             attributes["posture"] = registration.component.provenance.posture
             attributes["component"] = registration.id
+        if inputs is not None:
+            # **What** the act is, for a rule to match on (D65): the resolved inputs the step
+            # would run with. Reserved like the other two — a host could not have set it, so a
+            # driver could not have shaped a rule's view of the act.
+            attributes["inputs"] = inputs
         return Context(
             run_id=self.run_id,
             step=step,

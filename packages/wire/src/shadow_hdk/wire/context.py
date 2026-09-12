@@ -45,6 +45,7 @@ from shadow_hdk.wire.protocol import (
     CONTEXT_RELEASE,
     CONTEXT_REMAINING,
     CONTEXT_REQUEST_APPROVAL,
+    CONTEXT_REQUEST_INPUT,
     CONTEXT_RESUMED,
     CONTEXT_SEND,
     CONTEXT_SPAWN,
@@ -150,6 +151,14 @@ class WireRunContext(RunContext):
             },
         )
         return _as_answer(answered.get("answer"))
+
+    async def request_input(self, question: str, *, step: str | None = None) -> str | None:
+        """The agent's own question crosses and waits on the runtime side's handle (D65)."""
+        answered = await self._peer.call(
+            CONTEXT_REQUEST_INPUT, {"question": question, "step": step or self._step}
+        )
+        answer = answered.get("answer") if isinstance(answered, dict) else None
+        return str(answer) if answer is not None else None
 
     async def activity(self, kind: str, text: str, *, step: str | None = None) -> None:
         """What is happening crosses as a notification (D63): fire-and-forget, because activity is

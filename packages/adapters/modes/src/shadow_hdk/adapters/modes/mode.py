@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.ports import Allow, Ask, Context, GovernancePort, Judgement, Refuse
@@ -45,12 +46,24 @@ def layer(base: Mode, over: Mode) -> Mode:
 
 
 class ModeGovernance(GovernancePort):
-    def __init__(self, modes: Mapping[str, Mode], *, default: str, key: str = "mode") -> None:
+    def __init__(
+        self,
+        modes: Mapping[str, Mode],
+        *,
+        default: str,
+        key: str = "mode",
+        rules: Any = None,
+    ) -> None:
+        """`rules`: the host's `ActRules` (D65), consulted **after** this mode's own judgement says
+        *ask* — a matching `allow` rule stands in for the person, a matching `deny` refuses without
+        asking. Read at every judgement, so a rule added at answer time holds at the next step.
+        A rule never widens a ceiling: what the mode refuses stays refused."""
         if default not in modes:
             raise ValueError(f"default mode {default!r} is not one of {sorted(modes)}")
         self._modes = dict(modes)
         self._default = default
         self._key = key
+        self._rules = rules
 
     async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
         selected = context.attributes.get(self._key, self._default)
@@ -63,8 +76,23 @@ class ModeGovernance(GovernancePort):
         if not effects.narrows(mode.ceiling):
             return Refuse(f"mode {mode.name!r} does not permit this")
         if mode.ask_above is not None and not effects.narrows(mode.ask_above):
+            ruled = self._ruled(context, name)
+            if ruled == "allow":
+                return Allow()
+            if ruled == "deny":
+                return Refuse(f"a rule in mode {mode.name!r} refuses this act")
             return Ask(f"mode {mode.name!r} asks before this: {_why(effects, mode.ask_above)}")
         return Allow()
+
+    def _ruled(self, context: Context, mode: str) -> str | None:
+        """What the host's rules say about this act, if they know it (D65)."""
+        if self._rules is None:
+            return None
+        component = context.attributes.get("component")
+        if not isinstance(component, str):
+            return None
+        decided = self._rules.decide(component, context.attributes.get("inputs"), mode=mode)
+        return decided if isinstance(decided, str) else None
 
 
 def _why(effects: EffectProfile, line: EffectProfile) -> str:

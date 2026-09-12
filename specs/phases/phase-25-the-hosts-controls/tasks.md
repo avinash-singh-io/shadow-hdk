@@ -28,8 +28,8 @@ phase: 25
 - [x] `ModeRegistry` with shipped defaults named as the environment's modes; `set_mode`/`set_option`; `ModeChanged` on the record (modes authored from files: group 6, with the store)
 
 ## Group 5 — Approvals and input
-- [ ] `approve_and_add_rule` → a rule through the sink → `RuleRegistry` → governance, live
-- [ ] `ask_person` → `InputRequested`, answered through the handle
+- [x] `approve_and_add_rule` → `ActRule` through the sink → `ActRules` (a run handle) → governance after *ask*, live; both answer paths
+- [x] `ask_person` → `InputRequested`, answered with text through the handle; over the wire
 
 ## Group 6 — the Store
 - [ ] `Store` port; sqlite adapter; a source of every registry; refreshed at step boundaries

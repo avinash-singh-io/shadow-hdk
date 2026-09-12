@@ -65,6 +65,7 @@ CONTRACTED: dict[str, str] = {
     "InMemoryComponents": "tests/adapters/contract/test_the_doubles.py",
     # the thread's own turn component (D62)
     "_TurnComponents": "tests/runtime/test_a_thread_is_turns_of_runs.py",
+    "PersonComponents": "tests/runtime/test_approvals_add_rules_and_the_agent_asks_the_person.py",
     "SqliteThreads": "tests/adapters/basic/test_threads_survive_the_process.py",
     "InMemoryThreads": "tests/runtime/test_a_thread_is_turns_of_runs.py",
     "Judge": "tests/adapters/contract/test_the_doubles.py",

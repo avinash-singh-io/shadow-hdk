@@ -7,6 +7,7 @@ proposes, reads what is left of its lease, and spawns children without any of th
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -89,6 +90,10 @@ class RunOptions:
     """Where a component asks the host **live** while its step is still running (D58) — a step
     that holds a provider's session cannot park. A child inherits its parent's. `None` means
     nobody is there to ask, and `ask()` says so."""
+    rules: Any = None
+    """The host's act-rule registry (D65), when it keeps one: an `ApproveAndAddRule` answer —
+    live or on resume — adds its rule here the moment it is given, and governance reads it at
+    the next judgement. A child inherits its parent's. `None` means rules are not kept."""
 
 
 @dataclass(frozen=True)
@@ -241,6 +246,7 @@ class RunContext:
         # with a budget. `cancellation=` in the overrides makes the child its own to stop (D15).
         overrides.setdefault("cancellation", self._session.cancellation)
         overrides.setdefault("approvals", self._session.approvals)
+        overrides.setdefault("rules", self._session.rules)
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:
@@ -341,8 +347,8 @@ class RunContext:
         `about` is the component and inputs the question concerns (BUG-026): what the person is
         being asked to consent to, on the event and on the pending question alike."""
         from shadow_hdk.kernel.events import ApprovalRequested
-        from shadow_hdk.kernel.ports import Allow, Refuse
-        from shadow_hdk.runtime.approvals import Approve, ApproveAndAddRule, Deny, Request
+        from shadow_hdk.kernel.ports import Refuse
+        from shadow_hdk.runtime.approvals import Request
 
         where = step if step is not None else (self.step or "")
         handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
@@ -370,13 +376,68 @@ class RunContext:
                 inputs=inputs,
             )
         )
-        # The host's words become the loop's judgement. A rule that came with the approval is
-        # the host's to keep (group 5 proposes it through the sink); here it is an approval.
-        if isinstance(answered, Approve | ApproveAndAddRule):
+        return await self.accept_answer(answered)
+
+    async def accept_answer(self, answered: Any) -> Any:
+        """The host's words become the loop's judgement (D61, D65). `Approve` allows; `Deny`
+        refuses with its reason; `ApproveAndAddRule` allows **and** adds the rule to the host's
+        registry the moment it is given, then proposes it through the sink so the record says a
+        rule was made, about what. Anything else is handed on as it came (a `Judgement` already,
+        or JSON from the wire)."""
+        from shadow_hdk.kernel import ActRule, Proposal
+        from shadow_hdk.kernel.contracts import dump, load
+        from shadow_hdk.kernel.ports import Allow, Refuse
+        from shadow_hdk.runtime.approvals import Approve, ApproveAndAddRule, Deny
+
+        if isinstance(answered, dict) and answered.get("kind") == "approve_and_add_rule":
+            answered = ApproveAndAddRule(load(json.dumps(answered.get("rule")), ActRule))
+        elif isinstance(answered, dict) and answered.get("kind") == "approve":
+            answered = Approve()
+        elif isinstance(answered, dict) and answered.get("kind") == "deny":
+            answered = Deny(str(answered.get("reason", "the person said no")))
+        if isinstance(answered, ApproveAndAddRule):
+            rule = answered.rule
+            if not isinstance(rule, ActRule):
+                rule = load(json.dumps(rule), ActRule)
+            registry = self._session.rules
+            if registry is not None:
+                registry.add(rule)
+            from shadow_hdk.kernel import Provenance
+
+            await self.propose(
+                Proposal(
+                    kind="rule",
+                    payload=json.loads(dump(rule, ActRule)),
+                    # The person made it, in this run, at this moment.
+                    provenance=Provenance(registered_by="person", adapter="runtime", at=self.now()),
+                )
+            )
+            return Allow()
+        if isinstance(answered, Approve):
             return Allow()
         if isinstance(answered, Deny):
             return Refuse(answered.reason)
         return answered
+
+    async def request_input(self, question: str, *, step: str | None = None) -> str | None:
+        """The agent's own question to the person (D65): `InputRequested` on the record, the
+        answer as text through the same handle the approvals use. `None` when nobody was there —
+        a component says so and fails, rather than inventing an answer."""
+        from shadow_hdk.kernel.events import InputRequested
+        from shadow_hdk.runtime.approvals import Request
+
+        where = step if step is not None else (self.step or "")
+        handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
+        await self._emitter.emit(
+            lambda **k: InputRequested(step=where, question=question, handle=handle, **k)
+        )
+        approvals = self._session.approvals
+        if approvals is None:
+            return None
+        answered = await approvals.ask(
+            Request(handle=handle, run_id=self.run_id, step=where, question=question, kind="input")
+        )
+        return str(answered) if answered is not None else None
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:
         """What this step wants back if it parks. Read by the executor when the component answers

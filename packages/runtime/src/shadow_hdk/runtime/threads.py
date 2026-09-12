@@ -151,8 +151,11 @@ class Thread:
         approvals: Any = None,
         checkpointer: Any = None,
         modes: Any = None,
+        rules: Any = None,
     ) -> None:
         self._record = record
+        self._rules = rules
+        """The host's act-rule registry (D65), handed to every turn's run."""
         self._agent = agent
         self._ports = ports
         self._store = store
@@ -192,6 +195,7 @@ class Thread:
         approvals: Any = None,
         checkpointer: Any = None,
         modes: Any = None,
+        rules: Any = None,
         mode: str = "",
         provider: str = "",
         thread_id: str | None = None,
@@ -222,6 +226,7 @@ class Thread:
             approvals=approvals,
             checkpointer=checkpointer,
             modes=modes,
+            rules=rules,
         )
         if modes is not None and (spec := modes.get(mode)) is not None:
             thread._behaviour = spec.behaviour
@@ -242,6 +247,7 @@ class Thread:
         approvals: Any = None,
         checkpointer: Any = None,
         modes: Any = None,
+        rules: Any = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued."""
@@ -258,6 +264,7 @@ class Thread:
             approvals=approvals,
             checkpointer=checkpointer,
             modes=modes,
+            rules=rules,
         )
         if modes is not None and (spec := modes.get(record.mode)) is not None:
             thread._behaviour = spec.behaviour
@@ -366,6 +373,7 @@ class Thread:
                 lease=lease,
                 run_id=run_id,
                 approvals=self._approvals,
+                rules=self._rules,
                 checkpointer=self._checkpointer,
                 cancellation=cancellation,
                 context={

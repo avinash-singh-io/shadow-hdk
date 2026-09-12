@@ -127,7 +127,8 @@ class StepExecutor:
             return await self._resume_where_it_parked(step, parked_on, port, registration, inputs)
 
         judgement = await self._judge(
-            registration.component.effects, self.session.context_for(step.id, registration)
+            registration.component.effects,
+            self.session.context_for(step.id, registration, inputs),
         )
         match judgement:
             case Refuse(reason=reason):
@@ -234,7 +235,10 @@ class StepExecutor:
             if self._context is not None:
                 self._context.resuming(step.id, answer, self._kept.get(step.id))
             return await self._carry_out(step, port, registration, inputs)
-        answered = _as_judgement(await self._ask(step, "resumed"))
+        raw = await self._ask(step, "resumed")
+        if self._context is not None:
+            raw = await self._context.accept_answer(raw)
+        answered = _as_judgement(raw)
         if not isinstance(answered, Allow):
             return await self._observe(
                 step,

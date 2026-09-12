@@ -42,6 +42,8 @@ NOT_CROSSING: dict[str, str] = {
     "reserve": "runtime-internal: the meter reserves for a child, runtime-side on a crossed spawn",
     "settle": "runtime-internal: the meter settles what a child did not use",
     "unreachable": "a runtime-side fact; a crossed component meets it as a refusal",
+    "accept_answer": "runtime-internal: turns the host's answer into a judgement where the record "
+    "and the rule registry are; a crossed request_approval receives the judgement already made",
     "take_kept": "runtime-internal: the executor collects what a component kept before it parks",
     "resuming": "runtime-internal: the executor hands a resumed step its answer and what it kept",
     "resumed_done": "runtime-internal: the executor clears that after the invoke",

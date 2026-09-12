@@ -99,6 +99,7 @@ from shadow_hdk.kernel.providers import (
     ProviderKind,
     ProviderStatus,
 )
+from shadow_hdk.kernel.rules import ActRule
 from shadow_hdk.kernel.threads import ThreadId, ThreadRecord, TurnId, TurnRecord
 
 __all__ = [
@@ -181,6 +182,7 @@ __all__ = [
     "StepId",
     "ToolCall",
     "Until",
+    "ActRule",
     "ThreadId",
     "ThreadRecord",
     "ThreadStore",
