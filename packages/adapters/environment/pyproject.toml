@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-environment"
-version = "0.24.0"
+version = "0.25.0"
 description = "Where effects land, with a mode: local on the OS sandbox, or isolated in a box somebody else built."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.24.0", "shadow-hdk==0.24.0"]
+dependencies = ["shadow-hdk-kernel==0.25.0", "shadow-hdk==0.25.0"]
 
 [project.optional-dependencies]
 opensandbox = [

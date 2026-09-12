@@ -112,3 +112,72 @@ nothing — ENH-009: a shipped mode's `append_system` line. (6) A command that e
 is one scope over one root: the many-roots design keeps it and lets a rule say the path.
 
 ---
+
+### [DECISION] 2026-09-12 — D76: the workspace is one or many roots, chosen per thread and added live; the environment and the provider follow the mode
+
+Topics: workspace, roots, environment, modes, provider, resume, sink, BUG-032, BUG-033, ENH-011
+Affects-phases: phase-28-the-workspace
+Affects-specs: architecture/overview.md#environment, architecture/wire.md, architecture/adapters.md
+
+**Roots.** A `Workspace` is an ordered tuple of `Root(name, path)` — the first is the primary,
+where a relative path resolves; the rest are addressed by name (`sales/notes.md`) — VS Code's
+multi-root, Claude Code's `--add-dir`, Codex's `writable_roots`. It lives in the kernel as pure
+data (paths are strings; the kernel touches no filesystem, so nesting is the environment's to
+refuse). The environment opens on it: the seatbelt/bubblewrap profile allows writes under every
+root, the proof (D36) writes inside *each* and outside *all*, and `inside()` resolves by name,
+by absolute path under a root, or under the primary. The policy's scope stays `workspace`: a
+rule that wants to tell roots apart names the path (D65). A thread names its roots at
+`thread/start` (`root` alone still means one root, named after its directory) and the record
+carries them; `thread/add_root` re-opens the environment on the new set — proven again — and
+`WorkspaceChanged` goes on the record, between turns, like `ModeChanged`. A box
+(`SandboxEnvironment`) mounts one root and refuses a re-open honestly; a second root there is
+another box, later. Measured live: `second-repo` added mid-conversation; the tools' descriptions
+named it; the agent read and wrote there through the sandbox (9¢).
+
+**The environment follows the mode.** A `ModeSpec` names the environment mode it needs
+(`environment`); the shipped four do, a document may. `Thread.set_mode` re-opens the
+environment when that differs from the one open (`Environment.reopen`: the mechanism proves
+again, `requires` refuses unchanged) before the policy flips. The record and the wire carry
+`environment` beside `mode`, so a page never says `full` over a sandbox that is not. Measured
+live: `read-only` after `workspace-write` — reads everywhere, no write anywhere, inside or out.
+
+**The provider follows the mode (BUG-032).** The offered registry sends
+`notifications/tools/list_changed` to every live connection (the connection registers how, on
+its own stream; a gone one is dropped). Measured: Claude Code 2.1.235 kept the list it had
+("my tool list still shows it") and the call failed honestly. So a mode change and a root added
+reopen the provider — on its own session: `AgentPort.open(resume=)`, the Claude Code file's
+`resume_args = ["--resume"]` and `session_id_at = "session_id"`, the id read off every line of
+its stream and kept on the record after every turn. Measured live: reopened in `read-only`, the
+model remembered the word given before the switch and listed exactly the eight tools of the
+read-only registry — nothing stale, nothing lost. A behaviour change reopens the same way.
+
+**Kept, not printed (ENH-011).** `KeepingSink` is the composition's sink: a `skill` proposal
+becomes a `skills` row (D66), offered after a restart with source `store`; everything still
+reaches the sink behind it. The runtime still has no write path — the host's sink writes.
+
+**BUG-033, not reproduced.** wigolo ended with `serve` under SIGTERM to the python, SIGKILL to
+the python, and SIGTERM to its parent (measured three ways, with a thread open); it exits on
+stdin EOF. The orphan seen once (pid 27919) is recorded and watched for, not fixed blind.
+
+*Why:* what a conversation works on is the product's to choose, per conversation and while it
+runs (principle 10 — data changes live); and every one of the three surfaces a mode touches —
+what the OS enforces, what the policy judges, what the model is told it has — must move
+together, or the page lies.
+
+---
+
+## Verification Evidence
+
+Captured fresh 2026-09-12 on the phase branch at close, before landing:
+
+- `uv run ruff check -q` → exit 0
+- `uv run ruff format --check -q` → exit 0
+- `uv run mypy` → exit 0 (`Success: no issues found in 245 source files`)
+- `uv run pytest -q -p no:cacheprovider -m 'not live'` → `1392 passed, 2 skipped, 12 deselected, 85 warnings in 147.84s (0:02:27)`
+- `tests/test_versions.py` → EXPECTED `0.25.0`, eighteen packages moved together (D9); `uv sync --all-packages` clean; `../harness-demo` re-synced and sees 0.25.0
+- RED first, every group: group 1 `'ScriptedThreads' has no attribute 'tools'`, `no method 'tools/list'`, the parity invariant naming `Thread.tools`; group 2 a child judged with `{'posture', 'component', 'inputs'}` and no `mode`; `set(by_id)` lacking `ask`; group 3 `No module named 'shadow_hdk.kernel.workspace'`, `KeyError: 'roots'`, `[] == ['workspace_changed']`, `assert 'allow' == 'ask'` (the studio host's own pre-approving rule, the test re-aimed at `run_shell`), `assert 0 == 1` notifications heard; group 4 `No module named 'shadow_hdk.serve.keeping'`; the kernel-purity invariant refused `pathlib` in the kernel and the roots became strings
+- Found by running the README's snippet for real: a relative root reached the OS profile as written and the proof said *not proven* — resolved before the proof, a test added
+- Live, on the owner's subscription (Claude Code 2.1.235), through `../harness-demo/` (`shadow-hdk serve harness.toml --http --page studio/page.html`, the demo's own `pyproject.toml` over the sibling tree): eight turns in the review ($1.60) and four in the build — `second-repo` added mid-thread (`thread/add_root`): the tools named it, the agent read and wrote there through the sandbox (4 calls · 9¢); `read-only` after `workspace-write`: the sandbox followed, reads everywhere, no write anywhere, the CLI's cached list stale ("my tool list still shows it") and the call failed honestly (BUG-032 measured, 27¢); after the reopen-on-resume: the word PELICAN given in `workspace-write` remembered in `read-only`, and the model listed exactly the eight tools of the read-only registry (11¢); the `ask` mode: approve · approve-and-add-rule · deny (13¢)
+- BUG-033: wigolo ended with `serve` under SIGTERM to the python, SIGKILL to the python, and SIGTERM to its parent — each with a thread open and the battery running; not reproduced
+
+---

@@ -93,6 +93,7 @@ rather than remembered.
 | D73 | the registries are the harness's answer — `Thread.tools()`, `tools/list`, `skills/list` | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 | D74 | a child run is judged in its parent's context | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 | D75 | the `ask` mode; a run's tool surface is exactly the registry | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
+| D76 | the workspace is one or many roots, chosen per thread and added live; the environment and the provider follow the mode | [`phases/phase-28-the-workspace/history.md`](/phases/phase-28-the-workspace/history.md) |
 
 ## Also here
 

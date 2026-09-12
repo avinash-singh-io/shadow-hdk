@@ -119,3 +119,23 @@ async def test_the_proof_runs_over_every_root(tmp_path: Path) -> None:
     assert box is not None
     isolation = _prove(box, workspace, "workspace-write")
     assert isolation.proven and isolation.writes_confined and isolation.network_denied
+
+
+@needs_sandbox
+async def test_a_relative_root_is_resolved_before_the_proof(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """Found by running the README's snippet: `Root("finance", "./finance")` reached the OS
+    profile as written, the sandbox allowed nothing, and the proof said *not proven*."""
+    (tmp_path / "finance").mkdir()
+    (tmp_path / "sales").mkdir()
+    monkeypatch.chdir(tmp_path)
+    env = await LocalEnvironment.open(
+        workspace=Workspace((Root("finance", "./finance"), Root("sales", "./sales"))),
+        mode="workspace-write",
+    )
+    assert env.isolation.proven
+    assert env.roots[0].path == str((tmp_path / "finance").resolve())
+    assert await env.invoke("write_file", {"path": "sales/x.txt", "content": "x"}) == Completed(
+        {"path": "sales/x.txt", "bytes": 1}
+    )

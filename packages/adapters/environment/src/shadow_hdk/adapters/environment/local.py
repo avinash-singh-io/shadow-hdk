@@ -37,6 +37,7 @@ from shadow_hdk.runtime.environment import (
     Mode,
     output_activity,
     requires,
+    resolved,
 )
 from shadow_hdk.runtime.leash import run_leashed
 
@@ -95,7 +96,9 @@ def _seatbelt_profile(workspace: Workspace, mode: Mode) -> str:
     ]
     if mode == "workspace-write":
         # Every root (D76): a workspace of many directories is writable in all of them.
-        lines.extend(f'(allow file-write* (subpath "{r.path}"))' for r in workspace.roots)
+        lines.extend(
+            f'(allow file-write* (subpath "{Path(r.path).resolve()}"))' for r in workspace.roots
+        )
     return "\n".join(lines)
 
 
@@ -105,7 +108,7 @@ def _bubblewrap_args(binary: str, workspace: Workspace, mode: Mode) -> list[str]
     args = [binary, "--ro-bind", "/", "/", "--dev", "/dev", "--unshare-net", "--die-with-parent"]
     if mode == "workspace-write":
         for r in workspace.roots:
-            args += ["--bind", str(r.path), str(r.path)]
+            args += ["--bind", str(Path(r.path).resolve()), str(Path(r.path).resolve())]
     return args
 
 
@@ -188,8 +191,10 @@ class LocalEnvironment(Environment):
     ) -> LocalEnvironment:
         """Construct, proving first. Refuses a confined mode nothing here can enforce. `workspace`
         names one or many roots (D76); `root` alone is the one-root workspace."""
-        workspace = workspace or Workspace.of(root or Path.cwd())
-        where = Path(workspace.primary.path).resolve()
+        # Resolved before the proof (D76): a relative root would reach the OS profile as written
+        # and the sandbox would allow nothing — found by running the README's snippet for real.
+        workspace = resolved(workspace or Workspace.of(root or Path.cwd()))
+        where = Path(workspace.primary.path)
         box = local_sandbox()
         isolation = (
             Isolation.none() if mode == "full" or box is None else _prove(box, workspace, mode)

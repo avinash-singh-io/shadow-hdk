@@ -18,8 +18,18 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.24.0"
-"""0.24.0 because the front door grew (Phase 27, D70–D72): `Harness`, `Part` and `Budget` in
+EXPECTED = "0.25.0"
+"""0.25.0 because the workspace, the modes and the wire grew (Phase 28, D73–D76): `Workspace`
+and `Root` in the kernel; `ThreadRecord.roots` and `.environment`; `WorkspaceChanged`, the
+fifteenth event kind; `AgentPort.open(resume=)`; `Environment.reopen`, `Environment(workspace=)`;
+`ModeSpec.environment` and the fourth shipped mode, `ask`; `Thread.tools`, `Thread.add_root`,
+`Thread.workspace`; on the wire `tools/list`, `skills/list`, `thread/add_root`, `roots` and
+`environment` in the thread results, `root` in every `files/*` entry; `shadow-hdk-serve
+[providers]`; `KeepingSink`; and a child run judged in its parent's context (BUG-030), which
+changes what every host's policy is told. Additive on the surface and a change in what a
+mode means underneath, so the join moves.
+
+0.24.0 because the front door grew (Phase 27, D70–D72): `Harness`, `Part` and `Budget` in
 `shadow-hdk-serve`; `Settings` grew `batteries`, `batteries_dir` and `budget`;
 `ServeHost(governance=, sink=)`; `a_thread(agent=, batteries=, batteries_dir=)`;
 `McpComponents(only=, aliases=, effects=)` — a widened adapter constructor; and the wire's

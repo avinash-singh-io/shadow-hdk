@@ -15,14 +15,15 @@ phase: 28
 - [x] `shadow-hdk-serve[providers]`
 
 ## Group 3 — the workspace
-- [ ] `Workspace`/`Root` in the runtime's environment; the OS profiles over many roots; the proof over each; `inside()` by name
-- [ ] `ThreadRecord.roots`; `thread/start {roots}`; `thread/add_root`; `RootAdded`
-- [ ] `files/list` and `files/read` across roots; the page's trees; the demo on two roots
-- [ ] `ModeSpec.environment`; `set_mode` re-opens the environment when it differs; the environment's mode in `thread/start`'s result
-- [ ] BUG-032 `tools/list_changed` after `set_mode`, measured on Claude Code and Codex
+- [x] `Workspace`/`Root` in the kernel (pure); the environment over many roots — the OS profiles, the proof over each, `inside()` by name; `Environment.reopen`
+- [x] `ThreadRecord.roots` and `.environment`; `thread/start {roots}`; `thread/add_root`; `WorkspaceChanged` (the fifteenth kind; schemas and TS regenerated)
+- [x] `files/list` (root per entry) and `files/read {root, path}`; the page's trees and add-directory; the demo on two roots (measured live: `second-repo` added mid-thread, read and written)
+- [x] `ModeSpec.environment`; `set_mode` re-opens the environment when it differs; `environment` in `thread/start`, `set_mode` and `add_root` results (measured live: read-only after workspace-write denied every write)
+- [x] BUG-032 `tools/list_changed` sent per connection — Claude Code 2.1.235 ignores it (measured) — so a mode change or a root added reopens the provider on its own session (`AgentPort.open(resume=)`, `--resume`; measured live: memory kept, list fresh); Codex to measure when a Codex turn is next spent
 
 ## Group 4 — kept, not printed
-- [ ] the host's sink keeps a minted skill as a store row; listed with source `store` after a restart
+- [x] `KeepingSink`: a minted skill is a store row, offered after a restart with source `store`; everything still reaches the sink behind it
 
 ## Close
-- [ ] decisions; index; README; 0.25.0; landed; board
+- [x] decisions (D73–D76); index; README; 0.25.0 across eighteen packages
+- [ ] landed; board

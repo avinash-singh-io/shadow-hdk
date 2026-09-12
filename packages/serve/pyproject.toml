@@ -1,22 +1,22 @@
 [project]
 name = "shadow-hdk-serve"
-version = "0.24.0"
+version = "0.25.0"
 description = "The shipped composition behind the wire: `shadow-hdk serve harness.toml --stdio|--http`."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
-    "shadow-hdk-kernel==0.24.0",
-    "shadow-hdk==0.24.0",
-    "shadow-hdk-wire[serve]==0.24.0",
-    "shadow-hdk-providers==0.24.0",
-    "shadow-hdk-adapters-recording==0.24.0",
-    "shadow-hdk-adapters-modes==0.24.0",
-    "shadow-hdk-adapters-basic==0.24.0",
-    "shadow-hdk-adapters-environment==0.24.0",
-    "shadow-hdk-adapters-agent==0.24.0",
-    "shadow-hdk-adapters-mcp==0.24.0",
+    "shadow-hdk-kernel==0.25.0",
+    "shadow-hdk==0.25.0",
+    "shadow-hdk-wire[serve]==0.25.0",
+    "shadow-hdk-providers==0.25.0",
+    "shadow-hdk-adapters-recording==0.25.0",
+    "shadow-hdk-adapters-modes==0.25.0",
+    "shadow-hdk-adapters-basic==0.25.0",
+    "shadow-hdk-adapters-environment==0.25.0",
+    "shadow-hdk-adapters-agent==0.25.0",
+    "shadow-hdk-adapters-mcp==0.25.0",
 ]
 
 [project.optional-dependencies]
@@ -25,8 +25,8 @@ search = ["ddgs>=9"]   # the ddgs battery's engine — optional, so the light al
 # Code and Codex, `acp` for OpenCode. A product that installs `shadow-hdk-serve[providers]` can
 # open a thread on whichever CLI is signed in; without them `ready()` names the missing transport.
 providers = [
-    "shadow-hdk-adapters-jsonl==0.24.0",
-    "shadow-hdk-adapters-acp==0.24.0",
+    "shadow-hdk-adapters-jsonl==0.25.0",
+    "shadow-hdk-adapters-acp==0.25.0",
 ]
 
 [project.scripts]

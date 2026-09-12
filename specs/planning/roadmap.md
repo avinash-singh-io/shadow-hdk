@@ -26,7 +26,17 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-12, night
+## Where this stands — 2026-09-12, late
+
+**Phases 0–28 are done** and v0.25.0 is released. Phase 28 built what the owner's review asked
+for: the workspace as one or many roots chosen per conversation and added while it runs; a mode
+that moves all three of its surfaces together — what the OS enforces, what the policy judges,
+what the model is told it has (the provider reopened on its own session, its memory kept); the
+`ask` mode; the registries visible; and two governance holes closed (a child judged in its
+parent's context; every CLI built-in off). What remains is 29 (context engineering) and 30
+(collaboration), the owner's call.
+
+### Where this stood — 2026-09-12, night
 
 **Phase 28 — the workspace — is open**, from the owner's review and a demo run from outside the
 tree (`../harness-demo/`). Two groups are built on the branch: the registries visible
@@ -150,7 +160,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 25 | The host's controls | **DONE** · `phase-25-the-hosts-controls` | 24 | the industry's terms (thread, turn, item, delta, approval request); activity beside the record; `Thread` as a component with turns on the record; modes = policy + behaviour + presentation, `set_mode`; approval and input requests, with "add a rule"; the `Store` port — every registry live, no restart |
 | 26 | Any language | **DONE** · `phase-26-any-language` | 25 | the thread, the handles and the store cross the wire as methods (`ThreadHost`, parity rule 4); `shadow-hdk serve` over stdio and HTTP/SSE with the shipped composition (`shadow-hdk-serve`); a TypeScript client generated from the schemas, held by an invariant; the studio a page `serve` serves, talking the wire only; `files/*`; a session's threads close with it |
 | 27 | Batteries and the facade | **DONE** · `phase-27-batteries-and-the-facade` | 25, 26 | a battery is a file — wigolo and ddgs consumed behind the MCP/callable component port with vouched effects, judged by the modes as they are (D70); `harness.toml` and `Harness.load()` — three lines, `budget`, one step deeper, two invariants (D71); the coder on the facade; the optimiser port specified, its evaluator locked first (D72) |
-| 28 | The workspace | **in progress** · `phase-28-the-workspace` | 25, 26, 27 | the registries visible (`tools/list`, `skills/list` — D73); a child judged in its parent's context (D74); the `ask` mode and every CLI built-in off (D75); **to build**: one or many roots per thread, named at `thread/start` and added live; the environment follows the mode; the catalogue follows the mode; minted skills kept in the store |
+| 28 | The workspace | **DONE** · `phase-28-the-workspace` | 25, 26, 27 | the registries visible (`tools/list`, `skills/list` — D73); a child judged in its parent's context (D74); the `ask` mode and every CLI built-in off (D75); one or many roots per thread, named at `thread/start` and added live, the environment and the provider following the mode (`--resume`), minted skills kept in the store (D76) |
 | 29 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 30 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
 

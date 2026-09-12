@@ -2,7 +2,7 @@
 type: Phase
 phase: 28
 name: the-workspace
-status: in-progress
+status: complete
 topics: [workspace, roots, environment, modes, approval, registries, tools, skills, studio, demo]
 deps: [phase-25-the-hosts-controls, phase-26-any-language, phase-27-batteries-and-the-facade]
 ---
@@ -30,19 +30,19 @@ three bugs (BUG-030 to BUG-032), one leak (BUG-033) and the gaps this phase clos
   approve-and-add-rule, measured live.
 - **A run's tool surface is exactly the registry** (group 2 — built, BUG-031): every Claude Code
   built-in off by construction (`--tools ""`), not by a list of names.
-- **The workspace is one or many roots** (group 3 — the design below; to build): a thread
+- **The workspace is one or many roots** (group 3 — built, D76): a thread
   names its roots at `thread/start` (or takes the host's default), each root a name and a path;
   the environment confines to all of them and proves it; the file tools address `name/path`;
   `files/*` list and read across them; a root can be **added live** (`thread/add_root`, Claude
   Code's `/add-dir`) with the proof re-run for the new set.
-- **The environment follows the mode** (group 3): a shipped mode names the environment mode it
+- **The environment follows the mode** (group 3 — built): a shipped mode names the environment mode it
   needs, and `set_mode` re-opens (re-proves) the environment when that differs — today the
   selector flips the policy while the sandbox stays as opened, so `full` on a workspace-write
   thread reaches nothing more, and the page says otherwise.
-- **The provider's catalogue follows the mode** (group 3, BUG-032): the offered registry sends
+- **The provider's catalogue follows the mode** (group 3 — built, BUG-032): the offered registry sends
   `notifications/tools/list_changed` after `set_mode`, so a resident CLI re-lists — today it holds
   the catalogue it fetched under the previous mode until the thread is resumed.
-- **Kept, not printed** (group 4): what a run proposes for keeping — a minted skill — is kept in
+- **Kept, not printed** (group 4 — built, ENH-011): what a run proposes for keeping — a minted skill — is kept in
   the store by the shipped composition, so it is offered after a restart; today `serve`'s sink is
   stdout.
 

@@ -4,22 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-12 (Phase 28 — the workspace — opened; groups 1–2 built on the branch)
-> **Current Phase**: **28 — the workspace** (`phase-28-the-workspace`). Opened from the owner's
-> review and a demo run from outside the tree (`../harness-demo/`, eight turns on the
-> subscription). Built: the registries visible — `Thread.tools()`, `tools/list`, `skills/list`
-> (D73); a child run judged in its parent's context (BUG-030, D74 — `set_mode("read-only")` had
-> let a `run_shell` write); every Claude Code built-in off by construction (BUG-031, D75); the
-> `ask` mode, measured with approve · approve-and-add-rule · deny; `serve[providers]`. To build:
-> the workspace as one or many roots per thread, added live; the environment and the provider's
-> catalogue following the mode (BUG-032); minted skills kept in the store. Phases 29 (context
-> engineering) and 30 (collaboration) after.
+> **Last Updated**: 2026-09-12 (Phase 28 — the workspace — closed as v0.25.0)
+> **Current Phase**: **none — Phase 28 (the workspace) is complete and released as v0.25.0.**
+> Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
+> The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
+> `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
+> chosen per thread and added live, the environment and the provider following the mode
+> (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
+> (collaboration), the owner's call.
 >
-> 1,372 tests; mypy strict over 240 files; eighteen distributions at **0.24.0** (0.25.0 at the close of 28), all MIT.
+> 1,392 tests; mypy strict over 245 files; eighteen distributions at **0.25.0**, all MIT.
 >
-> **Latest Release**: **v0.24.0**, released 2026-09-12 — Phase 27, batteries and the facade
-> (D70–D72). Contract change (the front door, `batteries/list`, a widened adapter), so a *Pins*
-> row. Before it v0.23.0 (Phase 26, any language, D67–D69), v0.22.0
+> **Latest Release**: **v0.25.0**, released 2026-09-12 — Phase 28, the workspace (D73–D76).
+> Contract change (roots, `WorkspaceChanged`, `tools/list`, `skills/list`, `thread/add_root`,
+> `AgentPort.open(resume=)`, the `ask` mode, a child's context), so a *Pins* row. Before it
+> v0.24.0 (Phase 27, batteries and the facade, D70–D72), v0.23.0 (Phase 26, any language, D67–D69), v0.22.0
 > (Phase 25, the host's controls, D61–D66), v0.21.0 (the words, mid-phase), v0.20.0 (the studio inline; seven bugs found by using it, D59,
 > D60), v0.19.0 (hardening to Phase 24: D57 park, D58 live, `Questions`, Codex measured), v0.18.0 (Phase 24, the skill registry), v0.17.0 (Phase 23, a host —
 > the consumable line), v0.16.0, v0.15.0, v0.14.0, v0.13.1. All MIT
@@ -74,11 +73,13 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 | 25 | The host's controls | Complete, merged | **v0.22.0** |
 | 26 | Any language | Complete, merged | **v0.23.0** |
 | 27 | Batteries and the facade | Complete, merged | **v0.24.0** |
+| 28 | The workspace | Complete, merged | **v0.25.0** |
 
 ## Ad-hoc / Patch Releases
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.25.0 | 2026-09-12 | phase 28 | the workspace: one or many roots per thread, added live; the environment and the provider follow the mode; the `ask` mode; the registries visible; a child judged in its parent's context (D73–D76) |
 | v0.24.0 | 2026-09-12 | phase 27 | batteries and the facade: a battery is a file (wigolo, ddgs), `Harness.load` and `harness.toml`, `budget`, the optimiser specified (D70–D72) |
 | v0.23.0 | 2026-09-12 | phase 26 | any language: the thread, the handles and the store over the wire; `shadow-hdk serve`; the TypeScript client; the studio on the wire (D67–D69) |
 | v0.22.0 | 2026-09-12 | phase 25 | the host's controls: Thread/Turn/Item/Activity, modes = policy + behaviour, rules and input, the Store (D61–D66) |
@@ -90,7 +91,6 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 28 — the workspace | `phase-28-the-workspace` | in progress | groups 1–2 built (registries visible; BUG-030/031 closed; the `ask` mode); groups 3–4 designed in `plan.md` — roots, the environment follows the mode, BUG-032, minted skills kept |
 
 ## Upcoming Phases
 
@@ -119,14 +119,13 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 
 | ID | Type | Description |
 |----|------|-------------|
-| _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: BUG-032 (P2), BUG-033 (P2), ENH-005–011 (P2–P3) — see the backlog |
+| _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: BUG-033 (P3, not reproduced), ENH-005–008, ENH-012 (P2–P3) — see the backlog |
 
 ## Next Actions
 
-1. Phase 28 group 3 — the workspace: `Workspace`/`Root`, the OS profiles and the proof over many roots, `thread/start {roots}`, `thread/add_root`, `files/*` across roots, the environment following the mode, BUG-032
-2. Phase 28 group 4 — the host's sink keeps a minted skill as a store row
-3. Close 28 (0.25.0, land, board); then Phase 29 (context engineering) and 30 (collaboration), the owner's call
-4. Owner-gated, unchanged: ADR-1, ADR-2, a Linux host for the containment proofs, a lawyer's read on AGPL at arm's length
+1. Phase 29 (context engineering) and 30 (collaboration), the owner's call
+2. Codex measured on `tools/list_changed` and `--resume` when a Codex turn is next spent; ENH-012 (a clean settings scope for the provider); BUG-033 watched for
+3. Owner-gated, unchanged: ADR-1, ADR-2, a Linux host for the containment proofs, a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
 

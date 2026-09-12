@@ -177,7 +177,7 @@ class Environment(ComponentPort):
         requires(isolation, mode)
         # One root or many (D76): `workspace` names them; `root` alone is the one-root workspace
         # every earlier caller meant, and `self.root` stays the primary's path for them.
-        self.workspace: Workspace = _resolved(workspace or Workspace.of(root or Path.cwd()))
+        self.workspace: Workspace = resolved(workspace or Workspace.of(root or Path.cwd()))
         self.root = Path(self.workspace.primary.path)
         self.mode: Mode = mode
         self.isolation = isolation
@@ -222,7 +222,7 @@ class Environment(ComponentPort):
         """The same environment on a different workspace or in a different mode — a root added
         while the thread runs, a mode that needs another sandbox — proven before it is believed
         (D36) and refused, unchanged, where it cannot be (`CannotEnforce`)."""
-        wanted_workspace = _resolved(workspace) if workspace is not None else self.workspace
+        wanted_workspace = resolved(workspace) if workspace is not None else self.workspace
         wanted_mode: Mode = mode or self.mode
         isolation = self._prove_now(wanted_workspace, wanted_mode)
         requires(isolation, wanted_mode)
@@ -341,7 +341,7 @@ class Environment(ComponentPort):
         return (self.root / given).resolve()
 
 
-def _resolved(workspace: Workspace) -> Workspace:
+def resolved(workspace: Workspace) -> Workspace:
     """The kernel's roots with their paths resolved here, where the filesystem is — and refused
     where one root lies inside another, which the kernel cannot know."""
     resolved = Workspace(tuple(Root(r.name, str(Path(r.path).resolve())) for r in workspace.roots))
@@ -363,6 +363,7 @@ def _completed(output: JsonValue) -> Observation:
 
 
 __all__ = [
+    "resolved",
     "output_activity",
     "OPERATIONS",
     "CannotEnforce",
