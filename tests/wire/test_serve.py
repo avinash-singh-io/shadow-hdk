@@ -235,3 +235,29 @@ async def test_a_client_without_a_session_is_refused() -> None:
                     json={"jsonrpc": "2.0", "id": "x", "method": "initialize", "params": {}},
                 )
                 assert invented.status_code == 404, invented.text
+
+
+async def test_the_stream_opens_with_a_frame_before_anything_is_asked() -> None:
+    """The first bytes of the stream arrive before the client has called anything.
+
+    Uvicorn sends the SSE headers at once, so a browser page on the harness's own origin never
+    noticed what a Node front — Vite's dev proxy, a product's backend — does: Node holds a
+    response's headers until the first body byte is written. The session id rides in those
+    headers, and the harness's first frame was a reply to a call the client cannot make without
+    the id — a deadlock the React example found on its first connect. So the stream opens with
+    an SSE comment frame, as the SSE convention has it; a client ignores lines that are not
+    `data:` and every proxy flushes on it.
+    """
+    import httpx
+
+    with anyio.fail_after(30):
+        async with served_over_http() as address:
+            async with (
+                httpx.AsyncClient() as client,
+                client.stream("GET", f"{address}/rpc") as response,
+            ):
+                assert response.headers.get("x-shadow-hdk-session")
+                with anyio.fail_after(3):  # nothing was asked; without the opening frame this hangs
+                    first = await anext(response.aiter_raw())
+                assert first.startswith(b":"), first
+                assert first.endswith(b"\n\n"), first
