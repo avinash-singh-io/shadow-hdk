@@ -224,6 +224,9 @@ def spent_of(meter: LeaseMeter) -> Spent:
         seconds=float(counted["elapsed_seconds"]),
         cents=int(counted["cost_cents"]),
         unpriced=bool(counted["unpriced"]),
+        input_tokens=int(counted["input_tokens"]),
+        output_tokens=int(counted["output_tokens"]),
+        unmetered=bool(counted["unmetered"]),
     )
 
 
@@ -277,8 +280,13 @@ class Conversation:
                     "cost_cents": spent.cents,
                     "unpriced": 1 if spent.unpriced else 0,
                     "elapsed_seconds": spent.seconds,
+                    "input_tokens": spent.input_tokens,
+                    "output_tokens": spent.output_tokens,
+                    "unmetered": 1 if spent.unmetered else 0,
                 }
             )
+        # **The clock runs only in a turn** (D90): a conversation sitting open spends nothing.
+        self._meter.pause()
         self.registry = registry
         self._approvals = approvals
         self._checkpointer = checkpointer
@@ -547,6 +555,7 @@ class Conversation:
             self._parked_children = []
             self._open_questions = []
             self.turns_taken = number
+            unreported: list[bool] = []
 
             async def turn_component(inputs: Any) -> Observation:
                 context = current_run()
@@ -566,6 +575,9 @@ class Conversation:
                 if done.usage is not None:
                     # The step's cost, where the meter reads it (D20).
                     output["usage"] = json.loads(dump(done.usage, Usage))
+                else:
+                    # A turn the provider said nothing about (D90): the count is a floor.
+                    unreported.append(True)
                 return Completed(output)
 
             base = self._ports
@@ -596,6 +608,10 @@ class Conversation:
             steps_taken = 0
             spent_cents = 0
             cost_known = True
+            tokens_in = 0
+            tokens_out = 0
+            tokens_known = True
+            self._meter.unpause()
             try:
                 async for event in run(plan, ports, options=options):
                     await self._watch_questions(event, turn_id, run_id, on_question)
@@ -616,12 +632,21 @@ class Conversation:
                         elif event.reason != "completed" and outcome == "completed":
                             outcome = "failed"
                             said = said or f"the turn ended {event.reason}"
-                    if event.kind == "usage" and event.run_id == run_id:
+                    if event.kind == "usage":
+                        # The turn's own calls and its children's alike (D90): every call the
+                        # turn caused is the turn's to count.
                         usage = getattr(event, "usage", None)
-                        if usage is not None and usage.cost_cents is not None:
-                            spent_cents += usage.cost_cents
-                        elif usage is not None:
-                            cost_known = False
+                        if usage is not None and event.run_id == run_id:
+                            if usage.cost_cents is not None:
+                                spent_cents += usage.cost_cents
+                            else:
+                                cost_known = False
+                        if usage is not None:
+                            if usage.input_tokens is None and usage.output_tokens is None:
+                                tokens_known = False
+                            else:
+                                tokens_in += usage.input_tokens or 0
+                                tokens_out += usage.output_tokens or 0
                     yield event
             finally:
                 self._current = None
@@ -631,8 +656,14 @@ class Conversation:
                     # was told returns what it had — but the turn was cut short, and says so.
                     outcome = "cancelled"
                 self._meter.settle(
-                    reserved, steps=steps_taken, cost_cents=spent_cents, cost_known=cost_known
+                    reserved,
+                    steps=steps_taken,
+                    cost_cents=spent_cents,
+                    cost_known=cost_known,
+                    tokens=(tokens_in, tokens_out),
+                    tokens_known=tokens_known and not unreported,
                 )
+                self._meter.pause()
                 # **Kept, or withdrawn** (D88). A question answered `Parked` stays open on the
                 # turn — the run that sleeps on it is in the checkpointer; every other question
                 # still open when the turn ended was withdrawn from whoever was asked (D59).
@@ -755,6 +786,7 @@ class Conversation:
         )
         events: list[Event] = []
         steps_taken = 0
+        self._meter.unpause()
         try:
             async for event in resume_run(composition, answer, self._ports, options=options):
                 events.append(event)
@@ -762,6 +794,7 @@ class Conversation:
                     steps_taken = event.steps_taken
         finally:
             self._meter.settle(reserved, steps=steps_taken, cost_cents=0, cost_known=True)
+            self._meter.pause()
         return events
 
     # ------------------------------------------------------------------ mode and options

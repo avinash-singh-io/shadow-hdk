@@ -274,10 +274,24 @@ class RunContext:
         """Hold a child's worst case against this run's remaining budget."""
         return self._session.meter.carve(ceiling)
 
-    def settle(self, reserved: Ceiling, *, steps: int, cost_cents: int, cost_known: bool) -> None:
+    def settle(
+        self,
+        reserved: Ceiling,
+        *,
+        steps: int,
+        cost_cents: int,
+        cost_known: bool,
+        tokens: tuple[int, int] = (0, 0),
+        tokens_known: bool = True,
+    ) -> None:
         """Release that hold and charge what the child really spent."""
         self._session.meter.settle(
-            reserved, steps=steps, cost_cents=cost_cents, cost_known=cost_known
+            reserved,
+            steps=steps,
+            cost_cents=cost_cents,
+            cost_known=cost_known,
+            tokens=tokens,
+            tokens_known=tokens_known,
         )
 
     @property

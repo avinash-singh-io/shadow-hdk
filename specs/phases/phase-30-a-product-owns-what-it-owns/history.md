@@ -72,3 +72,21 @@ message on the last chunk — a call whose arguments arrive in fragments is one 
 
 **Why.** Every runtime in the field streams; a product streamed *underneath* `complete` with a
 model wrapper that folded chunks back (ENH-065, join J5). Closed here.
+
+### [DECISION] 2026-09-14 — D90: tokens and running time on the record
+
+**Decision.** `Spent.input_tokens`, `.output_tokens` and `.unmetered` (D84 grown): the meter
+counts every call's tokens — the turn's own and its children's, since every call the turn
+caused is the turn's to count — and a call that reported none (a provider turn with no usage,
+a model call with no counts) makes the count a floor, said by `unmetered`, never a zero. A
+thread's `seconds` are its turns' running time: the conversation's meter is paused between
+turns (`LeaseMeter.pause`/`unpause`) and runs only while a turn, or a settled act, runs — D33's
+rule for a run, held for the thread. Carried across openings with the rest of `spent`.
+
+**Why.** A subscription is *tokens counted, no price* — the field's runtimes keep usage on the
+container, and the product folded `usage` events into its own ledger for want of it. And the
+thread's clock ran from its opening: a thread left open overnight with one ten-second turn
+had spent its hour by sitting there (the React header read `58 min` two minutes in).
+
+**Correction.** This is a change in what `thread/remaining` says for an open, idle thread —
+more, and truthfully.

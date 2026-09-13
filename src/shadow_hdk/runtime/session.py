@@ -37,6 +37,11 @@ class LeaseMeter:
         self._carved_steps = 0
         self._carved_cost = 0
         self._carried_seconds = 0.0
+        self._running = True
+        """Whether the clock is running (D90): a run's always is; a thread's only in a turn."""
+        self._input_tokens = 0
+        self._output_tokens = 0
+        self._tokens_known = True
 
     @property
     def lease(self) -> Lease:
@@ -79,11 +84,46 @@ class LeaseMeter:
             self._cost_known = False
         else:
             self._cost += usage.cost_cents
+        self.count_tokens(usage)
+
+    def count_tokens(self, usage: Usage | None) -> None:
+        """Tokens in and out (D90). A call that reported none makes the count a floor."""
+        if usage is None:
+            return
+        if usage.input_tokens is None and usage.output_tokens is None:
+            self._tokens_known = False
+            return
+        self._input_tokens += usage.input_tokens or 0
+        self._output_tokens += usage.output_tokens or 0
+
+    @property
+    def tokens(self) -> tuple[int, int]:
+        return self._input_tokens, self._output_tokens
+
+    @property
+    def tokens_are_known(self) -> bool:
+        return self._tokens_known
+
+    def pause(self) -> None:
+        """Stop the clock: what this leg took is carried, and nothing more is counted until
+        `unpause` (D90). A thread's meter is paused between its turns."""
+        if not self._running:
+            return
+        self._carried_seconds = self.elapsed_seconds()
+        self._running = False
+
+    def unpause(self) -> None:
+        if self._running:
+            return
+        self._started = datetime.fromisoformat(self._clock.now())
+        self._running = True
 
     def elapsed_seconds(self) -> float:
         """This leg's seconds, plus every earlier leg's. **Parked time is not counted** (D33): a
         run waiting on an Ask is not running, and a person who takes a day to answer must not come
         back to a spent budget."""
+        if not self._running:
+            return self._carried_seconds
         this_leg = (datetime.fromisoformat(self._clock.now()) - self._started).total_seconds()
         return self._carried_seconds + this_leg
 
@@ -94,6 +134,9 @@ class LeaseMeter:
             "cost_cents": self._cost,
             "unpriced": 0 if self._cost_known else 1,
             "elapsed_seconds": self.elapsed_seconds(),
+            "input_tokens": self._input_tokens,
+            "output_tokens": self._output_tokens,
+            "unmetered": 0 if self._tokens_known else 1,
             "seq": 0,
         }
 
@@ -103,6 +146,9 @@ class LeaseMeter:
         self._cost = int(spent.get("cost_cents", 0))
         self._cost_known = not int(spent.get("unpriced", 0))
         self._carried_seconds = float(spent.get("elapsed_seconds", 0.0))
+        self._input_tokens = int(spent.get("input_tokens", 0))
+        self._output_tokens = int(spent.get("output_tokens", 0))
+        self._tokens_known = not int(spent.get("unmetered", 0))
 
     def check(self, *, costs: bool = True) -> EndReason | None:
         """Called before every step. `None` means go ahead.
@@ -166,12 +212,22 @@ class LeaseMeter:
         self._carved_cost += child.max_cost_cents or 0
         return child_lease
 
-    def settle(self, reserved: Ceiling, *, steps: int, cost_cents: int, cost_known: bool) -> None:
+    def settle(
+        self,
+        reserved: Ceiling,
+        *,
+        steps: int,
+        cost_cents: int,
+        cost_known: bool,
+        tokens: tuple[int, int] = (0, 0),
+        tokens_known: bool = True,
+    ) -> None:
         """Release a child's reservation and charge what it actually spent.
 
         Always paired with `carve`, and called by the drive when a child run ends — including when
         it ends badly, because a reservation held by a run that has stopped is money lost to
-        nobody.
+        nobody. `tokens` (D90) are what the child's calls counted; `tokens_known` is false when
+        one of them reported nothing.
         """
         self._carved_steps -= reserved.max_steps
         self._carved_cost -= reserved.max_cost_cents or 0
@@ -180,6 +236,10 @@ class LeaseMeter:
             self._cost += cost_cents
         else:
             self._cost_known = False
+        self._input_tokens += tokens[0]
+        self._output_tokens += tokens[1]
+        if not tokens_known:
+            self._tokens_known = False
 
 
 RESERVED_ATTRIBUTES = frozenset({"posture", "component", "inputs"})

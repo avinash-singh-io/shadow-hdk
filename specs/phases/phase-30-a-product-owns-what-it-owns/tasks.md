@@ -12,7 +12,7 @@ phase: 30
 - [x] records: D87 (a conversation without a record), D88 (a park on purpose), D89 (the agent streams)
 
 ## Group 2 — tokens and running time
-- [ ] `Spent` tokens; the thread's clock runs only in a turn; records: D90
+- [x] `Spent` tokens; the thread's clock runs only in a turn; records: D90
 
 ## Group 3 — the contracts shipped; a `Questions` port
 - [ ] `shadow_hdk.testing.contracts`, `shadow_hdk.testing.providers`; the tests import from there

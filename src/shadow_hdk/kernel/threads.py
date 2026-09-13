@@ -46,8 +46,14 @@ class Spent:
 
     steps: int = 0
     seconds: float = 0.0
+    """The turns' running time (D90): a thread sitting open spends nothing."""
     cents: int = 0
     unpriced: bool = False
+    input_tokens: int = 0
+    output_tokens: int = 0
+    """Tokens counted across the turns (D90) — a subscription's own measure."""
+    unmetered: bool = False
+    """A model call reported no tokens: the counts are a floor, never the amount."""
 
 
 @dataclass(frozen=True)

@@ -126,6 +126,8 @@ async def _drive(
                 steps=session.meter.steps,
                 cost_cents=session.meter.cost_cents,
                 cost_known=session.meter.cost_is_known,
+                tokens=session.meter.tokens,
+                tokens_known=session.meter.tokens_are_known,
             )
         emitter.close()
 
