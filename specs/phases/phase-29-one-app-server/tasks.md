@@ -38,8 +38,8 @@ phase: 29
 - [x] records: D85; adapters.md
 
 ## Group 7 — operations
-- [ ] `GET /healthz`; `admin/sessions`, `admin/threads`; the version in `initialize`
-- [ ] the per-run token closed as a decision (D85); wire.md
+- [x] `GET /healthz`; `admin/sessions`, `admin/threads`; the version in `initialize`
+- [x] the per-run token closed as a decision (D86); wire.md
 
 ## The release
 - [ ] schemas regenerated; the TypeScript client grown and its smoke green; the demo's tour updated and run once against the wheel

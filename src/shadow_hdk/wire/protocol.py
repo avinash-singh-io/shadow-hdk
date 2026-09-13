@@ -89,6 +89,9 @@ SKILLS_LIST = "skills/list"
 BATTERIES_LIST = "batteries/list"
 """What the serving process has switched on (D70): every battery it knows, on, off or unavailable
 and why."""
+# operations (D86): what the process holds, for whoever runs it — behind the bearer
+ADMIN_SESSIONS = "admin/sessions"
+ADMIN_THREADS = "admin/threads"
 
 # runtime → host, one way
 EVENT = "event"

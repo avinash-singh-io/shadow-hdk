@@ -179,3 +179,24 @@ mode said *ask*, which made a deny rule silent exactly where it mattered.
 
 **Not built.** Rules that reach into an input's structure beyond top-level keys; a rule over
 the tool's *effects* rather than its name (that is what a mode is).
+
+### [DECISION] 2026-09-14 — D86: operations; the per-run token closed
+
+**Decision.** `GET /healthz` on the HTTP door answers without a bearer — `{ok, version,
+sessions, threads}`, nothing a stranger could use; `initialize` says the kit's version beside
+the protocol's; `admin/sessions` (every session: id, opened at, the threads it has open) and
+`admin/threads` (every thread: who holds it, which session has it, its principal, turns, pending,
+spent) behind the bearer — a runtime over a pipe answers with its one session. **The per-run
+token** `wire.md` owed since BUG-006 is closed as a decision and not built: with one app server
+behind every surface the product's backend authenticates its people and holds the one bearer;
+a per-run credential would be a second secret for the same trust boundary, minted and checked
+by the process that already checks the first. What travels per thread is the person's identity
+(D82), asserted by the backend the bearer vouches for.
+
+**Why.** Every hosted runtime the note read owes these three things to whoever runs it — a
+health answer, a listing, a version — and none of them mints a per-run token: LangGraph Server
+takes an API key or a custom `@auth.authenticate`; the Codex app-server trusts its one client;
+Managed Agents authenticate at the API. The debt was a design from before the shape was known.
+
+**Not built.** Metrics endpoints, structured logs, rate limits: a product's platform has these;
+the harness gives it a health answer and the listings to build them from.

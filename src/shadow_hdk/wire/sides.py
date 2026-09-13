@@ -88,6 +88,7 @@ class RuntimeSide:
         timeout: float | None = 300.0,
         observer: Any = None,
         threads: Any = None,
+        admin: Any = None,
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
@@ -128,11 +129,14 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_REQUEST_APPROVAL, self._context_request_approval)
         self.peer.serves(CONTEXT_REQUEST_INPUT, self._context_request_input)
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
-        from shadow_hdk.wire.threads import ThreadMethods
+        from shadow_hdk.wire.threads import SoleSession, ThreadMethods
 
-        self.threads = ThreadMethods(self.peer, threads, self._clock)
+        self.threads = ThreadMethods(
+            self.peer, threads, self._clock, admin=admin or SoleSession(self, clock=clock)
+        )
         """The thread, crossed (D67): served when the process handed in a `ThreadHost`, refused
-        with a reason when it did not."""
+        with a reason when it did not. `admin` (D86) is what the process around this runtime
+        knows of its sessions — the HTTP app's, or this one session alone over a pipe."""
 
     def ports(self) -> Ports:
         from shadow_hdk.runtime.clock import SystemClock
@@ -262,7 +266,9 @@ class RuntimeSide:
                 f"this runtime speaks protocol {PROTOCOL_VERSION!r}, not {offered!r}"
             )
         self.initialized = True
-        return {"protocol_version": PROTOCOL_VERSION}
+        from shadow_hdk import __version__
+
+        return {"protocol_version": PROTOCOL_VERSION, "version": __version__}
 
     async def _run(self, params: dict[str, Any]) -> dict[str, Any]:
         self._agreed()

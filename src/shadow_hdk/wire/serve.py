@@ -62,6 +62,35 @@ class Session:
     from_host: MemoryObjectSendStream[str]
     runtime: Any = None
     events: MemoryObjectReceiveStream[str] | None = field(default=None)
+    opened_at: str = ""
+
+
+class Sessions:
+    """What the app knows of its sessions (D86): the admin view a runtime answers with."""
+
+    def __init__(self) -> None:
+        self.by_id: dict[str, Session] = {}
+
+    async def sessions(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": session.id,
+                "opened_at": session.opened_at,
+                "threads": sorted(session.runtime.threads.threads)
+                if session.runtime is not None
+                else [],
+            }
+            for session in self.by_id.values()
+        ]
+
+    def open_threads(self) -> int:
+        return sum(len(s["threads"]) for s in self._sync_sessions())
+
+    def _sync_sessions(self) -> list[dict[str, Any]]:
+        return [
+            {"threads": list(s.runtime.threads.threads) if s.runtime is not None else []}
+            for s in self.by_id.values()
+        ]
 
 
 def build_app(
@@ -84,10 +113,12 @@ def build_app(
     from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
     from starlette.routing import Route
 
+    from shadow_hdk import __version__
     from shadow_hdk.wire.sides import RuntimeSide
     from shadow_hdk.wire.threads import host_checkpointer
 
-    sessions: dict[str, Session] = {}
+    known = Sessions()
+    sessions: dict[str, Session] = known.by_id
 
     def unauthorised(request: Request) -> Response | None:
         """A session was issued to whoever asked (BUG-006). `wire.md` listed a run token under
@@ -108,11 +139,20 @@ def build_app(
         session_id = secrets.token_urlsafe(16)
         to_host_send, to_host_receive = anyio.create_memory_object_stream[str](float("inf"))
         from_host_send, from_host_receive = anyio.create_memory_object_stream[str](float("inf"))
-        session = Session(id=session_id, to_host=to_host_send, from_host=from_host_send)
+        session = Session(
+            id=session_id,
+            to_host=to_host_send,
+            from_host=from_host_send,
+            opened_at=_stamp(clock),
+        )
         # The runtime reads what the host POSTs and writes into the SSE stream.
         channel = QueueChannel(outbound=to_host_send, inbound=from_host_receive)
         session.runtime = RuntimeSide(
-            channel, clock=clock, threads=threads, checkpointer=await host_checkpointer(threads)
+            channel,
+            clock=clock,
+            threads=threads,
+            checkpointer=await host_checkpointer(threads),
+            admin=known,
         )
         sessions[session_id] = session
 
@@ -158,6 +198,18 @@ def build_app(
         # there is exactly one path for runtime-to-host traffic rather than two to keep in step.
         return Response(status_code=202)
 
+    async def healthz(_request: Request) -> Response:
+        """A load balancer's question, not a person's (D86): answered without a bearer, saying
+        nothing a stranger could use — the kit's version and two counts."""
+        return JSONResponse(
+            {
+                "ok": True,
+                "version": __version__,
+                "sessions": len(sessions),
+                "threads": known.open_threads(),
+            }
+        )
+
     async def the_page(_request: Request) -> Response:
         if page is None:
             return JSONResponse({"error": "no page is served here; talk to /rpc"}, status_code=404)
@@ -166,10 +218,19 @@ def build_app(
     return Starlette(
         routes=[
             Route("/", the_page),
+            Route("/healthz", healthz, methods=["GET"]),
             Route("/rpc", open_session, methods=["GET"]),
             Route("/rpc", post_frame, methods=["POST"]),
         ]
     )
+
+
+def _stamp(clock: Any) -> str:
+    if clock is not None:
+        return str(clock.now())
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
 
 
 LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})

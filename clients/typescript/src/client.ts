@@ -401,4 +401,9 @@ export class HarnessClient {
   /** Every rule, or — with a thread — the ones in that thread's scope (D82). */
   readonly rules = { list: (thread_id?: string) => this.call<{ rules: JsonValue[] }>("rules/list", thread_id ? { thread_id } : {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };
+  /** What the process holds, for its operator (D86): every session and every thread, behind the bearer. */
+  readonly admin = {
+    sessions: () => this.call<{ sessions: { id: string; opened_at: string; threads: string[] }[] }>("admin/sessions", {}),
+    threads: () => this.call<{ threads: JsonValue[] }>("admin/threads", {}),
+  };
 }

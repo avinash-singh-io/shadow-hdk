@@ -67,6 +67,8 @@ host ──► runtime   approvals/pending · approvals/answer  (approve · deny
                        checkpoint and the answer carries its events
 host ──► runtime   store/put · get · delete · list · version
 host ──► runtime   batteries/list                 on · off · unavailable, by the store's `wanted` rows (D83)
+host ──► runtime   admin/sessions · admin/threads  what the process holds, for its operator (D86)
+GET /healthz                                     ok · version · sessions · threads — no bearer (D86)
 host ──► runtime   modes/list · rules/list {thread_id?}   everything, or the thread's scope (D82)
 host ──► runtime   tools/list {thread_id}        what the agent is offered now, each with the mode's
                                                  judgement (allow · ask · refuse) and its source (D73)
@@ -92,16 +94,21 @@ fresh, its memory kept (`AgentPort.open(resume=)`).
 
 ## Rules already fixed
 
-> **Corrected 2026-09-10 (BUG-006).** This section listed the run token as fixed; it is **not
-> built**. Until it is, `served_over_http` is **loopback-only by default** and refuses to bind
-> anything else without a `token=` — a deployment-wide stop-gap, not the per-run credential below.
+> **Corrected 2026-09-10 (BUG-006); decided 2026-09-14 (D86).** This section listed the run
+> token as fixed; it was not built, and it will not be: with one app server behind every surface
+> the product's backend authenticates its people and holds the one bearer `served_over_http`
+> takes (`token=`; loopback needs none). A per-run credential would be a second secret for the
+> same trust boundary, minted and checked by the process that already checks the first. What
+> travels per thread instead is the person's identity — `thread/start {principal, attributes}`
+> (D82) — which the backend asserts and the bearer vouches for.
 > Two more corrections: `initialize` is now **required** before `run` or `resume`, and an omitted
 > protocol version is a **mismatch**, not a match (it used to default to this build's own, so a
 > peer that said nothing counted as agreeing). Every runtime→host callback carries a **timeout**,
 > because the lease bounds a run and a run waiting on a peer is not running.
 
-- **Authentication is a run token**: short-lived, single-run, minted when a run opens, carrying the
-  scope, principal and lease. The runtime never holds a host credential.
+- **Authentication is the deployment's bearer** (D86, closing the run-token debt of BUG-006): one
+  token on the HTTP door, held by the product's backend, never by a browser; the person's
+  identity travels on the thread (D82). The runtime never holds a host credential.
 - **Schemas are published** from `shadow_hdk.kernel.contracts.all_schemas()`; a TypeScript client
   is generated from them and is a *client*, never a port of the runtime (`09` §3b). The client is a
   package a product installs (`clients/typescript`, by path until it is on npm), and it runs in a
@@ -121,4 +128,9 @@ fresh, its memory kept (`AgentPort.open(resume=)`).
   is on; the pattern's ceiling crosses as data and is applied there as a second gate (`Narrowed`).
 - **Approvals cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Approvals` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
-  environment, sent as the first line before MCP; the run token above is still the wire's own debt.
+  environment, sent as the first line before MCP.
+- **Operations** (D86): `GET /healthz` answers without a bearer — ok, the kit's version, the
+  sessions and threads open — for a load balancer, saying nothing a stranger could use;
+  `initialize` says the kit's version beside the protocol's; `admin/sessions` and `admin/threads`,
+  behind the bearer, list what the process holds — every session with the threads it has open,
+  every thread with who holds it and which session has it.
