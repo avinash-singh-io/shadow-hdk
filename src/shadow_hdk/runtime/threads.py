@@ -24,7 +24,7 @@ import asyncio
 import contextlib
 import json
 import time
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -77,7 +77,7 @@ from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
-from shadow_hdk.runtime.session import LeaseMeter
+from shadow_hdk.runtime.session import RESERVED_ATTRIBUTES, LeaseMeter
 
 TURN = "turn"
 
@@ -330,11 +330,17 @@ class Thread:
         workspace: Workspace | None = None,
         holder: str = "",
         hold_seconds: float = HOLD_SECONDS,
+        principal: str = "",
+        attributes: Mapping[str, JsonValue] | None = None,
     ) -> Thread:
         """Start a thread: the record created, the registry served, the provider opened.
 
         `holder` names this process on the thread's hold (D81): taken here, renewed while the
         thread is open, released at close; `ThreadHeld` when another process has it.
+
+        `principal` and `attributes` (D82) are who the thread is for and the product's words
+        about it — on the record, and on every judgement's context from now on. A reserved
+        attribute name (`component`, `inputs`, `posture`) is refused here, as it is on a run.
 
         `workspace` names the roots (D76) — one or many; `root` alone is the one-root workspace.
         The record carries both: `root` the primary for a one-root reader, `roots` the whole.
@@ -346,6 +352,9 @@ class Thread:
         the policy's name.
         """
         workspace = workspace or Workspace.of(root)
+        given = dict(attributes or {})
+        if taken := sorted(set(given) & RESERVED_ATTRIBUTES):
+            raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
         record = ThreadRecord(
             id=thread_id or ports.clock.new_id(),
             root=str(workspace.primary.path),
@@ -354,6 +363,8 @@ class Thread:
             provider=provider,
             roots=workspace.roots,
             environment=_environment_mode_of(ports),
+            principal=principal,
+            attributes=given,
         )
         await store.create(record)
         thread = cls(
@@ -638,12 +649,8 @@ class Thread:
                 rules=self._rules,
                 checkpointer=self._checkpointer,
                 cancellation=cancellation,
-                context={
-                    "thread": self.id,
-                    "turn": turn_id,
-                    **({"mode": self._record.mode} if self._record.mode else {}),
-                    **self._options,
-                },
+                principal=self._record.principal or None,
+                context=self._context_for(turn_id),
             )
             self._record = _replace(
                 self._record,
@@ -701,6 +708,17 @@ class Thread:
                 self._record = _replace(self._record, turns=tuple(turns), pending=still)
                 await self._store.save(self._record)
                 await self._remember_session()  # the provider's own id, for the next reopen
+
+    def _context_for(self, turn_id: str) -> dict[str, JsonValue]:
+        """What every judgement of this thread's runs sees (D82): the runtime's keys, the
+        thread's attributes — the product's words — and the per-thread options."""
+        return {
+            "thread": self.id,
+            "turn": turn_id,
+            **({"mode": self._record.mode} if self._record.mode else {}),
+            **self._record.attributes,
+            **self._options,
+        }
 
     async def _keep_pending(self, event: Event, turn_id: str, run_id: str) -> None:
         """The questions of this turn, on the record as they open and close (D80).
@@ -862,12 +880,8 @@ class Thread:
             approvals=self._approvals,
             rules=self._rules,
             checkpointer=self._checkpointer,
-            context={
-                "thread": self.id,
-                "turn": question.turn,
-                **({"mode": self._record.mode} if self._record.mode else {}),
-                **self._options,
-            },
+            principal=self._record.principal or None,
+            context=self._context_for(question.turn),
         )
         events: list[Event] = []
         steps_taken = 0
@@ -900,15 +914,18 @@ class Thread:
                 if registration.id == TURN:
                     continue
                 attributes: dict[str, JsonValue] = {
-                    "thread": self.id,
-                    **({"mode": self._record.mode} if self._record.mode else {}),
-                    **self._options,
+                    **self._context_for("<catalogue>"),
                     "posture": registration.component.provenance.posture,
                     "component": registration.id,
                 }
                 judged = await self._ports.governance.judge(
                     registration.component.effects,
-                    Context(run_id="<catalogue>", step="<catalogue>", attributes=attributes),
+                    Context(
+                        run_id="<catalogue>",
+                        step="<catalogue>",
+                        principal=self._record.principal or None,
+                        attributes=attributes,
+                    ),
                 )
                 kind = (
                     "refuse"
@@ -961,9 +978,17 @@ class Thread:
         """
         if self._modes is not None:
             find = getattr(self._modes, "find", None)
-            spec = await find(mode_id) if find is not None else self._modes.get(mode_id)
+            spec = (
+                await find(
+                    mode_id,
+                    principal=self._record.principal or None,
+                    attributes=dict(self._record.attributes),
+                )
+                if find is not None
+                else self._modes.get(mode_id)
+            )
             if spec is None:
-                raise KeyError(f"no mode {mode_id!r} in the registry")
+                raise KeyError(f"no mode {mode_id!r} in the registry for this thread")
             behaviour = spec.behaviour
         else:
             spec, behaviour = None, self._behaviour

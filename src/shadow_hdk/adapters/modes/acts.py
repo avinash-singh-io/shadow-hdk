@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from shadow_hdk.kernel import ActRule
 from shadow_hdk.kernel.contracts import dump, load
+from shadow_hdk.kernel.rules import in_scope
 
 
 class RuleSource(Protocol):
@@ -71,18 +72,37 @@ class ActRules:
                 await keep(rule)
                 break
 
-    async def all_now(self) -> tuple[ActRule, ...]:
+    async def all_now(
+        self, *, principal: str | None = None, attributes: Any = None, everyone: bool = True
+    ) -> tuple[ActRule, ...]:
+        """Every rule, read now — or, with a principal or attributes named, the ones in scope for
+        them (D82). With nothing named, everything: the operator's view."""
         merged = list(self._rules)
         for source in self.sources:
             for rule in await source.rules():
                 if rule not in merged:
                     merged.append(rule)
-        return tuple(merged)
+        if principal is None and attributes is None:
+            return tuple(merged)
+        return tuple(
+            r for r in merged if in_scope(r.scope, principal=principal, attributes=attributes)
+        )
 
-    async def decide_now(self, component: str, inputs: Any, *, mode: str = "") -> str | None:
-        """`allow`, `deny`, or `None` — over the handed rules and every source, read now."""
+    async def decide_now(
+        self,
+        component: str,
+        inputs: Any,
+        *,
+        mode: str = "",
+        principal: str | None = None,
+        attributes: Any = None,
+    ) -> str | None:
+        """`allow`, `deny`, or `None` — over the handed rules and every source, read now; a rule
+        speaks only in its scope (D82)."""
         for rule in await self.all_now():
-            if rule.matches(component, inputs, mode=mode):
+            if rule.matches(
+                component, inputs, mode=mode, principal=principal, attributes=attributes
+            ):
                 return rule.decision
         return None
 

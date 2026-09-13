@@ -176,6 +176,20 @@ the named environment mode differs, and reopens the provider on its own session 
 catalogue is the new mode's (BUG-032). A child run is judged in its parent's context (D74): the
 mode a host set reaches every tool call, not only the turn's own step.
 
+**Who a row is for** (D82). A rule or a mode may carry a `scope` — a principal's name, or
+`attribute:value` in the product's own words (`tenant:acme`); empty is everyone. A thread is
+opened for a `principal` with `attributes`, both on the record and on every judgement's context
+(the turn's step, every tool call, the catalogue `tools()` judges); `ModeGovernance` reads a
+rule only in its scope and a mode out of scope is *not a mode here*; the registries list in
+scope when a thread is named (`rules/list {thread_id}`, `modes/list {thread_id}`) and everything
+when none is — the operator's view. A rule made at a card is scoped to the person who answered
+it; a rule for everyone is written to the store by whoever may write there. Two ways to keep
+tenants apart, both named: **by scope** — one process, one store, rows and threads carrying the
+tenant, the product's backend the only thing that reaches the bearer; **by process** — one
+`serve` per tenant with its own `[store] url`, when the product's policy says rows must never
+share a table. The kit does not choose; a product's own authorisation engine plugs into the
+governance port and sees the same principal and attributes.
+
 ## Plugging your record in — the twenty lines a host writes
 
 A host's memory, record or database is two things: **components** to read and write it, and a

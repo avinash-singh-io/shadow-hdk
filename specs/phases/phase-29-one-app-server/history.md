@@ -97,3 +97,27 @@ the remaining was read before the turn lock, while the running turn's reservatio
 it is read under the lock now, where the earlier turn has settled. The plan's `TurnRecord.started_as`
 is not added: an interrupted turn's outcome already says what happened to it, and `enqueue` is
 nothing the record needs to remember.
+
+### [DECISION] 2026-09-14 — D82: identity on the thread, scope on the rows
+
+**Decision.** `thread/start {principal, attributes}` → `ThreadRecord.principal` and
+`.attributes` (a tenant, a workspace id — the product's words; a reserved name is refused as it
+is on a run), and both on every judgement's `Context` of the thread's runs — the turn's step,
+every tool call (a child carries its parent's principal), the catalogue `tools()` judges, a parked
+act `settle` resumes. `ActRule.scope` and `ModeSpec.scope` — empty for everyone, a principal's
+name, or `attribute:value` — with one kernel word, `in_scope`; `ModeGovernance` reads a rule only
+in its scope and a mode out of scope is *not a mode here*; `ActRules.all_now` and
+`ModeRegistry.find/all` take the identity and answer in scope, everything when nobody is named;
+`rules/list` and `modes/list` take a `thread_id` for the scoped view; `set_mode` refuses a mode
+out of the thread's scope. A rule made at a card (`approve_and_add_rule`) is scoped to the
+principal who answered when it names no scope of its own.
+
+**Why.** Every runtime the note read puts the person on the container and filters rows by it —
+LangGraph's `@auth.on` owner metadata, ADK's `user_id` on the session, Codex's per-user
+approvals. The kit does not become an authorisation engine: a product's own plugs into the
+governance port and sees the same principal and attributes; the kit gives rows a scope so the
+shipped registries are safe by default in a shared process, and names the other way — one
+process per tenant — where a product's policy demands separate tables.
+
+**Not built.** Roles, groups, hierarchies of scope: `attribute:value` is one comparison on
+purpose; a product with roles puts the role among the attributes.

@@ -82,6 +82,8 @@ class ThreadHost(Protocol):
         name: str,
         observer: Any,
         roots: Any = None,
+        principal: str = "",
+        attributes: Any = None,
     ) -> Thread: ...
 
     async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
@@ -192,6 +194,10 @@ class ThreadMethods:
             name=str(params.get("name", "") or "tools"),
             observer=ActivityToWire(self._peer, thread_id),
             roots=params.get("roots") or None,
+            # Passed only when given (D82), so a host written before identity was on the thread
+            # is still called the way it always was.
+            **({"principal": str(params["principal"])} if params.get("principal") else {}),
+            **({"attributes": params["attributes"]} if params.get("attributes") else {}),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged
@@ -203,7 +209,8 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
-            "modes": await self._modes(host),
+            "modes": await self._modes(host, thread),
+            **_identity_json(thread),
         }
 
     async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -225,9 +232,10 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
-            "modes": await self._modes(host),
+            "modes": await self._modes(host, thread),
             "turns": [_turn_json(t) for t in thread.record.turns],
             "pending": [_pending_json(q) for q in thread.pending],
+            **_identity_json(thread),
         }
 
     async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -448,10 +456,14 @@ class ThreadMethods:
     async def _store_version(self, params: dict[str, Any]) -> dict[str, Any]:
         return {"version": await self._store_or_raise().version(str(params["collection"]))}
 
-    async def _modes_list(self, _params: dict[str, Any]) -> dict[str, Any]:
-        return {"modes": await self._modes(self._host_or_raise())}
+    async def _modes_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Every mode — or, with a `thread_id`, the ones in that thread's scope (D82)."""
+        host = self._host_or_raise()
+        thread = self._thread(params) if params.get("thread_id") else None
+        return {"modes": await self._modes(host, thread)}
 
-    async def _rules_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+    async def _rules_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Every rule — or, with a `thread_id`, the ones in that thread's scope (D82)."""
         from shadow_hdk.kernel import ActRule
 
         host = self._host_or_raise()
@@ -459,7 +471,12 @@ class ThreadMethods:
         if registry is None:
             return {"rules": []}
         all_now = getattr(registry, "all_now", None)
-        rules = await all_now() if all_now is not None else registry.all()
+        if all_now is None:
+            rules = registry.all()
+        elif params.get("thread_id"):
+            rules = await all_now(**_scope_of(self._thread(params)))
+        else:
+            rules = await all_now()
         return {"rules": [json.loads(dump(r, ActRule)) for r in rules]}
 
     # ------------------------------------------------------------------ the workspace (D69)
@@ -548,14 +565,36 @@ class ThreadMethods:
             ]
         }
 
-    async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
+    async def _modes(self, host: ThreadHost, thread: Thread | None = None) -> list[dict[str, Any]]:
+        """The modes — in the thread's scope when one is named (D82)."""
         registry = getattr(host, "modes", None)
         if registry is None:
             return []
+        modes = (
+            await registry.all(**_scope_of(thread)) if thread is not None else await registry.all()
+        )
         return [
-            {"id": m.id, "name": m.name, "description": m.description, "source": m.source}
-            for m in await registry.all()
+            {
+                "id": m.id,
+                "name": m.name,
+                "description": m.description,
+                "source": m.source,
+                "scope": m.scope,
+            }
+            for m in modes
         ]
+
+
+def _scope_of(thread: Thread) -> dict[str, Any]:
+    """The thread's identity, as the registries take it (D82)."""
+    return {
+        "principal": thread.record.principal or None,
+        "attributes": dict(thread.record.attributes),
+    }
+
+
+def _identity_json(thread: Thread) -> dict[str, Any]:
+    return {"principal": thread.record.principal, "attributes": dict(thread.record.attributes)}
 
 
 def _pending_json(question: Any) -> dict[str, Any]:

@@ -327,6 +327,8 @@ class ServeHost:
         observer: Any = None,
         thread_id: str | None = None,
         roots: Any = None,
+        principal: str = "",
+        attributes: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -365,6 +367,8 @@ class ServeHost:
             thread_id=thread_id,
             workspace=workspace,
             holder=self.holder,
+            principal=principal,
+            attributes=attributes if isinstance(attributes, dict) else None,
         )
         self.provider = called
         return thread

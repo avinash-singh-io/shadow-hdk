@@ -69,7 +69,10 @@ export interface Started {
   environment: string;
   provider: string;
   mode: string;
-  modes: { id: string; name: string; description: string; source: string }[];
+  modes: { id: string; name: string; description: string; source: string; scope: string }[];
+  /** Who the thread is for, and the product's words about it (D82). */
+  principal: string;
+  attributes: { [key: string]: JsonValue };
 }
 
 export interface Resumed extends Started {
@@ -269,8 +272,17 @@ export class HarnessClient {
   // ---------------------------------------------------------------- the thread
 
   readonly thread = {
-    start: (params: { root?: string; roots?: RootEntry[]; mode?: string; provider?: string; name?: string; thread_id?: string }) =>
-      this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
+    /** `principal` and `attributes` (D82): who the thread is for and the product's words about it — on the record and every judgement. */
+    start: (params: {
+      root?: string;
+      roots?: RootEntry[];
+      mode?: string;
+      provider?: string;
+      name?: string;
+      thread_id?: string;
+      principal?: string;
+      attributes?: { [key: string]: JsonValue };
+    }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
@@ -380,9 +392,11 @@ export class HarnessClient {
   /** The skills the composition carries — shipped, from the store, minted — with their sources. */
   readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
 
-  readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };
+  /** Every mode, or — with a thread — the ones in that thread's scope (D82). */
+  readonly modes = { list: (thread_id?: string) => this.call<{ modes: Started["modes"] }>("modes/list", thread_id ? { thread_id } : {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
   readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
-  readonly rules = { list: () => this.call<{ rules: JsonValue[] }>("rules/list", {}) };
+  /** Every rule, or — with a thread — the ones in that thread's scope (D82). */
+  readonly rules = { list: (thread_id?: string) => this.call<{ rules: JsonValue[] }>("rules/list", thread_id ? { thread_id } : {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };
 }

@@ -22,9 +22,9 @@ phase: 29
 - [x] records: D81; wire.md; adapters.md
 
 ## Group 3 — identity on the thread, scope on the rows
-- [ ] `thread/start {principal, attributes}` → the record and every judgement's context
-- [ ] `ModeSpec.scope`, `ActRule.scope`; registries read in scope; a card's rule scoped to who answered
-- [ ] records: D82; adapters.md (multi-tenancy: by scope, or by process — both named)
+- [x] `thread/start {principal, attributes}` → the record and every judgement's context
+- [x] `ModeSpec.scope`, `ActRule.scope`; registries read in scope; a card's rule scoped to who answered
+- [x] records: D82; adapters.md (multi-tenancy: by scope, or by process — both named); wire.md
 
 ## Group 4 — batteries live
 - [ ] wanted batteries as rows seeded from `[tools]`; opened at the next thread; `batteries/list` says on/off by row

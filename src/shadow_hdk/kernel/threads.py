@@ -81,6 +81,13 @@ class ThreadRecord:
     pending: tuple[PendingQuestion, ...] = ()
     """The questions open right now (D80): put here when asked, taken off when answered — by the
     process that asked, or by the one that resumed the thread after it."""
+    principal: str = ""
+    """Who the thread is for (D82): the product's name for the person — on every judgement's
+    context, and what a rule made at this thread's card is scoped to. Empty: nobody named."""
+    attributes: dict[str, JsonValue] = field(default_factory=dict)
+    """The product's words about the thread (D82) — a tenant, a workspace id — on every
+    judgement's context beside the runtime's own keys, where a rule's or a mode's `scope` reads
+    them."""
 
 
 __all__ = ["PendingQuestion", "ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]
