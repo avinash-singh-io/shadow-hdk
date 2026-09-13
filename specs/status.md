@@ -5,7 +5,7 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-14 (v0.28.0 — Phase 29, one app server behind every surface; D79–D86)
-> **Current Phase**: **none — Phase 29 (one app server behind every surface) is complete and released as v0.28.0**: the record chooses its store (D79), a parked turn survives the host (D80), one thread one holder (D81), identity on the thread and scope on the rows (D82), batteries live (D83), the budget on the record (D84), the rules the field has (D85), operations and the per-run token closed (D86); BUG-041, BUG-042 and ENH-013 closed on the way. Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
+> **Current Phase**: **30 — a product owns what it owns** (`phase-30-a-product-owns-what-it-owns`; opened 2026-09-14 from the research note *what a harness development kit owes its products* and the owner's go: the governed turn without the record, a park on purpose, the agent streams, tokens and running time, the contracts shipped, routed governance, typed refusals, a parked run behind our port, the record versioned, idle sessions, a stream that survives a drop; releases as 0.29.0). Before it: **Phase 29 (one app server behind every surface) is complete and released as v0.28.0**: the record chooses its store (D79), a parked turn survives the host (D80), one thread one holder (D81), identity on the thread and scope on the rows (D82), batteries live (D83), the budget on the record (D84), the rules the field has (D85), operations and the per-run token closed (D86); BUG-041, BUG-042 and ENH-013 closed on the way. Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
 > wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
 > workflow for eighteen names, which never ran; v0.27.0 makes them one — `shadow-hdk` with
@@ -14,7 +14,7 @@ type: Status
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
 > `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
 > chosen per thread and added live, the environment and the provider following the mode
-> (BUG-032, D76), minted skills kept. Next: Phase 30 (context engineering) and Phase 31
+> (BUG-032, D76), minted skills kept. Next: Phase 31 (context engineering) and Phase 32
 > (collaboration), the owner's call.
 >
 > 1,514 tests; mypy strict over 400 files; one distribution, `shadow-hdk`, at **0.28.0**, MIT, on PyPI.
@@ -116,6 +116,7 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 30 — a product owns what it owns | `phase-30-a-product-owns-what-it-owns` | active | group 1 of 6 (the governed turn; a park on purpose; the agent streams) |
 
 ## Upcoming Phases
 
