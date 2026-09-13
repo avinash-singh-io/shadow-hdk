@@ -1,13 +1,13 @@
 name: publish
-# Builds the distribution and publishes it — to TestPyPI on demand, to PyPI when a
-# release is published. The version in every package must equal the tag's (the versions test
-# already holds the packages to one number; this holds that number to the tag), and a fresh
-# install from the index must import and answer `initialize` before the run is called green.
+# Builds the one distribution (D78) and publishes it — to TestPyPI on demand, to PyPI when a
+# release is published. The version in `pyproject.toml` must equal the tag's (the versions test
+# holds the tree to that number; this holds the number to the tag), and a fresh install from the
+# index must import and answer `initialize` before the run is called green.
 #
 # Credentials: `PYPI_API_TOKEN` (and `TEST_PYPI_API_TOKEN`) as repository secrets — the owner's,
-# never in the tree. Trusted publishing (OIDC, no token) is the better arrangement once every
-# project exists on PyPI: register this workflow as each project's publisher, remove the
-# secrets, and `uv publish` will use the id-token below on its own.
+# never in the tree. Trusted publishing (OIDC, no token) is the better arrangement once the
+# project exists on PyPI: register this workflow as its publisher, remove the secrets, and
+# `uv publish` will use the id-token below on its own.
 on:
   release:
     types: [published]
