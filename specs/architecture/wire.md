@@ -59,10 +59,13 @@ host ──► runtime   thread/close · list (each row: held_by — D81) · for
 host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
 host ──► runtime   thread/add_root {name, path} → events · roots  (added live, re-proven — D76)
 host ──► runtime   thread/set_option · remaining   (budget − spent, across resumes — D84)
-host ──► runtime   turn/start {when: enqueue | reject | interrupt}   → the turn's record, when it ends
-                       (D81: a second turn waits, is refused naming the running one, or stops it)
+host ──► runtime   turn/start {when: enqueue | reject | interrupt,   → the turn's record, when it ends
+                               on_question: wait | park}
+                       (D81: a second turn waits, is refused naming the running one, or stops it;
+                        D88: `park` ends the turn `parked` at its first question, kept for a later
+                        `approvals/answer`)
 host ──► runtime   turn/steer · turn/interrupt · run/cancel
-host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · {text})
+host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · park · {text})
                        a left question (D80) is settled by its thread: the parked act runs from its
                        checkpoint and the answer carries its events
 host ──► runtime   store/put · get · delete · list · version

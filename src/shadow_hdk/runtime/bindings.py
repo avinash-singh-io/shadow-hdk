@@ -408,7 +408,7 @@ class RunContext:
         from shadow_hdk.kernel import ActRule, Proposal
         from shadow_hdk.kernel.contracts import dump, load
         from shadow_hdk.kernel.ports import Allow, Refuse
-        from shadow_hdk.runtime.approvals import Approve, ApproveAndAddRule, Deny
+        from shadow_hdk.runtime.approvals import Approve, ApproveAndAddRule, Deny, Parked
 
         if isinstance(answered, dict) and answered.get("kind") == "approve_and_add_rule":
             answered = ApproveAndAddRule(load(json.dumps(answered.get("rule")), ActRule))
@@ -416,6 +416,8 @@ class RunContext:
             answered = Approve()
         elif isinstance(answered, dict) and answered.get("kind") == "deny":
             answered = Deny(str(answered.get("reason", "the person said no")))
+        elif isinstance(answered, dict) and answered.get("kind") == "park":
+            answered = Parked()
         if isinstance(answered, ApproveAndAddRule):
             rule = answered.rule
             if not isinstance(rule, ActRule):

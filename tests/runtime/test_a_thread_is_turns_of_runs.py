@@ -320,7 +320,7 @@ class TestTheTurnComponentsIsAComponentPort(ComponentPortContract):
 
     def port(self) -> Any:
         from shadow_hdk.kernel import Completed
-        from shadow_hdk.runtime.threads import _turn_registration, _TurnComponents
+        from shadow_hdk.runtime.conversation import _turn_registration, _TurnComponents
 
         async def handler(_inputs: Any) -> Any:
             return Completed({"text": "ok"})

@@ -37,6 +37,8 @@ export interface ApprovalRequest {
 export type Answer =
   | { kind: "approve" }
   | { kind: "deny"; reason?: string }
+  /** Not now (D88): the call is kept with the run that sleeps on it; answer it later, on any request. */
+  | { kind: "park" }
   | { kind: "approve_and_add_rule"; rule: { component: string; inputs?: Record<string, JsonValue>; decision?: "allow" | "deny"; mode?: string; note?: string } }
   | { text: string };
 
@@ -308,7 +310,7 @@ export class HarnessClient {
     start: (
       thread_id: string,
       text: string,
-      options: { when?: "enqueue" | "reject" | "interrupt" } = {},
+      options: { when?: "enqueue" | "reject" | "interrupt"; on_question?: "wait" | "park" } = {},
     ): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
       const queue: (TurnLine | { kind: "done"; turn: TurnRecord })[] = [];
       let wake: (() => void) | null = null;
@@ -323,7 +325,12 @@ export class HarnessClient {
         }),
       );
       let finished = false;
-      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text, ...(options.when ? { when: options.when } : {}) })
+      void this.call<{ turn: TurnRecord }>("turn/start", {
+        thread_id,
+        text,
+        ...(options.when ? { when: options.when } : {}),
+        ...(options.on_question ? { on_question: options.on_question } : {}),
+      })
         .then((result) => push({ kind: "done", turn: result.turn }))
         .catch((error: Error) => push({ kind: "done", turn: { id: "", run_id: "", prompt: text, at: "", outcome: "failed", text: String(error) } }))
         .finally(() => {

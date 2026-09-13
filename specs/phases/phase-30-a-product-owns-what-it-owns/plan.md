@@ -69,4 +69,4 @@ and `Last-Event-ID` reattaches and replays; the TypeScript client reconnects so.
 
 0.29.0: schemas regenerated where a published contract moved; the TypeScript client grown; the
 demo re-pinned and its tour run once; the architecture documents; the Pins row; the guide for a
-product (`docs/consuming.md`) — the note's §7 in the kit's own words.
+product (a `consuming` page under `docs/`, written at the release) — the note's §7 in the kit's own words.

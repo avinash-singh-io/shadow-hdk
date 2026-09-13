@@ -132,6 +132,8 @@ class ScriptedModel(ModelPort):
         """The scripted answer, cut into deltas at word boundaries — deterministically, so a replay
         of a streamed run is still byte-for-byte the same as the one before it."""
         response = await self.complete(request)
+        if response.reasoning:
+            yield ModelChunk(reasoning=response.reasoning)  # the thought first, whole (D45)
         words = response.text.split(" ")
         for index, word in enumerate(words):
             if word or index:

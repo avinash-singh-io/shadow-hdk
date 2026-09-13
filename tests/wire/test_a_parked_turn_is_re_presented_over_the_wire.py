@@ -235,3 +235,86 @@ async def test_resume_offers_the_question_again_and_the_answer_settles_it(tmp_pa
                 assert "approved" in agent.prompts[-1] and agent.prompts[-1].endswith("next")
     finally:
         await host.aclose()
+
+
+async def test_a_turn_parked_on_purpose_over_the_wire_is_settled_on_a_later_call(
+    tmp_path: Path,
+) -> None:
+    """D88 across the wire: `turn/start {on_question: "park"}` returns `parked` at once; the
+    question is on `approvals/pending`; `approvals/answer` settles it — the act runs from its
+    checkpoint — and the next turn is told."""
+    writes = Writes()
+    agent = Agent(
+        [([("write_file", {"path": "a.txt", "content": "x"})], "kept; stopping"), ([], "on")]
+    )
+    host = Host(tmp_path / "a", agent, writes)
+    try:
+        async with loopback(threads=host) as (client, _runtime):
+            await client.initialize()
+            started = await client.peer.call(
+                "thread/start", {"root": "", "mode": "ask", "name": "tools"}
+            )
+            tid = str(started["thread_id"])
+            with anyio.fail_after(30):
+                done = await client.peer.call(
+                    "turn/start", {"thread_id": tid, "text": "write", "on_question": "park"}
+                )
+                assert done["turn"]["outcome"] == "parked"
+                assert writes.wrote == []
+                listed = await client.peer.call("approvals/pending", {})
+                (request,) = listed["requests"]
+                assert request["component"] == "write_file" and request["turn"] == "turn-1"
+                answered = await client.peer.call(
+                    "approvals/answer", {"handle": request["handle"], "answer": {"kind": "approve"}}
+                )
+                assert answered["answered"] is True and "observed" in [
+                    e["kind"] for e in answered["events"]
+                ]
+                assert writes.wrote == [{"path": "a.txt", "content": "x"}]
+                nxt = await client.peer.call("turn/start", {"thread_id": tid, "text": "next"})
+                assert nxt["turn"]["outcome"] == "completed"
+                assert "approved" in agent.prompts[-1]
+    finally:
+        await host.aclose()
+
+
+async def test_a_host_answers_park_live_and_settles_later(tmp_path: Path) -> None:
+    """`approvals/answer {kind: "park"}` from a host that is there but cannot decide now."""
+    writes = Writes()
+    agent = Agent([([("write_file", {"path": "a.txt", "content": "x"})], "kept"), ([], "on")])
+    host = Host(tmp_path / "a", agent, writes)
+    try:
+        async with loopback(threads=host) as (client, _runtime):
+            await client.initialize()
+            started = await client.peer.call(
+                "thread/start", {"root": "", "mode": "ask", "name": "tools"}
+            )
+            tid = str(started["thread_id"])
+            asked: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
+
+            async def hearing(params: dict[str, Any]) -> None:
+                if not asked.done():
+                    asked.set_result(params["request"])
+
+            client.peer.hears("approval_request", hearing)
+            with anyio.fail_after(30):
+                turning = asyncio.create_task(
+                    client.peer.call("turn/start", {"thread_id": tid, "text": "write"})
+                )
+                request = await asked
+                parked = await client.peer.call(
+                    "approvals/answer", {"handle": request["handle"], "answer": {"kind": "park"}}
+                )
+                assert parked["answered"] is True
+                done = await turning
+                assert done["turn"]["outcome"] == "parked"
+                listed = await client.peer.call("approvals/pending", {})
+                assert [r["handle"] for r in listed["requests"]] == [request["handle"]]
+                settled = await client.peer.call(
+                    "approvals/answer", {"handle": request["handle"], "answer": {"kind": "approve"}}
+                )
+                assert settled["answered"] is True and writes.wrote == [
+                    {"path": "a.txt", "content": "x"}
+                ]
+    finally:
+        await host.aclose()

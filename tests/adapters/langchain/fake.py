@@ -21,6 +21,9 @@ class FakeChat(BaseChatModel):
 
     answers: list[AIMessage] = []
     deltas: list[str] = []
+    pieces: list[AIMessageChunk] = []
+    """Chunks yielded verbatim, when given — a provider's own stream shape: thinking blocks,
+    a tool call arriving in fragments, usage on the last frame."""
     seen: list[list[BaseMessage]] = []
     bound: list[Any] = []
 
@@ -51,6 +54,10 @@ class FakeChat(BaseChatModel):
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         self.seen.append(list(messages))
+        if self.pieces:
+            for piece in self.pieces:
+                yield ChatGenerationChunk(message=piece)
+            return
         answer = self.answers.pop(0) if self.answers else AIMessage(content="")
         for delta in self.deltas or [str(answer.content)]:
             yield ChatGenerationChunk(message=AIMessageChunk(content=delta))

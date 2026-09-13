@@ -168,6 +168,49 @@ async def test_empty_frames_are_not_yielded_as_pieces_of_answer() -> None:
     assert chunks[-1].done and chunks[-1].usage == Usage(13, 6, None)
 
 
+async def test_a_stream_keeps_the_thinking_and_assembles_a_tool_call_from_its_pieces() -> None:
+    """D89: what Anthropic's stream looks like — a thinking block in deltas, then a tool call
+    whose arguments arrive in fragments, usage on the last frame. Every thinking delta is a
+    chunk of its own, in order; the tool call is whole on the last chunk, merged the way
+    LangChain merges chunks; nothing is invented and nothing is dropped."""
+    from langchain_core.messages import AIMessageChunk
+    from langchain_core.messages.tool import tool_call_chunk
+
+    chat = FakeChat(
+        answers=[],
+        deltas=[],
+        pieces=[
+            AIMessageChunk(content=[{"type": "thinking", "thinking": "the scale ", "index": 0}]),
+            AIMessageChunk(content=[{"type": "thinking", "thinking": "will know", "index": 0}]),
+            AIMessageChunk(content=[{"type": "text", "text": "Weighing", "index": 1}]),
+            AIMessageChunk(
+                content="",
+                tool_call_chunks=[
+                    tool_call_chunk(name="look", args='{"topic": ', id="c1", index=0)
+                ],
+            ),
+            AIMessageChunk(
+                content="",
+                tool_call_chunks=[tool_call_chunk(name=None, args='"x"}', id=None, index=0)],
+            ),
+            AIMessageChunk(
+                content="",
+                usage_metadata={"input_tokens": 10, "output_tokens": 4, "total_tokens": 14},
+            ),
+        ],
+        seen=[],
+        bound=[],
+    )
+    model = LangChainModel.over(chat)
+    chunks = [c async for c in model.stream(ModelRequest((Message("user", "?"),)))]
+    assert [c.reasoning for c in chunks if c.reasoning] == ["the scale ", "will know"]
+    assert "".join(c.text for c in chunks) == "Weighing"
+    assert chunks[-1].done and chunks[-1].usage == Usage(10, 4, None)
+    (call,) = chunks[-1].tool_calls
+    assert call.name == "look" and call.arguments == {"topic": "x"} and call.id == "c1"
+    assert not any(c.tool_calls for c in chunks[:-1]), "whole on the last chunk, never a fragment"
+
+
 def test_an_assistant_message_reaches_langchain_with_its_calls() -> None:
     """The adapter's half of BUG-005, without a provider: what `_to_langchain` builds."""
     from langchain_core.messages import AIMessage

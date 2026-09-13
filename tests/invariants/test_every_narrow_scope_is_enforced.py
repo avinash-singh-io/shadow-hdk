@@ -57,7 +57,7 @@ ENFORCED_BY: dict[str, tuple[str, str]] = {
         "shipped modes only narrow, never widen, so a false claim cannot originate here",
         "tests/test_a_mode_reaches_the_child.py",
     ),
-    "runtime:threads": (
+    "runtime:conversation": (
         "the turn step declares `writes: {provider-state}` — the provider's own transcript under "
         "its home — and nothing else, because its file tools are withheld and every write to the "
         "root goes through the run's environment, where it is judged; the turn itself is not what "

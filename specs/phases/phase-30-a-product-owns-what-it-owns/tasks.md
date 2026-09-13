@@ -6,10 +6,10 @@ phase: 30
 # Tasks — Phase 30
 
 ## Group 1 — the governed turn; a park on purpose; the agent streams
-- [ ] `Conversation` in the runtime; `Thread` over it; every `Thread` test unchanged
-- [ ] `Parked` answer; `turn(on_question="park")`; the turn ends `parked`, `settle` later; over the wire
-- [ ] `AgentComponent` streams through `ModelPort.stream` as activity; `LangChainModel.stream` keeps reasoning and merges tool calls
-- [ ] records: D87 (a conversation without a record), D88 (a park on purpose), D89 (the agent streams)
+- [x] `Conversation` in the runtime; `Thread` over it; every `Thread` test unchanged
+- [x] `Parked` answer; `turn(on_question="park")`; the turn ends `parked`, `settle` later; over the wire
+- [x] `AgentComponent` streams through `ModelPort.stream` as activity; `LangChainModel.stream` keeps reasoning and merges tool calls
+- [x] records: D87 (a conversation without a record), D88 (a park on purpose), D89 (the agent streams)
 
 ## Group 2 — tokens and running time
 - [ ] `Spent` tokens; the thread's clock runs only in a turn; records: D90
@@ -29,4 +29,4 @@ phase: 30
 - [ ] `idle_seconds`; the wire's frame ids, grace period, reattach and replay; the TypeScript client reconnects; records: D94
 
 ## The release
-- [ ] `docs/consuming.md`; the architecture documents; Verification Evidence; 0.29.0 tagged and released; the demo pinned; the board's Pins row
+- [ ] the `consuming` page under `docs/`; the architecture documents; Verification Evidence; 0.29.0 tagged and released; the demo pinned; the board's Pins row

@@ -124,6 +124,7 @@ class ModelPort(Protocol):
             tool_calls=response.tool_calls,
             usage=response.usage,
             done=True,
+            reasoning=response.reasoning,
         )
 
 

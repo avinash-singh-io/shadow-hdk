@@ -63,7 +63,16 @@ class ApproveAndAddRule:
     kind: str = "approve_and_add_rule"
 
 
-ApprovalAnswer = Approve | Deny | ApproveAndAddRule
+@dataclass(frozen=True)
+class Parked:
+    """Not now: keep the question (D88). The call is not run and not refused for good — the run
+    that asked stays asleep in the checkpointer, the provider is told the call is kept and asked
+    to stop, and whoever keeps the record settles it on a later request (`Thread.settle`)."""
+
+    kind: str = "park"
+
+
+ApprovalAnswer = Approve | Deny | ApproveAndAddRule | Parked
 
 
 class Approvals:
@@ -78,6 +87,8 @@ class Approvals:
         self._pending: dict[str, Request] = {}
         self._arrivals: asyncio.Queue[Request] = asyncio.Queue()
         self._withdrawals: asyncio.Queue[Request] = asyncio.Queue()
+        self.parked: set[str] = set()
+        """The handles answered `Parked` (D88): kept for later by whoever keeps the record."""
 
     def pending(self) -> tuple[Request, ...]:
         """Every question nobody has answered yet, oldest first."""
@@ -99,6 +110,11 @@ class Approvals:
         self._pending.pop(handle, None)
         if waiting is None or waiting.done():
             return False
+        if isinstance(judgement, Parked) or (
+            isinstance(judgement, dict) and judgement.get("kind") == "park"
+        ):
+            self.parked.add(handle)
+            judgement = Parked()
         waiting.set_result(judgement)
         return True
 
@@ -119,4 +135,12 @@ class Approvals:
                 self._withdrawals.put_nowait(pending)
 
 
-__all__ = ["ApprovalAnswer", "Approvals", "Approve", "ApproveAndAddRule", "Deny", "Request"]
+__all__ = [
+    "ApprovalAnswer",
+    "Approvals",
+    "Approve",
+    "ApproveAndAddRule",
+    "Deny",
+    "Parked",
+    "Request",
+]
