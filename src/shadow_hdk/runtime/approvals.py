@@ -22,20 +22,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
-
-@dataclass(frozen=True)
-class Request:
-    """One request a component is waiting on: for approval of an act, or for the person's input."""
-
-    handle: str
-    run_id: str
-    step: str
-    question: str
-    component: str | None = None
-    """What it is about — the component and inputs the step would run with (BUG-026)."""
-    inputs: Any = None
-    kind: str = "approval"
-    """`approval` or `input`."""
+from shadow_hdk.kernel.questions import Request
 
 
 @dataclass(frozen=True)
@@ -76,7 +63,8 @@ ApprovalAnswer = Approve | Deny | ApproveAndAddRule | Parked
 
 
 class Approvals:
-    """The host's handle: requests arrive on `next()`, answers go in through `answer()`. A rule
+    """The host's handle — the kernel's `Questions` port (D91), with the host's side beside it:
+    requests arrive on `next()`, answers go in through `answer()`. A rule
     that comes with an answer is kept by the run's registry (`RunOptions.rules`, D65) — the
     runtime adds it on either answer path, live or on resume, and proposes it through the sink."""
 

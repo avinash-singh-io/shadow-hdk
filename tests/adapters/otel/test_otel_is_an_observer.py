@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from shadow_hdk.adapters.otel import OpenTelemetryObserver
 from shadow_hdk.kernel.ports import ObserverPort
-from tests.adapters.contract import ObserverPortContract
+from shadow_hdk.testing.contracts import ObserverPortContract
 from tests.adapters.otel.conftest import RecordingTracer
 
 

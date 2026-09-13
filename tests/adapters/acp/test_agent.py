@@ -39,8 +39,8 @@ from shadow_hdk.kernel import (
 from shadow_hdk.kernel.ports import ComponentPort, GovernancePort
 from shadow_hdk.runtime import Ports, RunOptions, run
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.testing.contracts import ComponentPortContract
 from tests.adapters.acp.conftest import EVERYTHING, inside_a_run
-from tests.adapters.contract import ComponentPortContract
 
 WORKSPACE = ScopeSet.of("workspace")
 OUTER_BOUND = 30.0

@@ -15,8 +15,8 @@ phase: 30
 - [x] `Spent` tokens; the thread's clock runs only in a turn; records: D90
 
 ## Group 3 — the contracts shipped; a `Questions` port
-- [ ] `shadow_hdk.testing.contracts`, `shadow_hdk.testing.providers`; the tests import from there
-- [ ] `Questions` port; `Approvals` implements it; records: D91
+- [x] `shadow_hdk.testing.contracts`, `shadow_hdk.testing.providers`; the tests import from there
+- [x] `Questions` port; `Approvals` implements it; records: D91
 
 ## Group 4 — routed governance; typed refusals
 - [ ] `Routed`; `ERROR_KINDS` and `error.data`; the TypeScript client's `RemoteError.kind`; records: D92

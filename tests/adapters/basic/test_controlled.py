@@ -39,7 +39,7 @@ from shadow_hdk.runtime.testing import (
     ScriptedModel,
     make_registration,
 )
-from tests.adapters.contract import GovernancePortContract
+from shadow_hdk.testing.contracts import GovernancePortContract
 
 WORLD = ScopeSet.of("world")
 

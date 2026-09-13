@@ -16,7 +16,7 @@ from shadow_hdk.runtime.store import InMemoryStore
 from shadow_hdk.serve import ServeHost
 from shadow_hdk.serve.config import Settings
 from shadow_hdk.serve.keeping import KeepingSink
-from tests.adapters.contract import SinkPortContract
+from shadow_hdk.testing.contracts import SinkPortContract
 
 pytestmark = pytest.mark.anyio
 

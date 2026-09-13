@@ -17,7 +17,7 @@ from shadow_hdk.adapters.mcp import McpComponents, StdioServerParameters
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
 from shadow_hdk.kernel import ASSUME_WORST, Completed, EffectProfile, Failed, ScopeSet
 from shadow_hdk.kernel.ports import ComponentPort, Context
-from tests.adapters.contract import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 EVERYTHING = ScopeSet(everything=True)
 PARAMS = StdioServerParameters(command=sys.executable, args=["tests/adapters/mcp/server.py"])

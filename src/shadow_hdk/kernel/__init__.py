@@ -81,6 +81,7 @@ from shadow_hdk.kernel.ports import (
     ModelRequest,
     ModelResponse,
     ObserverPort,
+    Questions,
     Refuse,
     SinkPort,
     Store,
@@ -101,6 +102,7 @@ from shadow_hdk.kernel.providers import (
     ProviderKind,
     ProviderStatus,
 )
+from shadow_hdk.kernel.questions import Request
 from shadow_hdk.kernel.rules import ActRule
 from shadow_hdk.kernel.threads import (
     PendingQuestion,
@@ -202,6 +204,8 @@ __all__ = [
     "PendingQuestion",
     "Spent",
     "ThreadRecord",
+    "Questions",
+    "Request",
     "Store",
     "ThreadStore",
     "TurnId",

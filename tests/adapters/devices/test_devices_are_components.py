@@ -13,7 +13,7 @@ from shadow_hdk.adapters.devices import DeviceComponents
 from shadow_hdk.adapters.devices.testing import FakeActuator, FakeSensor, FakeWitness
 from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.ports import ComponentPort
-from tests.adapters.contract import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 
 class TestDeviceComponentsIsAComponentPort(ComponentPortContract):

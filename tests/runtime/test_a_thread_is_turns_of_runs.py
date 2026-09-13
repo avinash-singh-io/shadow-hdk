@@ -39,7 +39,7 @@ from shadow_hdk.runtime.testing import (
     make_registration,
 )
 from shadow_hdk.runtime.threads import InMemoryThreads, Thread
-from tests.adapters.contract.suites import ComponentPortContract, ThreadStoreContract
+from shadow_hdk.testing.contracts import ComponentPortContract, ThreadStoreContract
 
 pytestmark = pytest.mark.anyio
 

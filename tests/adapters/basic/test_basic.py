@@ -26,14 +26,16 @@ from shadow_hdk.kernel import (
     ScopeSet,
 )
 from shadow_hdk.kernel.ports import ClockPort, ComponentPort, GovernancePort
-from tests.adapters.contract import (
+from shadow_hdk.testing.contracts import (
+    A_CONTEXT,
+    A_PROVENANCE,
     ClockPortContract,
     ComponentPortContract,
     GovernancePortContract,
     ObserverPortContract,
     SinkPortContract,
+    an_event,
 )
-from tests.adapters.contract.suites import A_CONTEXT, A_PROVENANCE, an_event
 
 WRITES_RECORD = EffectProfile(writes=ScopeSet.of("record"), reversible=True)
 

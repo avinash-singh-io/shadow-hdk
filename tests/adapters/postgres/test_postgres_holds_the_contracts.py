@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from tests.adapters.contract.suites import StoreContract, ThreadStoreContract
+from shadow_hdk.testing.contracts import StoreContract, ThreadStoreContract
 from tests.adapters.postgres.conftest import wiped
 
 pytestmark = [

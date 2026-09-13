@@ -29,12 +29,12 @@ from shadow_hdk.kernel.ports import (
     Judgement,
     ModelPort,
     ObserverPort,
+    Questions,
     Refuse,
     SinkPort,
 )
 
 if TYPE_CHECKING:
-    from shadow_hdk.runtime.approvals import Approvals
     from shadow_hdk.runtime.cancel import Cancellation
     from shadow_hdk.runtime.children import Children
     from shadow_hdk.runtime.emit import Emitter
@@ -86,10 +86,11 @@ class RunOptions:
     parent: Any = MISSING
     cancellation: Cancellation | None = None
     """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
-    approvals: Approvals | None = None
+    approvals: Questions | None = None
     """Where a component asks the host **live** while its step is still running (D58) — a step
-    that holds a provider's session cannot park. A child inherits its parent's. `None` means
-    nobody is there to ask, and `ask()` says so."""
+    that holds a provider's session cannot park; the `Questions` port (D91), which the host's
+    `Approvals` handle implements and a product's own may. A child inherits its parent's. `None`
+    means nobody is there to ask, and `ask()` says so."""
     rules: Any = None
     """The host's act-rule registry (D65), when it keeps one: an `ApproveAndAddRule` answer —
     live or on resume — adds its rule here the moment it is given, and governance reads it at

@@ -1,7 +1,7 @@
 """Every implementation of a port is held to that port's contract, or exempt with a reason (TD-004).
 
-The contract suites in `tests/adapters/contract/suites.py` are what makes a port a port rather than
-a convention: an unknown id is an observation and not an exception, a registration round-trips
+The contract suites in `shadow_hdk.testing.contracts` (shipped, D91) are what makes a port a port
+rather than a convention: an unknown id is an observation and not an exception, a registration round-trips
 through JSON, an observation does too. Seven of fourteen adapters ran against them, and the other
 seven were the ones nothing held to the shape.
 

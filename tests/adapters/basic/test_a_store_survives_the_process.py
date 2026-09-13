@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from shadow_hdk.adapters.basic import SqliteStore
-from tests.adapters.contract.suites import StoreContract
+from shadow_hdk.testing.contracts import StoreContract
 
 pytestmark = pytest.mark.anyio
 

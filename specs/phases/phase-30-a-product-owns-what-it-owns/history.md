@@ -90,3 +90,22 @@ had spent its hour by sitting there (the React header read `58 min` two minutes 
 
 **Correction.** This is a change in what `thread/remaining` says for an open, idle thread —
 more, and truthfully.
+
+### [DECISION] 2026-09-14 — D91: the contracts ship; the runtime asks through a `Questions` port
+
+**Decision.** `shadow_hdk.testing` is the front door for a product's tests: `contracts` — every
+port's suite (component, model, governance, sink, observer, clock, store, thread store, and now
+`QuestionsContract`), moved out of the kit's tests into the wheel so a product proves its own
+implementation with the very tests the kit's adapters pass; `providers.ScriptedAgent` — an
+`AgentPort` double that calls the tools it is scripted to through the offer and keeps what it
+was told and what it heard; the runtime's doubles re-exported. The kit's own adapter tests
+import the suites from there. `Questions` is a kernel port (`ask(request) -> answer`; `Request`
+is a kernel contract now); the runtime asks through it (`RunOptions.approvals: Questions`);
+the host's `Approvals` implements it beside its own side (`next`, `answer`, `pending`,
+withdrawals, `parked`); a product's own way of asking implements one method and inherits
+nothing.
+
+**Why.** A product implementing `ThreadStore` over its tables could not run the suite without
+copying our tests, and wrote its own provider double (Intent Studio's 0043 P2); and it
+subclassed `Approvals` to change the runtime's side (`_CardAsks`) because the runtime's side and
+the host's were one object.

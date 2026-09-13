@@ -27,7 +27,7 @@ from shadow_hdk.kernel import ActRule, Store
 from shadow_hdk.runtime.store import InMemoryStore
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.testing import InMemoryComponents, make_registration
-from tests.adapters.contract.suites import ComponentPortContract, StoreContract
+from shadow_hdk.testing.contracts import ComponentPortContract, StoreContract
 
 pytestmark = pytest.mark.anyio
 

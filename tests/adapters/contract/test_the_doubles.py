@@ -24,15 +24,15 @@ from shadow_hdk.runtime.testing import (
     ScriptedModel,
     make_registration,
 )
-from tests.adapters.contract import (
+from shadow_hdk.testing.contracts import (
     ClockPortContract,
     ComponentPortContract,
     GovernancePortContract,
     ModelPortContract,
     ObserverPortContract,
     SinkPortContract,
+    an_observation,
 )
-from tests.adapters.contract.suites import an_observation
 
 
 class TestFixedClockIsAClockPort(ClockPortContract):

@@ -34,7 +34,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.ports import ComponentPort
 from shadow_hdk.runtime import Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
-from tests.adapters.contract import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 AnyCallable = Callable[..., object]
 WORKSPACE = ScopeSet.of("workspace")

@@ -305,7 +305,11 @@ Every command runs on the runtime's leash inside the box — a timeout, a capped
 operator's environment withheld, the process tree killed with the step (D35). Widening — *may I
 read elsewhere?* — is an `Ask`, not a tool.
 
-## Contract suites — what every adapter must pass
+## Contract suites — what every adapter must pass, and what a product runs against its own
+
+Shipped as `shadow_hdk.testing.contracts` (D91): a product implementing a port subclasses the
+suite in its own tests and hands it a fresh implementation; `shadow_hdk.testing.providers`
+ships a scripted `AgentPort` for the tests that open a thread on nothing.
 
 | suite | asserts |
 |---|---|

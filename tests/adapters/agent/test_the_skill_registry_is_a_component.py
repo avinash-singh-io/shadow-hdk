@@ -7,7 +7,7 @@ from pydantic import JsonValue
 from shadow_hdk.adapters.agent import MintedSkills, Skill, SkillComponents, SkillRegistry
 from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.ports import ComponentPort
-from tests.adapters.contract import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 
 class TestSkillComponentsIsAComponentPort(ComponentPortContract):

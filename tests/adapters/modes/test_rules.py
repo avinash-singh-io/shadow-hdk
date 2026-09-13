@@ -18,7 +18,7 @@ import pytest
 from shadow_hdk.adapters.modes import Rule, RuleGovernance, RuleSet
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 from shadow_hdk.kernel.ports import Ask, Context, GovernancePort, Refuse
-from tests.adapters.contract import GovernancePortContract
+from shadow_hdk.testing.contracts import GovernancePortContract
 
 EVERYTHING = ScopeSet(everything=True)
 WORKSPACE = ScopeSet.of("workspace")

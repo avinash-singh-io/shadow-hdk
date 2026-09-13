@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, ToolMessage
 from shadow_hdk.adapters.langchain import LangChainModel
 from shadow_hdk.kernel import Interface
 from shadow_hdk.kernel.ports import Message, ModelPort, ModelRequest, Usage
-from tests.adapters.contract import ModelPortContract
+from shadow_hdk.testing.contracts import ModelPortContract
 from tests.adapters.langchain.fake import FakeChat
 
 WEIGH = Interface(

@@ -14,7 +14,7 @@ from hypothesis import strategies as st
 from shadow_hdk.adapters.modes import Mode, ModeGovernance, layer
 from shadow_hdk.kernel import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
 from shadow_hdk.kernel.ports import Context, GovernancePort
-from tests.adapters.contract import GovernancePortContract
+from shadow_hdk.testing.contracts import GovernancePortContract
 
 EVERYTHING = ScopeSet(everything=True)
 

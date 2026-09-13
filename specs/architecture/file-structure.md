@@ -54,6 +54,8 @@ shadow-hdk/
       keeping.py                     KeepingSink — what a run proposes for keeping, kept (ENH-011)
       stores.py                      stores_for(url) — the Store, the ThreadStore and the checkpointer from one url (D79)
       __main__.py                    shadow-hdk serve [harness.toml] --stdio | --http [--page]
+    testing/                         what a product tests with (D91): contracts.py — one suite per
+      contracts.py  providers.py     port, shipped; providers.py — a scripted AgentPort; the runtime's doubles re-exported
     adapters/
       basic/                         allow-all · Controlled · stdout · file · callback · system clock ·
                                      callable · SqliteStore · SqliteThreads                        Phase 0
@@ -78,8 +80,9 @@ shadow-hdk/
     invariants/                      the properties, held by walks (see testing.md)
     kernel/  runtime/  wire/  providers/  serve/
     adapters/
-      contract/                      one abstract suite per port
+      contract/                      the doubles held to the shipped suites (the suites themselves ship: src/shadow_hdk/testing/)
       <adapter>/                     each adapter's own tests, subclassing its contract suite
+    testing/                         the shipped suites and doubles, proven from the wheel
     test_bare_harness.py             the definition of done
     test_the_*_example.py            the examples, driven
   examples/
