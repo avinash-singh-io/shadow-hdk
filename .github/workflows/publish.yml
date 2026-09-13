@@ -1,0 +1,93 @@
+name: publish
+# Builds the eighteen distributions and publishes them — to TestPyPI on demand, to PyPI when a
+# release is published. The version in every package must equal the tag's (the versions test
+# already holds the packages to one number; this holds that number to the tag), and a fresh
+# install from the index must import and answer `initialize` before the run is called green.
+#
+# Credentials: `PYPI_API_TOKEN` (and `TEST_PYPI_API_TOKEN`) as repository secrets — the owner's,
+# never in the tree. Trusted publishing (OIDC, no token) is the better arrangement once every
+# project exists on PyPI: register this workflow as each project's publisher, remove the
+# secrets, and `uv publish` will use the id-token below on its own.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      index:
+        description: where to publish
+        type: choice
+        options: [testpypi, pypi]
+        default: testpypi
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: the version every package carries, and the tag it must equal
+        id: version
+        run: |
+          v=$(uv run python -c "import tomllib; print(tomllib.load(open('packages/kernel/pyproject.toml','rb'))['project']['version'])")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.tag_name }}" != "v$v" ]; then
+            echo "release tag ${{ github.event.release.tag_name }} != package version v$v" >&2; exit 1
+          fi
+      - run: uv build --all-packages --out-dir dist
+      - run: ls dist | wc -l | grep -qx 36  # 18 wheels + 18 sdists, or the build is not the tree
+      - run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'release' && 'pypi' || inputs.index }}
+    permissions:
+      id-token: write   # trusted publishing, once configured on PyPI; unused while a token is set
+      contents: read
+    steps:
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: publish
+        env:
+          INDEX: ${{ github.event_name == 'release' && 'pypi' || inputs.index }}
+          PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        run: |
+          if [ "$INDEX" = "pypi" ]; then
+            uv publish --token "$PYPI_TOKEN" dist/*
+          else
+            uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYPI_TOKEN" dist/*
+          fi
+
+  smoke:
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: a fresh install from the index imports and answers initialize
+        env:
+          INDEX: ${{ github.event_name == 'release' && 'pypi' || inputs.index }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          uv venv fresh
+          if [ "$INDEX" = "pypi" ]; then extra=""; else extra="--index https://test.pypi.org/simple/ --index-strategy unsafe-best-match"; fi
+          for attempt in 1 2 3 4 5 6; do
+            uv pip install --python fresh/bin/python $extra "shadow-hdk-serve[providers]==$VERSION" && break
+            echo "not on the index yet (attempt $attempt)"; sleep 30
+          done
+          fresh/bin/python -c "import shadow_hdk.serve, shadow_hdk.kernel, shadow_hdk.wire; print('imported', '$VERSION')"
+          printf '[environment]\nroot = "."\nmode = "read-only"\n' > harness.toml
+          printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol_version":"1"}}\n' | fresh/bin/shadow-hdk serve harness.toml --stdio | grep -q '"protocol_version": "1"'

@@ -10,7 +10,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Eighteen distributions at `0.26.0`, all MIT.** 1,411 tests; `mypy --strict` over 251 files;
+**Eighteen distributions at `0.26.1`, all MIT, on PyPI.** 1,411 tests; `mypy --strict` over 251 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -206,6 +206,18 @@ gets the whole thing either way — offloading is about the model's context, nev
 ---
 
 ## Using it
+
+### Install
+
+```bash
+pip install "shadow-hdk-serve[providers]"      # the front door, with the Claude Code / Codex / OpenCode transports
+pip install "shadow-hdk-serve[providers,search]"   # …and the ddgs engine for the light web-search battery
+```
+
+Eighteen distributions on PyPI, versioned together (D9): `shadow-hdk-serve` pulls the kernel,
+the runtime, the wire, the providers and the adapters it composes; a product composing its own
+takes the pieces it wants — `shadow-hdk-kernel` alone is pure types with one dependency. The
+one import name is `shadow_hdk`; the CLI is `shadow-hdk`.
 
 ### Three lines
 

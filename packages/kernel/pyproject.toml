@@ -1,14 +1,29 @@
 [project]
 name = "shadow-hdk-kernel"
-version = "0.26.0"
+version = "0.26.1"
 description = "The kernel of shadow-hdk: frozen types and ports for an effect-governed agent runtime. No I/O, no clock, no framework."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 # pydantic is the one dependency, and only for the published contracts (09 §3b): every kernel type
 # is a stdlib dataclass; pydantic turns it into JSON Schema and proves the JSON round trip in CI.
 dependencies = ["pydantic>=2.9"]
+
+[project.urls]
+Homepage = "https://github.com/avinash-singh-io/shadow-hdk"
+Repository = "https://github.com/avinash-singh-io/shadow-hdk"
+Changelog = "https://github.com/avinash-singh-io/shadow-hdk/blob/main/specs/changelog/2026-09.md"
+Issues = "https://github.com/avinash-singh-io/shadow-hdk/issues"
 
 [build-system]
 requires = ["hatchling>=1.25"]

@@ -1,23 +1,38 @@
 [project]
 name = "shadow-hdk-serve"
-version = "0.26.0"
+version = "0.26.1"
 description = "The shipped composition behind the wire: `shadow-hdk serve harness.toml --stdio|--http`."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = [
-    "shadow-hdk-kernel==0.26.0",
-    "shadow-hdk==0.26.0",
-    "shadow-hdk-wire[serve]==0.26.0",
-    "shadow-hdk-providers==0.26.0",
-    "shadow-hdk-adapters-recording==0.26.0",
-    "shadow-hdk-adapters-modes==0.26.0",
-    "shadow-hdk-adapters-basic==0.26.0",
-    "shadow-hdk-adapters-environment==0.26.0",
-    "shadow-hdk-adapters-agent==0.26.0",
-    "shadow-hdk-adapters-mcp==0.26.0",
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
 ]
+dependencies = [
+    "shadow-hdk-kernel==0.26.1",
+    "shadow-hdk==0.26.1",
+    "shadow-hdk-wire[serve]==0.26.1",
+    "shadow-hdk-providers==0.26.1",
+    "shadow-hdk-adapters-recording==0.26.1",
+    "shadow-hdk-adapters-modes==0.26.1",
+    "shadow-hdk-adapters-basic==0.26.1",
+    "shadow-hdk-adapters-environment==0.26.1",
+    "shadow-hdk-adapters-agent==0.26.1",
+    "shadow-hdk-adapters-mcp==0.26.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/avinash-singh-io/shadow-hdk"
+Repository = "https://github.com/avinash-singh-io/shadow-hdk"
+Changelog = "https://github.com/avinash-singh-io/shadow-hdk/blob/main/specs/changelog/2026-09.md"
+Issues = "https://github.com/avinash-singh-io/shadow-hdk/issues"
 
 [project.optional-dependencies]
 search = ["ddgs>=9"]   # the ddgs battery's engine — optional, so the light alternative stays light
@@ -25,8 +40,8 @@ search = ["ddgs>=9"]   # the ddgs battery's engine — optional, so the light al
 # Code and Codex, `acp` for OpenCode. A product that installs `shadow-hdk-serve[providers]` can
 # open a thread on whichever CLI is signed in; without them `ready()` names the missing transport.
 providers = [
-    "shadow-hdk-adapters-jsonl==0.26.0",
-    "shadow-hdk-adapters-acp==0.26.0",
+    "shadow-hdk-adapters-jsonl==0.26.1",
+    "shadow-hdk-adapters-acp==0.26.1",
 ]
 
 [project.scripts]

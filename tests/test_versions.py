@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.26.0"
-"""0.26.0 — the packages proven as published artefacts: the providers wheel built for the first
+EXPECTED = "0.26.1"
+"""0.26.1 — published: every package carries its URLs and classifiers for its PyPI page, and
+the publish workflow builds, checks, publishes and smoke-installs the eighteen (no contract
+change; a patch — D9).
+
+0.26.0 — the packages proven as published artefacts: the providers wheel built for the first
 time (BUG-035), every wheel built and looked into, a clean-venv install serving. The published
 shape is what a consumer compiles against, so every package moves together (D9).
 
