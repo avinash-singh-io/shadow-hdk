@@ -4,12 +4,20 @@
 // real. Prints one JSON line with what it saw.
 import { HarnessClient } from "./client.js";
 
+// A browser's `fetch` refuses to run with `this` bound to anything but the window ("Illegal
+// invocation"); Node's does not care, so a client that calls `this.doFetch(...)` passes here
+// and fails on the first page that installs it. This shim is the browser's rule, enforced in Node.
+const strictFetch: typeof fetch = function (this: unknown, input, init) {
+  if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+  return fetch(input, init);
+};
+
 const address = process.argv[2];
 if (!address) {
   console.error("usage: node smoke.js http://127.0.0.1:PORT [token]");
   process.exit(2);
 }
-const client = new HarnessClient({ address, token: process.argv[3] || undefined });
+const client = new HarnessClient({ address, token: process.argv[3] || undefined, fetch: strictFetch });
 // The mode to switch to: one that differs from the thread's and that this machine can enforce
 // (the driver picks it — `read-only` where an OS sandbox is, a store mode where none is).
 const other = process.argv[4] || "read-only";

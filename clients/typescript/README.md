@@ -21,7 +21,9 @@ await client.thread.setMode(started.thread_id, "read-only");
 const files = await client.files.list(started.thread_id);
 ```
 
-Local only: `npm install` here (never `-g`), `npm run generate` after the schemas change,
-`npm run check`, `npm run build`. The invariant `tests/invariants/test_the_typescript_client_is_current.py`
+A package a product installs. From a checkout, by path — `"shadow-hdk-client":
+"file:../path/to/shadow-hdk/clients/typescript"` — after `npm install` here (never `-g`), which
+builds `dist/` (`prepare`); `main`, `types` and `exports` point at it. `npm run generate` after
+the schemas change, `npm run check`, `npm run build`. The invariant `tests/invariants/test_the_typescript_client_is_current.py`
 diffs the generated types against the schemas; `tests/serve/test_the_typescript_client_talks_to_serve.py`
 drives a real `serve --http` with this client. Private — not published.

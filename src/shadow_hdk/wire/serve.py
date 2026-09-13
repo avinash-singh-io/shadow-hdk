@@ -114,6 +114,11 @@ def build_app(
         sessions[session_id] = session
 
         async def frames() -> AsyncIterator[bytes]:
+            # The stream opens with a comment frame, as SSE has it: a Node front (a dev proxy,
+            # a product's backend) holds the response's headers — the session id among them —
+            # until the first body byte, and the first frame was a reply to a call the client
+            # cannot make without the id. A client ignores a line that is not `data:`.
+            yield b": session open\n\n"
             async with anyio.create_task_group() as group:
                 group.start_soon(session.runtime.peer.serve_forever, group)
                 try:

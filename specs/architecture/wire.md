@@ -91,7 +91,13 @@ fresh, its memory kept (`AgentPort.open(resume=)`).
 - **Authentication is a run token**: short-lived, single-run, minted when a run opens, carrying the
   scope, principal and lease. The runtime never holds a host credential.
 - **Schemas are published** from `shadow_hdk.kernel.contracts.all_schemas()`; a TypeScript client
-  is generated from them and is a *client*, never a port of the runtime (`09` §3b).
+  is generated from them and is a *client*, never a port of the runtime (`09` §3b). The client is a
+  package a product installs (`clients/typescript`, by path until it is on npm), and it runs in a
+  browser: `fetch` is never called with the client as `this` (BUG-039).
+- **The stream opens with a frame** (BUG-038). `GET /rpc` answers the session id in a header and an
+  SSE comment frame at once, before anything is asked — a Node front (a dev proxy, a product's
+  backend) holds a response's headers until its first body byte, and the first frame used to be a
+  reply to a call the client cannot make without the id. A client ignores a line that is not `data:`.
 - **The same suite runs both ways.** The wire passes the in-process runtime suite through a loopback
   transport, or the wire is not done.
 - **Parity is an invariant, not a promise** (Phase 23, D51). Every `RunContext` method either
