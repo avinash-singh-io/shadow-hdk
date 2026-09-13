@@ -137,7 +137,11 @@ export class HarnessClient {
     this.address = options.address.replace(/\/$/, "");
     this.token = options.token;
     this.onRequest = options.onRequest;
-    this.doFetch = options.fetch ?? fetch;
+    // Called as `this.doFetch(...)`, a `fetch` stored bare would run with `this` bound to the
+    // client — a browser refuses that ("Illegal invocation"); Node lets it pass. So the stored
+    // function calls the real one with no `this` at all, the supplied one included.
+    const underlying = options.fetch ?? fetch;
+    this.doFetch = (input, init) => underlying(input, init);
   }
 
   // ---------------------------------------------------------------- the session
