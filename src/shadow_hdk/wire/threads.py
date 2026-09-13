@@ -84,6 +84,7 @@ class ThreadHost(Protocol):
         roots: Any = None,
         principal: str = "",
         attributes: Any = None,
+        budget: Any = None,
     ) -> Thread: ...
 
     async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
@@ -198,6 +199,7 @@ class ThreadMethods:
             # is still called the way it always was.
             **({"principal": str(params["principal"])} if params.get("principal") else {}),
             **({"attributes": params["attributes"]} if params.get("attributes") else {}),
+            **({"budget": params["budget"]} if params.get("budget") is not None else {}),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged

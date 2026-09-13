@@ -50,6 +50,7 @@ from shadow_hdk.kernel import (
     Provenance,
     Registration,
     ScopeSet,
+    Spent,
     ThreadRecord,
     TurnRecord,
 )
@@ -282,7 +283,18 @@ class Thread:
         self._agent = agent
         self._ports = ports
         self._store = store
-        self._meter = LeaseMeter(lease, ports.clock)
+        # **The thread's own budget over the host's default, from what it already spent** (D84).
+        # The meter was per opening before: a resumed thread spent its whole budget again.
+        own = Lease(record.budget, lease.floor) if record.budget is not None else lease
+        self._meter = LeaseMeter(own, ports.clock)
+        self._meter.restore(
+            {
+                "steps": record.spent.steps,
+                "cost_cents": record.spent.cents,
+                "unpriced": 1 if record.spent.unpriced else 0,
+                "elapsed_seconds": record.spent.seconds,
+            }
+        )
         self.registry = registry
         self._approvals = approvals
         self._checkpointer = checkpointer
@@ -332,8 +344,12 @@ class Thread:
         hold_seconds: float = HOLD_SECONDS,
         principal: str = "",
         attributes: Mapping[str, JsonValue] | None = None,
+        budget: Ceiling | None = None,
     ) -> Thread:
         """Start a thread: the record created, the registry served, the provider opened.
+
+        `budget` (D84) is this thread's own ceiling over `lease`, the host's default; what the
+        thread spends is on its record after every turn, and a resume starts from it.
 
         `holder` names this process on the thread's hold (D81): taken here, renewed while the
         thread is open, released at close; `ThreadHeld` when another process has it.
@@ -365,6 +381,7 @@ class Thread:
             environment=_environment_mode_of(ports),
             principal=principal,
             attributes=given,
+            budget=budget,
         )
         await store.create(record)
         thread = cls(
@@ -551,8 +568,19 @@ class Thread:
         return self._record
 
     def remaining(self) -> Lease:
-        """What the thread may still spend across its turns."""
+        """What the thread may still spend across its turns: its budget less what is on the
+        record (D84)."""
         return self._meter.remaining()
+
+    def _spent(self) -> Spent:
+        """The meter's counters, in the record's words (D84)."""
+        counted = self._meter.spent()
+        return Spent(
+            steps=int(counted["steps"]),
+            seconds=float(counted["elapsed_seconds"]),
+            cents=int(counted["cost_cents"]),
+            unpriced=bool(counted["unpriced"]),
+        )
 
     @property
     def turning(self) -> bool:
@@ -705,7 +733,9 @@ class Thread:
                 turns[-1] = _replace_turn(turns[-1], outcome=outcome, text=said)
                 # A turn that ended has no question open: whoever was asked was withdrawn from.
                 still = tuple(q for q in self._record.pending if q.turn != turn_id)
-                self._record = _replace(self._record, turns=tuple(turns), pending=still)
+                self._record = _replace(
+                    self._record, turns=tuple(turns), pending=still, spent=self._spent()
+                )
                 await self._store.save(self._record)
                 await self._remember_session()  # the provider's own id, for the next reopen
 

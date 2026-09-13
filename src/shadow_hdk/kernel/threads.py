@@ -14,6 +14,7 @@ from typing import Literal
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.workspace import Root
 
 ThreadId = str
@@ -35,6 +36,18 @@ class TurnRecord:
     text: str = ""
     """What the agent said back — the turn's own answer, kept here so a host lists a thread
     without replaying every run."""
+
+
+@dataclass(frozen=True)
+class Spent:
+    """What a thread has spent across its turns (D84): the meter's counters, kept on the record
+    so a resumed thread starts from them. `unpriced` says a model call nobody could price is in
+    the total — cents is then a floor, not the amount."""
+
+    steps: int = 0
+    seconds: float = 0.0
+    cents: int = 0
+    unpriced: bool = False
 
 
 @dataclass(frozen=True)
@@ -88,6 +101,12 @@ class ThreadRecord:
     """The product's words about the thread (D82) — a tenant, a workspace id — on every
     judgement's context beside the runtime's own keys, where a rule's or a mode's `scope` reads
     them."""
+    budget: Ceiling | None = None
+    """This thread's own ceiling (D84) — steps, seconds, cents — over the host's default when it
+    was opened with one; `None` means the host's default, which is not repeated here."""
+    spent: Spent = field(default_factory=Spent)
+    """What the thread has spent (D84), saved at the end of every turn; `remaining` is the
+    budget less this, however many times the thread is resumed."""
 
 
-__all__ = ["PendingQuestion", "ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]
+__all__ = ["PendingQuestion", "Spent", "ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]

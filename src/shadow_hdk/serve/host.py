@@ -39,7 +39,7 @@ from shadow_hdk.adapters.modes import (
     store_rules,
 )
 from shadow_hdk.adapters.recording import SocketOffer
-from shadow_hdk.kernel import Lease, ThreadStore, Workspace
+from shadow_hdk.kernel import Ceiling, Lease, ThreadStore, Workspace
 from shadow_hdk.kernel.ports import AgentPort
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals, Ports
@@ -359,6 +359,7 @@ class ServeHost:
         roots: Any = None,
         principal: str = "",
         attributes: Any = None,
+        budget: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -399,9 +400,32 @@ class ServeHost:
             holder=self.holder,
             principal=principal,
             attributes=attributes if isinstance(attributes, dict) else None,
+            budget=self._budget_of(budget),
         )
         self.provider = called
         return thread
+
+    def _budget_of(self, given: Any) -> Ceiling | None:
+        """A thread's own budget (D84), in the file's words — `{steps, seconds, cents}`, each
+        over the file's default when named — as the kernel's ceiling; `None` when nothing was
+        asked for. A value that is not a whole number is refused by name."""
+        if given is None:
+            return None
+        if not isinstance(given, dict):
+            raise ValueError("budget must be an object of steps, seconds and cents")
+        for key in ("steps", "seconds", "cents"):
+            if key in given and given[key] is not None and not isinstance(given[key], int):
+                raise ValueError(f"budget {key} must be a whole number")
+        base = self.settings.budget
+        return (
+            Budget(
+                steps=int(given.get("steps", base.steps)),
+                seconds=int(given.get("seconds", base.seconds)),
+                cents=given.get("cents", base.cents),
+            )
+            .lease()
+            .ceiling
+        )
 
     async def _environment_for(self, policy_mode: str) -> EnvironmentMode:
         """The sandbox mode a mode needs (D76), from its spec in the registry read now (D66).

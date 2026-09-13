@@ -102,7 +102,14 @@ from shadow_hdk.kernel.providers import (
     ProviderStatus,
 )
 from shadow_hdk.kernel.rules import ActRule
-from shadow_hdk.kernel.threads import PendingQuestion, ThreadId, ThreadRecord, TurnId, TurnRecord
+from shadow_hdk.kernel.threads import (
+    PendingQuestion,
+    Spent,
+    ThreadId,
+    ThreadRecord,
+    TurnId,
+    TurnRecord,
+)
 from shadow_hdk.kernel.workspace import Root, Workspace
 
 __all__ = [
@@ -193,6 +200,7 @@ __all__ = [
     "ActRule",
     "ThreadId",
     "PendingQuestion",
+    "Spent",
     "ThreadRecord",
     "Store",
     "ThreadStore",

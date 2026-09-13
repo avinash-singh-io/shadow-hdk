@@ -140,3 +140,20 @@ behind. A row is the same door the others use.
 closed at the next thread's open and gone from every thread at once. Holding it until the last
 thread opened with it closes would need the host to know its threads' lifetimes, which the wire
 knows and the host does not — named here, not built.
+
+### [DECISION] 2026-09-14 — D84: the budget on the record
+
+**Decision.** `thread/start {budget: {steps, seconds, cents}}` opens a thread on a ceiling of
+its own over the file's default (`ThreadRecord.budget`; `None` when the default is meant, which
+is not repeated on the record); what the thread has spent is on the record (`ThreadRecord.spent`:
+steps, seconds, cents, unpriced) after every turn, and the meter of every opening starts from
+it — `remaining` is budget less spent however many times the thread is resumed. Closes ENH-013,
+measured over the wire: the reload that used to read `400 · 500` after `399 · 492` reads what was
+left.
+
+**Why.** A budget a product shows its person is a promise about the whole conversation, not
+about the process that happens to hold it now; every runtime the note read keeps usage on the
+container (Codex's thread, LangGraph's thread metadata, ADK's session state).
+
+**The truthful edge.** A turn the host died in charged its steps in memory only: what it spent
+is not on the record. The spend of a crash is unknown, and the record says what it knows.

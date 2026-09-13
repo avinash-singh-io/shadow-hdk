@@ -50,14 +50,15 @@ whichever it is.
 
 ```
 host ──► runtime   thread/start {root | roots: [{name, path}…], mode, provider, name,
-                                 principal, attributes}                    (who it is for — D82)
+                                 principal, attributes,                     (who it is for — D82)
+                                 budget: {steps, seconds, cents}}           (its own ceiling — D84)
                        → thread_id · root (the primary) · roots · environment (the sandbox's mode)
                          · mode · modes (in the thread's scope) · principal · attributes
 host ──► runtime   thread/resume → … · turns · pending  (the questions the last host left — D80)
 host ──► runtime   thread/close · list (each row: held_by — D81) · fork · rollback · archive
 host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
 host ──► runtime   thread/add_root {name, path} → events · roots  (added live, re-proven — D76)
-host ──► runtime   thread/set_option · remaining
+host ──► runtime   thread/set_option · remaining   (budget − spent, across resumes — D84)
 host ──► runtime   turn/start {when: enqueue | reject | interrupt}   → the turn's record, when it ends
                        (D81: a second turn waits, is refused naming the running one, or stops it)
 host ──► runtime   turn/steer · turn/interrupt · run/cancel

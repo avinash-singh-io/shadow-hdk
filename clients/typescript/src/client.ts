@@ -282,6 +282,8 @@ export class HarnessClient {
       thread_id?: string;
       principal?: string;
       attributes?: { [key: string]: JsonValue };
+      /** This thread's own ceiling over the file's default (D84); what it spends is on its record. */
+      budget?: { steps?: number; seconds?: number; cents?: number | null };
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),

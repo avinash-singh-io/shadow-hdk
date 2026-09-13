@@ -31,7 +31,7 @@ phase: 29
 - [x] records: D83; adapters.md; wire.md; serve.md
 
 ## Group 5 — the budget on the record
-- [ ] `thread/start {budget}`; `ThreadRecord.budget`, `.spent`; `thread/remaining` = budget − spent; resume from spent; ENH-013 closed
+- [x] `thread/start {budget}`; `ThreadRecord.budget`, `.spent`; `thread/remaining` = budget − spent; resume from spent; ENH-013 closed; records D84
 
 ## Group 6 — the rules the field has
 - [ ] `ActRule.decision = "ask"`; deny holds in `full`; glob inputs anchored to roots; the invariant and its mutation
