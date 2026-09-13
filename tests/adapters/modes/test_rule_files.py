@@ -13,8 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from shadow_hdk.adapters.modes import Rule, RuleSet, load_rules, shipped_example
 
+from shadow_hdk.adapters.modes import Rule, RuleSet, load_rules, shipped_example
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 
 WORKSPACE = ScopeSet.of("workspace")

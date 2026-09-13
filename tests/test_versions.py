@@ -7,7 +7,7 @@ was true at Phase 0 and has been wrong since Phase 1 added adapters.)*
 
 **A patch bump is not a contract change and takes no *Pins* row.** Every entry below until 0.13.1
 was a minor, and each says what a host would have to change; 0.13.1 is the first that says nobody
-has to change anything. The packages still move together, because they pin each other by equality
+has to change anything. One distribution since 0.27.0 (D78): one version, and the parts inside it
 and a lockstep set with one member behind is a resolver error waiting to happen — but *moving
 together* and *breaking the join* are different claims, and only the second belongs on the board.
 """
@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.26.1"
-"""0.26.1 — published: every package carries its URLs and classifiers for its PyPI page, and
+EXPECTED = "0.27.0"
+"""0.27.0 — one distribution (D78): `shadow-hdk`, with the specialised SDKs as extras
+(`[langchain]`, `[mqtt]`, `[otel]`, `[sandbox]`, `[search]`, `[all]`), in place of eighteen
+that moved together anyway. A consumer's install lines change, and the eighteen names never
+ship — a contract change in the published shape.
+
+0.26.1 — published: every package carries its URLs and classifiers for its PyPI page, and
 the publish workflow builds, checks, publishes and smoke-installs the eighteen (no contract
 change; a patch — D9).
 
@@ -166,26 +171,28 @@ and a child that died silently looks the same. 0.4.0 was `Ended.detail`; 0.3.0 w
 moves together (D9)."""
 
 
-def _packages() -> dict[str, str]:
-    found = {}
-    for pyproject in sorted(ROOT.glob("packages/**/pyproject.toml")):
-        project = tomllib.loads(pyproject.read_text())["project"]
-        found[project["name"]] = project["version"]
-    return found
+def _distribution() -> dict[str, str]:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    return {str(project["name"]): str(project["version"])}
 
 
-def test_every_package_is_at_the_same_version() -> None:
-    versions = _packages()
-    assert versions, "the version walk found no packages"
-    assert set(versions.values()) == {EXPECTED}, versions
+def test_the_distribution_is_at_the_expected_version() -> None:
+    assert _distribution() == {"shadow-hdk": EXPECTED}
 
 
-def test_the_packages_every_phase_relies_on_are_still_here() -> None:
+def test_the_parts_every_phase_relies_on_are_still_here() -> None:
     """A subset, not an equality: each phase adds adapters, and a test that had to be edited every
     time one arrived would be edited without being read."""
+    parts = {p.name for p in (ROOT / "src" / "shadow_hdk").iterdir() if p.is_dir()}
+    adapters = {p.name for p in (ROOT / "src" / "shadow_hdk" / "adapters").iterdir() if p.is_dir()}
+    assert {"kernel", "runtime", "wire", "providers", "serve", "adapters"} <= parts
     assert {
-        "shadow-hdk-kernel",
-        "shadow-hdk",
-        "shadow-hdk-adapters-basic",
-        "shadow-hdk-adapters-agent",
-    } <= set(_packages())
+        "basic",
+        "agent",
+        "modes",
+        "mcp",
+        "recording",
+        "environment",
+        "jsonl",
+        "acp",
+    } <= adapters

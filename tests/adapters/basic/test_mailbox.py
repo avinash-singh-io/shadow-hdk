@@ -11,8 +11,8 @@ from collections.abc import Callable
 
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import JsonValue
-from shadow_hdk.adapters.basic import AllowAll, CallableComponents, Mailbox
 
+from shadow_hdk.adapters.basic import AllowAll, CallableComponents, Mailbox
 from shadow_hdk.kernel import (
     Await,
     Binding,

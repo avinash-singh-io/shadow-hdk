@@ -9,8 +9,8 @@ registry stay open: **an effect nobody vouched for is assumed to be the worst on
 from __future__ import annotations
 
 import pytest
-from shadow_hdk.adapters.acp import effects_for
 
+from shadow_hdk.adapters.acp import effects_for
 from shadow_hdk.kernel import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
 
 WORKSPACE = ScopeSet.of("workspace")

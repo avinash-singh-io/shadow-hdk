@@ -12,8 +12,8 @@ reached past it would be a way to read the registry a mode had closed.
 from __future__ import annotations
 
 import pytest
-from shadow_hdk.adapters.agent import DESCRIBE, Pattern, describe_for, thin
 
+from shadow_hdk.adapters.agent import DESCRIBE, Pattern, describe_for, thin
 from shadow_hdk.kernel.components import Interface
 from shadow_hdk.runtime.testing import make_registration
 
@@ -95,7 +95,6 @@ async def test_the_loop_answers_a_describe_from_what_the_policy_left() -> None:
     dispatched, answered, and put where the model will read it.
     """
     from shadow_hdk.adapters.agent import Pattern as P
-
     from shadow_hdk.kernel.ports import ModelResponse, ToolCall
     from tests.adapters.agent.test_agent import drive_agent
 
@@ -115,7 +114,6 @@ async def test_the_loop_answers_a_describe_from_what_the_policy_left() -> None:
 
 async def test_a_describe_for_something_the_policy_hid_is_a_sentence_not_a_schema() -> None:
     from shadow_hdk.adapters.agent import Pattern as P
-
     from shadow_hdk.kernel.ports import ModelResponse, ToolCall
     from tests.adapters.agent.test_agent import drive_agent
 
@@ -136,7 +134,6 @@ async def test_the_catalogue_the_model_is_offered_is_thinned_above_the_threshold
     """The wiring, not the function. `thin` is tested above; this proves the loop actually uses it,
     which a mutation showed nothing else did — the catalogue could have gone out whole."""
     from shadow_hdk.adapters.agent import Pattern as P
-
     from shadow_hdk.kernel.ports import ModelResponse, ToolCall
     from tests.adapters.agent.test_agent import drive_agent
 

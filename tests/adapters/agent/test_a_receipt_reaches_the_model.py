@@ -9,7 +9,6 @@ not tell *accepted* from *rejected by the world*, and would have re-sent. The re
 from __future__ import annotations
 
 from shadow_hdk.adapters.agent import Pattern
-
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Acted
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall
@@ -32,7 +31,6 @@ def notify(to: str) -> Acted:
 async def _drive_an_act() -> ScriptedModel:
     from shadow_hdk.adapters.agent import AgentComponent
     from shadow_hdk.adapters.basic import AllowAll, CallableComponents
-
     from shadow_hdk.kernel import Binding, Ceiling, Composition, Floor, Invoke, Lease
     from shadow_hdk.runtime import RunOptions, run
 

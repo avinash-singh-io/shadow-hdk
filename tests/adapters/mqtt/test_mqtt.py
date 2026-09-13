@@ -7,8 +7,8 @@ from collections.abc import Sequence
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll
 
+from shadow_hdk.adapters.basic import AllowAll
 from shadow_hdk.adapters.devices import DeviceComponents
 from shadow_hdk.adapters.mqtt import MqttLink
 from shadow_hdk.kernel import (

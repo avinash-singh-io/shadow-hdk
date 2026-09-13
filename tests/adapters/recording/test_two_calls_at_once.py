@@ -16,8 +16,8 @@ import asyncio
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.recording import RecordingServer
 
+from shadow_hdk.adapters.recording import RecordingServer
 from shadow_hdk.kernel import EffectProfile, Ended, ScopeSet
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement
 from shadow_hdk.runtime import Approvals, RunContext
@@ -86,6 +86,7 @@ async def test_two_questions_over_the_socket_answered_backwards() -> None:
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
@@ -139,6 +140,7 @@ async def test_a_call_the_cli_cancels_does_not_end_the_conversation() -> None:
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
@@ -196,6 +198,7 @@ async def test_a_relay_that_dies_mid_question_does_not_end_the_conversation() ->
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
@@ -252,6 +255,7 @@ async def test_an_answer_to_a_connection_that_is_gone_does_not_end_the_conversat
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
@@ -314,6 +318,7 @@ async def test_a_broken_connection_is_that_connections_problem_not_the_conversat
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
@@ -370,6 +375,7 @@ def test_only_the_wire_going_away_is_swallowed() -> None:
     """The containment must not become a place for bugs to hide: a group with anything that is
     not a connection dying still propagates."""
     import anyio
+
     from shadow_hdk.adapters.recording.socket import _all_connection_shaped
 
     gone = BaseExceptionGroup("g", [anyio.BrokenResourceError(), ConnectionResetError()])
@@ -394,6 +400,7 @@ async def test_the_relay_waits_as_long_as_a_person_takes() -> None:
 
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+
     from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")

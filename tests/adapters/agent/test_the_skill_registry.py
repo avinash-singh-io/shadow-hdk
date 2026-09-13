@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from shadow_hdk.adapters.agent import Skill, load_skill
 from shadow_hdk.adapters.agent.registry import (
     DirectorySkills,

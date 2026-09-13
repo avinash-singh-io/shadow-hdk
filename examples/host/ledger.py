@@ -14,7 +14,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from shadow_hdk.adapters.agent import Skill, kept_from
-
 from shadow_hdk.kernel import Proposal
 from shadow_hdk.kernel.contracts import adapter_for
 

@@ -15,8 +15,8 @@ import anyio
 import pytest
 from mcp import ClientSession, types
 from mcp.shared.memory import create_client_server_memory_streams
-from shadow_hdk.adapters.recording import RecordingServer
 
+from shadow_hdk.adapters.recording import RecordingServer
 from shadow_hdk.kernel import Event, Invoked, Observed
 from shadow_hdk.kernel.ports import GovernancePort
 from shadow_hdk.runtime import RunContext

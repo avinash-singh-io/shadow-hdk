@@ -28,7 +28,6 @@ from shadow_hdk.adapters.basic import StdoutObserver, StdoutSink, SystemClock
 from shadow_hdk.adapters.langchain import LangChainModel
 from shadow_hdk.adapters.mcp import McpComponents, StdioServerParameters
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

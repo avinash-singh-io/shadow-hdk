@@ -18,9 +18,9 @@ from typing import Any
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
+
 from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.adapters.basic import CallableComponents
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

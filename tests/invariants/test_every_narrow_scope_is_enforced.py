@@ -2,7 +2,7 @@
 
 This runtime governs by asking a component what it touches — six fields — and judging those,
 never its name. So every guarantee rests on the answer being **true**, and BUG-018 was three
-adapters, in three packages that cannot import each other, answering `{workspace}` for things that
+adapters, in three parts that cannot import each other, answering `{workspace}` for things that
 reach the whole machine. The enforcement worked perfectly on a false input, three times.
 
 The rule was already written down. `sandbox.py` said *a governance system fed a lie is worse than
@@ -25,8 +25,8 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ADAPTERS = ROOT / "packages" / "adapters"
-RUNTIME = ROOT / "packages" / "runtime" / "src" / "shadow_hdk" / "runtime"
+ADAPTERS = ROOT / "src" / "shadow_hdk" / "adapters"
+RUNTIME = ROOT / "src" / "shadow_hdk" / "runtime"
 
 ENFORCED_BY: dict[str, tuple[str, str]] = {
     "agent": (
@@ -96,8 +96,10 @@ def narrowing_adapters(adapters: Path, runtime: Path | None = None) -> set[str]:
     the day the narrow scope moved into the runtime, which is the day it mattered most."""
     found = {
         package.name
-        for package in sorted(p for p in adapters.glob("*") if p.is_dir())
-        if any(_declares_a_narrow_scope(s) for s in package.glob("src/**/*.py"))
+        for package in sorted(
+            p for p in adapters.glob("*") if p.is_dir() and p.name != "__pycache__"
+        )
+        if any(_declares_a_narrow_scope(s) for s in package.glob("**/*.py"))
     }
     if runtime is not None and runtime.exists():
         found |= {

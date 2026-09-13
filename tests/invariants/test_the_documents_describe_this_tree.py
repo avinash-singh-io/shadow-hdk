@@ -28,7 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SPECS = ROOT / "specs"
 
-ROOTS = ("packages/", "specs/", "tests/", "docs/", "examples/", "spikes/", ".github/", ".githooks")
+ROOTS = ("src/", "specs/", "tests/", "docs/", "examples/", "spikes/", ".github/", ".githooks")
 """The prefixes that make a backticked string a claim about this repository."""
 
 PLACEHOLDER = ("<", "*", "YYYY", "NNNN")
@@ -126,7 +126,11 @@ def test_no_document_names_a_path_that_is_not_there() -> None:
 
 def test_the_adapter_list_matches_the_tree() -> None:
     """The one listing a reader navigates by, held to the directory it describes."""
-    on_disk = {p.name for p in (ROOT / "packages" / "adapters").iterdir() if p.is_dir()}
+    on_disk = {
+        p.name
+        for p in (ROOT / "src" / "shadow_hdk" / "adapters").iterdir()
+        if p.is_dir() and p.name != "__pycache__"
+    }
     named = adapters_named(SPECS / "architecture" / "file-structure.md")
 
     assert named - on_disk == set(), f"named but not on disk: {sorted(named - on_disk)}"
@@ -143,7 +147,7 @@ def test_the_runtime_module_table_matches_the_tree() -> None:
     twenty. The seven it missed are the ones that arrived after it was written — cancellation,
     children, the clock, devices, the leash, process groups and replay — which is precisely the set
     a reader would not know to look for."""
-    on_disk = {p.name for p in (ROOT / "packages/runtime/src/shadow_hdk/runtime").glob("*.py")}
+    on_disk = {p.name for p in (ROOT / "src/shadow_hdk/runtime").glob("*.py")}
     named = modules_named(SPECS / "architecture" / "runtime.md")
 
     assert named - on_disk == set(), f"named but not on disk: {sorted(named - on_disk)}"
@@ -160,13 +164,13 @@ def test_the_rules_catch_what_they_look_for(tmp_path: Path) -> None:
     (tmp_path / "specs").mkdir()
     rotten = tmp_path / "specs" / "doc.md"
     rotten.write_text(
-        "See `packages/gone/` and `specs/phases/<phase>/tasks.md` and `tests/`.\n", encoding="utf-8"
+        "See `src/gone/` and `specs/phases/<phase>/tasks.md` and `tests/`.\n", encoding="utf-8"
     )
     (tmp_path / "tests").mkdir()
 
     dead = dead_paths([rotten], tmp_path)
 
-    assert dead == ["specs/doc.md: packages/gone/"], dead
+    assert dead == ["specs/doc.md: src/gone/"], dead
 
 
 def test_the_listing_rules_catch_what_they_look_for(tmp_path: Path) -> None:

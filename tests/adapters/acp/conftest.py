@@ -11,8 +11,8 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from pydantic import JsonValue
-from shadow_hdk.adapters.basic import AllowAll
 
+from shadow_hdk.adapters.basic import AllowAll
 from shadow_hdk.kernel import (
     Ceiling,
     Completed,

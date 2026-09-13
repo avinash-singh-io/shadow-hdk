@@ -18,9 +18,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from shadow_hdk.adapters.acp import AcpAgent
 from shadow_hdk.adapters.acp.agent import mcp_servers_from
-
 from shadow_hdk.kernel import EffectProfile, ToolSource
 
 OURS = ToolSource(kind="mcp", address="shadow-hdk://run/registry")

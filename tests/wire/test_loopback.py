@@ -350,7 +350,6 @@ async def test_the_host_refuses_a_component_it_does_not_have() -> None:
     end-to-end test precisely because none of them can get there.
     """
     from shadow_hdk.adapters.basic import AllowAll
-
     from shadow_hdk.wire.sides import HostSide
 
     ports = Ports(

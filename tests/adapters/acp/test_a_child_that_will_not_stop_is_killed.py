@@ -15,7 +15,6 @@ import os
 import time
 
 from shadow_hdk.adapters.acp import AcpAgent
-
 from tests.adapters.acp.test_agent import READER, SPIKE
 
 GRACE = 1.0

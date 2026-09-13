@@ -22,7 +22,6 @@ from a step that never happened.
 from __future__ import annotations
 
 from shadow_hdk.adapters.agent import Pattern
-
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.ports import Context, Judgement, ModelResponse, Refuse, ToolCall
 from shadow_hdk.runtime import Ports
@@ -55,7 +54,6 @@ def wipe(what: str) -> str:
 async def _drive_refused() -> ScriptedModel:
     from shadow_hdk.adapters.agent import AgentComponent
     from shadow_hdk.adapters.basic import CallableComponents
-
     from shadow_hdk.kernel import (
         Binding,
         Ceiling,

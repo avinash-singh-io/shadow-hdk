@@ -11,8 +11,8 @@ import pytest
 from examples.host.brains import AT, WORKER, Brain, scripted
 from examples.host.host import Outcome, host
 from examples.host.policy import Policy
-from shadow_hdk.adapters.agent import AgentComponent
 
+from shadow_hdk.adapters.agent import AgentComponent
 from shadow_hdk.adapters.environment import local_sandbox
 from shadow_hdk.kernel import (
     Allow,

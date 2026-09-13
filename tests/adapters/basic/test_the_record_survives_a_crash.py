@@ -28,8 +28,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.basic.sinks import FileSink, proposals_in
 
+from shadow_hdk.adapters.basic.sinks import FileSink, proposals_in
 from shadow_hdk.kernel.components import Provenance
 from shadow_hdk.kernel.observations import Proposal
 

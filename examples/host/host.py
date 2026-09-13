@@ -7,12 +7,11 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from shadow_hdk.adapters.basic import SystemClock
-
 from examples.host.brains import AT, Brain
 from examples.host.ledger import Ledger
 from examples.host.policy import Policy
 from examples.host.view import lines_for, thought
+from shadow_hdk.adapters.basic import SystemClock
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.kernel import ApprovalRequested, Ceiling, Ended, Event, Floor, Lease, Reasoning
 from shadow_hdk.kernel.ports import Judgement

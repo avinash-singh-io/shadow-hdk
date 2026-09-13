@@ -9,14 +9,14 @@ type: Rules
 
 ## Stack & commands
 
-- Python **≥ 3.12**, **uv** workspace (never pip/poetry), **hatchling** builds, **LangGraph ≥ 1.2, < 2**.
-- One import name, `shadow_hdk`, as a **PEP 420 namespace package** — `packages/*/src/shadow_hdk/<part>/`; never add `shadow_hdk/__init__.py`.
+- Python **≥ 3.12**, **uv** (never pip/poetry), **hatchling** builds, **LangGraph ≥ 1.2, < 2**.
+- One distribution, `shadow-hdk`; one import name, `shadow_hdk` — `src/shadow_hdk/<part>/`; the specialised SDKs are extras, imported lazily by the part that needs them (D78).
 - **Gate** before any commit claims done: `uv run ruff check` · `uv run ruff format --check` · `uv run mypy` (strict) · `uv run pytest`. The bare-harness test is the Rule 12 verification evidence for this repository.
 - **Commits** are Conventional (`feat(runtime): …`, `docs: …`); the hook enforces it.
 
 ## Architecture invariants — each one is a test
 
-- **No product.** Nothing under `packages/` imports `intent.*` or any product. `tests/invariants/test_stands_alone.py`.
+- **No product.** Nothing under `src/shadow_hdk/` imports `intent.*` or any product. `tests/invariants/test_stands_alone.py`.
 - **The kernel is pure.** No I/O, clock, logging, or framework import under `kernel/`. Frozen dataclasses and protocols only.
 - **Layers point one way.** kernel ← runtime ← adapters. The runtime never imports an adapter; adapters never import each other.
 - **Every contract round-trips through JSON.** A callable cannot cross a port even in-process.

@@ -20,7 +20,6 @@ from __future__ import annotations
 import json
 
 from shadow_hdk.adapters.agent import DESCRIBE, Pattern, thin
-
 from shadow_hdk.kernel.components import Interface
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall
 from tests.adapters.agent.test_agent import drive_agent

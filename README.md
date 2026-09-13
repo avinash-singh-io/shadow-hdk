@@ -2,7 +2,7 @@
 
 **A Harness Development Kit**: a runtime that runs an agent over an open set of components under
 a governance policy and hands what the agent produces to whoever is listening — the kit a team
-builds its own agentic system from. `pip install shadow-hdk-serve`; `from shadow_hdk.serve import
+builds its own agentic system from. `pip install shadow-hdk`; `from shadow_hdk.serve import
 Harness`; `shadow-hdk serve`.
 
 It has no database, no schema, no product concepts and no UI. It does not know what your
@@ -10,7 +10,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Eighteen distributions at `0.26.1`, all MIT, on PyPI.** 1,411 tests; `mypy --strict` over 251 files;
+**One distribution, `shadow-hdk` `0.27.0`, MIT, on PyPI.** 1,436 tests; `mypy --strict` over 377 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -24,13 +24,15 @@ Everything else in this repository follows from these.
 A component declares six fields, and every rule downstream is a rule over those six:
 
 ```python
+from shadow_hdk.kernel import EffectProfile, ScopeSet
+
 EffectProfile(
-    reads=frozenset({"filesystem"}),  # what it can see
-    writes=frozenset({"filesystem"}),  # what it can change
-    reaches=frozenset({"local"}),  # how far it goes
+    reads=ScopeSet.of("workspace"),  # what it can see
+    writes=ScopeSet.of("workspace"),  # what it can change
+    reaches=False,  # does it leave this machine
     reversible=False,  # can it be undone
     contained=True,  # is it inside a proven boundary
-    costs=Cost(cents=0, seconds=2),  # what it spends
+    costs=False,  # does it spend money
 )
 ```
 
@@ -210,14 +212,26 @@ gets the whole thing either way — offloading is about the model's context, nev
 ### Install
 
 ```bash
-pip install "shadow-hdk-serve[providers]"      # the front door, with the Claude Code / Codex / OpenCode transports
-pip install "shadow-hdk-serve[providers,search]"   # …and the ddgs engine for the light web-search battery
+pip install shadow-hdk            # the kit: kernel, runtime, wire, providers, serve, the light adapters
+pip install "shadow-hdk[all]"     # …and every specialised SDK
 ```
 
-Eighteen distributions on PyPI, versioned together (D9): `shadow-hdk-serve` pulls the kernel,
-the runtime, the wire, the providers and the adapters it composes; a product composing its own
-takes the pieces it wants — `shadow-hdk-kernel` alone is pure types with one dependency. The
-one import name is `shadow_hdk`; the CLI is `shadow-hdk`.
+One distribution, one import name (`shadow_hdk`), one CLI (`shadow-hdk`). What a base install
+does not need it does not pay for — the specialised SDKs are extras, each behind the part that
+uses it, and a part that needs one says which when it is missing:
+
+| extra | brings | for |
+|---|---|---|
+| `[langchain]` | LangChain | the model port over every provider LangChain integrates — bring your own key |
+| `[openai]` `[anthropic]` `[ollama]` `[huggingface]` | that provider's LangChain package (each includes `[langchain]`) | one provider |
+| `[mqtt]` | paho-mqtt | devices over MQTT 3.1.1 |
+| `[otel]` | opentelemetry-api | the event stream as a trace |
+| `[sandbox]` | the OpenSandbox SDK | an environment inside a box somebody else built |
+| `[search]` | ddgs | the light web-search battery's engine (wigolo is its own process, via npm) |
+| `[all]` | all of the above | |
+
+The layering — the kernel pure, the runtime importing no adapter, no adapter importing another,
+the wire and the providers importing no adapter — is a test, not a packaging boundary (D78).
 
 ### Three lines
 
@@ -555,29 +569,29 @@ Code:
 
 ## Layout
 
-Eighteen distributions, one import name (`shadow_hdk`, a namespace package), so a deployment
-takes only what it uses — and one TypeScript client generated from the schemas.
+One distribution, one import name (`shadow_hdk`), the specialised SDKs as extras — and one
+TypeScript client generated from the schemas.
 
 ```
-packages/kernel                     pure types, one partial order, six ports — no I/O at all
-packages/runtime                    the loop, on LangGraph
-packages/wire                       the runtime behind JSON-RPC — ports inverted, or threads served
-packages/serve                      the front door: `Harness`, `shadow-hdk serve`, batteries
-packages/providers                  what this machine can reach — your key, or your subscription
-packages/adapters/basic             allow-all · stdout · file · clock · callables
-packages/adapters/modes             governance as data: a mode is a ceiling and an ask line
-packages/adapters/agent             the model loop as a component; patterns and skills as TOML
-packages/adapters/langchain         one ModelPort over every provider LangChain integrates
-packages/adapters/mcp               an MCP server's tools as components, effects derived not trusted
-packages/adapters/acp               another agent (Codex, Claude Code) as a governed component
-packages/adapters/recording         this run's registry, offered to a child as an MCP server
-packages/adapters/workspace         a filesystem confined to a root it cannot leave
-packages/adapters/sandbox_subprocess  code with a leash, and an honest account of what it is not
-packages/adapters/contained         a sandbox that proves containment or refuses to exist
-packages/adapters/derivation        total expressions over typed tables, fixed-point arithmetic
-packages/adapters/devices           sensors, actuators, witnesses — one device contract
-packages/adapters/mqtt              MQTT topics over that device contract
-packages/adapters/otel              the shape of a run as a trace, over the OpenTelemetry API alone
+src/shadow_hdk/kernel               pure types, one partial order, the ports — no I/O at all
+src/shadow_hdk/runtime              the loop, on LangGraph; threads; the environment base
+src/shadow_hdk/wire                 the runtime behind JSON-RPC — ports inverted, or threads served
+src/shadow_hdk/serve                the front door: `Harness`, `shadow-hdk serve`, batteries
+src/shadow_hdk/providers            what this machine can reach — your key, or your subscription
+src/shadow_hdk/adapters/basic       allow-all · stdout · file · clock · callables · sqlite stores
+src/shadow_hdk/adapters/modes       governance as data: a mode is a policy, a behaviour, an environment
+src/shadow_hdk/adapters/agent       the model loop as a component; patterns and skills as TOML
+src/shadow_hdk/adapters/langchain   one ModelPort over every provider LangChain integrates  [langchain]
+src/shadow_hdk/adapters/mcp         an MCP server's tools as components, effects derived not trusted
+src/shadow_hdk/adapters/acp         an agent over ACP — OpenCode, anything Zed-compatible
+src/shadow_hdk/adapters/jsonl       a CLI answering in line-delimited JSON — Claude Code, Codex
+src/shadow_hdk/adapters/recording   this run's registry, offered to a child as an MCP server
+src/shadow_hdk/adapters/environment where effects land, with a mode, on one or many roots  [sandbox]
+src/shadow_hdk/adapters/derivation  total expressions over typed tables, fixed-point arithmetic
+src/shadow_hdk/adapters/devices     sensors, actuators, witnesses — one device contract
+src/shadow_hdk/adapters/mqtt        MQTT topics over that device contract  [mqtt]
+src/shadow_hdk/adapters/otel        the shape of a run as a trace, over the OpenTelemetry API alone  [otel]
+docs/packages/                      one page per part — what it is for, its seams, its decisions
 clients/typescript                  types from the schemas, and a thin client for `serve --http`
 ```
 
@@ -602,7 +616,7 @@ The last one is why this file names only paths that are really here.
 ## Building it
 
 ```bash
-uv sync --all-packages
+uv sync --all-extras
 uv run ruff check
 uv run ruff format --check
 uv run mypy

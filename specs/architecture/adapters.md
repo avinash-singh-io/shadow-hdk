@@ -4,7 +4,7 @@ type: Architecture
 
 # Adapters — every plug, and the contract each must satisfy
 
-> Each adapter is its own package, `shadow-hdk-adapters-<x>`, importing `shadow_hdk.runtime`
+> Each adapter is its own package under `shadow_hdk.adapters.<x>`, importing `shadow_hdk.runtime`
 > and `shadow_hdk.kernel` and **never another adapter**. Each subclasses the abstract contract
 > suite for the port it implements (`tests/adapters/contract`), so "it implements the port" is a
 > test result rather than a claim.
@@ -223,8 +223,8 @@ the MCP adapter's `held_stdio_client` is the SDK's transport with the process ou
 group on close and when the interpreter ends. What a run proposes for keeping — a minted skill —
 is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offered after a
 restart with source `store`; every proposal still reaches the sink behind it. The composition
-installs with the shipped providers' transports as an extra: `shadow-hdk-serve[providers]`
-(`jsonl` for Claude Code and Codex, `acp` for OpenCode).
+installs as one distribution, `shadow-hdk`, the shipped providers' transports (`jsonl` for
+Claude Code and Codex, `acp` for OpenCode) in the base and the specialised SDKs as extras (D78).
 
 ## The environment — where the agent's effects land (Phase 22, D48–D50)
 

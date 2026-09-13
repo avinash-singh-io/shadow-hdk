@@ -29,8 +29,8 @@ from typing import Any
 
 import pytest
 from pydantic import JsonValue
-from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 
+from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

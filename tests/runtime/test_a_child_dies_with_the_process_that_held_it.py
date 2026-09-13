@@ -107,9 +107,9 @@ def test_a_child_let_go_of_is_not_ended() -> None:
     class Fake:
         pid = 4242
 
-    hold(Fake())  # type: ignore[arg-type]
+    hold(Fake())
     assert 4242 in held_now()
-    let_go(Fake())  # type: ignore[arg-type]
+    let_go(Fake())
     assert 4242 not in held_now()
 
 

@@ -14,9 +14,9 @@ from typing import Any
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
+
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
 from shadow_hdk.adapters.modes.acts import ActRules
-
 from shadow_hdk.kernel import (
     ActRule,
     Binding,

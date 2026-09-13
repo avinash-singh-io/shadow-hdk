@@ -139,7 +139,6 @@ async def test_a_whole_agent_run_replays_with_no_model_behind_it() -> None:
     """
     from shadow_hdk.adapters.agent import AgentComponent, single
     from shadow_hdk.adapters.basic import AllowAll, CallableComponents
-
     from shadow_hdk.kernel import (
         Binding,
         Ceiling,

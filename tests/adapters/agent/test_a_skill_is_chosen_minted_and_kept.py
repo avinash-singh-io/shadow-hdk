@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+
 from shadow_hdk.adapters.agent import (
     AgentComponent,
     MintedSkills,
@@ -26,7 +27,6 @@ from shadow_hdk.adapters.agent import (
 from shadow_hdk.adapters.agent.registry import MINT_SKILL, USE_SKILL
 from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

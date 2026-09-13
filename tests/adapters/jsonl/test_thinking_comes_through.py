@@ -75,7 +75,6 @@ async def test_inside_a_run_each_thought_lands_on_the_record_as_it_arrives(tmp_p
     """Why before what. The tool calls a subscription-driven agent makes land on the record through
     the socket as they happen; its thinking has to land the same way or it reads as hindsight."""
     from shadow_hdk.adapters.basic import AllowAll
-
     from shadow_hdk.kernel import (
         Binding,
         Ceiling,

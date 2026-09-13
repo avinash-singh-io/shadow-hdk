@@ -7,10 +7,10 @@ model's mood — which is also what makes these cost nothing to run.
 from __future__ import annotations
 
 from pydantic import JsonValue
+
 from shadow_hdk.adapters.agent import AgentComponent, Pattern, single
 from shadow_hdk.adapters.agent.pattern import COMPOSE, DONE, PROPOSE
 from shadow_hdk.adapters.basic import AllowAll, CallableComponents
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

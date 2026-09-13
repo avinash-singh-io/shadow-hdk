@@ -123,7 +123,8 @@ class ComponentPortContract:
 
 
 class ModelPortContract:
-    """Override `port` and `a_request`."""
+    """Override `port` and `a_request` — or `using`, when the port has a lifetime (a model on the
+    far side of a wire is reached through a session, entered and left inside each test)."""
 
     def port(self) -> ModelPort:
         raise NotImplementedError
@@ -131,28 +132,37 @@ class ModelPortContract:
     def a_request(self) -> ModelRequest:
         raise NotImplementedError
 
+    @asynccontextmanager
+    async def using(self) -> AsyncIterator[ModelPort]:
+        yield self.port()
+
     async def test_a_request_returns_a_response(self) -> None:
-        response = await self.port().complete(self.a_request())
+        async with self.using() as port:
+            response = await port.complete(self.a_request())
         assert isinstance(response.text, str)
         assert isinstance(response.tool_calls, tuple)
 
     async def test_a_response_round_trips_through_json(self) -> None:
-        response = await self.port().complete(self.a_request())
+        async with self.using() as port:
+            response = await port.complete(self.a_request())
         assert round_trip(response, CONTRACTS["ModelResponse"]) == response
 
     async def test_streaming_yields_at_least_one_chunk(self) -> None:
-        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        async with self.using() as port:
+            chunks = [chunk async for chunk in port.stream(self.a_request())]
         assert chunks, "a stream that yields nothing is not a stream"
 
     async def test_exactly_one_chunk_says_it_is_the_last(self) -> None:
         """Written so it holds for a live model too: nothing here compares two calls, because two
         calls to a real provider are two different answers."""
-        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        async with self.using() as port:
+            chunks = [chunk async for chunk in port.stream(self.a_request())]
         assert chunks[-1].done, "the last chunk must say so"
         assert not any(chunk.done for chunk in chunks[:-1]), "only the last chunk is the last"
 
     async def test_what_the_call_cost_arrives_at_the_end_or_not_at_all(self) -> None:
-        chunks = [chunk async for chunk in self.port().stream(self.a_request())]
+        async with self.using() as port:
+            chunks = [chunk async for chunk in port.stream(self.a_request())]
         priced = [chunk for chunk in chunks if chunk.usage is not None]
         assert priced in ([], [chunks[-1]]), "cost is not known until the call ends"
         for chunk in priced:
@@ -162,7 +172,8 @@ class ModelPortContract:
                 assert value is None or isinstance(value, int)
 
     async def test_usage_is_a_number_or_unknown_never_a_guess(self) -> None:
-        usage = (await self.port().complete(self.a_request())).usage
+        async with self.using() as port:
+            usage = (await port.complete(self.a_request())).usage
         if usage is None:
             return
         for value in (usage.input_tokens, usage.output_tokens, usage.cost_cents):
@@ -170,39 +181,49 @@ class ModelPortContract:
 
 
 class GovernancePortContract:
-    """Override `port`."""
+    """Override `port` — or `using`, when the port has a lifetime."""
 
     def port(self) -> GovernancePort:
         raise NotImplementedError
 
+    @asynccontextmanager
+    async def using(self) -> AsyncIterator[GovernancePort]:
+        yield self.port()
+
     async def test_it_answers_every_profile_shape_with_a_judgement(self) -> None:
-        for profile in PROFILE_SHAPES:
-            judgement = await self.port().judge(profile, A_CONTEXT)
-            assert isinstance(judgement, Allow | Ask | Refuse), f"{profile} got {judgement!r}"
+        async with self.using() as port:
+            for profile in PROFILE_SHAPES:
+                judgement = await port.judge(profile, A_CONTEXT)
+                assert isinstance(judgement, Allow | Ask | Refuse), f"{profile} got {judgement!r}"
 
     async def test_a_judgement_round_trips_through_json(self) -> None:
-        for profile in PROFILE_SHAPES:
-            judgement = await self.port().judge(profile, A_CONTEXT)
-            assert round_trip(judgement, CONTRACTS["Judgement"]) == judgement
+        async with self.using() as port:
+            for profile in PROFILE_SHAPES:
+                judgement = await port.judge(profile, A_CONTEXT)
+                assert round_trip(judgement, CONTRACTS["Judgement"]) == judgement
 
 
 class SinkPortContract:
-    """Override `port`."""
+    """Override `port` — or `using`, when the port has a lifetime."""
 
     def port(self) -> SinkPort:
         raise NotImplementedError
 
+    @asynccontextmanager
+    async def using(self) -> AsyncIterator[SinkPort]:
+        yield self.port()
+
     async def test_it_accepts_every_proposal_shape(self) -> None:
         shapes: tuple[JsonValue, ...] = (None, 1, "text", ["a"], {"k": {"nested": True}})
-        for payload in shapes:
-            await self.port().propose(
-                Proposal(kind="claim", payload=payload, provenance=A_PROVENANCE)
-            )
+        async with self.using() as port:
+            for payload in shapes:
+                await port.propose(Proposal(kind="claim", payload=payload, provenance=A_PROVENANCE))
 
     async def test_it_accepts_a_proposal_with_grounds(self) -> None:
-        await self.port().propose(
-            Proposal(kind="claim", payload={}, provenance=A_PROVENANCE, grounds=("s1", "s2"))
-        )
+        async with self.using() as port:
+            await port.propose(
+                Proposal(kind="claim", payload={}, provenance=A_PROVENANCE, grounds=("s1", "s2"))
+            )
 
 
 class ObserverPortContract:

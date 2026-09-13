@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+
 from shadow_hdk.adapters.agent import SkillRegistry, store_skills
 from shadow_hdk.adapters.modes import (
     ActRules,
@@ -22,7 +23,6 @@ from shadow_hdk.adapters.modes import (
     store_rules,
 )
 from shadow_hdk.adapters.modes.registry import shipped_modes
-
 from shadow_hdk.kernel import ActRule, Store
 from shadow_hdk.runtime.store import InMemoryStore
 from shadow_hdk.runtime.switched import Switched, store_switches
@@ -260,7 +260,6 @@ async def test_a_mode_added_to_the_store_is_judged_from_at_the_next_step() -> No
     """The whole claim, end to end: governance over a registry with a store source; a mode row
     written after the run's ports were built selects at the next judgement."""
     from shadow_hdk.adapters.modes import governance_for
-
     from shadow_hdk.kernel import Binding, Ceiling, Composition, Floor, Invoke, Lease
     from shadow_hdk.runtime import Ports, RunOptions, run
     from shadow_hdk.runtime.testing import FixedClock, ListSink
@@ -294,7 +293,6 @@ async def test_a_mode_added_to_the_store_is_judged_from_at_the_next_step() -> No
 async def test_a_rule_made_at_answer_time_is_written_through_to_the_store() -> None:
     """`accept_answer` keeps the rule in the run's registry *and*, through it, in the store."""
     from shadow_hdk.adapters.modes import Mode, ModeGovernance
-
     from shadow_hdk.kernel import (
         Binding,
         Ceiling,
