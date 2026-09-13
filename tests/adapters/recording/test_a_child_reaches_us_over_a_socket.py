@@ -23,13 +23,13 @@ from typing import Any
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
 from shadow_hdk.adapters.recording import (
     PORT_VARIABLE,
     TOKEN_VARIABLE,
     RecordingServer,
     serve_over_socket,
 )
-
 from shadow_hdk.kernel import Event, Invoked, Observed
 from shadow_hdk.runtime import RunContext
 

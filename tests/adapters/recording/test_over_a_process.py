@@ -16,8 +16,8 @@ from typing import Any
 
 import anyio
 import pytest
-from shadow_hdk.adapters.recording import RecordingServer, serve_over_pipes
 
+from shadow_hdk.adapters.recording import RecordingServer, serve_over_pipes
 from shadow_hdk.kernel import Event, Invoked, Observed
 from shadow_hdk.kernel.ports import GovernancePort
 from shadow_hdk.runtime import RunContext

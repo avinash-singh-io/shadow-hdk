@@ -4,11 +4,12 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-13 (published to PyPI, v0.26.1)
-> **Current Phase**: **none — Phase 28 (the workspace) is complete; v0.26.0 proved the eighteen
+> **Last Updated**: 2026-09-13 (one distribution, v0.27.0 — the first on PyPI)
+> **Current Phase**: **none — Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
-> wheel built and looked into; a clean-venv install serving) and v0.26.1 published them to
-> PyPI.** Phase 28, released as v0.25.0:
+> wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
+> workflow for eighteen names, which never ran; v0.27.0 makes them one — `shadow-hdk` with
+> extras (D78) — and is the first release published to PyPI.** Phase 28, released as v0.25.0:
 > Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
 > `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
@@ -16,10 +17,12 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,411 tests; mypy strict over 251 files; eighteen distributions at **0.26.1**, all MIT, on PyPI.
+> 1,436 tests; mypy strict over 377 files; one distribution, `shadow-hdk`, at **0.27.0**, MIT, on PyPI.
 >
-> **Latest Release**: **v0.26.1**, released 2026-09-13 — published to PyPI (the URLs and
-> classifiers on every package; the publish workflow). Before it **v0.26.0** — the packages
+> **Latest Release**: **v0.27.0**, released 2026-09-13 — one distribution with extras (D78);
+> BUG-036, BUG-037; mypy over the whole tree; the sdist declared; published to PyPI. Before it
+> **v0.26.1** (the URLs and classifiers; the publish workflow, tagged but never released — it
+> would have published eighteen names). Before it **v0.26.0** — the packages
 > proven as published artefacts (BUG-035, the wheel invariant, the clean-venv proof). Before it v0.25.3 (BUG-034; the
 > specs synced), v0.25.2 (D77 — `start_held`,
 > `LineBuffer`, the root-name rule), v0.25.1 (a battery's process
@@ -38,11 +41,11 @@ shadow-hdk is the generic agentic system designed in
 `intent-ecosystem/vision/09-the-agentic-system.md`: a runtime that runs an agent over an open set of
 components under a governance policy and hands what it produces to whoever is listening. It governs
 effects, not names; the agent's plan is data compiled to a LangGraph graph; the runtime acts through
-components and records through the sink. Three packages — kernel, runtime, adapters — one import
+components and records through the sink. One distribution — kernel, runtime, wire, providers, serve, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Twenty-eight phases are built,
-merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distributions at 0.24.0.
+merged and released**: 1,436 tests, mypy strict over 377 files, one distribution at 0.27.0.
 
 ## Completed Phases
 

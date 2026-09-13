@@ -14,6 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from shadow_hdk.adapters.agent import Pattern, load_pattern, shipped
 
 SHIPPED = {

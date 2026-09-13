@@ -19,8 +19,8 @@ from __future__ import annotations
 import os
 
 import pytest
-from shadow_hdk.adapters.langchain import LangChainModel
 
+from shadow_hdk.adapters.langchain import LangChainModel
 from shadow_hdk.kernel import Interface
 from shadow_hdk.kernel.ports import Message, ModelRequest
 

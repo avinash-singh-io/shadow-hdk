@@ -11,7 +11,6 @@ second turn was not.
 from __future__ import annotations
 
 from shadow_hdk.adapters.agent import Pattern
-
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.ports import Message, ModelResponse, ToolCall
 from shadow_hdk.runtime import Ports
@@ -28,7 +27,6 @@ def look(topic: str) -> str:
 async def _two_turns() -> ScriptedModel:
     from shadow_hdk.adapters.agent import AgentComponent
     from shadow_hdk.adapters.basic import AllowAll, CallableComponents
-
     from shadow_hdk.kernel import Binding, Ceiling, Composition, Floor, Invoke, Lease
     from shadow_hdk.runtime import RunOptions, run
 

@@ -16,8 +16,8 @@ missed one in `contained` would read as working right up until the day it matter
 from __future__ import annotations
 
 import pytest
-from shadow_hdk.adapters.modes import Rule, RuleSet, widens
 
+from shadow_hdk.adapters.modes import Rule, RuleSet, widens
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 
 EVERYTHING = ScopeSet(everything=True)
@@ -128,7 +128,6 @@ def test_the_check_covers_every_field_the_kernel_has() -> None:
     from dataclasses import fields as dataclass_fields
 
     from shadow_hdk.adapters.modes import FIELDS
-
     from shadow_hdk.kernel.effects import EffectProfile
 
     assert set(FIELDS) == {f.name for f in dataclass_fields(EffectProfile)}

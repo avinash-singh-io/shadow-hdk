@@ -15,7 +15,6 @@ from importlib.metadata import entry_points
 from pathlib import Path
 
 from shadow_hdk.adapters.acp import AcpAgent, open_agent
-
 from shadow_hdk.kernel import AgentPort, Provider, ToolSource
 from shadow_hdk.providers.surface import TRANSPORT_GROUP, transports
 

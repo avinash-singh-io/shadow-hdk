@@ -28,7 +28,6 @@ from shadow_hdk.adapters.agent import (
     SkillSource,
     shipped_skills,
 )
-
 from shadow_hdk.kernel import (
     Binding,
     Completed,
@@ -196,7 +195,6 @@ async def by_subscription(
         RecordingServer,
         serve_over_socket,
     )
-
     from shadow_hdk.kernel.ports import ToolSource
     from shadow_hdk.providers import detect, environment_for, open_with, search_dirs, shipped
 

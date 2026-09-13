@@ -6,8 +6,8 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from shadow_hdk.adapters.basic import SqliteStore
 
+from shadow_hdk.adapters.basic import SqliteStore
 from tests.adapters.contract.suites import StoreContract
 
 pytestmark = pytest.mark.anyio

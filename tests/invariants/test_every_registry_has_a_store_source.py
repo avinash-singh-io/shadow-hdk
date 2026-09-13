@@ -3,7 +3,7 @@
 Every registry in the tree — a class whose name ends in `Registry` or `Rules`, or that wraps
 components with switches — must take a `Store` as a source, and the source must exist by name.
 A registry that could only be filled from code or files is a restart waiting to happen. The walk
-is over `packages/*/src`; the table says, for each registry, which store source feeds it and
+is over `src/shadow_hdk`; the table says, for each registry, which store source feeds it and
 which test proves a row written now is read at the next read.
 """
 
@@ -12,7 +12,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-PACKAGES = Path(__file__).resolve().parents[2] / "packages"
+PACKAGES = Path(__file__).resolve().parents[2] / "src" / "shadow_hdk"
 
 LIVE: dict[str, tuple[str, str]] = {
     "ModeRegistry": ("store_modes", "tests/runtime/test_a_store_makes_every_registry_live.py"),
@@ -37,7 +37,7 @@ NOT_A_REGISTRY: dict[str, str] = {
 
 def _classes() -> dict[str, Path]:
     found: dict[str, Path] = {}
-    for source in sorted(PACKAGES.glob("**/src/**/*.py")):
+    for source in sorted(PACKAGES.glob("**/*.py")):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
         for node in ast.walk(tree):
             if (
@@ -55,7 +55,7 @@ def _classes() -> dict[str, Path]:
 
 def _functions() -> set[str]:
     names: set[str] = set()
-    for source in sorted(PACKAGES.glob("**/src/**/*.py")):
+    for source in sorted(PACKAGES.glob("**/*.py")):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
         names.update(
             n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef)
@@ -74,7 +74,7 @@ def test_every_registry_has_a_store_source() -> None:
 
 def test_every_named_source_exists_and_its_proof_is_a_real_test() -> None:
     functions = _functions()
-    root = PACKAGES.parent
+    root = PACKAGES.parents[1]
     for registry, (source, proof) in {**LIVE, **LIVE_FUNCTIONS}.items():
         assert source in functions, f"{registry}: store source {source!r} does not exist"
         text = (root / proof).read_text(encoding="utf-8")

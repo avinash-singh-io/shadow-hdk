@@ -1,5 +1,5 @@
 name: publish
-# Builds the eighteen distributions and publishes them — to TestPyPI on demand, to PyPI when a
+# Builds the distribution and publishes it — to TestPyPI on demand, to PyPI when a
 # release is published. The version in every package must equal the tag's (the versions test
 # already holds the packages to one number; this holds that number to the tag), and a fresh
 # install from the index must import and answer `initialize` before the run is called green.
@@ -32,13 +32,13 @@ jobs:
       - name: the version every package carries, and the tag it must equal
         id: version
         run: |
-          v=$(uv run python -c "import tomllib; print(tomllib.load(open('packages/kernel/pyproject.toml','rb'))['project']['version'])")
+          v=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "version=$v" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.tag_name }}" != "v$v" ]; then
             echo "release tag ${{ github.event.release.tag_name }} != package version v$v" >&2; exit 1
           fi
-      - run: uv build --all-packages --out-dir dist
-      - run: ls dist | wc -l | grep -qx 36  # 18 wheels + 18 sdists, or the build is not the tree
+      - run: uv build --out-dir dist
+      - run: ls dist | wc -l | grep -qx 2  # one wheel and one sdist, or the build is not the tree
       - run: uvx twine check dist/*
       - uses: actions/upload-artifact@v4
         with:
@@ -85,7 +85,7 @@ jobs:
           uv venv fresh
           if [ "$INDEX" = "pypi" ]; then extra=""; else extra="--index https://test.pypi.org/simple/ --index-strategy unsafe-best-match"; fi
           for attempt in 1 2 3 4 5 6; do
-            uv pip install --python fresh/bin/python $extra "shadow-hdk-serve[providers]==$VERSION" && break
+            uv pip install --python fresh/bin/python $extra "shadow-hdk==$VERSION" && break
             echo "not on the index yet (attempt $attempt)"; sleep 30
           done
           fresh/bin/python -c "import shadow_hdk.serve, shadow_hdk.kernel, shadow_hdk.wire; print('imported', '$VERSION')"

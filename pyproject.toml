@@ -1,44 +1,81 @@
-# The workspace root. It is not a distribution — `package = false` — it exists so one `uv sync`
-# installs every package under packages/ with one lockfile and one toolchain config.
-#
-# Distributions (10-the-roadmap §7d): `shadow-hdk-kernel` (here), `shadow-hdk` (the runtime,
-# R3), `shadow-hdk-adapters-<x>` (R1 onward). One import name, `shadow_hdk`, as a PEP 420
-# namespace package, so `shadow_hdk.kernel` and `shadow_hdk.runtime` can ship separately.
+# Shadow HDK — one distribution, one import name. What a consumer installs is `shadow-hdk`; what
+# it imports is `shadow_hdk.<part>`; what it does not need it does not pay for — the specialised
+# SDKs are extras, and every adapter that wants one imports it lazily and says which extra when it
+# is missing. The layering — the kernel pure, the runtime importing no adapter, no adapter importing
+# another, the wire and the providers importing no adapter — is a test (`tests/invariants`), not a
+# packaging boundary (D78).
 [project]
-name = "shadow-hdk-workspace"
-version = "0.0.0"
+name = "shadow-hdk"
+version = "0.27.0"
+description = "Shadow HDK — a Harness Development Kit: an effect-governed agent runtime, its components, and the wire."
+readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel", "shadow-hdk", "shadow-hdk-adapters-basic", "shadow-hdk-adapters-agent", "shadow-hdk-adapters-langchain[openai,huggingface]", "shadow-hdk-adapters-modes", "shadow-hdk-adapters-mcp", "shadow-hdk-adapters-acp", "shadow-hdk-adapters-recording", "shadow-hdk-wire[serve]", "shadow-hdk-adapters-derivation", "shadow-hdk-adapters-otel", "shadow-hdk-adapters-devices", "shadow-hdk-adapters-mqtt", "shadow-hdk-providers", "shadow-hdk-adapters-jsonl", "shadow-hdk-serve"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.9",                      # the kernel's one dependency: the published contracts
+    "langgraph>=1.2,<2",                  # the runtime: a composition compiles to a graph
+    "mcp>=2.0,<3",                        # MCP servers as components; the registry offered as one
+    "anyio>=4",                           # the wire, the recording server, the batteries
+    "agent-client-protocol>=0.12,<1",     # the ACP transport — OpenCode, anything Zed-compatible
+    "starlette>=0.37",                    # `shadow-hdk serve --http`: the loopback listener with SSE
+    "uvicorn>=0.30",
+    "httpx>=0.27",                        # a client of that listener, and the TypeScript proof's peer
+]
 
-[tool.uv]
-package = false
+[project.optional-dependencies]
+# Bring your own key: one ModelPort over every provider LangChain integrates.
+langchain = ["langchain>=1.0,<2"]
+openai = ["shadow-hdk[langchain]", "langchain-openai>=1.0"]
+anthropic = ["shadow-hdk[langchain]", "langchain-anthropic>=1.0"]
+ollama = ["shadow-hdk[langchain]", "langchain-ollama>=1.0"]
+huggingface = ["shadow-hdk[langchain]", "langchain-huggingface>=0.3"]
+# Devices over MQTT 3.1.1.
+mqtt = ["paho-mqtt>=2.1,<3"]
+# The event stream as an OpenTelemetry trace.
+otel = ["opentelemetry-api>=1.44,<2"]
+# An environment inside a box somebody else built (OpenSandbox; needs a server).
+sandbox = ["opensandbox>=0.1.16,<0.2"]
+# The light web-search battery's engine (wigolo is its own process, installed with npm).
+search = ["ddgs>=9"]
+# Everything.
+all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search]"]
 
-[tool.uv.workspace]
-# Adapters nest one level deeper (`packages/adapters/<name>/`), so a bare `packages/*` would match
-# the container directory and fail the sync with "missing a pyproject.toml".
-members = ["packages/kernel", "packages/runtime", "packages/wire", "packages/providers", "packages/serve", "packages/adapters/*"]
+[project.scripts]
+shadow-hdk = "shadow_hdk.serve.__main__:main"
+shadow-hdk-registry = "shadow_hdk.adapters.recording.socket:relay"
 
-[tool.uv.sources]
-shadow-hdk-kernel = { workspace = true }
-shadow-hdk = { workspace = true }
-shadow-hdk-adapters-basic = { workspace = true }
-shadow-hdk-adapters-agent = { workspace = true }
-shadow-hdk-adapters-langchain = { workspace = true }
-shadow-hdk-adapters-modes = { workspace = true }
-shadow-hdk-adapters-mcp = { workspace = true }
-shadow-hdk-adapters-acp = { workspace = true }
-shadow-hdk-adapters-recording = { workspace = true }
-shadow-hdk-wire = { workspace = true }
-shadow-hdk-adapters-derivation = { workspace = true }
-shadow-hdk-adapters-otel = { workspace = true }
-shadow-hdk-adapters-devices = { workspace = true }
-shadow-hdk-adapters-mqtt = { workspace = true }
-shadow-hdk-providers = { workspace = true }
-shadow-hdk-serve = { workspace = true }
-shadow-hdk-adapters-environment = { workspace = true }
-shadow-hdk-adapters-jsonl = { workspace = true }
+# How the providers find the transports the shipped CLIs speak (D40): a provider file names one.
+[project.entry-points."shadow_hdk.transports"]
+jsonl = "shadow_hdk.adapters.jsonl.transport:open_agent"
+acp = "shadow_hdk.adapters.acp.transport:open_agent"
+
+[project.urls]
+Homepage = "https://github.com/avinash-singh-io/shadow-hdk"
+Repository = "https://github.com/avinash-singh-io/shadow-hdk"
+Changelog = "https://github.com/avinash-singh-io/shadow-hdk/blob/main/specs/changelog/2026-09.md"
+Issues = "https://github.com/avinash-singh-io/shadow-hdk/issues"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shadow_hdk"]
+
+[tool.hatch.build.targets.sdist]
+# Declared, not inherited: the first build carried the TypeScript client's node_modules (2,273
+# files) because a nested .gitignore was not honoured. The source, and what installs it.
+only-include = ["src/shadow_hdk", "README.md", "LICENSE", "pyproject.toml"]
 
 [dependency-groups]
 dev = [
@@ -48,18 +85,22 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.6",
     "mypy>=1.11",
-    "agent-client-protocol>=0.12",
     "pytest-timeout>=2.3",
     # A checkpointer we do NOT ship, to prove the host can bring its own. Everything before
     # Phase 6 was proven against `InMemorySaver`, which is not durability.
     "langgraph-checkpoint-sqlite>=2.0",
     "amqtt>=0.12.0",
+    "twine>=6",
 ]
+
+[tool.uv]
+# The suite exercises every adapter, so a development sync installs every extra.
+default-groups = ["dev"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["packages/kernel/src", "packages/runtime/src", "packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/acp/src:packages/adapters/recording/src", "packages/wire/src", "packages/providers/src", "packages/serve/src", "packages/adapters/environment/src", "packages/adapters/jsonl/src", "packages/adapters/derivation/src", "packages/adapters/otel/src", "packages/adapters/devices/src", "packages/adapters/mqtt/src", "tests"]
+src = ["src", "tests"]
 # Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
 # and a design document is not the formatter's business. momentum's own scaffold is vendored.
 extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
@@ -71,8 +112,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]
 python_version = "3.12"
 strict = true
 packages = ["shadow_hdk", "tests", "examples"]
-mypy_path = "packages/kernel/src:packages/runtime/src:packages/adapters/basic/src:packages/adapters/agent/src:packages/adapters/langchain/src:packages/adapters/modes/src:packages/adapters/mcp/src:packages/adapters/acp/src:packages/adapters/recording/src:packages/adapters/otel/src:packages/adapters/devices/src:packages/adapters/mqtt/src:packages/wire/src:packages/providers/src:packages/serve/src:packages/adapters/environment/src:packages/adapters/jsonl/src:packages/adapters/derivation/src"
-namespace_packages = true
+mypy_path = "src"
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]

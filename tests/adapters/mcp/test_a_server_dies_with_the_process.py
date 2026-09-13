@@ -14,8 +14,8 @@ import time
 from pathlib import Path
 
 import pytest
-from shadow_hdk.adapters.mcp import McpComponents, StdioServerParameters
 
+from shadow_hdk.adapters.mcp import McpComponents, StdioServerParameters
 from shadow_hdk.runtime.processes import held_now
 
 STUBBORN = str(Path(__file__).with_name("stubborn_server.py"))

@@ -23,7 +23,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PACKAGES = ROOT / "packages"
+PACKAGES = ROOT / "src" / "shadow_hdk"
 TESTS = ROOT / "tests"
 
 PORTS = {
@@ -61,6 +61,11 @@ CONTRACTED: dict[str, str] = {
     "StdoutObserver": "tests/adapters/basic/test_basic.py",
     "StdoutSink": "tests/adapters/basic/test_basic.py",
     "SystemClock": "tests/adapters/basic/test_basic.py",
+    # the wire's remote halves — what the served runtime uses as its ports
+    "RemoteComponents": "tests/wire/test_the_remote_halves_hold_their_contracts.py",
+    "RemoteGovernance": "tests/wire/test_the_remote_halves_hold_their_contracts.py",
+    "RemoteModel": "tests/wire/test_the_remote_halves_hold_their_contracts.py",
+    "RemoteSink": "tests/wire/test_the_remote_halves_hold_their_contracts.py",
     # the runtime's own testing doubles, which hosts import and therefore depend on
     "CallbackObserver": "tests/adapters/contract/test_the_doubles.py",
     "FixedClock": "tests/adapters/contract/test_the_doubles.py",
@@ -89,9 +94,9 @@ exposed *outward*, which is the arrow pointing the other way."""
 
 
 def _implementations() -> dict[str, Path]:
-    """Every class under `packages/*/src` whose bases name a port."""
+    """Every class under `src/shadow_hdk` whose bases name a port."""
     found: dict[str, Path] = {}
-    for source in sorted(PACKAGES.glob("**/src/**/*.py")):
+    for source in sorted(PACKAGES.glob("**/*.py")):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and any(

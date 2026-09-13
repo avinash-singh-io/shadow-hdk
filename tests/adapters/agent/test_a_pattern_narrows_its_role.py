@@ -22,7 +22,6 @@ from typing import Any
 from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.adapters.agent.pattern import COMPOSE, DONE, PROPOSE
 from shadow_hdk.adapters.basic import AllowAll, CallableComponents
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

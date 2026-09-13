@@ -16,8 +16,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from shadow_hdk.adapters.modes import ModeRegistry, ModeSpec, governance_for, shipped_modes
 
+from shadow_hdk.adapters.modes import ModeRegistry, ModeSpec, governance_for, shipped_modes
 from shadow_hdk.kernel import Behaviour, Ceiling, Floor, Lease, Turn
 from shadow_hdk.kernel.events import ModeChanged
 from shadow_hdk.kernel.ports import AgentSession

@@ -18,8 +18,8 @@ import asyncio
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.recording import RecordingServer
 
+from shadow_hdk.adapters.recording import RecordingServer
 from shadow_hdk.kernel import EffectProfile, ScopeSet
 from shadow_hdk.kernel.events import ApprovalRequested
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement, Refuse

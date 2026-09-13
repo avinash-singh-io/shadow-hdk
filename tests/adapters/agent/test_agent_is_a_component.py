@@ -9,8 +9,8 @@ an exception, and what it returns round-trips too.
 from __future__ import annotations
 
 from pydantic import JsonValue
-from shadow_hdk.adapters.agent import AgentComponent, Pattern
 
+from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.ports import ComponentPort

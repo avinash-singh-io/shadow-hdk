@@ -11,7 +11,7 @@ import importlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-FACADE = ROOT / "packages" / "serve" / "src" / "shadow_hdk" / "serve" / "facade.py"
+FACADE = ROOT / "src" / "shadow_hdk" / "serve" / "facade.py"
 
 STDLIB = {"asyncio", "collections", "dataclasses", "pathlib", "typing", "__future__"}
 

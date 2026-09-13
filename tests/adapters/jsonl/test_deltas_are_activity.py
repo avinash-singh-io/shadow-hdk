@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll
 
+from shadow_hdk.adapters.basic import AllowAll
 from shadow_hdk.adapters.jsonl import JsonlSession
 from shadow_hdk.kernel import (
     Activity,

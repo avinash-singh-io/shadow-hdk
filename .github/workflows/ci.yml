@@ -14,7 +14,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --all-packages
+      - run: uv sync --all-extras
       # The TypeScript client (Phase 26, D68): generated types diffed against the schemas, the
       # client type-checked and built, then proven against a live `serve --http` by the Python
       # suite. Node here so the invariant runs rather than skips.

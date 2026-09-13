@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from langchain_core.messages import AIMessage, ToolMessage
-from shadow_hdk.adapters.langchain import LangChainModel
 
+from shadow_hdk.adapters.langchain import LangChainModel
 from shadow_hdk.kernel import Interface
 from shadow_hdk.kernel.ports import Message, ModelPort, ModelRequest, Usage
 from tests.adapters.contract import ModelPortContract
@@ -171,8 +171,8 @@ async def test_empty_frames_are_not_yielded_as_pieces_of_answer() -> None:
 def test_an_assistant_message_reaches_langchain_with_its_calls() -> None:
     """The adapter's half of BUG-005, without a provider: what `_to_langchain` builds."""
     from langchain_core.messages import AIMessage
-    from shadow_hdk.adapters.langchain.model import _to_langchain
 
+    from shadow_hdk.adapters.langchain.model import _to_langchain
     from shadow_hdk.kernel.ports import Message, ToolCall
 
     built = _to_langchain(
@@ -195,7 +195,6 @@ def test_arguments_that_are_not_a_mapping_are_carried_not_dropped() -> None:
     """A provider names its arguments, so LangChain wants a mapping. A model that sent something
     else is still shown to the next turn rather than silently losing its own call."""
     from shadow_hdk.adapters.langchain.model import _calls_for
-
     from shadow_hdk.kernel.ports import ToolCall
 
     assert _calls_for((ToolCall("c1", "look", "lathes"),))[0]["args"] == {"value": "lathes"}

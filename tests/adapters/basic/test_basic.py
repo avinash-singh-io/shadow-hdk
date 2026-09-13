@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import io
 
+import pytest
 from pydantic import JsonValue
+
 from shadow_hdk.adapters.basic import (
     AllowAll,
     CallableComponents,
@@ -14,7 +16,6 @@ from shadow_hdk.adapters.basic import (
     StdoutSink,
     SystemClock,
 )
-
 from shadow_hdk.kernel import (
     ASSUME_WORST,
     Completed,
@@ -142,6 +143,18 @@ async def test_an_async_callable_works_the_same_as_a_sync_one() -> None:
 async def test_a_callable_may_return_its_own_observation() -> None:
     observation = await _components().invoke("refuses_itself", {"why": "not in this mode"})
     assert observation == Refused("not in this mode")
+
+
+async def test_a_removed_callable_is_neither_listed_nor_invocable() -> None:
+    """The mirror of `add`: what a closed battery (BUG-037's neighbour) uses to be gone, so a port
+    a host still holds after `close` offers nothing — the same as a stopped MCP server's."""
+    components = _components()
+    components.remove("note_fact")
+
+    assert "note_fact" not in {r.id for r in await components.registrations()}
+    assert (await components.invoke("note_fact", {"text": "x"})).kind == "failed"
+    with pytest.raises(KeyError):
+        components.remove("note_fact")
 
 
 async def test_effects_are_carried_verbatim_and_never_guessed() -> None:

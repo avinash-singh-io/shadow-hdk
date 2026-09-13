@@ -21,7 +21,6 @@ Containment is what makes the narrow claim true. Without it the honest answer is
 from __future__ import annotations
 
 from shadow_hdk.adapters.acp.kinds import effects_for, reading_a_file, writing_a_file
-
 from shadow_hdk.kernel import ScopeSet
 
 WORKSPACE = ScopeSet.of("workspace")

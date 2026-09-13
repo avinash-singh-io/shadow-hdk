@@ -10,8 +10,8 @@ from __future__ import annotations
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from shadow_hdk.adapters.modes import Mode, ModeGovernance, layer
 
+from shadow_hdk.adapters.modes import Mode, ModeGovernance, layer
 from shadow_hdk.kernel import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
 from shadow_hdk.kernel.ports import Context, GovernancePort
 from tests.adapters.contract import GovernancePortContract

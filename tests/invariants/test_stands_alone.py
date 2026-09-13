@@ -2,7 +2,7 @@
 
 Four rules, all AST walks, all build failures rather than review comments:
 
-1. **No product.** Nothing under ``packages/*/src`` imports ``intent.*`` — the same mechanism that
+1. **No product.** Nothing under ``src/shadow_hdk`` imports ``intent.*`` — the same mechanism that
    keeps Intent Studio's ``knowledge/`` liftable, pointed the other way.
 2. **The kernel is pure.** Nothing under the kernel imports I/O, a clock, logging, or a framework.
    Frozen dataclasses and protocols only. The runtime is where LangGraph appears, and nowhere below.
@@ -29,10 +29,12 @@ from collections.abc import Iterable
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PACKAGES = ROOT / "packages"
-KERNEL = PACKAGES / "kernel" / "src" / "shadow_hdk" / "kernel"
-RUNTIME = PACKAGES / "runtime" / "src" / "shadow_hdk" / "runtime"
-PROVIDERS = PACKAGES / "providers" / "src" / "shadow_hdk" / "providers"
+PACKAGES = ROOT / "src" / "shadow_hdk"
+"""One distribution since 0.27.0 (D78); the parts are packages of the one tree, and every rule
+below is about the parts, not about how they ship."""
+KERNEL = PACKAGES / "kernel"
+RUNTIME = PACKAGES / "runtime"
+PROVIDERS = PACKAGES / "providers"
 ADAPTERS = PACKAGES / "adapters"
 EXAMPLES = ROOT / "examples"
 
@@ -149,9 +151,8 @@ def test_the_runtime_imports_no_adapter() -> None:
 
 
 def test_no_adapter_imports_another() -> None:
-    """Walks nothing until `packages/adapters/` exists; inert then, live the day it does."""
     violations: list[str] = []
-    packages = sorted(p for p in ADAPTERS.glob("*") if p.is_dir()) if ADAPTERS.exists() else []
+    packages = sorted(p for p in ADAPTERS.glob("*") if p.is_dir() and p.name != "__pycache__")
     for package in packages:
         violations += adapter_violations(_sources(package), own=f"{ADAPTER_ROOT}.{package.name}")
     assert not violations, "an adapter reaches sideways:\n  " + "\n  ".join(violations)

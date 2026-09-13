@@ -13,7 +13,6 @@ talking to the whole history has saved nothing.
 from __future__ import annotations
 
 from shadow_hdk.adapters.agent import COMPACT, Pattern
-
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall
 from tests.adapters.agent.test_agent import drive_agent
 

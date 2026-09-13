@@ -93,7 +93,8 @@ Pre-1.0, a contract change is a **minor** bump plus a row on `intent-ecosystem/l
 *Pins*. The product pins an exact version and adopts deliberately.
 
 *Why:* the join is the only place two lanes can break each other. *Overturned by:* 1.0, when a
-contract change becomes a major bump.
+contract change becomes a major bump. *Amended by* D78 (2026-09-13): one version was the rule;
+one distribution — `shadow-hdk`, with extras — is the fact, so "every package" reads "the kit".
 
 ## D10 — LangGraph `>=1.2,<2`; Python `>=3.12`
 

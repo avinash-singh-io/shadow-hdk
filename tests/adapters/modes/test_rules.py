@@ -14,8 +14,8 @@ A `Mode` is the one-row case, and `adapters/modes` keeps working.
 from __future__ import annotations
 
 import pytest
-from shadow_hdk.adapters.modes import Rule, RuleGovernance, RuleSet
 
+from shadow_hdk.adapters.modes import Rule, RuleGovernance, RuleSet
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 from shadow_hdk.kernel.ports import Ask, Context, GovernancePort, Refuse
 from tests.adapters.contract import GovernancePortContract

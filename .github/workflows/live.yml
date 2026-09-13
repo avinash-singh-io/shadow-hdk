@@ -26,7 +26,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --all-packages
+      - run: uv sync --all-extras
       - name: the live selection, skips explained
         env:
           INTENT_HF_TOKEN: ${{ secrets.INTENT_HF_TOKEN }}

@@ -13,7 +13,6 @@ from collections.abc import Callable
 from typing import Any
 
 from shadow_hdk.adapters.agent import Pattern
-
 from shadow_hdk.kernel import (
     Binding,
     Ceiling,

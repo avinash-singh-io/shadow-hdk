@@ -15,8 +15,8 @@ mistake in what governance is told is worth a refusal at the door rather than a 
 from __future__ import annotations
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 
+from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 from shadow_hdk.kernel import Ceiling, Composition, Floor, Invoke, Lease, ScopeSet
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.runtime import Ports, RunOptions, run

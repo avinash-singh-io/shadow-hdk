@@ -202,7 +202,6 @@ async def test_a_refused_driver_is_absent_from_what_the_model_is_offered() -> No
         return Completed(None)
 
     from shadow_hdk.adapters.basic import AllowAll
-
     from shadow_hdk.runtime.testing import InMemoryComponents
 
     ports = Ports(

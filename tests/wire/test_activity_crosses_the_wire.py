@@ -13,8 +13,8 @@ from typing import Any
 
 import anyio
 from pydantic import JsonValue
-from shadow_hdk.adapters.basic import AllowAll
 
+from shadow_hdk.adapters.basic import AllowAll
 from shadow_hdk.kernel import (
     Activity,
     Binding,

@@ -14,8 +14,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-PACKAGES = Path(__file__).resolve().parents[2] / "packages"
-THE_PLACE = "packages/runtime/src/shadow_hdk/runtime/processes.py"
+PACKAGES = Path(__file__).resolve().parents[2] / "src" / "shadow_hdk"
+THE_PLACE = "src/shadow_hdk/runtime/processes.py"
 
 
 def _starts_a_leader(node: ast.Call) -> bool:
@@ -31,11 +31,11 @@ def _starts_a_leader(node: ast.Call) -> bool:
 
 def _sites() -> list[str]:
     found: list[str] = []
-    for source in sorted(PACKAGES.glob("**/src/**/*.py")):
+    for source in sorted(PACKAGES.glob("**/*.py")):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and _starts_a_leader(node):
-                found.append(f"{source.relative_to(PACKAGES.parent)}:{node.lineno}")
+                found.append(f"{source.relative_to(PACKAGES.parents[1])}:{node.lineno}")
     return found
 
 

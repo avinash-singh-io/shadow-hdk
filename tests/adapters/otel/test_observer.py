@@ -14,8 +14,8 @@ import pytest
 from opentelemetry import trace
 from opentelemetry.trace import StatusCode
 from pydantic import JsonValue
-from shadow_hdk.adapters.basic import AllowAll
 
+from shadow_hdk.adapters.basic import AllowAll
 from shadow_hdk.adapters.otel import OpenTelemetryObserver
 from shadow_hdk.kernel import (
     Acted,
