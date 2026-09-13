@@ -28,4 +28,4 @@ phase: 26
 
 ## Close
 - [x] D67, D68, D69 recorded and indexed; `architecture/wire.md` grew the second shape; status/roadmap/changelog/README; 0.23.0 across eighteen packages; Verification Evidence fresh
-- [x] landed (CI green on `0299fca` → staging `c87c65f` → main → `v0.23.0` → release); board with a Pins row (`f8f2f02`)
+- [x] landed (CI green on `e62e67d` → staging `b8ac6c4` → main → `v0.23.0` → release); board with a Pins row (`f8f2f02`)

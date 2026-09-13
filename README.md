@@ -1,14 +1,16 @@
-# shadow-hdk
+# Shadow HDK
 
-A runtime that runs an agent over an open set of components under a governance policy, and hands
-what the agent produces to whoever is listening.
+**A Harness Development Kit**: a runtime that runs an agent over an open set of components under
+a governance policy and hands what the agent produces to whoever is listening — the kit a team
+builds its own agentic system from. `pip install shadow-hdk-serve`; `from shadow_hdk.serve import
+Harness`; `shadow-hdk serve`.
 
 It has no database, no schema, no product concepts and no UI. It does not know what your
 application is for. What it knows is how to take a plan, judge every step of it against a policy
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**Eighteen distributions at `0.25.3`, all MIT.** 1,407 tests; `mypy --strict` over 249 files;
+**Eighteen distributions at `0.26.0`, all MIT.** 1,411 tests; `mypy --strict` over 251 files;
 0.594 ms of runtime overhead per step.
 
 ---

@@ -84,9 +84,9 @@ async def test_two_questions_over_the_socket_answered_backwards() -> None:
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()
@@ -137,9 +137,9 @@ async def test_a_call_the_cli_cancels_does_not_end_the_conversation() -> None:
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()
@@ -194,9 +194,9 @@ async def test_a_relay_that_dies_mid_question_does_not_end_the_conversation() ->
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()
@@ -250,9 +250,9 @@ async def test_an_answer_to_a_connection_that_is_gone_does_not_end_the_conversat
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()
@@ -312,9 +312,9 @@ async def test_a_broken_connection_is_that_connections_problem_not_the_conversat
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()
@@ -392,9 +392,9 @@ async def test_the_relay_waits_as_long_as_a_person_takes() -> None:
     import sys
     from pathlib import Path
 
-    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
+    from shadow_hdk.adapters.recording import PORT_VARIABLE, TOKEN_VARIABLE, serve_over_socket
 
     relay = str(Path(sys.executable).parent / "shadow-hdk-registry")
     questions = Approvals()

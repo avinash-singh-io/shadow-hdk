@@ -26,4 +26,4 @@ phase: 28
 
 ## Close
 - [x] decisions (D73–D76); index; README; 0.25.0 across eighteen packages
-- [x] landed: branch CI `c07bd22` green → staging `ca3f155` green → main `ca3f155` green → `v0.25.0` tagged and released (`gh release create --latest`) → branch deleted; board row H30, Pins row, log line (`d2aec68`)
+- [x] landed: branch CI `da98996` green → staging `720059a` green → main `720059a` green → `v0.25.0` tagged and released (`gh release create --latest`) → branch deleted; board row H30, Pins row, log line (`d2aec68`)

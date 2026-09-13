@@ -1336,417 +1336,6 @@ wheels = [
 ]
 
 [[package]]
-name = "shadow-hdk"
-version = "0.25.3"
-source = { editable = "packages/runtime" }
-dependencies = [
-    { name = "langgraph" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "langgraph", specifier = ">=1.2,<2" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-acp"
-version = "0.25.3"
-source = { editable = "packages/adapters/acp" }
-dependencies = [
-    { name = "agent-client-protocol" },
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "agent-client-protocol", specifier = ">=0.12,<1" },
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-agent"
-version = "0.25.3"
-source = { editable = "packages/adapters/agent" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-basic"
-version = "0.25.3"
-source = { editable = "packages/adapters/basic" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-derivation"
-version = "0.25.3"
-source = { editable = "packages/adapters/derivation" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-devices"
-version = "0.25.3"
-source = { editable = "packages/adapters/devices" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-environment"
-version = "0.25.3"
-source = { editable = "packages/adapters/environment" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.optional-dependencies]
-opensandbox = [
-    { name = "opensandbox" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "opensandbox", marker = "extra == 'opensandbox'", specifier = ">=0.1.16,<0.2" },
-]
-provides-extras = ["opensandbox"]
-
-[[package]]
-name = "shadow-hdk-adapters-jsonl"
-version = "0.25.3"
-source = { editable = "packages/adapters/jsonl" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-langchain"
-version = "0.25.3"
-source = { editable = "packages/adapters/langchain" }
-dependencies = [
-    { name = "langchain" },
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.optional-dependencies]
-anthropic = [
-    { name = "langchain-anthropic" },
-]
-huggingface = [
-    { name = "langchain-huggingface" },
-]
-ollama = [
-    { name = "langchain-ollama" },
-]
-openai = [
-    { name = "langchain-openai" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "langchain", specifier = ">=1.0,<2" },
-    { name = "langchain-anthropic", marker = "extra == 'anthropic'", specifier = ">=1.0" },
-    { name = "langchain-huggingface", marker = "extra == 'huggingface'", specifier = ">=0.3" },
-    { name = "langchain-ollama", marker = "extra == 'ollama'", specifier = ">=1.0" },
-    { name = "langchain-openai", marker = "extra == 'openai'", specifier = ">=1.0" },
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-provides-extras = ["openai", "anthropic", "ollama", "huggingface"]
-
-[[package]]
-name = "shadow-hdk-adapters-mcp"
-version = "0.25.3"
-source = { editable = "packages/adapters/mcp" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-    { name = "mcp" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "mcp", specifier = ">=2.0,<3" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-modes"
-version = "0.25.3"
-source = { editable = "packages/adapters/modes" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-mqtt"
-version = "0.25.3"
-source = { editable = "packages/adapters/mqtt" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-    { name = "paho-mqtt" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "paho-mqtt", specifier = ">=2.1,<3" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-otel"
-version = "0.25.3"
-source = { editable = "packages/adapters/otel" }
-dependencies = [
-    { name = "shadow-hdk-kernel" },
-    { name = "opentelemetry-api" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "opentelemetry-api", specifier = ">=1.44,<2" },
-]
-
-[[package]]
-name = "shadow-hdk-adapters-recording"
-version = "0.25.3"
-source = { editable = "packages/adapters/recording" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-    { name = "mcp" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "mcp", specifier = ">=2.0,<3" },
-]
-
-[[package]]
-name = "shadow-hdk-kernel"
-version = "0.25.3"
-source = { editable = "packages/kernel" }
-dependencies = [
-    { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
-
-[[package]]
-name = "shadow-hdk-providers"
-version = "0.25.3"
-source = { editable = "packages/providers" }
-dependencies = [
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "shadow-hdk-kernel", editable = "packages/kernel" }]
-
-[[package]]
-name = "shadow-hdk-serve"
-version = "0.25.3"
-source = { editable = "packages/serve" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-adapters-agent" },
-    { name = "shadow-hdk-adapters-basic" },
-    { name = "shadow-hdk-adapters-environment" },
-    { name = "shadow-hdk-adapters-mcp" },
-    { name = "shadow-hdk-adapters-modes" },
-    { name = "shadow-hdk-adapters-recording" },
-    { name = "shadow-hdk-kernel" },
-    { name = "shadow-hdk-providers" },
-    { name = "shadow-hdk-wire", extra = ["serve"] },
-]
-
-[package.optional-dependencies]
-providers = [
-    { name = "shadow-hdk-adapters-acp" },
-    { name = "shadow-hdk-adapters-jsonl" },
-]
-search = [
-    { name = "ddgs" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ddgs", marker = "extra == 'search'", specifier = ">=9" },
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-adapters-acp", marker = "extra == 'providers'", editable = "packages/adapters/acp" },
-    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
-    { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
-    { name = "shadow-hdk-adapters-environment", editable = "packages/adapters/environment" },
-    { name = "shadow-hdk-adapters-jsonl", marker = "extra == 'providers'", editable = "packages/adapters/jsonl" },
-    { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
-    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
-    { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "shadow-hdk-providers", editable = "packages/providers" },
-    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
-]
-provides-extras = ["search", "providers"]
-
-[[package]]
-name = "shadow-hdk-wire"
-version = "0.25.3"
-source = { editable = "packages/wire" }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-kernel" },
-]
-
-[package.optional-dependencies]
-serve = [
-    { name = "httpx" },
-    { name = "starlette" },
-    { name = "uvicorn" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", marker = "extra == 'serve'", specifier = ">=0.27" },
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "starlette", marker = "extra == 'serve'", specifier = ">=0.37" },
-    { name = "uvicorn", marker = "extra == 'serve'", specifier = ">=0.30" },
-]
-provides-extras = ["serve"]
-
-[[package]]
-name = "shadow-hdk-workspace"
-version = "0.0.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "shadow-hdk" },
-    { name = "shadow-hdk-adapters-acp" },
-    { name = "shadow-hdk-adapters-agent" },
-    { name = "shadow-hdk-adapters-basic" },
-    { name = "shadow-hdk-adapters-derivation" },
-    { name = "shadow-hdk-adapters-devices" },
-    { name = "shadow-hdk-adapters-jsonl" },
-    { name = "shadow-hdk-adapters-langchain", extra = ["huggingface", "openai"] },
-    { name = "shadow-hdk-adapters-mcp" },
-    { name = "shadow-hdk-adapters-modes" },
-    { name = "shadow-hdk-adapters-mqtt" },
-    { name = "shadow-hdk-adapters-otel" },
-    { name = "shadow-hdk-adapters-recording" },
-    { name = "shadow-hdk-kernel" },
-    { name = "shadow-hdk-providers" },
-    { name = "shadow-hdk-serve" },
-    { name = "shadow-hdk-wire", extra = ["serve"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "agent-client-protocol" },
-    { name = "amqtt" },
-    { name = "hypothesis" },
-    { name = "langgraph-checkpoint-sqlite" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-timeout" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "shadow-hdk", editable = "packages/runtime" },
-    { name = "shadow-hdk-adapters-acp", editable = "packages/adapters/acp" },
-    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
-    { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
-    { name = "shadow-hdk-adapters-derivation", editable = "packages/adapters/derivation" },
-    { name = "shadow-hdk-adapters-devices", editable = "packages/adapters/devices" },
-    { name = "shadow-hdk-adapters-jsonl", editable = "packages/adapters/jsonl" },
-    { name = "shadow-hdk-adapters-langchain", extras = ["openai", "huggingface"], editable = "packages/adapters/langchain" },
-    { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
-    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
-    { name = "shadow-hdk-adapters-mqtt", editable = "packages/adapters/mqtt" },
-    { name = "shadow-hdk-adapters-otel", editable = "packages/adapters/otel" },
-    { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
-    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
-    { name = "shadow-hdk-providers", editable = "packages/providers" },
-    { name = "shadow-hdk-serve", editable = "packages/serve" },
-    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "agent-client-protocol", specifier = ">=0.12" },
-    { name = "amqtt", specifier = ">=0.12.0" },
-    { name = "hypothesis", specifier = ">=6.100" },
-    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0" },
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "pytest-timeout", specifier = ">=2.3" },
-    { name = "ruff", specifier = ">=0.6" },
-]
-
-[[package]]
 name = "lxml"
 version = "6.1.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2783,6 +2372,417 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/e5/9e274e24eeb027640ffc7442f21239f16d17f47acec15ae34f32e03a5c79/ruff-0.16.6-py3-none-win32.whl", hash = "sha256:0b87d9d16fcb63e8018423ca1d50b7260f15cb2da33e30db4baad4183a948c25", size = 10049212, upload-time = "2026-09-03T16:57:20.55Z" },
     { url = "https://files.pythonhosted.org/packages/22/31/72472449414223ed1a2da236b992adbb1a2ae59e34794574810f60ce068e/ruff-0.16.6-py3-none-win_amd64.whl", hash = "sha256:10d21c51c3495d8eaea7b703a16592117ea6eb1d649e36335aa965ff1173eb39", size = 10556402, upload-time = "2026-09-03T16:57:23.501Z" },
     { url = "https://files.pythonhosted.org/packages/fc/07/d781f8f8e1ac24bef9f3269cf62ffb1407ca24c3a8f12e5e22874f90528c/ruff-0.16.6-py3-none-win_arm64.whl", hash = "sha256:7a976c79b958f94e50a022a19f0f8c87387448020935ec14fc74331bd0a7f2c5", size = 10412850, upload-time = "2026-09-03T16:57:26.416Z" },
+]
+
+[[package]]
+name = "shadow-hdk"
+version = "0.26.0"
+source = { editable = "packages/runtime" }
+dependencies = [
+    { name = "langgraph" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langgraph", specifier = ">=1.2,<2" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-acp"
+version = "0.26.0"
+source = { editable = "packages/adapters/acp" }
+dependencies = [
+    { name = "agent-client-protocol" },
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-client-protocol", specifier = ">=0.12,<1" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-agent"
+version = "0.26.0"
+source = { editable = "packages/adapters/agent" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-basic"
+version = "0.26.0"
+source = { editable = "packages/adapters/basic" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-derivation"
+version = "0.26.0"
+source = { editable = "packages/adapters/derivation" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-devices"
+version = "0.26.0"
+source = { editable = "packages/adapters/devices" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-environment"
+version = "0.26.0"
+source = { editable = "packages/adapters/environment" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.optional-dependencies]
+opensandbox = [
+    { name = "opensandbox" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "opensandbox", marker = "extra == 'opensandbox'", specifier = ">=0.1.16,<0.2" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+provides-extras = ["opensandbox"]
+
+[[package]]
+name = "shadow-hdk-adapters-jsonl"
+version = "0.26.0"
+source = { editable = "packages/adapters/jsonl" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-langchain"
+version = "0.26.0"
+source = { editable = "packages/adapters/langchain" }
+dependencies = [
+    { name = "langchain" },
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.optional-dependencies]
+anthropic = [
+    { name = "langchain-anthropic" },
+]
+huggingface = [
+    { name = "langchain-huggingface" },
+]
+ollama = [
+    { name = "langchain-ollama" },
+]
+openai = [
+    { name = "langchain-openai" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain", specifier = ">=1.0,<2" },
+    { name = "langchain-anthropic", marker = "extra == 'anthropic'", specifier = ">=1.0" },
+    { name = "langchain-huggingface", marker = "extra == 'huggingface'", specifier = ">=0.3" },
+    { name = "langchain-ollama", marker = "extra == 'ollama'", specifier = ">=1.0" },
+    { name = "langchain-openai", marker = "extra == 'openai'", specifier = ">=1.0" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+provides-extras = ["openai", "anthropic", "ollama", "huggingface"]
+
+[[package]]
+name = "shadow-hdk-adapters-mcp"
+version = "0.26.0"
+source = { editable = "packages/adapters/mcp" }
+dependencies = [
+    { name = "mcp" },
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mcp", specifier = ">=2.0,<3" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-modes"
+version = "0.26.0"
+source = { editable = "packages/adapters/modes" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-mqtt"
+version = "0.26.0"
+source = { editable = "packages/adapters/mqtt" }
+dependencies = [
+    { name = "paho-mqtt" },
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "paho-mqtt", specifier = ">=2.1,<3" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-otel"
+version = "0.26.0"
+source = { editable = "packages/adapters/otel" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "opentelemetry-api", specifier = ">=1.44,<2" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-adapters-recording"
+version = "0.26.0"
+source = { editable = "packages/adapters/recording" }
+dependencies = [
+    { name = "mcp" },
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mcp", specifier = ">=2.0,<3" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+]
+
+[[package]]
+name = "shadow-hdk-kernel"
+version = "0.26.0"
+source = { editable = "packages/kernel" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
+
+[[package]]
+name = "shadow-hdk-providers"
+version = "0.26.0"
+source = { editable = "packages/providers" }
+dependencies = [
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "shadow-hdk-kernel", editable = "packages/kernel" }]
+
+[[package]]
+name = "shadow-hdk-serve"
+version = "0.26.0"
+source = { editable = "packages/serve" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-adapters-agent" },
+    { name = "shadow-hdk-adapters-basic" },
+    { name = "shadow-hdk-adapters-environment" },
+    { name = "shadow-hdk-adapters-mcp" },
+    { name = "shadow-hdk-adapters-modes" },
+    { name = "shadow-hdk-adapters-recording" },
+    { name = "shadow-hdk-kernel" },
+    { name = "shadow-hdk-providers" },
+    { name = "shadow-hdk-wire", extra = ["serve"] },
+]
+
+[package.optional-dependencies]
+providers = [
+    { name = "shadow-hdk-adapters-acp" },
+    { name = "shadow-hdk-adapters-jsonl" },
+]
+search = [
+    { name = "ddgs" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ddgs", marker = "extra == 'search'", specifier = ">=9" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-adapters-acp", marker = "extra == 'providers'", editable = "packages/adapters/acp" },
+    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
+    { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
+    { name = "shadow-hdk-adapters-environment", editable = "packages/adapters/environment" },
+    { name = "shadow-hdk-adapters-jsonl", marker = "extra == 'providers'", editable = "packages/adapters/jsonl" },
+    { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
+    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
+    { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "shadow-hdk-providers", editable = "packages/providers" },
+    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
+]
+provides-extras = ["search", "providers"]
+
+[[package]]
+name = "shadow-hdk-wire"
+version = "0.26.0"
+source = { editable = "packages/wire" }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-kernel" },
+]
+
+[package.optional-dependencies]
+serve = [
+    { name = "httpx" },
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", marker = "extra == 'serve'", specifier = ">=0.27" },
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "starlette", marker = "extra == 'serve'", specifier = ">=0.37" },
+    { name = "uvicorn", marker = "extra == 'serve'", specifier = ">=0.30" },
+]
+provides-extras = ["serve"]
+
+[[package]]
+name = "shadow-hdk-workspace"
+version = "0.0.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "shadow-hdk" },
+    { name = "shadow-hdk-adapters-acp" },
+    { name = "shadow-hdk-adapters-agent" },
+    { name = "shadow-hdk-adapters-basic" },
+    { name = "shadow-hdk-adapters-derivation" },
+    { name = "shadow-hdk-adapters-devices" },
+    { name = "shadow-hdk-adapters-jsonl" },
+    { name = "shadow-hdk-adapters-langchain", extra = ["huggingface", "openai"] },
+    { name = "shadow-hdk-adapters-mcp" },
+    { name = "shadow-hdk-adapters-modes" },
+    { name = "shadow-hdk-adapters-mqtt" },
+    { name = "shadow-hdk-adapters-otel" },
+    { name = "shadow-hdk-adapters-recording" },
+    { name = "shadow-hdk-kernel" },
+    { name = "shadow-hdk-providers" },
+    { name = "shadow-hdk-serve" },
+    { name = "shadow-hdk-wire", extra = ["serve"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "agent-client-protocol" },
+    { name = "amqtt" },
+    { name = "hypothesis" },
+    { name = "langgraph-checkpoint-sqlite" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "shadow-hdk", editable = "packages/runtime" },
+    { name = "shadow-hdk-adapters-acp", editable = "packages/adapters/acp" },
+    { name = "shadow-hdk-adapters-agent", editable = "packages/adapters/agent" },
+    { name = "shadow-hdk-adapters-basic", editable = "packages/adapters/basic" },
+    { name = "shadow-hdk-adapters-derivation", editable = "packages/adapters/derivation" },
+    { name = "shadow-hdk-adapters-devices", editable = "packages/adapters/devices" },
+    { name = "shadow-hdk-adapters-jsonl", editable = "packages/adapters/jsonl" },
+    { name = "shadow-hdk-adapters-langchain", extras = ["openai", "huggingface"], editable = "packages/adapters/langchain" },
+    { name = "shadow-hdk-adapters-mcp", editable = "packages/adapters/mcp" },
+    { name = "shadow-hdk-adapters-modes", editable = "packages/adapters/modes" },
+    { name = "shadow-hdk-adapters-mqtt", editable = "packages/adapters/mqtt" },
+    { name = "shadow-hdk-adapters-otel", editable = "packages/adapters/otel" },
+    { name = "shadow-hdk-adapters-recording", editable = "packages/adapters/recording" },
+    { name = "shadow-hdk-kernel", editable = "packages/kernel" },
+    { name = "shadow-hdk-providers", editable = "packages/providers" },
+    { name = "shadow-hdk-serve", editable = "packages/serve" },
+    { name = "shadow-hdk-wire", extras = ["serve"], editable = "packages/wire" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "agent-client-protocol", specifier = ">=0.12" },
+    { name = "amqtt", specifier = ">=0.12.0" },
+    { name = "hypothesis", specifier = ">=6.100" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0" },
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "pytest-timeout", specifier = ">=2.3" },
+    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]

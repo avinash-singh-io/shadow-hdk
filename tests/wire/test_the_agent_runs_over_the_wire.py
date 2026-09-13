@@ -14,9 +14,9 @@ with the parent's record intact.
 from __future__ import annotations
 
 import anyio
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.adapters.basic import AllowAll
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Binding,

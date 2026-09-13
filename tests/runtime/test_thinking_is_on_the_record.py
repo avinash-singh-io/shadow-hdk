@@ -10,9 +10,9 @@ nothing to say is a kind readers learn to skip.
 
 from __future__ import annotations
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.adapters.basic import AllowAll
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Binding,

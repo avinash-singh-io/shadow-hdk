@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from shadow_hdk.adapters.basic import AllowAll
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll
 
 from shadow_hdk.kernel import (
     Acted,

@@ -50,7 +50,7 @@ sees nothing to answer; the parked child is released with the run.
 
 ## Verification Evidence
 
-Fresh, 2026-09-12, this session, on `main` at `0f63065`.
+Fresh, 2026-09-12, this session, on `main` at `b906f21`.
 
 **The four zeros:**
 

@@ -17,7 +17,7 @@ tech-debt items, written by another agent, several naming line numbers. The rule
 that **every row is reproduced before it is fixed** — one of them was already right about this
 lane's own gate, and being right eleven times is not the same as being right this time.
 
-**What it changed about what this lane had claimed.** BUG-007 (fixed before this phase, `8a9e566`)
+**What it changed about what this lane had claimed.** BUG-007 (fixed before this phase, `6f45e4c`)
 found that `mypy_path` omitted `wire`, `contained` and `derivation`; all three ship `py.typed`, so
 mypy silenced them as site-packages. Every *mypy 0* reported from Phase 9 to Phase 16 excluded the
 wire package, where nine errors sat. The gate now covers 116 files and an invariant asserts the set

@@ -15,9 +15,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent import Skill, load_skill, missing_for
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Completed,

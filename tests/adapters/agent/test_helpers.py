@@ -11,6 +11,7 @@ not offered them, and there is nothing in the runtime that knows the names.
 
 from __future__ import annotations
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent import (
     MAILBOX,
     RELEASE,
@@ -21,7 +22,6 @@ from shadow_hdk.adapters.agent import (
     shipped,
 )
 from shadow_hdk.adapters.basic import AllowAll, CallableComponents, Mailbox
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Binding,

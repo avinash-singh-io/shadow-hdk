@@ -19,7 +19,7 @@ Append-only. Newest at the bottom.
 ### [ARCH_CHANGE] 2026-09-10 — branched from Phase 4
 Topics: branches, chain
 
-`phase-5-the-recording-server` is cut from `phase-4-the-acp-bridge` at `a69135c`. The chain is
+`phase-5-the-recording-server` is cut from `phase-4-the-acp-bridge` at `4a92c9a`. The chain is
 Phase 0 → 1 → 2 → 3 → 4 → 5.
 
 ### [CORRECTION] 2026-09-10 — a routed tool call is **controlled**, not observed

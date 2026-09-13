@@ -4,8 +4,10 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-13 (the specs synced to 0.25.2; BUG-034 closed)
-> **Current Phase**: **none — Phase 28 (the workspace) is complete and released as v0.25.0.**
+> **Last Updated**: 2026-09-13 (v0.26.0 — the packages as published artefacts)
+> **Current Phase**: **none — Phase 28 (the workspace) is complete; v0.26.0 proved the eighteen
+> packages as published artefacts (the providers wheel built for the first time, BUG-035; every
+> wheel built and looked into; a clean-venv install serving).** Phase 28, released as v0.25.0:
 > Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
 > `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
@@ -13,10 +15,11 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,407 tests; mypy strict over 249 files; eighteen distributions at **0.25.3**, all MIT.
+> 1,411 tests; mypy strict over 251 files; eighteen distributions at **0.26.0**, all MIT.
 >
-> **Latest Release**: **v0.25.3**, released 2026-09-13 — a patch: the mode in settings is a mode
-> id, `ask` included (BUG-034); the specs synced. Before it v0.25.2 (D77 — `start_held`,
+> **Latest Release**: **v0.26.0**, released 2026-09-13 — the packages proven as published
+> artefacts (BUG-035, the wheel invariant, the clean-venv proof). Before it v0.25.3 (BUG-034; the
+> specs synced), v0.25.2 (D77 — `start_held`,
 > `LineBuffer`, the root-name rule), v0.25.1 (a battery's process
 > held, BUG-033; Claude Code from a clean scope, ENH-012) and **v0.25.0** — Phase 28, the workspace (D73–D76).
 > Contract change (roots, `WorkspaceChanged`, `tools/list`, `skills/list`, `thread/add_root`,
@@ -42,7 +45,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 ## Completed Phases
 
 > Every phase is merged and released. `main`, `staging` and the phase branches met at
-> `81d4b6a` on 2026-09-10; each phase carries a `phase/NN-*` tag, and the release column is
+> `c0bc9e7` on 2026-09-10; each phase carries a `phase/NN-*` tag, and the release column is
 > the version that first shipped it. Several phases share a version because a version is a
 > **contract** change (D9), not a phase boundary.
 
@@ -77,6 +80,7 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 | 26 | Any language | Complete, merged | **v0.23.0** |
 | 27 | Batteries and the facade | Complete, merged | **v0.24.0** |
 | 28 | The workspace | Complete, merged | **v0.25.0** |
+| — | the packages as published artefacts | Complete, merged | **v0.26.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -154,4 +158,4 @@ merged and released**: 1,364 tests, mypy strict over 237 files, eighteen distrib
 - 2026-09-10 — **Phase 0 complete**: the runtime, the agent as a component, the basic adapters, the bare harness green with zero product code
 - 2026-09-10 — founded: charter, principles, success criteria, roadmap, architecture, Epic 0001, Phase 0
 - 2026-09-10 — momentum installed; joined `intent-ecosystem` as member `shadow-hdk`
-- 2026-09-10 — the kernel, two invariants and the strict-xfail bare-harness test (`0ca2d2b`, `9befb80`)
+- 2026-09-10 — the kernel, two invariants and the strict-xfail bare-harness test (`16eb1fd`, `4047434`)

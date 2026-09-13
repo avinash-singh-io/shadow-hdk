@@ -315,7 +315,7 @@ Topics: ci, benchmark, d11, honesty
 Affects-phases: none
 Affects-specs: specs/backlog/backlog.md
 
-The first run in this repository's history, on `5cd57b4`. `ruff`, `ruff format` and `mypy` passed on
+The first run in this repository's history, on `fd0de9c`. `ruff`, `ruff format` and `mypy` passed on
 Linux exactly as they do here. The tests reported **835 passed, 3 failed, 10 deselected**.
 
 Two of the three things predicted did not happen. The 90% coverage floor, never measured off this

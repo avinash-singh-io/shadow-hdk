@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import dataclasses
 
-from shadow_hdk.adapters.basic import AllowAll, Controlled
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll, Controlled
 
 from shadow_hdk.kernel import (
     Ceiling,

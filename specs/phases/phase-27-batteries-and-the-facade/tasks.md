@@ -22,4 +22,4 @@ phase: 27
 
 ## Close
 - [x] D70, D71, D72 recorded and indexed; `architecture/overview.md` and `adapters.md` grew the front door and batteries; status/roadmap/changelog/README; 0.24.0 across eighteen packages; Verification Evidence
-- [x] landed (CI green on `ff9fb60` → staging `0a6a41a` → main → `v0.24.0` → release); board with a Pins row (`8a59084`)
+- [x] landed (CI green on `d0c6255` → staging `a2e1e7c` → main → `v0.24.0` → release); board with a Pins row (`8a59084`)

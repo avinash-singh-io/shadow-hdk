@@ -69,7 +69,7 @@ attempts on its own tools are invisible on the record.
 
 ## Verification Evidence
 
-Fresh, 2026-09-12, this session, on `feat/studio-inline-and-scenarios` at `cbe5892` (now `main`).
+Fresh, 2026-09-12, this session, on `feat/studio-inline-and-scenarios` at `355678f` (now `main`).
 
 **The four zeros:**
 
@@ -80,7 +80,7 @@ Success: no issues found in 213 source files
 1201 passed, 2 skipped, 12 deselected, 85 warnings in 129.80s (0:02:09)
 ```
 
-**CI:** green on the branch head, on `staging` and on `main`, all at `cbe5892`.
+**CI:** green on the branch head, on `staging` and on `main`, all at `355678f`.
 
 **Red first, then green, then mutants:**
 

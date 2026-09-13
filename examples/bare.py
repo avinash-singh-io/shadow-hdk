@@ -24,9 +24,9 @@ import sys
 from collections.abc import Sequence
 from typing import TextIO
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent import AgentComponent, Pattern
 from shadow_hdk.adapters.basic import AllowAll, StdoutObserver, StdoutSink, SystemClock
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Binding,

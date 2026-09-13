@@ -19,7 +19,7 @@ Append-only. Newest at the bottom.
 ### [ARCH_CHANGE] 2026-09-10 — branched from Phase 3
 Topics: branches, chain
 
-`phase-4-the-acp-bridge` is cut from `phase-3-workspace-and-code` at `13bc074`. The chain is
+`phase-4-the-acp-bridge` is cut from `phase-3-workspace-and-code` at `308a7ee`. The chain is
 Phase 0 → 1 → 2 → 3 → 4; nothing merges until the owner lands it.
 
 ### [DECISION] 2026-09-10 — a child agent's request is judged, not answered

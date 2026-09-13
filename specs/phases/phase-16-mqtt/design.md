@@ -1,17 +1,17 @@
 ---
 type: Design
 phase: 16-mqtt
-status: review of the adapter as built at cd24bdc, plus the in-flight Group 2 (2026-09-10)
+status: review of the adapter as built at 5025679, plus the in-flight Group 2 (2026-09-10)
 topics: [mqtt, d32, link, envelope, concurrency, backpressure, wildcards, tls]
 ---
 
 # Phase 16 — the MQTT adapter: system design, and what a review of it finds
 
-> **2026-09-10, after the review:** F1–F4 landed as Group 3 (`c0224e4`, tests in
+> **2026-09-10, after the review:** F1–F4 landed as Group 3 (`b46ef84`, tests in
 > `tests/adapters/mqtt/test_review_findings.py`); F6 and F8 are in the docstrings; F5 and F7 stand
-> as notes; F9 is `[~]`. Received unchanged in `2c1fd6f`.
+> as notes; F9 is `[~]`. Received unchanged in `008f417`.
 
-> The adapter drawn from the code as built (`cd24bdc`; 18 tests green in this session, and Group
+> The adapter drawn from the code as built (`5025679`; 18 tests green in this session, and Group
 > 2's three environment tests green in the working tree), with the consequences of D29–D32 made
 > explicit, the trade-offs named, and the findings ranked — two of them reproduced against the local
 > broker rather than read from the code. The decisions themselves are not re-asked here.

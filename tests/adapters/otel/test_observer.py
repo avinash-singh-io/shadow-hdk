@@ -11,10 +11,10 @@ import typing
 from collections.abc import Sequence
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll
 from opentelemetry import trace
 from opentelemetry.trace import StatusCode
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll
 
 from shadow_hdk.adapters.otel import OpenTelemetryObserver
 from shadow_hdk.kernel import (
@@ -148,7 +148,9 @@ async def test_a_run_is_one_span_and_a_step_is_its_child() -> None:
     assert step.attributes["shadow_hdk.component"] == "look"
     assert step.ended
     observed = [e for e in step.events if e.name == "observed"]
-    assert len(observed) == 1 and observed[0].attributes["shadow_hdk.observation.kind"] == "completed"
+    assert (
+        len(observed) == 1 and observed[0].attributes["shadow_hdk.observation.kind"] == "completed"
+    )
 
 
 async def test_the_spans_carry_the_records_time_not_the_observers() -> None:
@@ -221,7 +223,8 @@ async def test_a_parked_step_ends_its_span_and_a_resume_opens_another() -> None:
         pass
     steps = tracer.named("shadow_hdk.step")
     assert (
-        len(steps) == 2 and steps[1].events[-1].attributes["shadow_hdk.observation.kind"] == "completed"
+        len(steps) == 2
+        and steps[1].events[-1].attributes["shadow_hdk.observation.kind"] == "completed"
     )
     assert _one(tracer.named("shadow_hdk.run")).attributes["shadow_hdk.reason"] == "completed"
 
@@ -285,7 +288,9 @@ async def test_a_stream_this_process_did_not_see_start_still_traces() -> None:
     await observer.on(Ended(run_id="r", seq=8, at=at, reason="completed", steps_taken=3))
     run_span = _one(tracer.named("shadow_hdk.run"))
     assert run_span.attributes["shadow_hdk.run_id"] == "r" and run_span.ended
-    assert "shadow_hdk.lease.max_steps" not in run_span.attributes, "no lease was seen; none invented"
+    assert "shadow_hdk.lease.max_steps" not in run_span.attributes, (
+        "no lease was seen; none invented"
+    )
     step = _one(tracer.named("shadow_hdk.step"))
     assert step.parent is run_span and step.ended
     assert observer.open_runs == 0

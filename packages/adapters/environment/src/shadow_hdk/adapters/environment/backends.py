@@ -89,7 +89,11 @@ async def prove_box(box: Box, *, mode: Mode) -> Isolation:
     inside_ok = True
     if mode == "workspace-write":
         inside = await box.run(
-            ["python3", "-c", f"open('{MOUNT}/.shadow-hdk-inside', 'w').write('x'); print('WROTE')"],
+            [
+                "python3",
+                "-c",
+                f"open('{MOUNT}/.shadow-hdk-inside', 'w').write('x'); print('WROTE')",
+            ],
             timeout_s=PROBE_TIMEOUT_S,
             output_limit=4_000,
         )

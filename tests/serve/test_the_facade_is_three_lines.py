@@ -167,9 +167,7 @@ async def test_the_readme_three_lines_run_for_real(tmp_path: Path) -> None:
 
     readme = (Path(__file__).resolve().parents[2] / "README.md").read_text(encoding="utf-8")
     toml_block = re.search(r"```toml\n# harness.toml\n(.*?)```", readme, re.S)
-    py_block = re.search(
-        r"```python\nfrom shadow_hdk.serve import Harness\n(.*?)```", readme, re.S
-    )
+    py_block = re.search(r"```python\nfrom shadow_hdk.serve import Harness\n(.*?)```", readme, re.S)
     assert toml_block and py_block, "the README has the three lines and their file"
     toml = toml_block.group(1)
     toml = re.sub(r'mode = "workspace-write"', f'mode = "{ENFORCEABLE}"', toml)

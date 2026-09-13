@@ -19,7 +19,7 @@ Append-only. Newest at the bottom.
 ### [ARCH_CHANGE] 2026-09-10 — branched from Phase 2
 Topics: branches, chain
 
-`phase-3-workspace-and-code` is cut from `phase-2-the-spike` at `05000c2`. The chain is Phase 0 →
+`phase-3-workspace-and-code` is cut from `phase-2-the-spike` at `beb9efa`. The chain is Phase 0 →
 1 → 2 → 3; nothing merges until the owner lands it.
 
 ### [DECISION] 2026-09-10 — `contained` is a deployment fact with no default

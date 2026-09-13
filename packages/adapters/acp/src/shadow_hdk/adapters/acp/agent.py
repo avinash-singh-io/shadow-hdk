@@ -22,8 +22,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.adapters.acp.client import BridgeClient
 from pydantic import JsonValue
+from shadow_hdk.adapters.acp.client import BridgeClient
 
 import acp
 from acp import schema

@@ -19,7 +19,7 @@ Append-only. Newest at the bottom.
 ### [ARCH_CHANGE] 2026-09-10 — branched from Phase 1
 Topics: branches, chain
 
-`phase-2-the-spike` is cut from `phase-1-real-adapters` at `4d2a8dc`. Nothing merges, so the chain
+`phase-2-the-spike` is cut from `phase-1-real-adapters` at `ff82fd9`. Nothing merges, so the chain
 of phase branches carries the code: Phase 0 → Phase 1 → Phase 2.
 
 ### [DECISION] 2026-09-10 — what this machine can measure, and what it will not do to measure more

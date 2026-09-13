@@ -56,7 +56,7 @@ hits first.
 is built through its third phase: the host's controls (25), every one of them over the wire for a
 host in any language (26), and now the batteries and the facade (27) — `harness.toml` and three
 lines by default, the same objects one step deeper, web search and fetch consumed as batteries
-with honest effects. What remains of the roadmap is Phase 28 (context engineering) and Phase 29
+with honest effects. What remains of the roadmap is Phase 29 (context engineering) and Phase 30
 (collaboration), unchanged; the optimiser is specified and waits on its locked evaluator.
 
 ### Where this stood — 2026-09-12, later

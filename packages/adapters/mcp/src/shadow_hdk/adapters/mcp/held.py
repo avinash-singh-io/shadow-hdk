@@ -19,11 +19,11 @@ from typing import Any
 
 import anyio
 
-from shadow_hdk.runtime.processes import start_held, stop_or_kill
 from mcp import StdioServerParameters
 from mcp import types as mcp_types
 from mcp.client.stdio import get_default_environment
 from mcp.shared.message import SessionMessage
+from shadow_hdk.runtime.processes import start_held, stop_or_kill
 
 GRACE_S = 2.0
 """How long a server gets to leave on its own after its stdin closes, before the group is ended."""

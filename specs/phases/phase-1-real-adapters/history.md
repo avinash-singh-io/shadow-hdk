@@ -20,7 +20,7 @@ Append-only. Newest at the bottom.
 Topics: branches, chain
 Affects-specs: specs/phases/phase-1-real-adapters/overview.md
 
-`phase-1-real-adapters` is cut from `phase-0-the-runtime` at `0e39c70`, not from `staging`. Nothing
+`phase-1-real-adapters` is cut from `phase-0-the-runtime` at `ed9e4cd`, not from `staging`. Nothing
 merges without the owner, so the chain of phase branches is what carries the code forward: Phase 2
 will branch from this one, and so on until the owner lands the lot. Each phase's `history.md` records
 its parent, so the chain is readable without `git log --graph`.
@@ -268,7 +268,7 @@ throughout, and the honest fix was to the thing that was actually wrong.
 ### [CORRECTION] 2026-09-10 — I committed over a red gate, because `| tail` hid its exit code
 Topics: gate, tooling, discipline
 
-`9d08285` was committed with **four mypy errors**. The cause is worth writing down because it will
+`0a3e058` was committed with **four mypy errors**. The cause is worth writing down because it will
 recur otherwise: the gate was being run as
 
     uv run ruff check -q && uv run ruff format --check -q && uv run mypy 2>&1|tail -1 && uv run pytest …

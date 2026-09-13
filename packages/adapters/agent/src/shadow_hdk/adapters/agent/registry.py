@@ -29,8 +29,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Any, Protocol
 
-from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
 from pydantic import JsonValue
+from shadow_hdk.adapters.agent.skills import Skill, load_skill, missing_for, skill_from
 
 from shadow_hdk.kernel.components import (
     Component,

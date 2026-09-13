@@ -19,10 +19,10 @@ from typing import Any
 
 import anyio
 import pytest
-from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
-from shadow_hdk.adapters.recording.socket import TOKEN_VARIABLE
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from shadow_hdk.adapters.recording import PORT_VARIABLE, RecordingServer, serve_over_socket
+from shadow_hdk.adapters.recording.socket import TOKEN_VARIABLE
 
 from shadow_hdk.runtime import RunContext
 

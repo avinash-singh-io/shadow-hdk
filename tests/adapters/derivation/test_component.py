@@ -12,8 +12,8 @@ there is, and a mode that allows nothing else still lets it run.
 
 from __future__ import annotations
 
-from shadow_hdk.adapters.basic import AllowAll
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll
 
 from shadow_hdk.adapters.derivation import DerivationComponents, parse, to_tree
 from shadow_hdk.kernel import (

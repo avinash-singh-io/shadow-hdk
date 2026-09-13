@@ -28,8 +28,8 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll, CallableComponents
 
 from shadow_hdk.kernel import (
     Binding,

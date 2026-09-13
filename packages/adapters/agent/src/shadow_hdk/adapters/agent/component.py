@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin, thinned
 from shadow_hdk.adapters.agent.meta import BY_NAME
 from shadow_hdk.adapters.agent.pattern import (
@@ -30,7 +31,6 @@ from shadow_hdk.adapters.agent.pattern import (
     Pattern,
 )
 from shadow_hdk.adapters.agent.skills import Skill, missing_for
-from pydantic import JsonValue
 
 from shadow_hdk.kernel.components import (
     Component,

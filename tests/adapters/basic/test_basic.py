@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.basic import (
     AllowAll,
     CallableComponents,
@@ -13,7 +14,6 @@ from shadow_hdk.adapters.basic import (
     StdoutSink,
     SystemClock,
 )
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     ASSUME_WORST,

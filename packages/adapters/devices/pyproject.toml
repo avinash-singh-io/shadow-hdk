@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-devices"
-version = "0.25.3"
+version = "0.26.0"
 description = "Sensors read the world, actuators write it, a witness reports it: one device contract, the fake first."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.3", "shadow-hdk==0.25.3"]
+dependencies = ["shadow-hdk-kernel==0.26.0", "shadow-hdk==0.26.0"]
 
 [build-system]
 requires = ["hatchling>=1.25"]

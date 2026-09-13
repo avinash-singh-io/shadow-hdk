@@ -12,8 +12,8 @@ one used by `steps()` and `run_items()`; the wire calls it.
 from __future__ import annotations
 
 import anyio
-from shadow_hdk.adapters.basic import AllowAll
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll
 
 from shadow_hdk.kernel import (
     Binding,

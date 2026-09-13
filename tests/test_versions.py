@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.25.3"
-"""0.25.3 — a patch: the mode in settings is a mode id, `ask` included (BUG-034); `requires`
+EXPECTED = "0.26.0"
+"""0.26.0 — the packages proven as published artefacts: the providers wheel built for the first
+time (BUG-035), every wheel built and looked into, a clean-venv install serving. The published
+shape is what a consumer compiles against, so every package moves together (D9).
+
+0.25.3 — a patch: the mode in settings is a mode id, `ask` included (BUG-034); `requires`
 refuses an unknown environment name; the specs synced. No contract change (D9).
 
 0.25.2 — a patch: one rule, one implementation (D77). `start_held` the one place a session

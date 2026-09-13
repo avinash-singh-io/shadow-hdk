@@ -113,7 +113,9 @@ class OpenTelemetryObserver(ObserverPort):
                 )
             case "refused":
                 self._run(event.run_id, at).add_event(
-                    "refused", {"shadow_hdk.step": event.step, "shadow_hdk.reason": event.reason}, at
+                    "refused",
+                    {"shadow_hdk.step": event.step, "shadow_hdk.reason": event.reason},
+                    at,
                 )
             case "approval_requested" | "input_requested":
                 self._run(event.run_id, at).add_event(
@@ -146,7 +148,9 @@ class OpenTelemetryObserver(ObserverPort):
                 # Length, never the text (D28): a trace carries the *shape* of a run, and a
                 # model's reasoning is a payload — often the most sensitive one on the record.
                 self._run(event.run_id, at).add_event(
-                    "reasoning", {"shadow_hdk.step": event.step, "shadow_hdk.chars": len(event.text)}, at
+                    "reasoning",
+                    {"shadow_hdk.step": event.step, "shadow_hdk.chars": len(event.text)},
+                    at,
                 )
             case "usage":
                 self._innermost(event.run_id, at, step=event.step).set_attributes(

@@ -1,12 +1,12 @@
 [project]
 name = "shadow-hdk-adapters-recording"
-version = "0.25.3"
+version = "0.26.0"
 description = "The run's registry, offered to a child agent as an MCP server — so what it does is routed, and therefore recorded."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["shadow-hdk-kernel==0.25.3", "shadow-hdk==0.25.3", "mcp>=2.0,<3"]
+dependencies = ["shadow-hdk-kernel==0.26.0", "shadow-hdk==0.26.0", "mcp>=2.0,<3"]
 
 [project.scripts]
 shadow-hdk-registry = "shadow_hdk.adapters.recording.socket:relay"

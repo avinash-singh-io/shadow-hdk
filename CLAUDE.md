@@ -4,25 +4,6 @@
 
 # Project Rules: shadow-hdk
 
-<!-- ecosystem:begin v=2 -->
-> **Member of `intent-ecosystem` ecosystem** at `../intent-ecosystem`.
->
-> **Cross-repo work?** The moment work touches a SECOND member repo, stop and run
-> `/brainstorm-initiative` — never plan cross-repo features in this repo. It writes
-> the initiative to `../intent-ecosystem/initiatives/<NNNN-slug>.md`; each member then
-> runs its OWN `/start-phase` or `/hotfix`.
->
-> Lifecycle: `/brainstorm-initiative` → `initiative start` → member phases → `initiative complete`
-> _Enforcement: the nudge is best-effort · the landing gate refuses · the write path is unconditional_
->
-> Orchestration primitives (run from this repo or the ecosystem root):
-> - `/scout <repo>` — read another member's state
-> - `/dispatch <r1> <r2> "..."` — parallel multi-repo investigation (slash command — `momentum dispatch` CLI is keyword-only)
-> - `/handoff <repo>` — transfer context to another member
-> - `/continue` — resume from an inbox handoff
->
-> See siblings + live state: `momentum ecosystem status`
-<!-- ecosystem:end -->
 
 > Claude Code configuration for this momentum-managed project.
 

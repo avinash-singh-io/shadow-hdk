@@ -12,8 +12,8 @@ import asyncio
 from typing import Any
 
 import anyio
-from shadow_hdk.adapters.basic import AllowAll
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll
 
 from shadow_hdk.kernel import (
     Activity,

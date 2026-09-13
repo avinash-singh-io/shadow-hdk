@@ -10,8 +10,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll, Controlled
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll, Controlled
 
 from shadow_hdk.adapters.devices import DeviceComponents, Overheard
 from shadow_hdk.adapters.devices.testing import FakeActuator, FakeSensor, FakeWitness

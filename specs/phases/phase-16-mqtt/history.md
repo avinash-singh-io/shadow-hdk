@@ -65,7 +65,7 @@ re-sent) — `amqtt` always acks — and MQTT v5 properties, which no broker her
 Topics: mqtt, link, concurrency, backpressure, design
 Affects-phases: none
 Affects-specs: none
-Detail: `design.md` in this phase draws the adapter as built at `cd24bdc` — requirements, the
+Detail: `design.md` in this phase draws the adapter as built at `5025679` — requirements, the
 three-actor concurrency model, the link's state machine, the failure table, the trade-offs behind D32
 and the one-link topology — and ranks what a review of it finds. Two findings were reproduced against
 the local broker rather than read from the code.
@@ -92,7 +92,7 @@ Affects-phases: none
 Affects-specs: none
 
 The review arrived uncommitted in the working tree between two ticks and was committed unchanged
-before anything else (`2c1fd6f`). Its two P1s were reproduced first — three concurrent connects
+before anything else (`008f417`). Its two P1s were reproduced first — three concurrent connects
 opened three sessions; a registration table set after its filter — then fixed: one `asyncio.Lock`
 across the open path and `close()`, registration under the thread lock with tables before filters,
 a re-check in `_open` for a device registered while it opened (the window is hit deterministically
@@ -112,7 +112,7 @@ ENH-003 stays open as the first step of OPC-UA or ROS 2.
 Topics: runtime, resume, leases, wire, agent, transcript, sandbox, workspace, mypy, ci, derivation, sinks, posture, spec-drift, landing
 Affects-phases: phase-0-the-runtime, phase-1-real-adapters, phase-3-workspace-and-code, phase-4-the-acp-bridge, phase-6-the-compiler-complete, phase-7-sub-agents, phase-8-patterns-skills-replay, phase-9-the-wire, phase-11-contained-sandboxes, phase-12-derivation, phase-14-telemetry, phase-15-environment-contract
 Affects-specs: specs/architecture/runtime.md#the-drive, specs/architecture/runtime.md#the-governed-step, specs/architecture/wire.md#rules-already-fixed, specs/architecture/adapters.md#the-workspace-and-code-adapters, specs/architecture/file-structure.md, specs/architecture/testing.md#layers, specs/status.md, specs/planning/roadmap.md
-Detail: A design-lead read of the whole harness at `4331178` — specs in full, kernel and the governed
+Detail: A design-lead read of the whole harness at `1b91815` — specs in full, kernel and the governed
 step by hand, five reviewers over runtime, wire, core adapters, environment adapters and process —
 with the headline claims reproduced by execution. The architecture holds: the lattice is a GLB with
 an order, one step judges everything, layering is a test, refusal is its own kind. Four things the

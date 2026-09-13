@@ -13,8 +13,8 @@ import stat
 from pathlib import Path
 
 import pytest
-from shadow_hdk.adapters.basic import AllowAll, FileSink, proposals_in
 from pydantic import JsonValue
+from shadow_hdk.adapters.basic import AllowAll, FileSink, proposals_in
 
 from shadow_hdk.kernel import (
     Ceiling,

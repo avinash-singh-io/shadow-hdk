@@ -17,9 +17,11 @@ from collections.abc import Collection, Mapping, Sequence
 from contextlib import AsyncExitStack
 from typing import Any
 
-from shadow_hdk.adapters.mcp.held import held_stdio_client
 from pydantic import JsonValue
+from shadow_hdk.adapters.mcp.held import held_stdio_client
 
+from mcp import ClientSession, StdioServerParameters
+from mcp.types import Tool
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -30,8 +32,6 @@ from shadow_hdk.kernel.components import (
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Completed, Failed, Observation
 from shadow_hdk.kernel.ports import ComponentPort
-from mcp import ClientSession, StdioServerParameters
-from mcp.types import Tool
 
 
 class McpComponents(ComponentPort):

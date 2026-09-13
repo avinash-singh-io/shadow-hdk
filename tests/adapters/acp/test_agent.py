@@ -18,9 +18,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from pydantic import JsonValue
 from shadow_hdk.adapters.acp import AcpAgent
 from shadow_hdk.adapters.modes import Mode, ModeGovernance
-from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     Binding,

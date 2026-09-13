@@ -15,8 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from shadow_hdk.adapters.acp.client import Spend
 from pydantic import JsonValue
+from shadow_hdk.adapters.acp.client import Spend
 
 from shadow_hdk.kernel import Completed
 from tests.adapters.acp.conftest import inside_a_run
