@@ -240,6 +240,12 @@ is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offe
 restart with source `store`; every proposal still reaches the sink behind it. The composition
 installs as one distribution, `shadow-hdk`, the shipped providers' transports (`jsonl` for
 Claude Code and Codex, `acp` for OpenCode) in the base and the specialised SDKs as extras (D78).
+**Which batteries are on is rows** (D83): `[tools] batteries` seeds the store's `wanted`
+collection (`{id, on}`) at the host's first open, a row already there left as it is, and from
+then on the store rules — `store/put wanted ddgs {"id": "ddgs", "on": true}` opens it at the next
+thread, `"on": false` closes it; a battery's server is the process's, not a thread's, so one
+switched off is gone from every thread at once. `batteries/list` says on · off · unavailable by
+those rows.
 
 ## The environment — where the agent's effects land (Phase 22, D48–D50)
 

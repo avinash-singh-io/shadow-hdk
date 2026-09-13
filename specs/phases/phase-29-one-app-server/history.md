@@ -121,3 +121,22 @@ process per tenant — where a product's policy demands separate tables.
 
 **Not built.** Roles, groups, hierarchies of scope: `attribute:value` is one comparison on
 purpose; a product with roles puts the role among the attributes.
+
+### [DECISION] 2026-09-14 — D83: batteries live — what is wanted is rows
+
+**Decision.** `[tools] batteries` seeds the store's `wanted` collection (`{id, on}`) at the
+host's first open — a row already there is left as it is — and from then on the rows say which
+batteries the next thread gets: `ServeHost` reads them at every thread's open, opens what is
+wanted and not yet open (held for the process, as before), closes what is open and no longer
+wanted. `batteries/list` says on · off · unavailable by those rows; a row naming no battery is
+reported, not fatal.
+
+**Why.** Every other registry the host reads is live through the store (D66: modes, rules,
+skills, switches); batteries were the one thing fixed at the process's start, so a product could
+not turn a search engine on for its users without restarting the server every surface stands
+behind. A row is the same door the others use.
+
+**The truthful edge.** A battery's server is the process's, not a thread's: one switched off is
+closed at the next thread's open and gone from every thread at once. Holding it until the last
+thread opened with it closes would need the host to know its threads' lifetimes, which the wire
+knows and the host does not — named here, not built.

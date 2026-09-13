@@ -61,6 +61,9 @@ from shadow_hdk.serve.config import Budget, Settings
 from shadow_hdk.serve.keeping import KeepingSink
 from shadow_hdk.serve.stores import Stores, stores_for
 
+WANTED = "wanted"
+"""The store collection that says which batteries are on (D83): rows `{id, on}`."""
+
 MODES = ModeRegistry(shipped_modes())
 _POLICY = {spec.id: spec.policy for spec in MODES.listing()}
 LOOKING: Mode = _POLICY["read-only"]
@@ -233,23 +236,51 @@ class ServeHost:
         self.batteries = batteries_for(self.store, files=settings.batteries_dir)
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
-        self._batteries_started = False
+        self._batteries_seeded = False
         self._agent = agent
         self.provider = ""
 
+    async def wanted(self) -> tuple[str, ...]:
+        """Which batteries are wanted **now** (D83): the store's `wanted` rows (`{id, on}`),
+        seeded once from `[tools] batteries` — a row already there is left as it is, so the
+        store rules from the first open on, the way a mode or a rule row does (D66)."""
+        if not self._batteries_seeded:
+            for battery_id in self.settings.batteries:
+                if await self.store.get(WANTED, battery_id) is None:
+                    await self.store.put(WANTED, battery_id, {"id": battery_id, "on": True})
+            self._batteries_seeded = True
+        return tuple(
+            str(row.get("id", key))
+            for key, row in await self.store.list(WANTED)
+            if isinstance(row, dict) and row.get("on") is True
+        )
+
     async def _battery_ports(self) -> tuple[Any, ...]:
-        """The batteries switched on, opened once for the process — their servers outlive any one
-        thread, like the store does."""
-        if not self._batteries_started:
-            self.batteries_opened, self.battery_problems = await open_batteries(
-                self.batteries, self.settings.batteries
-            )
-            self._batteries_started = True
+        """The batteries wanted now, opened — each held for the process once it is, its server
+        outliving any one thread like the store does — and the ones no longer wanted closed
+        (D83). Read at every thread's open: a row written now is a battery at the next thread —
+        and a battery switched off is gone from every thread at once, its server being the
+        process's, not a thread's."""
+        wanted = await self.wanted()
+        keep = tuple(b for b in self.batteries_opened if b.battery.id in wanted)
+        for gone in (b for b in self.batteries_opened if b.battery.id not in wanted):
+            await gone.close()
+            self.battery_problems.pop(gone.battery.id, None)
+        have = {b.battery.id for b in keep}
+        opened, problems = await open_batteries(
+            self.batteries, [b for b in wanted if b not in have]
+        )
+        self.batteries_opened = (*keep, *opened)
+        self.battery_problems = {
+            **{k: v for k, v in self.battery_problems.items() if k in wanted},
+            **problems,
+        }
         return tuple(b.port for b in self.batteries_opened if b.port is not None)
 
     async def battery_listing(self) -> list[dict[str, Any]]:
         """Every battery the registry knows: on, off (not wanted), or unavailable and why."""
         await self._battery_ports()
+        wanted = await self.wanted()
         running = {b.battery.id for b in self.batteries_opened if b.port is not None}
         listed: list[dict[str, Any]] = []
         for battery in await self.batteries.all():
@@ -260,7 +291,7 @@ class ServeHost:
                 else "unavailable"
                 if problem
                 else "off"
-                if battery.id not in self.settings.batteries
+                if battery.id not in wanted
                 else "unavailable"
             )
             listed.append(
@@ -301,7 +332,6 @@ class ServeHost:
         for opened in self.batteries_opened:
             await opened.close()
         self.batteries_opened = ()
-        self._batteries_started = False
         await self.stores.aclose()
 
     async def _provider(self, want: str | None, root: Path) -> tuple[AgentPort, str]:

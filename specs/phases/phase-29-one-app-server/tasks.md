@@ -27,8 +27,8 @@ phase: 29
 - [x] records: D82; adapters.md (multi-tenancy: by scope, or by process — both named); wire.md
 
 ## Group 4 — batteries live
-- [ ] wanted batteries as rows seeded from `[tools]`; opened at the next thread; `batteries/list` says on/off by row
-- [ ] records: D83
+- [x] wanted batteries as rows seeded from `[tools]`; opened at the next thread; `batteries/list` says on/off by row
+- [x] records: D83; adapters.md; wire.md; serve.md
 
 ## Group 5 — the budget on the record
 - [ ] `thread/start {budget}`; `ThreadRecord.budget`, `.spent`; `thread/remaining` = budget − spent; resume from spent; ENH-013 closed

@@ -20,6 +20,8 @@ path = "live.sqlite"          # modes, rules, skills, switches, threads, parked 
 dir = "modes"                 # reviewer.md, builder.toml …
 [registry]
 name = "tools"                # what the provider sees its tools named
+[tools]
+batteries = ["ddgs"]          # seeds the store's `wanted` rows once; the rows rule after (D83)
 ```
 
 ```

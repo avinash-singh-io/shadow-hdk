@@ -64,7 +64,8 @@ host ──► runtime   turn/steer · turn/interrupt · run/cancel
 host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · {text})
                        a left question (D80) is settled by its thread: the parked act runs from its
                        checkpoint and the answer carries its events
-host ──► runtime   store/put · get · delete · list · version · batteries/list
+host ──► runtime   store/put · get · delete · list · version
+host ──► runtime   batteries/list                 on · off · unavailable, by the store's `wanted` rows (D83)
 host ──► runtime   modes/list · rules/list {thread_id?}   everything, or the thread's scope (D82)
 host ──► runtime   tools/list {thread_id}        what the agent is offered now, each with the mode's
                                                  judgement (allow · ask · refuse) and its source (D73)
