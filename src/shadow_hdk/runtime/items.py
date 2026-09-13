@@ -141,14 +141,37 @@ class Fold:
         self.order: list[tuple[RunId, StepId]] = []
         self.closed_now: list[Item] = []
         """Every step the last `feed` closed, nested or not — what a live host renders."""
+        self._waiting: dict[tuple[RunId, StepId], Item] = {}
+        """Steps that closed on a question — an approval or an input — and may be answered."""
 
     def _step(self, run_id: RunId, step: StepId) -> _Open:
         key = (run_id, step)
         if key not in self.open:
-            self.open[key] = _Open(run_id=run_id, step=step)
+            self.open[key] = self._reopened(key) or _Open(run_id=run_id, step=step)
             self.order.append(key)
         self.current[run_id] = step
         return self.open[key]
+
+    def _reopened(self, key: tuple[RunId, StepId]) -> _Open | None:
+        """A step that closed on a question and now hears more is the same step, answered
+        (D38: it resumes where it parked; nothing invokes it twice). The waiting item was handed
+        out so a live host could render it; it comes back out of the finished list — one step is
+        one item — and the reopened fold keeps what the invocation said (BUG-040)."""
+        waited = self._waiting.pop(key, None)
+        if waited is None:
+            return None
+        self.finished = [done for done in self.finished if (done.run_id, done.step) != key]
+        for opened in self.open.values():
+            opened.children = [c for c in opened.children if (c.run_id, c.step) != key]
+        return _Open(
+            run_id=waited.run_id,
+            step=waited.step,
+            component=waited.component,
+            reasoning=[waited.reasoning] if waited.reasoning else [],
+            usage=waited.usage,
+            at=waited.at,
+            children=list(waited.children),
+        )
 
     def feed(self, event: Event) -> list[Item]:
         """Fold one event; return any top-level steps that just closed. `closed_now` holds every
@@ -211,6 +234,8 @@ class Fold:
         done = opened.frozen()
         self.order.remove((run_id, step))
         self.closed_now.append(done)
+        if done.outcome in ("approval_requested", "input_requested"):
+            self._waiting[(run_id, step)] = done
         if (parent := self.parent_of.get(run_id)) is not None:
             parent_run, parent_step = parent
             if (parent_run, parent_step) in self.open:

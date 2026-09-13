@@ -124,9 +124,12 @@ class Routing:
         while observation is None and question is not None:
             # **The policy asked, and the child is waiting on this very call** (BUG-021, D58). The
             # nested run parked; this step cannot — it is what keeps the provider alive — so the
-            # request is put to the host live, naming the call itself (BUG-026), and the held
-            # child is sent the answer.
-            answer = await context.request_approval(question, about=(name, dict(arguments or {})))
+            # request is put to the host live, naming the call itself (BUG-026) *and its step*
+            # (BUG-040: raised from the socket's task, the context has no current step, and the
+            # record said `""`), and the held child is sent the answer.
+            answer = await context.request_approval(
+                question, step=step, about=(name, dict(arguments or {}))
+            )
             if not await context.children.is_held(handle):
                 break
             observation, question = outcome_of(await context.children.send(handle, answer), step)

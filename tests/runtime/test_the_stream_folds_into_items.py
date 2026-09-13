@@ -32,7 +32,7 @@ from shadow_hdk.kernel import (
     Started,
     UsageReported,
 )
-from shadow_hdk.kernel.events import ApprovalRequested, Refused
+from shadow_hdk.kernel.events import ApprovalRequested, InputRequested, Refused
 from shadow_hdk.kernel.ports import Usage
 from shadow_hdk.runtime.items import Item, items
 
@@ -91,6 +91,28 @@ def test_a_question_is_a_step_still_waiting() -> None:
 
     assert publish.outcome == "approval_requested"
     assert publish.reason == "publish it?"
+
+
+def test_a_step_that_asked_and_was_answered_keeps_what_it_was_invoked_as() -> None:
+    """A question closes the step (a host renders it as *waiting*); the answer resumes the same
+    step where it parked (D38) — no second `Invoked`. The item that closes then must still say
+    which component it was, and when it began: the first fold reopened a blank step and the
+    React example's cards showed `tools__ask_person__1 completed` with no component (BUG-040)."""
+    p = "parent"
+    stream: list[Event] = [
+        Started(run_id=p, seq=1, at="t1", lease=LEASE),
+        Invoked(run_id=p, seq=2, at="t2", step="ask", component="ask_person", inputs={"q": "?"}),
+        InputRequested(run_id=p, seq=3, at="t3", step="ask", question="which?", handle="h1"),
+        Observed(run_id=p, seq=4, at="t4", step="ask", observation=Completed({"answer": "A"})),
+    ]
+
+    waiting, answered = items(stream[:3])[0], items(stream)[-1]
+
+    assert waiting.outcome == "input_requested" and waiting.component == "ask_person"
+    assert answered.outcome == "completed"
+    assert answered.component == "ask_person", "the component was lost across the park"
+    assert answered.at == "t2", "the step began when it was invoked, not when it was answered"
+    assert len(items(stream)) == 1, "one step, asked and answered, is one item"
 
 
 def test_a_child_folds_under_the_step_that_spawned_it() -> None:
