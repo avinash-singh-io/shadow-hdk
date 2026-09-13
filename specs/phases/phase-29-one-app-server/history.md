@@ -229,3 +229,22 @@ Captured fresh 2026-09-14 on the phase branch at close, before landing, with
 - CI on every group's push: `ci` green ×7 (`gh run list --branch phase-29-one-app-server`)
 - RED first, every group: group 1 `No module named 'shadow_hdk.serve.stores'`, `Thread.open() got an unexpected keyword argument 'checkpointer'` (none — it existed unpassed: the served thread had no checkpointer), the crash image's `pending` empty, `wait_for(reader, 2)` → `TimeoutError` (BUG-041); group 2 the four contract tests of a hold, `Thread.open() got an unexpected keyword argument 'holder'`, `RuntimeError: the thread has no steps left` (BUG-042); group 3 `Thread.open() got an unexpected keyword argument 'principal'`, `Context(... principal=None ...)` on the tool step; group 4 `assert None == {'id': 'reference', 'on': True}`; group 5 `unexpected keyword argument 'budget'`; group 6 nine of eleven failing, `assert 'rule' in "mode 'read-only' does not permit this"`; group 7 four of four failing
 - Mutations killed: group 1 ×4 (`2 failed`, `4 failed`, `1 failed`, and the settled-question removal only after `test_a_question_answered_mid_turn_is_off_the_record_before_the_next_opens` was added — the first version of the test could not tell), group 2 ×2 (`2 failed`, `3 failed`)
+
+### [NOTE] 2026-09-14 — Measured live, after the release, in the React example on 0.28.0
+
+The example re-pinned to `shadow-hdk[all]==0.28.0` (`shadow-hdk-demo` `7c88364`), one live run
+on the owner's subscription (Claude Code 2.1.235): in `ask`, *write finance/h1-summary.md …* —
+the agent wrote the file at once (an allow rule for `write_file` from an earlier "approve &
+don't ask again" was in the store, unscoped, made before D82) and asked to `run_python`. With
+the card up **the harness was killed**. On disk the record said `pending: [{turn: "turn-1",
+step: "tools__run_python__5", component: "run_python", run_id: …}]`. A new process on the same
+store, the page reloaded: `thread/resume` pushed `approval_request` before its reply and the
+reply carried `pending`; the same card, approved; `approvals/answer` came back with
+`invoked · observed · ended` — the parked call ran from its checkpoint, `exit_code 0`,
+`285750 46 2026-06` — and turn-1 stayed `parked` with the note. The next turn's answer: *the
+numbers match the computed ones … from the earlier `run_python` result (285750 / 46 / 2026-06
+at 55400)*. After the reload the header read `left 395 steps · 58 min · 491 ¢` (D84; the row
+`spent 5 steps · 9¢`). `GET /healthz` → `{"ok": true, "version": "0.28.0", "sessions": 1,
+"threads": 1}`. What the page had to learn: a card pushed during `connect` arrives before any
+hook listens, so its approvals hook reads `approvals/pending` on mount — the list is the truth,
+the stream the update. Total: two turns, 9¢.
