@@ -10,7 +10,10 @@ behind `shadow-hdk serve` for a host in any language and behind `a_thread` for a
 
 from __future__ import annotations
 
+import os
+import socket
 import sys
+import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -23,7 +26,7 @@ from shadow_hdk.adapters.agent import (
     shipped_skills,
     store_skills,
 )
-from shadow_hdk.adapters.basic import SqliteStore, SqliteThreads, StdoutSink, SystemClock
+from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.adapters.modes import (
     ActRules,
@@ -36,7 +39,7 @@ from shadow_hdk.adapters.modes import (
     store_rules,
 )
 from shadow_hdk.adapters.recording import SocketOffer
-from shadow_hdk.kernel import Lease, ThreadStore, Workspace
+from shadow_hdk.kernel import Ceiling, Lease, ThreadStore, Workspace
 from shadow_hdk.kernel.ports import AgentPort
 from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
 from shadow_hdk.runtime import Approvals, Ports
@@ -44,7 +47,6 @@ from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
-from shadow_hdk.runtime.store import InMemoryStore
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
 from shadow_hdk.serve.batteries import (
@@ -57,6 +59,10 @@ from shadow_hdk.serve.batteries import (
 )
 from shadow_hdk.serve.config import Budget, Settings
 from shadow_hdk.serve.keeping import KeepingSink
+from shadow_hdk.serve.stores import Stores, stores_for
+
+WANTED = "wanted"
+"""The store collection that says which batteries are on (D83): rows `{id, on}`."""
 
 MODES = ModeRegistry(shipped_modes())
 _POLICY = {spec.id: spec.policy for spec in MODES.listing()}
@@ -187,10 +193,11 @@ def a_lease(budget: Budget | None = None) -> Lease:
 class ServeHost:
     """The wire's `ThreadHost`, composed from the shipped adapters.
 
-    One per process: one store (sqlite when `settings.store` names a file, memory otherwise), one
-    thread store beside it, one `Approvals` handle, one rule registry, one mode registry. A
-    provider is resolved at `open` — `settings.want` or the first CLI signed in here — unless one
-    was handed in (`agent=`), which is what a test does.
+    One per process: one record — the store the registries read, the thread store, and the
+    checkpointer a parked run sleeps in, all three from `settings.store`'s url (D79; memory when
+    it names nothing) — one `Approvals` handle, one rule registry, one mode registry. A provider
+    is resolved at `open` — `settings.want` or the first CLI signed in here — unless one was
+    handed in (`agent=`), which is what a test does.
     """
 
     def __init__(
@@ -200,19 +207,26 @@ class ServeHost:
         agent: AgentPort | None = None,
         governance: Any = None,
         sink: Any = None,
+        store: Any = None,
+        threads: ThreadStore | None = None,
+        checkpointer: Any = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
-        opens — one step deeper (D71) without composing the rest again."""
+        opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
+        `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
+        would have made, and a host that hands all three never reads the url."""
         self.settings = settings
         self._governance = governance
         self._sink = sink
         self.approvals = Approvals()
-        self.store: Any = SqliteStore(settings.store) if settings.store else InMemoryStore()
-        self.threads: ThreadStore = (
-            SqliteThreads(settings.store.with_suffix(".threads.sqlite"))
-            if settings.store
-            else InMemoryThreads()
+        self.stores: Stores = stores_for(
+            settings.store, store=store, threads=threads, checkpointer=checkpointer
         )
+        self.store: Any = self.stores.store
+        self.threads: ThreadStore = self.stores.threads
+        self.holder = f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:8]}"
+        """This process's name on every thread it holds (D81): host, pid, a nonce — so a second
+        process on the same store is refused by a name a person can find."""
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
         self.skills = skills_for(self.store)
@@ -222,23 +236,51 @@ class ServeHost:
         self.batteries = batteries_for(self.store, files=settings.batteries_dir)
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
-        self._batteries_started = False
+        self._batteries_seeded = False
         self._agent = agent
         self.provider = ""
 
+    async def wanted(self) -> tuple[str, ...]:
+        """Which batteries are wanted **now** (D83): the store's `wanted` rows (`{id, on}`),
+        seeded once from `[tools] batteries` — a row already there is left as it is, so the
+        store rules from the first open on, the way a mode or a rule row does (D66)."""
+        if not self._batteries_seeded:
+            for battery_id in self.settings.batteries:
+                if await self.store.get(WANTED, battery_id) is None:
+                    await self.store.put(WANTED, battery_id, {"id": battery_id, "on": True})
+            self._batteries_seeded = True
+        return tuple(
+            str(row.get("id", key))
+            for key, row in await self.store.list(WANTED)
+            if isinstance(row, dict) and row.get("on") is True
+        )
+
     async def _battery_ports(self) -> tuple[Any, ...]:
-        """The batteries switched on, opened once for the process — their servers outlive any one
-        thread, like the store does."""
-        if not self._batteries_started:
-            self.batteries_opened, self.battery_problems = await open_batteries(
-                self.batteries, self.settings.batteries
-            )
-            self._batteries_started = True
+        """The batteries wanted now, opened — each held for the process once it is, its server
+        outliving any one thread like the store does — and the ones no longer wanted closed
+        (D83). Read at every thread's open: a row written now is a battery at the next thread —
+        and a battery switched off is gone from every thread at once, its server being the
+        process's, not a thread's."""
+        wanted = await self.wanted()
+        keep = tuple(b for b in self.batteries_opened if b.battery.id in wanted)
+        for gone in (b for b in self.batteries_opened if b.battery.id not in wanted):
+            await gone.close()
+            self.battery_problems.pop(gone.battery.id, None)
+        have = {b.battery.id for b in keep}
+        opened, problems = await open_batteries(
+            self.batteries, [b for b in wanted if b not in have]
+        )
+        self.batteries_opened = (*keep, *opened)
+        self.battery_problems = {
+            **{k: v for k, v in self.battery_problems.items() if k in wanted},
+            **problems,
+        }
         return tuple(b.port for b in self.batteries_opened if b.port is not None)
 
     async def battery_listing(self) -> list[dict[str, Any]]:
         """Every battery the registry knows: on, off (not wanted), or unavailable and why."""
         await self._battery_ports()
+        wanted = await self.wanted()
         running = {b.battery.id for b in self.batteries_opened if b.port is not None}
         listed: list[dict[str, Any]] = []
         for battery in await self.batteries.all():
@@ -249,7 +291,7 @@ class ServeHost:
                 else "unavailable"
                 if problem
                 else "off"
-                if battery.id not in self.settings.batteries
+                if battery.id not in wanted
                 else "unavailable"
             )
             listed.append(
@@ -280,12 +322,17 @@ class ServeHost:
                 )
         return listed
 
+    async def checkpointer(self) -> Any:
+        """Where a parked run sleeps (D80): the one handed in, or the one the store's url names —
+        opened on first ask, because its connection is an async one."""
+        return await self.stores.checkpointer()
+
     async def aclose(self) -> None:
-        """Stop what the process holds open: the batteries' servers."""
+        """Stop what the process holds open: the batteries' servers, the record's connections."""
         for opened in self.batteries_opened:
             await opened.close()
         self.batteries_opened = ()
-        self._batteries_started = False
+        await self.stores.aclose()
 
     async def _provider(self, want: str | None, root: Path) -> tuple[AgentPort, str]:
         if self._agent is not None:
@@ -310,6 +357,9 @@ class ServeHost:
         observer: Any = None,
         thread_id: str | None = None,
         roots: Any = None,
+        principal: str = "",
+        attributes: Any = None,
+        budget: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -340,15 +390,42 @@ class ServeHost:
             lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=name or self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
+            checkpointer=await self.checkpointer(),
             rules=self.rules,
             modes=self.modes,
             mode=policy_mode,
             provider=called,
             thread_id=thread_id,
             workspace=workspace,
+            holder=self.holder,
+            principal=principal,
+            attributes=attributes if isinstance(attributes, dict) else None,
+            budget=self._budget_of(budget),
         )
         self.provider = called
         return thread
+
+    def _budget_of(self, given: Any) -> Ceiling | None:
+        """A thread's own budget (D84), in the file's words — `{steps, seconds, cents}`, each
+        over the file's default when named — as the kernel's ceiling; `None` when nothing was
+        asked for. A value that is not a whole number is refused by name."""
+        if given is None:
+            return None
+        if not isinstance(given, dict):
+            raise ValueError("budget must be an object of steps, seconds and cents")
+        for key in ("steps", "seconds", "cents"):
+            if key in given and given[key] is not None and not isinstance(given[key], int):
+                raise ValueError(f"budget {key} must be a whole number")
+        base = self.settings.budget
+        return (
+            Budget(
+                steps=int(given.get("steps", base.steps)),
+                seconds=int(given.get("seconds", base.seconds)),
+                cents=given.get("cents", base.cents),
+            )
+            .lease()
+            .ceiling
+        )
 
     async def _environment_for(self, policy_mode: str) -> EnvironmentMode:
         """The sandbox mode a mode needs (D76), from its spec in the registry read now (D66).
@@ -396,8 +473,10 @@ class ServeHost:
             lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
+            checkpointer=await self.checkpointer(),
             rules=self.rules,
             modes=self.modes,
+            holder=self.holder,
         )
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:

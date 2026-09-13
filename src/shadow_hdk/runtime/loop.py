@@ -13,6 +13,7 @@ every event says which run it belongs to.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -301,8 +302,16 @@ async def _stream(
             if parent is not None:
                 await parent.forward(event)
             yield event
+    except BaseException:
+        # **The reader left; the drive goes with it** (BUG-041). A reader cancelled or closed
+        # while the drive waits on a question nobody will answer would otherwise wait forever
+        # for it, on its own way out — every `thread/close` with a card open hung so. The
+        # question the drive was waiting on is withdrawn by the cancellation (D59).
+        driving.cancel()
+        raise
     finally:
-        await driving
+        with contextlib.suppress(asyncio.CancelledError):
+            await driving
         await emitter.drained()
 
 

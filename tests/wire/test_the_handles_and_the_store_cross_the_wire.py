@@ -115,7 +115,14 @@ async def test_approve_and_add_rule_over_the_wire_keeps_the_rule(tmp_path: Path)
         rules = await host.peer.call("rules/list", {})
 
     assert rules["rules"] == [
-        {"component": "look", "inputs": {}, "decision": "allow", "mode": "", "note": ""}
+        {
+            "component": "look",
+            "inputs": {},
+            "decision": "allow",
+            "mode": "",
+            "note": "",
+            "scope": "",
+        }
     ]
     assert threads.rules is not None
     assert threads.rules.all() == (ActRule(component="look"),)

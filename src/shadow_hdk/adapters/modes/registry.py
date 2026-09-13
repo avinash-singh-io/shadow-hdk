@@ -16,6 +16,7 @@ from typing import Any, Protocol
 from shadow_hdk.adapters.modes.mode import Mode as Policy
 from shadow_hdk.adapters.modes.mode import ModeGovernance
 from shadow_hdk.kernel import Behaviour, EffectProfile, ScopeSet
+from shadow_hdk.kernel.rules import in_scope
 
 EVERYTHING = ScopeSet(everything=True)
 OURS = ScopeSet.of("workspace", "record", "provider-state")
@@ -37,6 +38,9 @@ class ModeSpec:
     """The environment mode this mode needs — what the sandbox must enforce (D76): `read-only`,
     `workspace-write` or `full`. `Thread.set_mode` re-opens the environment when it differs from
     the one open; empty means the environment stays as it is."""
+    scope: str = ""
+    """Who this mode is for (D82): empty for everyone, a principal's name, or `attribute:value`
+    — a tenant's mode is not a mode for another tenant's thread."""
 
     @classmethod
     def of(
@@ -49,6 +53,7 @@ class ModeSpec:
         behaviour: Behaviour | None = None,
         source: str = "shipped",
         environment: str = "",
+        scope: str = "",
     ) -> ModeSpec:
         return cls(
             id=mode_id,
@@ -58,6 +63,7 @@ class ModeSpec:
             behaviour=behaviour or Behaviour(),
             source=source,
             environment=environment,
+            scope=scope,
         )
 
 
@@ -91,13 +97,29 @@ class ModeRegistry:
         self._by_id = merged
         self._problems = tuple(problems)
 
-    async def find(self, mode_id: str) -> ModeSpec | None:
+    async def find(
+        self, mode_id: str, *, principal: str | None = None, attributes: Any = None
+    ) -> ModeSpec | None:
+        """The mode by id, read now — `None` when it is not here, or not for this principal with
+        these attributes (D82); with nothing named, scope is not asked."""
         await self.refresh()
-        return self._by_id.get(mode_id)
+        found = self._by_id.get(mode_id)
+        if found is None or (principal is None and attributes is None):
+            return found
+        return found if in_scope(found.scope, principal=principal, attributes=attributes) else None
 
-    async def all(self) -> tuple[ModeSpec, ...]:
+    async def all(
+        self, *, principal: str | None = None, attributes: Any = None
+    ) -> tuple[ModeSpec, ...]:
+        """Every mode, read now — or the ones in scope for the principal and attributes named."""
         await self.refresh()
-        return tuple(self._by_id.values())
+        if principal is None and attributes is None:
+            return tuple(self._by_id.values())
+        return tuple(
+            m
+            for m in self._by_id.values()
+            if in_scope(m.scope, principal=principal, attributes=attributes)
+        )
 
     async def problems(self) -> tuple[str, ...]:
         await self.refresh()
@@ -182,6 +204,7 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
         behaviour=Behaviour(**made),
         source=source,
         environment=environment,
+        scope=str(document.get("scope", "") or ""),
     )
 
 

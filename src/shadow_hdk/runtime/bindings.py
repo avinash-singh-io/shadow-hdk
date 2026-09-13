@@ -11,7 +11,7 @@ import json
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Final
 
 from pydantic import JsonValue
@@ -136,6 +136,11 @@ class RunContext:
         return self._session.run_id
 
     @property
+    def principal(self) -> str | None:
+        """Who this run is for (D82): what every judgement's `Context.principal` says."""
+        return self._session.principal
+
+    @property
     def ports(self) -> Ports:
         return self._ports
 
@@ -254,6 +259,9 @@ class RunContext:
         overrides.setdefault("cancellation", self._session.cancellation)
         overrides.setdefault("approvals", self._session.approvals)
         overrides.setdefault("rules", self._session.rules)
+        # **The parent's principal** (D82): a child's steps are judged as the same person — a
+        # rule scoped to them speaks for the tool calls their agent makes.
+        overrides.setdefault("principal", self._session.principal)
         # **The parent's context, by default** (BUG-030). What a host put on the run — the thread,
         # the turn, the *mode* — is what its policy judges by, and a child's steps are judged by
         # the same policy: a child that carried no context was judged in the governance's default
@@ -412,6 +420,11 @@ class RunContext:
             rule = answered.rule
             if not isinstance(rule, ActRule):
                 rule = load(json.dumps(rule), ActRule)
+            if not rule.scope and self.principal:
+                # **The answerer's, not everyone's** (D82): a rule made at a card speaks for the
+                # person who answered it. A rule for everyone is written to the store by whoever
+                # may write there.
+                rule = replace(rule, scope=self.principal)
             registry = self._session.rules
             if registry is not None:
                 add_now = getattr(registry, "add_now", None)

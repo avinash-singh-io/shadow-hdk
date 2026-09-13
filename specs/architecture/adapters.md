@@ -27,6 +27,7 @@ type: Architecture
 | `derivation` | component | 12 | total expressions over typed tables |
 | `otel` | observer | 14 | the run's shape as a trace over the OpenTelemetry API alone — ids, kinds, reasons, the lease, usage, an act's receipt; never a payload (D28) |
 | `devices` | component | 15 | one device contract, three roles (D31): a sensor reads `world`, an actuator writes it irreversibly with the lease read at the act and a receipt, a witness reports acts it did not command as observed receipts; fakes ship; MQTT (16), OPC-UA and ROS 2 (`[~]`) are adapters over it |
+| `postgres` | store · thread store · checkpointer | 29 | the record on Postgres (D79): `PostgresStore` and `PostgresThreads` hold the same contracts the sqlite ones do, over `psycopg`'s async pool; the checkpointer is LangGraph's own `AsyncPostgresSaver`; `[store] url = "postgresql://…"` fills all three — `[postgres]` extra |
 | `mqtt` | component (devices) | 16 | MQTT topics as the three roles over `paho-mqtt` on 3.1.1: a subscribed topic is a sensor, a command topic an actuator (QoS 1; the receipt says `published`, or carries the device's own ack by key), an event topic a witness; the envelope is the payload (D32); a failed act breaks the link so nothing in flight is re-sent |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
 
@@ -169,11 +170,30 @@ presentation (id, name, description) and the **environment mode it needs**. Four
 | `full` | full | everything; a write outside the workspace, or a command that reaches, is asked about |
 
 Yours are files (`modes/reviewer.md`) or store rows naming a shipped policy — never effects by
-hand. When the policy asks, the host's `ActRules` (D65) are read after the mode says *ask* — a
-rule never widens a ceiling. `Thread.set_mode` flips the policy, re-opens the environment when
+hand. The host's `ActRules` (D65, D85) are read in the field's order — **deny, then the
+ceiling, then ask, then the mode, then allow**: a `deny` rule refuses in every mode, `full`
+included; an `ask` rule puts the act to the person in every mode; an `allow` rule stands in for
+the person only where the mode would have asked — a rule never widens a ceiling, and among the
+rules that match the strongest decides whatever order they were written in. A rule's inputs may
+be patterns (`"path": "finance/**"`, `"command": "git *"`) matched against the input as the tool
+receives it — a path relative to the primary root, or `name/…` for another root. `Thread.set_mode` flips the policy, re-opens the environment when
 the named environment mode differs, and reopens the provider on its own session so its
 catalogue is the new mode's (BUG-032). A child run is judged in its parent's context (D74): the
 mode a host set reaches every tool call, not only the turn's own step.
+
+**Who a row is for** (D82). A rule or a mode may carry a `scope` — a principal's name, or
+`attribute:value` in the product's own words (`tenant:acme`); empty is everyone. A thread is
+opened for a `principal` with `attributes`, both on the record and on every judgement's context
+(the turn's step, every tool call, the catalogue `tools()` judges); `ModeGovernance` reads a
+rule only in its scope and a mode out of scope is *not a mode here*; the registries list in
+scope when a thread is named (`rules/list {thread_id}`, `modes/list {thread_id}`) and everything
+when none is — the operator's view. A rule made at a card is scoped to the person who answered
+it; a rule for everyone is written to the store by whoever may write there. Two ways to keep
+tenants apart, both named: **by scope** — one process, one store, rows and threads carrying the
+tenant, the product's backend the only thing that reaches the bearer; **by process** — one
+`serve` per tenant with its own `[store] url`, when the product's policy says rows must never
+share a table. The kit does not choose; a product's own authorisation engine plugs into the
+governance port and sees the same principal and attributes.
 
 ## Plugging your record in — the twenty lines a host writes
 
@@ -225,6 +245,12 @@ is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offe
 restart with source `store`; every proposal still reaches the sink behind it. The composition
 installs as one distribution, `shadow-hdk`, the shipped providers' transports (`jsonl` for
 Claude Code and Codex, `acp` for OpenCode) in the base and the specialised SDKs as extras (D78).
+**Which batteries are on is rows** (D83): `[tools] batteries` seeds the store's `wanted`
+collection (`{id, on}`) at the host's first open, a row already there left as it is, and from
+then on the store rules — `store/put wanted ddgs {"id": "ddgs", "on": true}` opens it at the next
+thread, `"on": false` closes it; a battery's server is the process's, not a thread's, so one
+switched off is gone from every thread at once. `batteries/list` says on · off · unavailable by
+those rows.
 
 ## The environment — where the agent's effects land (Phase 22, D48–D50)
 
@@ -289,3 +315,5 @@ read elsewhere?* — is an `Ask`, not a tool.
 | `SinkPortContract` | accepts every `Proposal` shape; never raises for a well-formed one |
 | `ObserverPortContract` | accepts every event kind; a raising observer does not fail a run |
 | `ClockPortContract` | `now()` is monotone non-decreasing; `new_id()` never repeats within a process |
+| `StoreContract` | rows round-trip; `put` replaces; a version moves per collection, and deleting nothing moves nothing (D66) |
+| `ThreadStoreContract` | a record round-trips field for field (pending questions included, D80); listing hides archived unless asked; **one holder at a time** — a hold is exclusive while it lives, its holder keeps and renews it, release frees it, a stranger's release changes nothing, and it lapses when nobody renews (D81) |

@@ -245,7 +245,7 @@ def test_serve_takes_the_settings_from_flags_as_well_as_a_toml(tmp_path: Path) -
         ]
     )
     assert overridden.mode == "full" and overridden.want == "codex"
-    assert overridden.store == tmp_path / "s.sqlite"
+    assert overridden.store == f"sqlite:///{tmp_path / 's.sqlite'}"
     assert overridden.root == (tmp_path / "other").resolve()
     bare = settings_from(["--http", f"--root={tmp_path}"])
     assert bare.root == tmp_path.resolve() and bare.mode == "workspace-write"

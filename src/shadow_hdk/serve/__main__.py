@@ -1,5 +1,5 @@
 """`shadow-hdk serve [harness.toml] --stdio|--http [--port N] [--token T] [--page FILE]
-[--root DIR] [--mode M] [--store FILE] [--provider P]`.
+[--root DIR] [--mode M] [--store FILE|URL] [--provider P]`.
 
 The runtime with the shipped composition behind it, for a host in any language. `--stdio` is
 newline-delimited JSON-RPC over stdin/stdout — Codex's default, what an editor or a desktop app
@@ -18,12 +18,12 @@ from pathlib import Path
 
 import anyio
 
-from shadow_hdk.serve.config import Settings, load_settings
+from shadow_hdk.serve.config import Settings, as_store_url, load_settings
 from shadow_hdk.serve.host import ServeHost
 
 USAGE = (
     "usage: shadow-hdk serve [harness.toml] --stdio | --http [--port N] [--token T] "
-    "[--page FILE] [--root DIR] [--mode M] [--store FILE] [--provider P]"
+    "[--page FILE] [--root DIR] [--mode M] [--store FILE|URL] [--provider P]"
 )
 
 
@@ -64,7 +64,7 @@ def settings_from(rest: list[str]) -> Settings:
     if mode := _flag(rest, "mode"):
         settings = replace(settings, mode=mode)  # a mode id; refused at open if unknown
     if store := _flag(rest, "store"):
-        settings = replace(settings, store=Path(store))
+        settings = replace(settings, store=as_store_url(store, base=Path.cwd()))
     if provider := _flag(rest, "provider"):
         settings = replace(settings, want=provider)
     return settings

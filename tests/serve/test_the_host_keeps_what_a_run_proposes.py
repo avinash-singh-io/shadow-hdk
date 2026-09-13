@@ -67,7 +67,7 @@ async def test_a_malformed_skill_proposal_is_passed_on_not_kept() -> None:
 
 
 async def test_the_serve_host_offers_a_kept_skill_after_a_restart(tmp_path: Path) -> None:
-    settings = Settings(root=tmp_path, mode="full", store=tmp_path / "live.sqlite")
+    settings = Settings(root=tmp_path, mode="full", store=f"sqlite:///{tmp_path}/live.sqlite")
     first = ServeHost(settings)
     await first.sink.propose(_minted("kept-one"))
     second = ServeHost(settings)  # a new process, same file

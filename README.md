@@ -10,7 +10,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**One distribution, `shadow-hdk` `0.27.2`, MIT, on PyPI.** 1,439 tests; `mypy --strict` over 377 files;
+**One distribution, `shadow-hdk` `0.28.0`, MIT, on PyPI.** 1,514 tests; `mypy --strict` over 400 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -196,9 +196,14 @@ host answers through its `Approvals` handle: **approve**, **deny**, or **approve
 an `ActRule` naming the act, kept, read at the next judgement, on the record as a proposal. The
 agent's own question to the person is `ask_person`, an `InputRequest` on the record.
 
-Everything a product would keep in a database — modes, rules, skills, which tools are on,
-providers — is a registry with a `Store` source: change a row, and the next step reads it. Only
-the substrate (contracts, the loop, ports, adapters, transports) is code.
+Everything a product would keep in a database — modes, rules, skills, which tools and batteries
+are on, providers — is a registry with a `Store` source: change a row, and the next step reads
+it. Only the substrate (contracts, the loop, ports, adapters, transports) is code. **The record
+chooses its store** (D79): `[store] url = "sqlite:///live.sqlite"` or `"postgresql://…"` fills
+the store, the threads and the checkpointer at once, so a turn parked on a question outlives the
+process that asked it (D80); a thread has one holder at a time (D81), is opened for a principal
+whose rules and modes are scoped to them (D82), on a budget kept on its record (D84); a `deny`
+or an `ask` rule holds in every mode, `full` included (D85).
 
 Two things keep a long run cheap: above `catalogue_threshold` the model sees a name and a line
 per tool and pulls a schema with `describe` when it reaches for one; past `offload_over` a large
@@ -630,7 +635,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–27 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–29 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:
@@ -642,7 +647,7 @@ irreversible step must produce an `Acted` whichever port it came through, and wh
 signed — are open decisions rather than missing code.
 
 The low-level design is in [`specs/architecture/overview.md`](specs/architecture/overview.md); the
-sixty-six decisions behind it are mapped in
+eighty-six decisions behind it are mapped in
 [`specs/decisions/index.md`](specs/decisions/index.md).
 
 MIT.

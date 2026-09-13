@@ -50,6 +50,9 @@ PROVIDED_BY: dict[str, str] = {
     "opentelemetry": "opentelemetry-api",
     "opensandbox": "opensandbox",
     "ddgs": "ddgs",
+    "aiosqlite": "langgraph-checkpoint-sqlite",  # its own dependency; imported beside its saver
+    "psycopg": "psycopg",
+    "psycopg_pool": "psycopg",
 }
 
 #: The part behind each extra: what may import that extra's SDKs, and nothing else may.
@@ -59,6 +62,7 @@ BEHIND_AN_EXTRA: dict[str, tuple[str, ...]] = {
     "adapters/otel": ("otel",),
     "adapters/environment": ("sandbox",),  # the OpenSandbox backend only; the rest is base
     "serve": ("search",),  # the ddgs battery only; the rest is base
+    "adapters/postgres": ("postgres",),
 }
 
 

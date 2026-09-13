@@ -30,6 +30,8 @@ export interface ApprovalRequest {
   component: string | null;
   inputs: JsonValue;
   kind: "approval" | "input";
+  /** Set on a question the last host left open (D80): the turn it belongs to. */
+  turn?: string;
 }
 
 export type Answer =
@@ -67,11 +69,16 @@ export interface Started {
   environment: string;
   provider: string;
   mode: string;
-  modes: { id: string; name: string; description: string; source: string }[];
+  modes: { id: string; name: string; description: string; source: string; scope: string }[];
+  /** Who the thread is for, and the product's words about it (D82). */
+  principal: string;
+  attributes: { [key: string]: JsonValue };
 }
 
 export interface Resumed extends Started {
   turns: TurnRecord[];
+  /** Questions the last host left open (D80), offered again — answer them like any other. */
+  pending: ApprovalRequest[];
 }
 
 export interface BatteryRow {
@@ -265,11 +272,23 @@ export class HarnessClient {
   // ---------------------------------------------------------------- the thread
 
   readonly thread = {
-    start: (params: { root?: string; roots?: RootEntry[]; mode?: string; provider?: string; name?: string; thread_id?: string }) =>
-      this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
+    /** `principal` and `attributes` (D82): who the thread is for and the product's words about it — on the record and every judgement. */
+    start: (params: {
+      root?: string;
+      roots?: RootEntry[];
+      mode?: string;
+      provider?: string;
+      name?: string;
+      thread_id?: string;
+      principal?: string;
+      attributes?: { [key: string]: JsonValue };
+      /** This thread's own ceiling over the file's default (D84); what it spends is on its record. */
+      budget?: { steps?: number; seconds?: number; cents?: number | null };
+    }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
-    list: () => this.call<{ threads: JsonValue[] }>("thread/list", {}),
+    /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
+    list: () => this.call<{ threads: (JsonValue & { held_by?: string | null })[] }>("thread/list", {}),
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
     rollback: (thread_id: string, to_turn: number) => this.call<{ thread: JsonValue }>("thread/rollback", { thread_id, to_turn }),
     archive: (thread_id: string) => this.call<{ archived: string }>("thread/archive", { thread_id }),
@@ -286,7 +305,11 @@ export class HarnessClient {
      * Start a turn and iterate what happens — events, items and activity tagged with the thread —
      * until the turn's record comes back as `{ kind: "done", turn }`.
      */
-    start: (thread_id: string, text: string): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
+    start: (
+      thread_id: string,
+      text: string,
+      options: { when?: "enqueue" | "reject" | "interrupt" } = {},
+    ): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
       const queue: (TurnLine | { kind: "done"; turn: TurnRecord })[] = [];
       let wake: (() => void) | null = null;
       const push = (line: TurnLine | { kind: "done"; turn: TurnRecord }) => {
@@ -300,7 +323,7 @@ export class HarnessClient {
         }),
       );
       let finished = false;
-      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text })
+      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text, ...(options.when ? { when: options.when } : {}) })
         .then((result) => push({ kind: "done", turn: result.turn }))
         .catch((error: Error) => push({ kind: "done", turn: { id: "", run_id: "", prompt: text, at: "", outcome: "failed", text: String(error) } }))
         .finally(() => {
@@ -329,7 +352,9 @@ export class HarnessClient {
 
   readonly approvals = {
     pending: () => this.call<{ requests: ApprovalRequest[] }>("approvals/pending", {}),
-    answer: (handle: string, answer: Answer) => this.call<{ answered: boolean }>("approvals/answer", { handle, answer: answer as unknown as JsonValue }),
+    /** `events` comes back when the question was one the last host left (D80): the parked act ran from its checkpoint. */
+    answer: (handle: string, answer: Answer) =>
+      this.call<{ answered: boolean; events?: Event[] }>("approvals/answer", { handle, answer: answer as unknown as JsonValue }),
     /** Requests as they become pending — approvals and the agent's own questions — and withdrawals. */
     onRequest: (listener: (request: ApprovalRequest, thread_id: string) => void) => {
       const off = ["approval_request", "input_request"].map((kind) =>
@@ -369,9 +394,16 @@ export class HarnessClient {
   /** The skills the composition carries — shipped, from the store, minted — with their sources. */
   readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
 
-  readonly modes = { list: () => this.call<{ modes: Started["modes"] }>("modes/list", {}) };
+  /** Every mode, or — with a thread — the ones in that thread's scope (D82). */
+  readonly modes = { list: (thread_id?: string) => this.call<{ modes: Started["modes"] }>("modes/list", thread_id ? { thread_id } : {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
   readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
-  readonly rules = { list: () => this.call<{ rules: JsonValue[] }>("rules/list", {}) };
+  /** Every rule, or — with a thread — the ones in that thread's scope (D82). */
+  readonly rules = { list: (thread_id?: string) => this.call<{ rules: JsonValue[] }>("rules/list", thread_id ? { thread_id } : {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };
+  /** What the process holds, for its operator (D86): every session and every thread, behind the bearer. */
+  readonly admin = {
+    sessions: () => this.call<{ sessions: { id: string; opened_at: string; threads: string[] }[] }>("admin/sessions", {}),
+    threads: () => this.call<{ threads: JsonValue[] }>("admin/threads", {}),
+  };
 }

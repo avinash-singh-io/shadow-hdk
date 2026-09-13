@@ -17,15 +17,17 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
-from shadow_hdk.kernel import EffectProfile, Event, Lease, ThreadRecord
+from shadow_hdk.kernel import EffectProfile, Event, Lease, Spent, ThreadRecord
 from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime.items import Fold, as_json
-from shadow_hdk.runtime.threads import Thread
+from shadow_hdk.runtime.threads import Thread, When
 from shadow_hdk.wire.protocol import (
     ACTIVITY,
+    ADMIN_SESSIONS,
+    ADMIN_THREADS,
     APPROVAL_REQUEST,
     APPROVALS_ANSWER,
     APPROVALS_PENDING,
@@ -82,11 +84,48 @@ class ThreadHost(Protocol):
         name: str,
         observer: Any,
         roots: Any = None,
+        principal: str = "",
+        attributes: Any = None,
+        budget: Any = None,
     ) -> Thread: ...
 
     async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
 
     async def list(self) -> Any: ...
+
+    async def checkpointer(self) -> Any: ...
+
+
+async def host_checkpointer(host: Any) -> Any:
+    """The host's checkpointer, when it has one (D80): a session runs on it, so a run parked in
+    one session is there for the next — a page reloaded, a process restarted. `None` from a host
+    without one gives the session a checkpointer of its own, for as long as the session lives."""
+    ask = getattr(host, "checkpointer", None)
+    return await ask() if ask is not None else None
+
+
+class SoleSession:
+    """What a runtime over a pipe or a loopback knows of its sessions (D86): itself. The HTTP
+    app hands in its own view of every session it serves."""
+
+    def __init__(self, runtime: Any, *, clock: Any = None) -> None:
+        self._runtime = runtime
+        self._opened_at = clock.now() if clock is not None else _now()
+
+    async def sessions(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "this",
+                "opened_at": self._opened_at,
+                "threads": sorted(self._runtime.threads.threads),
+            }
+        ]
+
+
+def _now() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
 
 
 class ActivityToWire:
@@ -110,10 +149,13 @@ class ActivityToWire:
 class ThreadMethods:
     """The thread methods, served on a peer over a `ThreadHost`."""
 
-    def __init__(self, peer: Any, host: ThreadHost | None, clock: Any) -> None:
+    def __init__(
+        self, peer: Any, host: ThreadHost | None, clock: Any, *, admin: Any = None
+    ) -> None:
         self._peer = peer
         self._host = host
         self._clock = clock
+        self._admin = admin
         self.threads: dict[str, Thread] = {}
         for method, handler in (
             (THREAD_START, self._start),
@@ -145,6 +187,8 @@ class ThreadMethods:
             (BATTERIES_LIST, self._batteries_list),
             (TOOLS_LIST, self._tools_list),
             (SKILLS_LIST, self._skills_list),
+            (ADMIN_SESSIONS, self._admin_sessions),
+            (ADMIN_THREADS, self._admin_threads),
         ):
             peer.serves(method, handler)
         self._relays: list[asyncio.Task[None]] = []
@@ -182,6 +226,11 @@ class ThreadMethods:
             name=str(params.get("name", "") or "tools"),
             observer=ActivityToWire(self._peer, thread_id),
             roots=params.get("roots") or None,
+            # Passed only when given (D82), so a host written before identity was on the thread
+            # is still called the way it always was.
+            **({"principal": str(params["principal"])} if params.get("principal") else {}),
+            **({"attributes": params["attributes"]} if params.get("attributes") else {}),
+            **({"budget": params["budget"]} if params.get("budget") is not None else {}),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged
@@ -193,7 +242,8 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
-            "modes": await self._modes(host),
+            "modes": await self._modes(host, thread),
+            **_identity_json(thread),
         }
 
     async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -202,13 +252,23 @@ class ThreadMethods:
         thread_id = str(params.get("thread_id", ""))
         thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
         self.threads[thread.id] = thread
+        # A question the last host left open (D80) is offered again: pushed the way a live one
+        # is, so a page that only listens shows the card, and in the result for the one that
+        # asked.
+        for question in thread.pending:
+            await self._peer.notify(
+                INPUT_REQUEST if question.kind == "input" else APPROVAL_REQUEST,
+                {"thread_id": thread.id, "request": _pending_json(question)},
+            )
         return {
             "thread_id": thread.id,
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
-            "modes": await self._modes(host),
+            "modes": await self._modes(host, thread),
             "turns": [_turn_json(t) for t in thread.record.turns],
+            "pending": [_pending_json(q) for q in thread.pending],
+            **_identity_json(thread),
         }
 
     async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -232,8 +292,17 @@ class ThreadMethods:
         self.threads.clear()
 
     async def _list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every thread in the store, each row saying who holds it now (D81) — `None` when
+        nobody does, so a page knows which it may resume."""
         host = self._host_or_raise()
-        return {"threads": [_thread_json(t) for t in await host.list()]}
+        store = getattr(host, "threads", None)
+        who = getattr(store, "held_by", None)
+        rows = []
+        for record in await host.list():
+            row = _thread_json(record)
+            row["held_by"] = await who(record.id) if who is not None else None
+            rows.append(row)
+        return {"threads": rows}
 
     async def _fork(self, params: dict[str, Any]) -> dict[str, Any]:
         return {"thread": _thread_json(await self._thread(params).fork())}
@@ -286,12 +355,15 @@ class ThreadMethods:
     # ------------------------------------------------------------------ the turn
 
     async def _turn(self, params: dict[str, Any]) -> dict[str, Any]:
+        """`when` (D81) names what this turn does while one runs: `enqueue` (the default),
+        `reject` — the refusal names the running turn — or `interrupt`."""
         thread = self._thread(params)
         text = str(params.get("text", ""))
+        when = cast(When, str(params.get("when", "enqueue") or "enqueue"))
         fold = Fold()
         count = 0
         # **One fold, both sides of the wire** (D46) — the same one `run` uses.
-        async for event in thread.turn(text):
+        async for event in thread.turn(text, when=when):
             count += 1
             await self._peer.notify(
                 EVENT, {"thread_id": thread.id, "event": json.loads(dump(event, Event))}
@@ -349,19 +421,37 @@ class ThreadMethods:
             )
 
     async def _pending(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every question open now: the ones a running turn waits on live, and the ones a host
+        that died left on a thread's record (D80), each once."""
         host = self._host_or_raise()
-        return {"requests": [_request_json(p) for p in host.approvals.pending()]}
+        live = [_request_json(p) for p in host.approvals.pending()]
+        seen = {r["handle"] for r in live}
+        left = [
+            _pending_json(q)
+            for thread in self.threads.values()
+            for q in thread.pending
+            if q.handle not in seen
+        ]
+        return {"requests": [*live, *left]}
 
     async def _answer(self, params: dict[str, Any]) -> dict[str, Any]:
         """The host's answer, as JSON: `{"kind": "approve"}`, `{"kind": "deny", "reason"}`,
         `{"kind": "approve_and_add_rule", "rule": {...}}` — or `{"text": "..."}` for an input
-        request. The runtime's `accept_answer` reads these shapes (D65)."""
+        request. The runtime's `accept_answer` reads these shapes (D65). A question a running
+        turn waits on is answered live; one the last host left (D80) is settled by its thread —
+        the parked act runs from its checkpoint, and what happened goes down the stream."""
         host = self._host_or_raise()
         answer = params.get("answer")
         if isinstance(answer, dict) and "text" in answer and "kind" not in answer:
             answer = str(answer["text"])
-        done = host.approvals.answer(str(params.get("handle", "")), answer)
-        return {"answered": bool(done)}
+        handle = str(params.get("handle", ""))
+        if host.approvals.answer(handle, answer):
+            return {"answered": True}
+        for thread in self.threads.values():
+            if any(q.handle == handle for q in thread.pending):
+                settled = await thread.settle(handle, answer)
+                return {"answered": True, "events": await self._announced(thread, settled)}
+        return {"answered": False}
 
     async def _cancel(self, params: dict[str, Any]) -> dict[str, Any]:
         thread = self._thread(params)
@@ -399,10 +489,14 @@ class ThreadMethods:
     async def _store_version(self, params: dict[str, Any]) -> dict[str, Any]:
         return {"version": await self._store_or_raise().version(str(params["collection"]))}
 
-    async def _modes_list(self, _params: dict[str, Any]) -> dict[str, Any]:
-        return {"modes": await self._modes(self._host_or_raise())}
+    async def _modes_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Every mode — or, with a `thread_id`, the ones in that thread's scope (D82)."""
+        host = self._host_or_raise()
+        thread = self._thread(params) if params.get("thread_id") else None
+        return {"modes": await self._modes(host, thread)}
 
-    async def _rules_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+    async def _rules_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Every rule — or, with a `thread_id`, the ones in that thread's scope (D82)."""
         from shadow_hdk.kernel import ActRule
 
         host = self._host_or_raise()
@@ -410,7 +504,12 @@ class ThreadMethods:
         if registry is None:
             return {"rules": []}
         all_now = getattr(registry, "all_now", None)
-        rules = await all_now() if all_now is not None else registry.all()
+        if all_now is None:
+            rules = registry.all()
+        elif params.get("thread_id"):
+            rules = await all_now(**_scope_of(self._thread(params)))
+        else:
+            rules = await all_now()
         return {"rules": [json.loads(dump(r, ActRule)) for r in rules]}
 
     # ------------------------------------------------------------------ the workspace (D69)
@@ -499,14 +598,90 @@ class ThreadMethods:
             ]
         }
 
-    async def _modes(self, host: ThreadHost) -> list[dict[str, Any]]:
+    # ------------------------------------------------------------------ operations (D86)
+
+    async def _admin_sessions(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every session the process serves: its id, when it opened, the threads it has open."""
+        if self._admin is None:
+            return {"sessions": []}
+        return {"sessions": await self._admin.sessions()}
+
+    async def _admin_threads(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every thread in the store, with who holds it (D81) and which session has it open —
+        the operator's view; a page shows a person their own through `thread/list`. A runtime
+        with no thread host has no threads to list, which is an answer, not a refusal."""
+        host = self._host
+        if host is None:
+            return {"threads": []}
+        sessions = await self._admin.sessions() if self._admin is not None else []
+        open_in = {tid: s["id"] for s in sessions for tid in s["threads"]}
+        store = getattr(host, "threads", None)
+        who = getattr(store, "held_by", None)
+        rows = []
+        for record in await host.list():
+            rows.append(
+                {
+                    "id": record.id,
+                    "created_at": record.created_at,
+                    "mode": record.mode,
+                    "provider": record.provider,
+                    "principal": record.principal,
+                    "attributes": dict(record.attributes),
+                    "turns": len(record.turns),
+                    "pending": len(record.pending),
+                    "spent": json.loads(dump(record.spent, Spent)),
+                    "archived": record.archived,
+                    "held_by": await who(record.id) if who is not None else None,
+                    "session": open_in.get(record.id),
+                }
+            )
+        return {"threads": rows}
+
+    async def _modes(self, host: ThreadHost, thread: Thread | None = None) -> list[dict[str, Any]]:
+        """The modes — in the thread's scope when one is named (D82)."""
         registry = getattr(host, "modes", None)
         if registry is None:
             return []
+        modes = (
+            await registry.all(**_scope_of(thread)) if thread is not None else await registry.all()
+        )
         return [
-            {"id": m.id, "name": m.name, "description": m.description, "source": m.source}
-            for m in await registry.all()
+            {
+                "id": m.id,
+                "name": m.name,
+                "description": m.description,
+                "source": m.source,
+                "scope": m.scope,
+            }
+            for m in modes
         ]
+
+
+def _scope_of(thread: Thread) -> dict[str, Any]:
+    """The thread's identity, as the registries take it (D82)."""
+    return {
+        "principal": thread.record.principal or None,
+        "attributes": dict(thread.record.attributes),
+    }
+
+
+def _identity_json(thread: Thread) -> dict[str, Any]:
+    return {"principal": thread.record.principal, "attributes": dict(thread.record.attributes)}
+
+
+def _pending_json(question: Any) -> dict[str, Any]:
+    """A question off the record (D80), in the shape a live request has — a page shows both the
+    same way — with the turn it belongs to."""
+    return {
+        "handle": question.handle,
+        "run_id": question.run_id,
+        "step": question.step,
+        "question": question.question,
+        "component": question.component,
+        "inputs": question.inputs,
+        "kind": question.kind,
+        "turn": question.turn,
+    }
 
 
 def _request_json(pending: Any) -> dict[str, Any]:
@@ -547,4 +722,4 @@ def _thread_json(record: ThreadRecord) -> dict[str, Any]:
     return loaded
 
 
-__all__ = ["ActivityToWire", "ThreadHost", "ThreadMethods"]
+__all__ = ["ActivityToWire", "ThreadHost", "ThreadMethods", "host_checkpointer"]

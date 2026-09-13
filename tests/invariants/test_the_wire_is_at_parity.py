@@ -57,6 +57,8 @@ NOT_CROSSING: dict[str, str] = {
     "resumed_done": "runtime-internal: the executor clears that after the invoke",
     "activity_now": "synchronous convenience over `activity` for a reader task; `activity` crosses",
     "forward_activity": "runtime-internal: the drive forwards a child's activity to the root",
+    "principal": "a property of the run's options (D82): the crossed context carries it on every "
+    "`Context` it builds, as `run_id` is carried",
 }
 """Method → why it does not cross. Every entry is a claim; an entry for a method that has since
 been made to cross is refused by the third test below."""
@@ -108,6 +110,8 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.remaining": "THREAD_REMAINING",
     "Thread.tools": "TOOLS_LIST",
     "Thread.add_root": "THREAD_ADD_ROOT",
+    "Thread.pending": "THREAD_RESUME",  # the questions the last host left, in the answer (D80)
+    "Thread.settle": "APPROVALS_ANSWER",  # one handle answers a live question or a left one
     # Approvals
     "Approvals.pending": "APPROVALS_PENDING",
     "Approvals.answer": "APPROVALS_ANSWER",

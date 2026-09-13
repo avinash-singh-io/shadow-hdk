@@ -107,12 +107,13 @@ async def serve_stdio(threads: Any = None) -> None:
     import sys
 
     from shadow_hdk.wire.sides import RuntimeSide
+    from shadow_hdk.wire.threads import host_checkpointer
 
     channel = StdioChannel(
         inbound=anyio.wrap_file(sys.stdin.buffer),
         outbound=anyio.wrap_file(sys.stdout.buffer),
     )
-    runtime = RuntimeSide(channel, threads=threads)
+    runtime = RuntimeSide(channel, threads=threads, checkpointer=await host_checkpointer(threads))
     try:
         async with anyio.create_task_group() as group:
             await runtime.peer.serve_forever(group)

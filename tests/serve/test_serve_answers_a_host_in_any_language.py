@@ -164,7 +164,7 @@ def test_settings_read_the_minimal_harness_toml(tmp_path: Path) -> None:
     settings = load_settings(tmp_path / "harness.toml")
     assert settings.root == (tmp_path / "work").resolve()
     assert settings.mode == "read-only" and settings.want == "codex"
-    assert settings.store == (tmp_path / "live.sqlite").resolve()
+    assert settings.store == f"sqlite:///{(tmp_path / 'live.sqlite').resolve()}"
     assert settings.modes_dir == (tmp_path / "modes").resolve()
     assert settings.registry_name == "workspace"
 
