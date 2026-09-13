@@ -5,7 +5,7 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-13 (v0.27.2 — the approval cards; BUG-040)
-> **Current Phase**: **none — Phase 28 (the workspace) is complete; v0.26.0 proved the
+> **Current Phase**: **29 — one app server behind every surface** (`phase-29-one-app-server`; opened 2026-09-14 from the research note and the owner's decision: the record chooses its store, a parked run survives, one thread one holder, identity and scope, batteries live, the budget on the record, the field's rules, operations; releases as 0.28.0). Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
 > wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
 > workflow for eighteen names, which never ran; v0.27.0 makes them one — `shadow-hdk` with
@@ -109,6 +109,7 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 29 — one app server behind every surface | `phase-29-one-app-server` | active | group 1 of 7 (the store as a choice; a parked run survives) |
 
 ## Upcoming Phases
 
