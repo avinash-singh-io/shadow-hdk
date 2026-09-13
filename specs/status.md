@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-13 (v0.27.1 — the first product installs the kit; BUG-038, BUG-039)
+> **Last Updated**: 2026-09-13 (v0.27.2 — the approval cards; BUG-040)
 > **Current Phase**: **none — Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
 > wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
@@ -17,11 +17,12 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
 > (collaboration), the owner's call.
 >
-> 1,437 tests; mypy strict over 377 files; one distribution, `shadow-hdk`, at **0.27.1**, MIT, on PyPI.
+> 1,439 tests; mypy strict over 377 files; one distribution, `shadow-hdk`, at **0.27.2**, MIT, on PyPI.
 >
-> **Latest Release**: **v0.27.1**, released 2026-09-13 — the React example's first connect: the
-> SSE stream opens with a frame (BUG-038), the TypeScript client runs in a browser and is a
-> package (BUG-039). Before it **v0.27.0** — one distribution with extras (D78);
+> **Latest Release**: **v0.27.2**, released 2026-09-13 — the React example's approval cards:
+> a call the mode asks about is one item, named and kept across its park (BUG-040). Before it
+> **v0.27.1** — the example's first connect: the SSE stream opens with a frame (BUG-038), the
+> TypeScript client runs in a browser and is a package (BUG-039). Before it **v0.27.0** — one distribution with extras (D78);
 > BUG-036, BUG-037; mypy over the whole tree; the sdist declared; published to PyPI. Before it
 > **v0.26.1** (the URLs and classifiers; the publish workflow, tagged but never released — it
 > would have published eighteen names). Before it **v0.26.0** — the packages
@@ -47,7 +48,7 @@ components and records through the sink. One distribution — kernel, runtime, w
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Twenty-eight phases are built,
-merged and released**: 1,437 tests, mypy strict over 377 files, one distribution at 0.27.1.
+merged and released**: 1,439 tests, mypy strict over 377 files, one distribution at 0.27.2.
 
 ## Completed Phases
 

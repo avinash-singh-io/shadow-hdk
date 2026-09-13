@@ -66,6 +66,32 @@ async def test_the_question_reaches_the_host_and_an_allow_lets_the_call_through(
     )
 
 
+async def test_the_question_on_the_record_names_the_call_it_is_about() -> None:
+    """The live ask is raised from the socket's task, where the run context has no current step,
+    so the event named step `""` — and a page projecting items by step showed an empty item
+    beside the call's own (BUG-040, found by the React example's approval cards). The offer is
+    the one place that knows the step it built for the call; the event names it."""
+    questions = Approvals()
+
+    async def the_host_says_yes() -> None:
+        pending = await asyncio.wait_for(questions.next(), 10)
+        questions.answer(pending.handle, Allow())
+
+    async def drive(context: RunContext) -> Any:
+        host = asyncio.create_task(the_host_says_yes())
+        try:
+            return await _wipe_through(context)
+        finally:
+            await host
+
+    _result, events = await with_a_run(drive, governance=AsksAboutWrites(), approvals=questions)
+
+    asked = [e for e in events if isinstance(e, ApprovalRequested)]
+    assert asked, "the question was not on the record"
+    for event in asked:
+        assert event.step and "wipe" in event.step, f"the question names no call: {event.step!r}"
+
+
 async def test_a_refusal_tells_the_child_it_was_refused() -> None:
     questions = Approvals()
 
