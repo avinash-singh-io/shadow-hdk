@@ -85,6 +85,7 @@ def build_app(
     from starlette.routing import Route
 
     from shadow_hdk.wire.sides import RuntimeSide
+    from shadow_hdk.wire.threads import host_checkpointer
 
     sessions: dict[str, Session] = {}
 
@@ -110,7 +111,9 @@ def build_app(
         session = Session(id=session_id, to_host=to_host_send, from_host=from_host_send)
         # The runtime reads what the host POSTs and writes into the SSE stream.
         channel = QueueChannel(outbound=to_host_send, inbound=from_host_receive)
-        session.runtime = RuntimeSide(channel, clock=clock, threads=threads)
+        session.runtime = RuntimeSide(
+            channel, clock=clock, threads=threads, checkpointer=await host_checkpointer(threads)
+        )
         sessions[session_id] = session
 
         async def frames() -> AsyncIterator[bytes]:

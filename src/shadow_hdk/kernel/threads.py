@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from pydantic import JsonValue
+
 from shadow_hdk.kernel.workspace import Root
 
 ThreadId = str
@@ -27,9 +29,30 @@ class TurnRecord:
     prompt: str
     at: str
     outcome: Literal["running", "completed", "failed", "refused", "cancelled", "parked"] = "running"
+    """`parked`: the host went away while a question of this turn was open (D80); the question is
+    on the thread's `pending` until it is settled, and the turn stays `parked` — the agent's
+    transcript cannot be rewound, so the outcome is told to it at the next turn, not rewritten."""
     text: str = ""
     """What the agent said back — the turn's own answer, kept here so a host lists a thread
     without replaying every run."""
+
+
+@dataclass(frozen=True)
+class PendingQuestion:
+    """A question of a turn nobody has answered yet, on the record so it survives the process
+    that asked it (D80): an approval the policy asked for — with the run that parked on it, which
+    a new host resumes from the checkpointer — or the agent's own question to the person."""
+
+    handle: str
+    turn: TurnId
+    step: str
+    question: str
+    kind: Literal["approval", "input"] = "approval"
+    component: str | None = None
+    inputs: JsonValue | None = None
+    run_id: str = ""
+    """The run parked on this question — a child of the turn's run — when there is one to resume;
+    an input question has none, its answer is text the agent is told."""
 
 
 @dataclass(frozen=True)
@@ -55,6 +78,9 @@ class ThreadRecord:
     `root` names — a record written before roots were kept."""
     environment: str = ""
     """The environment's own mode — what the sandbox enforces — beside `mode`, the policy's."""
+    pending: tuple[PendingQuestion, ...] = ()
+    """The questions open right now (D80): put here when asked, taken off when answered — by the
+    process that asked, or by the one that resumed the thread after it."""
 
 
-__all__ = ["ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]
+__all__ = ["PendingQuestion", "ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]

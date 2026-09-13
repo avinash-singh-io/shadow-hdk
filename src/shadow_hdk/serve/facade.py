@@ -22,7 +22,7 @@ from typing import Any
 
 from shadow_hdk.kernel import Activity, Event, TurnRecord
 from shadow_hdk.runtime.items import Fold, Item
-from shadow_hdk.serve.config import Budget, Settings, load_settings
+from shadow_hdk.serve.config import Budget, Settings, as_store_url, load_settings
 from shadow_hdk.serve.host import ServeHost
 
 
@@ -94,7 +94,7 @@ class Harness:
             root=Path(root).resolve(),
             mode=mode,
             want=provider,
-            store=Path(store) if store else None,
+            store=as_store_url(str(store), base=Path.cwd()) if store else None,
             modes_dir=Path(modes_dir) if modes_dir else None,
             registry_name=registry_name,
             batteries=tuple(batteries),

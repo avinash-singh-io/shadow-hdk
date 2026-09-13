@@ -45,6 +45,7 @@ from shadow_hdk.kernel import (
     Lease,
     Observation,
     Observed,
+    PendingQuestion,
     Provenance,
     Registration,
     ScopeSet,
@@ -52,7 +53,13 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.contracts import dump
-from shadow_hdk.kernel.events import Event, ModeChanged, WorkspaceChanged
+from shadow_hdk.kernel.events import (
+    ApprovalRequested,
+    Event,
+    InputRequested,
+    ModeChanged,
+    WorkspaceChanged,
+)
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import (
     AgentPort,
@@ -66,6 +73,7 @@ from shadow_hdk.kernel.workspace import Root, Workspace
 from shadow_hdk.runtime.bindings import Ports, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.environment import Environment
+from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
 from shadow_hdk.runtime.session import LeaseMeter
@@ -231,7 +239,11 @@ class Thread:
         """The running turn's handle to stop it (D15), while one runs."""
         self._interrupted = False
         self._kept: list[str] = []
-        """Steering the provider could not take mid-turn: folded into the next prompt."""
+        """Steering the provider could not take mid-turn, and what became of a call settled after
+        the host that heard it died (D80): folded into the next prompt."""
+        self._parked: list[PendingQuestion] = []
+        """Children parked during the running turn, by step — so the turn's question can name
+        the run to wake. Only the running turn's; cleared as it starts."""
 
     # ------------------------------------------------------------------ opening and closing
 
@@ -329,8 +341,28 @@ class Thread:
         )
         if modes is not None and (spec := modes.get(record.mode)) is not None:
             thread._behaviour = spec.behaviour
+        await thread._settle_what_the_last_host_left()
         await thread._start()
         return thread
+
+    async def _settle_what_the_last_host_left(self) -> None:
+        """A turn still `running` on a record nobody is running is one the last host died in
+        (D80). With a question open it is `parked` — the question stays pending, the run that
+        parked on it is in the checkpointer, and `settle` finishes it; with nothing open the
+        turn is `cancelled`, and the text says by what, because nothing else can be known."""
+        turns = list(self._record.turns)
+        if not turns or turns[-1].outcome != "running":
+            return
+        last = turns[-1]
+        open_here = tuple(q for q in self._record.pending if q.turn == last.id)
+        if open_here:
+            turns[-1] = _replace_turn(last, outcome="parked")
+        else:
+            turns[-1] = _replace_turn(
+                last, outcome="cancelled", text="the host went away before the turn ended"
+            )
+        self._record = _replace(self._record, turns=tuple(turns), pending=open_here)
+        await self._store.save(self._record)
 
     async def _start(self) -> None:
         # **The offer lives in a task of its own.** A socket offer is an anyio listener and a task
@@ -448,6 +480,7 @@ class Thread:
             cancellation = Cancellation()
             self._current = cancellation
             self._interrupted = False
+            self._parked = []
 
             async def turn_component(inputs: Any) -> Observation:
                 context = current_run()
@@ -510,6 +543,7 @@ class Thread:
             cost_known = True
             try:
                 async for event in run(plan, ports, options=options):
+                    await self._keep_pending(event, turn_id, run_id)
                     if isinstance(event, Observed) and event.step == turn_id:
                         if isinstance(event.observation, Completed) and isinstance(
                             event.observation.output, dict
@@ -545,9 +579,189 @@ class Thread:
                 )
                 turns = list(self._record.turns)
                 turns[-1] = _replace_turn(turns[-1], outcome=outcome, text=said)
-                self._record = _replace(self._record, turns=tuple(turns))
+                # A turn that ended has no question open: whoever was asked was withdrawn from.
+                still = tuple(q for q in self._record.pending if q.turn != turn_id)
+                self._record = _replace(self._record, turns=tuple(turns), pending=still)
                 await self._store.save(self._record)
                 await self._remember_session()  # the provider's own id, for the next reopen
+
+    async def _keep_pending(self, event: Event, turn_id: str, run_id: str) -> None:
+        """The questions of this turn, on the record as they open and close (D80).
+
+        A tool call the policy asks about is a child run parked on its `Ask`; the child's own
+        `ApprovalRequested` names the run that parked, and the turn's — raised live from the
+        offer with the component and inputs (BUG-026) — carries the handle the person answers.
+        The agent's own question (`InputRequested`) is the child's alone: nothing parks, the
+        answer is text. Either is off the record once its step is observed or refused."""
+        pending = list(self._record.pending)
+        changed = False
+        if isinstance(event, ApprovalRequested) and event.run_id == run_id:
+            parked_child = next(
+                (
+                    q.run_id
+                    for q in reversed(self._parked)
+                    if q.step == event.step and q.turn == turn_id
+                ),
+                "",
+            )
+            pending.append(
+                PendingQuestion(
+                    handle=event.handle,
+                    turn=turn_id,
+                    step=event.step,
+                    question=event.question,
+                    kind="approval",
+                    component=event.component,
+                    inputs=event.inputs,
+                    run_id=parked_child,
+                )
+            )
+            changed = True
+        elif isinstance(event, ApprovalRequested):
+            # A child's park: remember which run sleeps under this step, for the turn's question.
+            self._parked.append(
+                PendingQuestion(
+                    handle=event.handle,
+                    turn=turn_id,
+                    step=event.step,
+                    question=event.question,
+                    run_id=event.run_id,
+                )
+            )
+        elif isinstance(event, InputRequested):
+            pending.append(
+                PendingQuestion(
+                    handle=event.handle,
+                    turn=turn_id,
+                    step=event.step,
+                    question=event.question,
+                    kind="input",
+                )
+            )
+            changed = True
+        elif isinstance(event, Observed | RefusedEvent) and any(
+            q.step == event.step and q.turn == turn_id for q in pending
+        ):
+            pending = [q for q in pending if not (q.step == event.step and q.turn == turn_id)]
+            changed = True
+        if changed:
+            self._record = _replace(self._record, pending=tuple(pending))
+            await self._store.save(self._record)
+
+    @property
+    def pending(self) -> tuple[PendingQuestion, ...]:
+        """The questions open on this thread (D80) — the ones a host that died left, until they
+        are settled, and the ones the running turn is waiting on now."""
+        return self._record.pending
+
+    async def settle(self, handle: str, answer: Any) -> list[Event]:
+        """Answer a question the last host left open (D80).
+
+        An approval resumes the run that parked on it from the checkpointer — the act runs, or
+        is refused, exactly where it stopped — and the record says what became of it. Either
+        kind is folded ahead of the next prompt, so the agent learns what happened to the call
+        it made: its transcript cannot be rewound, and a call it never heard back from would be
+        one it might make again. The turn stays `parked`: it ended without the agent's answer.
+        """
+        question = next((q for q in self._record.pending if q.handle == handle), None)
+        if question is None:
+            raise KeyError(f"no question {handle!r} is pending on thread {self.id!r}")
+        events: list[Event] = []
+        if question.kind == "input":
+            said = str(answer.get("text", answer) if isinstance(answer, dict) else answer)
+            told = f"You asked the person {question.question!r}; they answered: {said}"
+        elif not question.run_id:
+            told = f"Your call {_call_line(question)} could not be settled: no run parked on it"
+        else:
+            events = await self._resume_parked(question, answer)
+            observation = next(
+                (
+                    e.observation
+                    for e in reversed(events)
+                    if isinstance(e, Observed) and e.step == question.step
+                ),
+                None,
+            )
+            refusal = next(
+                (
+                    e.reason
+                    for e in reversed(events)
+                    if isinstance(e, RefusedEvent) and e.step == question.step
+                ),
+                None,
+            )
+            if isinstance(observation, Completed):
+                told = (
+                    f"Your call {_call_line(question)} from {question.turn} was approved by the "
+                    f"person after the host restarted and produced: "
+                    f"{json.dumps(observation.output)}"
+                )
+            elif observation is not None or refusal is not None:
+                reason = refusal or getattr(observation, "reason", None) or "it failed"
+                told = (
+                    f"Your call {_call_line(question)} from {question.turn} was denied by the "
+                    f"person after the host restarted: {reason}"
+                )
+            else:
+                told = f"Your call {_call_line(question)} from {question.turn} did not settle"
+        self._kept.append(told)
+        turns = list(self._record.turns)
+        for index, turn in enumerate(turns):
+            if turn.id == question.turn:
+                turns[index] = _replace_turn(
+                    turn, text="\n\n".join(t for t in (turn.text, told) if t)
+                )
+        self._record = _replace(
+            self._record,
+            turns=tuple(turns),
+            pending=tuple(q for q in self._record.pending if q.handle != handle),
+        )
+        await self._store.save(self._record)
+        return events
+
+    async def _resume_parked(self, question: PendingQuestion, answer: Any) -> list[Event]:
+        """The child run that parked on the question, woken from the checkpointer with the
+        answer — the same composition the offer built for the call, so the step is the same."""
+        inputs = question.inputs if isinstance(question.inputs, dict) else {}
+        composition = Composition(
+            (
+                Invoke(
+                    id=question.step,
+                    component=question.component or "",
+                    inputs=tuple(Binding(name=k, value=v) for k, v in inputs.items()),
+                ),
+            )
+        )
+        left = self._meter.remaining().ceiling
+        reserved = Ceiling(
+            max_steps=min(2, max(left.max_steps, 1)),
+            max_wall_seconds=left.max_wall_seconds,
+            max_cost_cents=left.max_cost_cents,
+        )
+        lease = self._meter.carve(reserved)
+        options = RunOptions(
+            lease=lease,
+            run_id=question.run_id,
+            approvals=self._approvals,
+            rules=self._rules,
+            checkpointer=self._checkpointer,
+            context={
+                "thread": self.id,
+                "turn": question.turn,
+                **({"mode": self._record.mode} if self._record.mode else {}),
+                **self._options,
+            },
+        )
+        events: list[Event] = []
+        steps_taken = 0
+        try:
+            async for event in resume_run(composition, answer, self._ports, options=options):
+                events.append(event)
+                if isinstance(event, Ended):
+                    steps_taken = event.steps_taken
+        finally:
+            self._meter.settle(reserved, steps=steps_taken, cost_cents=0, cost_known=True)
+        return events
 
     # ------------------------------------------------------------------ mode and options
 
@@ -748,6 +962,11 @@ class Thread:
 
 def _replace_turn(turn: TurnRecord, **changes: Any) -> TurnRecord:
     return replace(turn, **changes)
+
+
+def _call_line(question: PendingQuestion) -> str:
+    inputs = question.inputs if isinstance(question.inputs, dict) else {}
+    return f"{question.component}({json.dumps(inputs)})"
 
 
 __all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Offered", "Thread"]

@@ -108,6 +108,8 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.remaining": "THREAD_REMAINING",
     "Thread.tools": "TOOLS_LIST",
     "Thread.add_root": "THREAD_ADD_ROOT",
+    "Thread.pending": "THREAD_RESUME",  # the questions the last host left, in the answer (D80)
+    "Thread.settle": "APPROVALS_ANSWER",  # one handle answers a live question or a left one
     # Approvals
     "Approvals.pending": "APPROVALS_PENDING",
     "Approvals.answer": "APPROVALS_ANSWER",

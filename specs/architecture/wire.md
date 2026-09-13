@@ -51,13 +51,16 @@ whichever it is.
 ```
 host ──► runtime   thread/start {root | roots: [{name, path}…], mode, provider, name}
                        → thread_id · root (the primary) · roots · environment (the sandbox's mode) · mode · modes
-host ──► runtime   thread/resume · close · list · fork · rollback · archive
+host ──► runtime   thread/resume → … · turns · pending  (the questions the last host left — D80)
+host ──► runtime   thread/close · list · fork · rollback · archive
 host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
 host ──► runtime   thread/add_root {name, path} → events · roots  (added live, re-proven — D76)
 host ──► runtime   thread/set_option · remaining
 host ──► runtime   turn/start                    → the turn's record, when it ends
 host ──► runtime   turn/steer · turn/interrupt · run/cancel
 host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · {text})
+                       a left question (D80) is settled by its thread: the parked act runs from its
+                       checkpoint and the answer carries its events
 host ──► runtime   store/put · get · delete · list · version · modes/list · rules/list · batteries/list
 host ──► runtime   tools/list {thread_id}        what the agent is offered now, each with the mode's
                                                  judgement (allow · ask · refuse) and its source (D73)
@@ -69,7 +72,9 @@ host ◄── runtime   approval_request · input_request · request_withdrawn
 
 Rules: every public method of `Thread`, `Approvals` and `Store` crosses under a `protocol.py`
 name or is named in the parity test's `HANDLES_NOT_CROSSING` with a reason; a session that ends
-closes every thread it opened; a thread's offer is held by one task for its lifetime, so any
+closes every thread it opened; every session and every served thread runs on the host's
+checkpointer (D80) — a run parked in one session is there for the next, and outlives the process
+when the store's url is a file or a database (D79); a thread's offer is held by one task for its lifetime, so any
 method may be called from any task; a change between turns (`set_mode`, `add_root`) is on the
 record and goes down the stream as an `event` like any other, and comes back in the result for
 the one that asked; a page the server serves (`--page`) is a client of these methods and nothing

@@ -14,7 +14,8 @@ mode = "workspace-write"      # read-only | workspace-write | full
 [provider]
 want = ""                     # claude-code | codex | opencode | "" for the first ready
 [store]
-path = "live.sqlite"          # modes, rules, skills, switches — live, no restart
+path = "live.sqlite"          # modes, rules, skills, switches, threads, parked runs — live, no restart
+# url = "postgresql://…"      # or Postgres, with the [postgres] extra: the same three, one choice (D79)
 [modes]
 dir = "modes"                 # reviewer.md, builder.toml …
 [registry]

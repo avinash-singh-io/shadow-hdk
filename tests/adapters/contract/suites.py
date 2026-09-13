@@ -277,7 +277,7 @@ class ThreadStoreContract:
         raise NotImplementedError
 
     async def test_a_record_round_trips_field_for_field(self) -> None:
-        from shadow_hdk.kernel import ThreadRecord, TurnRecord
+        from shadow_hdk.kernel import PendingQuestion, ThreadRecord, TurnRecord
 
         store = self.store()
         record = ThreadRecord(
@@ -299,6 +299,17 @@ class ThreadStoreContract:
             forked_from="t0",
             seeded_turns=1,
             session_id="s",
+            pending=(
+                PendingQuestion(
+                    handle="r1:s1:3",
+                    turn="turn-1",
+                    step="s1",
+                    question="may it?",
+                    component="write_file",
+                    inputs={"path": "a.txt"},
+                    run_id="child-1",
+                ),
+            ),
         )
         await store.create(record)
         assert await store.get("t1") == record

@@ -30,6 +30,7 @@ dependencies = [
     "starlette>=0.37",                    # `shadow-hdk serve --http`: the loopback listener with SSE
     "uvicorn>=0.30",
     "httpx>=0.27",                        # a client of that listener, and the TypeScript proof's peer
+    "langgraph-checkpoint-sqlite>=3.1",   # a parked run sleeps on disk by default (D80), not in memory
 ]
 
 [project.optional-dependencies]
@@ -47,8 +48,10 @@ otel = ["opentelemetry-api>=1.44,<2"]
 sandbox = ["opensandbox>=0.1.16,<0.2"]
 # The light web-search battery's engine (wigolo is its own process, installed with npm).
 search = ["ddgs>=9"]
+# The record on Postgres: the store, the threads and the checkpointer over one url (D79).
+postgres = ["psycopg[binary,pool]>=3.2", "langgraph-checkpoint-postgres>=3.0"]
 # Everything.
-all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search]"]
+all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search,postgres]"]
 
 [project.scripts]
 shadow-hdk = "shadow_hdk.serve.__main__:main"
@@ -86,9 +89,6 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "pytest-timeout>=2.3",
-    # A checkpointer we do NOT ship, to prove the host can bring its own. Everything before
-    # Phase 6 was proven against `InMemorySaver`, which is not durability.
-    "langgraph-checkpoint-sqlite>=2.0",
     "amqtt>=0.12.0",
     "twine>=6",
 ]

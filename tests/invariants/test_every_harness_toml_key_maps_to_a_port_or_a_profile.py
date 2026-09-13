@@ -15,6 +15,7 @@ MEANS: dict[str, tuple[str, str, str]] = {
     "environment.mode": ("shadow_hdk.adapters.environment", "LocalEnvironment", "open(mode=)"),
     "provider.want": ("shadow_hdk.providers", "ready", "want"),
     "store.path": ("shadow_hdk.adapters.basic", "SqliteStore", "the Store port on a file"),
+    "store.url": ("shadow_hdk.serve.stores", "stores_for", "the three the url names (D79)"),
     "modes.dir": ("shadow_hdk.adapters.modes", "modes_in", "a ModeRegistry source"),
     "registry.name": ("shadow_hdk.adapters.recording", "SocketOffer", "name="),
     "tools.batteries": ("shadow_hdk.serve.batteries", "open_battery", "each id, opened"),

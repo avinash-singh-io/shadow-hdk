@@ -9,6 +9,21 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # The Postgres adapter's contract suites run against a real server (D79): this one. Without
+    # the variable below they skip, saying so — the desk runs them against its own Postgres.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: harness
+          POSTGRES_PASSWORD: harness
+          POSTGRES_DB: shadow_hdk_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U harness" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      SHADOW_HDK_TEST_POSTGRES_URL: postgresql://harness:harness@localhost:5432/shadow_hdk_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

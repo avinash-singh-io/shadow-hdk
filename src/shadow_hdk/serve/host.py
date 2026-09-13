@@ -23,7 +23,7 @@ from shadow_hdk.adapters.agent import (
     shipped_skills,
     store_skills,
 )
-from shadow_hdk.adapters.basic import SqliteStore, SqliteThreads, StdoutSink, SystemClock
+from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.adapters.modes import (
     ActRules,
@@ -44,7 +44,6 @@ from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
-from shadow_hdk.runtime.store import InMemoryStore
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
 from shadow_hdk.serve.batteries import (
@@ -57,6 +56,7 @@ from shadow_hdk.serve.batteries import (
 )
 from shadow_hdk.serve.config import Budget, Settings
 from shadow_hdk.serve.keeping import KeepingSink
+from shadow_hdk.serve.stores import Stores, stores_for
 
 MODES = ModeRegistry(shipped_modes())
 _POLICY = {spec.id: spec.policy for spec in MODES.listing()}
@@ -187,10 +187,11 @@ def a_lease(budget: Budget | None = None) -> Lease:
 class ServeHost:
     """The wire's `ThreadHost`, composed from the shipped adapters.
 
-    One per process: one store (sqlite when `settings.store` names a file, memory otherwise), one
-    thread store beside it, one `Approvals` handle, one rule registry, one mode registry. A
-    provider is resolved at `open` — `settings.want` or the first CLI signed in here — unless one
-    was handed in (`agent=`), which is what a test does.
+    One per process: one record — the store the registries read, the thread store, and the
+    checkpointer a parked run sleeps in, all three from `settings.store`'s url (D79; memory when
+    it names nothing) — one `Approvals` handle, one rule registry, one mode registry. A provider
+    is resolved at `open` — `settings.want` or the first CLI signed in here — unless one was
+    handed in (`agent=`), which is what a test does.
     """
 
     def __init__(
@@ -200,19 +201,23 @@ class ServeHost:
         agent: AgentPort | None = None,
         governance: Any = None,
         sink: Any = None,
+        store: Any = None,
+        threads: ThreadStore | None = None,
+        checkpointer: Any = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
-        opens — one step deeper (D71) without composing the rest again."""
+        opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
+        `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
+        would have made, and a host that hands all three never reads the url."""
         self.settings = settings
         self._governance = governance
         self._sink = sink
         self.approvals = Approvals()
-        self.store: Any = SqliteStore(settings.store) if settings.store else InMemoryStore()
-        self.threads: ThreadStore = (
-            SqliteThreads(settings.store.with_suffix(".threads.sqlite"))
-            if settings.store
-            else InMemoryThreads()
+        self.stores: Stores = stores_for(
+            settings.store, store=store, threads=threads, checkpointer=checkpointer
         )
+        self.store: Any = self.stores.store
+        self.threads: ThreadStore = self.stores.threads
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
         self.skills = skills_for(self.store)
@@ -280,12 +285,18 @@ class ServeHost:
                 )
         return listed
 
+    async def checkpointer(self) -> Any:
+        """Where a parked run sleeps (D80): the one handed in, or the one the store's url names —
+        opened on first ask, because its connection is an async one."""
+        return await self.stores.checkpointer()
+
     async def aclose(self) -> None:
-        """Stop what the process holds open: the batteries' servers."""
+        """Stop what the process holds open: the batteries' servers, the record's connections."""
         for opened in self.batteries_opened:
             await opened.close()
         self.batteries_opened = ()
         self._batteries_started = False
+        await self.stores.aclose()
 
     async def _provider(self, want: str | None, root: Path) -> tuple[AgentPort, str]:
         if self._agent is not None:
@@ -340,6 +351,7 @@ class ServeHost:
             lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=name or self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
+            checkpointer=await self.checkpointer(),
             rules=self.rules,
             modes=self.modes,
             mode=policy_mode,
@@ -396,6 +408,7 @@ class ServeHost:
             lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=self.settings.registry_name, withhold={TURN}),
             approvals=self.approvals,
+            checkpointer=await self.checkpointer(),
             rules=self.rules,
             modes=self.modes,
         )

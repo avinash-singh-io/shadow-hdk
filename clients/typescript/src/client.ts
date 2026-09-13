@@ -30,6 +30,8 @@ export interface ApprovalRequest {
   component: string | null;
   inputs: JsonValue;
   kind: "approval" | "input";
+  /** Set on a question the last host left open (D80): the turn it belongs to. */
+  turn?: string;
 }
 
 export type Answer =
@@ -72,6 +74,8 @@ export interface Started {
 
 export interface Resumed extends Started {
   turns: TurnRecord[];
+  /** Questions the last host left open (D80), offered again — answer them like any other. */
+  pending: ApprovalRequest[];
 }
 
 export interface BatteryRow {
@@ -329,7 +333,9 @@ export class HarnessClient {
 
   readonly approvals = {
     pending: () => this.call<{ requests: ApprovalRequest[] }>("approvals/pending", {}),
-    answer: (handle: string, answer: Answer) => this.call<{ answered: boolean }>("approvals/answer", { handle, answer: answer as unknown as JsonValue }),
+    /** `events` comes back when the question was one the last host left (D80): the parked act ran from its checkpoint. */
+    answer: (handle: string, answer: Answer) =>
+      this.call<{ answered: boolean; events?: Event[] }>("approvals/answer", { handle, answer: answer as unknown as JsonValue }),
     /** Requests as they become pending — approvals and the agent's own questions — and withdrawals. */
     onRequest: (listener: (request: ApprovalRequest, thread_id: string) => void) => {
       const off = ["approval_request", "input_request"].map((kind) =>

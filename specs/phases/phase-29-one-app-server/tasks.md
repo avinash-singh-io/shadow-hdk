@@ -6,12 +6,13 @@ phase: 29
 # Tasks — Phase 29
 
 ## Group 1 — the record chooses its store; a parked run survives
-- [ ] `[store] url` (`path` as sugar); `stores_for(url)`; `langgraph-checkpoint-sqlite` a base dependency
-- [ ] `adapters.postgres`: `PostgresStore`, `PostgresThreads`, the Postgres checkpointer; the `[postgres]` extra; the lazy import with the install hint
-- [ ] the contract suites against Postgres under `SHADOW_HDK_TEST_POSTGRES_URL`; CI's Postgres service
-- [ ] `ServeHost(store=, threads=, checkpointer=)`; the served threads on the host's checkpointer
-- [ ] a parked run survives a host: pending rebuilt from the checkpoint on resume; measured across two hosts
-- [ ] records: D79 (the store is a choice), D80 (a parked run is on the record's store); backlog; changelog; adapters.md; the file structure
+- [x] `[store] url` (`path` as sugar); `stores_for(url)`; `langgraph-checkpoint-sqlite` a base dependency
+- [x] `adapters.postgres`: `PostgresStore`, `PostgresThreads`, the Postgres checkpointer; the `[postgres]` extra; the lazy import with the install hint
+- [x] the contract suites against Postgres under `SHADOW_HDK_TEST_POSTGRES_URL`; CI's Postgres service
+- [x] `ServeHost(store=, threads=, checkpointer=)`; the served threads on the host's checkpointer
+- [x] a parked run survives a host: the question on the record, the child resumed from the checkpoint by `settle`; measured across two hosts (a crash image of the store) and over the wire
+- [x] BUG-041 — a cancelled reader of `run()` hung on a drive waiting for nobody — found and closed
+- [x] records: D79, D80; backlog; changelog; adapters.md; wire.md; the file structure
 
 ## Group 2 — one thread, one holder
 - [ ] `ThreadStore.acquire/renew/release`; the three implementations; the contract suite

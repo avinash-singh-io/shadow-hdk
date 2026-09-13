@@ -15,6 +15,7 @@ from shadow_hdk.serve.host import (
     skills_for,
     workshop,
 )
+from shadow_hdk.serve.stores import Stores, stores_for
 
 __all__ = [
     "Budget",
@@ -27,10 +28,12 @@ __all__ = [
     "POLICY_FOR",
     "ServeHost",
     "Settings",
+    "Stores",
     "a_lease",
     "a_thread",
     "load_settings",
     "modes_for",
     "skills_for",
+    "stores_for",
     "workshop",
 ]

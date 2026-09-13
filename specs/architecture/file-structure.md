@@ -52,6 +52,7 @@ shadow-hdk/
       facade.py  config.py           Harness — three lines; harness.toml, every key a port or a profile (D71)
       batteries.py  web.py           a battery is a file (D70); batteries_library/ (wigolo, ddgs)  [search]
       keeping.py                     KeepingSink — what a run proposes for keeping, kept (ENH-011)
+      stores.py                      stores_for(url) — the Store, the ThreadStore and the checkpointer from one url (D79)
       __main__.py                    shadow-hdk serve [harness.toml] --stdio | --http [--page]
     adapters/
       basic/                         allow-all · Controlled · stdout · file · callback · system clock ·
@@ -69,6 +70,7 @@ shadow-hdk/
       otel/                          the event stream exported as a trace  [otel]                 Phase 14
       devices/                       sensors, actuators, witnesses                                Phase 15
       mqtt/                          one link, three roles over MQTT 3.1.1  [mqtt]                Phase 16
+      postgres/                      the record on Postgres — PostgresStore · PostgresThreads · the checkpointer  [postgres]  Phase 29
   docs/packages/                     one page per part — what it is for, its seams, its decisions
   schemas/                           the published contracts, one JSON Schema each, and index.json
   clients/typescript/                types generated from the schemas; a thin JSON-RPC/SSE client (D68)

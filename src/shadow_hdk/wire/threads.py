@@ -88,6 +88,16 @@ class ThreadHost(Protocol):
 
     async def list(self) -> Any: ...
 
+    async def checkpointer(self) -> Any: ...
+
+
+async def host_checkpointer(host: Any) -> Any:
+    """The host's checkpointer, when it has one (D80): a session runs on it, so a run parked in
+    one session is there for the next — a page reloaded, a process restarted. `None` from a host
+    without one gives the session a checkpointer of its own, for as long as the session lives."""
+    ask = getattr(host, "checkpointer", None)
+    return await ask() if ask is not None else None
+
 
 class ActivityToWire:
     """The observer a thread's ports carry: events are on the turn's own iterator; activity goes
@@ -202,6 +212,14 @@ class ThreadMethods:
         thread_id = str(params.get("thread_id", ""))
         thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
         self.threads[thread.id] = thread
+        # A question the last host left open (D80) is offered again: pushed the way a live one
+        # is, so a page that only listens shows the card, and in the result for the one that
+        # asked.
+        for question in thread.pending:
+            await self._peer.notify(
+                INPUT_REQUEST if question.kind == "input" else APPROVAL_REQUEST,
+                {"thread_id": thread.id, "request": _pending_json(question)},
+            )
         return {
             "thread_id": thread.id,
             **_workspace_json(thread),
@@ -209,6 +227,7 @@ class ThreadMethods:
             "mode": thread.record.mode,
             "modes": await self._modes(host),
             "turns": [_turn_json(t) for t in thread.record.turns],
+            "pending": [_pending_json(q) for q in thread.pending],
         }
 
     async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -349,19 +368,37 @@ class ThreadMethods:
             )
 
     async def _pending(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every question open now: the ones a running turn waits on live, and the ones a host
+        that died left on a thread's record (D80), each once."""
         host = self._host_or_raise()
-        return {"requests": [_request_json(p) for p in host.approvals.pending()]}
+        live = [_request_json(p) for p in host.approvals.pending()]
+        seen = {r["handle"] for r in live}
+        left = [
+            _pending_json(q)
+            for thread in self.threads.values()
+            for q in thread.pending
+            if q.handle not in seen
+        ]
+        return {"requests": [*live, *left]}
 
     async def _answer(self, params: dict[str, Any]) -> dict[str, Any]:
         """The host's answer, as JSON: `{"kind": "approve"}`, `{"kind": "deny", "reason"}`,
         `{"kind": "approve_and_add_rule", "rule": {...}}` — or `{"text": "..."}` for an input
-        request. The runtime's `accept_answer` reads these shapes (D65)."""
+        request. The runtime's `accept_answer` reads these shapes (D65). A question a running
+        turn waits on is answered live; one the last host left (D80) is settled by its thread —
+        the parked act runs from its checkpoint, and what happened goes down the stream."""
         host = self._host_or_raise()
         answer = params.get("answer")
         if isinstance(answer, dict) and "text" in answer and "kind" not in answer:
             answer = str(answer["text"])
-        done = host.approvals.answer(str(params.get("handle", "")), answer)
-        return {"answered": bool(done)}
+        handle = str(params.get("handle", ""))
+        if host.approvals.answer(handle, answer):
+            return {"answered": True}
+        for thread in self.threads.values():
+            if any(q.handle == handle for q in thread.pending):
+                settled = await thread.settle(handle, answer)
+                return {"answered": True, "events": await self._announced(thread, settled)}
+        return {"answered": False}
 
     async def _cancel(self, params: dict[str, Any]) -> dict[str, Any]:
         thread = self._thread(params)
@@ -509,6 +546,21 @@ class ThreadMethods:
         ]
 
 
+def _pending_json(question: Any) -> dict[str, Any]:
+    """A question off the record (D80), in the shape a live request has — a page shows both the
+    same way — with the turn it belongs to."""
+    return {
+        "handle": question.handle,
+        "run_id": question.run_id,
+        "step": question.step,
+        "question": question.question,
+        "component": question.component,
+        "inputs": question.inputs,
+        "kind": question.kind,
+        "turn": question.turn,
+    }
+
+
 def _request_json(pending: Any) -> dict[str, Any]:
     return {
         "handle": pending.handle,
@@ -547,4 +599,4 @@ def _thread_json(record: ThreadRecord) -> dict[str, Any]:
     return loaded
 
 
-__all__ = ["ActivityToWire", "ThreadHost", "ThreadMethods"]
+__all__ = ["ActivityToWire", "ThreadHost", "ThreadMethods", "host_checkpointer"]

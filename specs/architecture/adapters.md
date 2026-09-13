@@ -27,6 +27,7 @@ type: Architecture
 | `derivation` | component | 12 | total expressions over typed tables |
 | `otel` | observer | 14 | the run's shape as a trace over the OpenTelemetry API alone — ids, kinds, reasons, the lease, usage, an act's receipt; never a payload (D28) |
 | `devices` | component | 15 | one device contract, three roles (D31): a sensor reads `world`, an actuator writes it irreversibly with the lease read at the act and a receipt, a witness reports acts it did not command as observed receipts; fakes ship; MQTT (16), OPC-UA and ROS 2 (`[~]`) are adapters over it |
+| `postgres` | store · thread store · checkpointer | 29 | the record on Postgres (D79): `PostgresStore` and `PostgresThreads` hold the same contracts the sqlite ones do, over `psycopg`'s async pool; the checkpointer is LangGraph's own `AsyncPostgresSaver`; `[store] url = "postgresql://…"` fills all three — `[postgres]` extra |
 | `mqtt` | component (devices) | 16 | MQTT topics as the three roles over `paho-mqtt` on 3.1.1: a subscribed topic is a sensor, a command topic an actuator (QoS 1; the receipt says `published`, or carries the device's own ack by key), an event topic a witness; the envelope is the payload (D32); a failed act breaks the link so nothing in flight is re-sent |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
 
