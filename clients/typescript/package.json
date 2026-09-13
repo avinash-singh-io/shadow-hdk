@@ -5,10 +5,24 @@
   "description": "Types generated from shadow-hdk's published schemas, and a thin JSON-RPC/SSE client for `shadow-hdk serve`.",
   "license": "MIT",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
   "scripts": {
     "generate": "node generate.mjs",
     "check": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "prepare": "tsc -p tsconfig.json"
   },
   "devDependencies": {
     "json-schema-to-typescript": "^15.0.4",
