@@ -97,11 +97,15 @@ def _limit_memory(pid: int, megabytes: int) -> None:
     Not `preexec_fn`: that runs between fork and exec in a process that has threads, where it is
     unsafe, and where any failure surfaces as an opaque *Exception occurred in preexec_fn* that
     takes the whole step with it — measured, on the very platform that refuses the limit.
-    `prlimit` sets another process's limit from here, and exists only where the limit does.
+    `prlimit` sets another process's limit from here, and exists only where the limit does —
+    Linux, said as a platform check the type checker reads the same way on every machine (a
+    `type: ignore` here is needed on macOS and unused on Linux, so CI and the desk disagreed).
     """
+    if sys.platform != "linux":
+        return
     limit = megabytes * 1024 * 1024
-    with contextlib.suppress(ValueError, OSError, AttributeError, ProcessLookupError):
-        resource.prlimit(pid, resource.RLIMIT_AS, (limit, limit))  # type: ignore[attr-defined]
+    with contextlib.suppress(ValueError, OSError, ProcessLookupError):
+        resource.prlimit(pid, resource.RLIMIT_AS, (limit, limit))
 
 
 async def run_leashed(
