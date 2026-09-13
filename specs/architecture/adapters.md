@@ -170,8 +170,13 @@ presentation (id, name, description) and the **environment mode it needs**. Four
 | `full` | full | everything; a write outside the workspace, or a command that reaches, is asked about |
 
 Yours are files (`modes/reviewer.md`) or store rows naming a shipped policy — never effects by
-hand. When the policy asks, the host's `ActRules` (D65) are read after the mode says *ask* — a
-rule never widens a ceiling. `Thread.set_mode` flips the policy, re-opens the environment when
+hand. The host's `ActRules` (D65, D85) are read in the field's order — **deny, then the
+ceiling, then ask, then the mode, then allow**: a `deny` rule refuses in every mode, `full`
+included; an `ask` rule puts the act to the person in every mode; an `allow` rule stands in for
+the person only where the mode would have asked — a rule never widens a ceiling, and among the
+rules that match the strongest decides whatever order they were written in. A rule's inputs may
+be patterns (`"path": "finance/**"`, `"command": "git *"`) matched against the input as the tool
+receives it — a path relative to the primary root, or `name/…` for another root. `Thread.set_mode` flips the policy, re-opens the environment when
 the named environment mode differs, and reopens the provider on its own session so its
 catalogue is the new mode's (BUG-032). A child run is judged in its parent's context (D74): the
 mode a host set reaches every tool call, not only the turn's own step.

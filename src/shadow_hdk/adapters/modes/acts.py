@@ -50,8 +50,19 @@ def store_rules(store: Any, collection: str = "rules") -> StoreRules:
     return StoreRules(store, collection)
 
 
+STRENGTH = ("deny", "ask", "allow")
+"""Among the rules that match, the strongest decides (D85): a deny anywhere refuses, else an
+ask anywhere asks, else an allow allows — the order Claude Code reads its rules in, and the one
+that cannot be defeated by the order rows happen to be written in."""
+
+
+def strongest(decisions: Iterable[str]) -> str | None:
+    found = set(decisions)
+    return next((d for d in STRENGTH if d in found), None)
+
+
 class ActRules:
-    """Rules in the order they were added; the first that matches decides."""
+    """Rules in the order they were added; among those that match, the strongest decides."""
 
     def __init__(
         self, rules: Iterable[ActRule] = (), *, sources: Sequence[RuleSource] = ()
@@ -97,14 +108,15 @@ class ActRules:
         principal: str | None = None,
         attributes: Any = None,
     ) -> str | None:
-        """`allow`, `deny`, or `None` — over the handed rules and every source, read now; a rule
-        speaks only in its scope (D82)."""
-        for rule in await self.all_now():
+        """`deny`, `ask`, `allow`, or `None` — over the handed rules and every source, read
+        now; a rule speaks only in its scope (D82); the strongest matching decision wins (D85)."""
+        return strongest(
+            rule.decision
+            for rule in await self.all_now()
             if rule.matches(
                 component, inputs, mode=mode, principal=principal, attributes=attributes
-            ):
-                return rule.decision
-        return None
+            )
+        )
 
     def remove(self, rule: ActRule) -> None:
         self._rules = [r for r in self._rules if r != rule]
@@ -113,11 +125,10 @@ class ActRules:
         return tuple(self._rules)
 
     def decide(self, component: str, inputs: Any, *, mode: str = "") -> str | None:
-        """`allow`, `deny`, or `None` when no rule speaks."""
-        for rule in self._rules:
-            if rule.matches(component, inputs, mode=mode):
-                return rule.decision
-        return None
+        """`deny`, `ask`, `allow`, or `None` when no rule speaks — the strongest that matches."""
+        return strongest(
+            rule.decision for rule in self._rules if rule.matches(component, inputs, mode=mode)
+        )
 
 
-__all__ = ["ActRules", "RuleSource", "StoreRules", "store_rules"]
+__all__ = ["STRENGTH", "ActRules", "RuleSource", "StoreRules", "store_rules", "strongest"]

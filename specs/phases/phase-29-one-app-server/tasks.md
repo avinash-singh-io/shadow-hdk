@@ -34,8 +34,8 @@ phase: 29
 - [x] `thread/start {budget}`; `ThreadRecord.budget`, `.spent`; `thread/remaining` = budget − spent; resume from spent; ENH-013 closed; records D84
 
 ## Group 6 — the rules the field has
-- [ ] `ActRule.decision = "ask"`; deny holds in `full`; glob inputs anchored to roots; the invariant and its mutation
-- [ ] records: D84
+- [x] `ActRule.decision = "ask"`; deny and ask hold in `full` (parametrised over every shipped mode); patterns in inputs anchored to roots; the strongest matching rule decides
+- [x] records: D85; adapters.md
 
 ## Group 7 — operations
 - [ ] `GET /healthz`; `admin/sessions`, `admin/threads`; the version in `initialize`

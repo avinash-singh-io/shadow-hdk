@@ -157,3 +157,25 @@ container (Codex's thread, LangGraph's thread metadata, ADK's session state).
 
 **The truthful edge.** A turn the host died in charged its steps in memory only: what it spent
 is not on the record. The spend of a crash is unknown, and the record says what it knows.
+
+### [DECISION] 2026-09-14 — D85: the rules the field has
+
+**Decision.** `ActRule.decision` is `allow`, `deny` or **`ask`**, and `ModeGovernance` reads the
+rules in Claude Code's order with the ceiling where a ceiling goes: **deny, then the ceiling,
+then ask, then the mode, then allow**. A deny rule refuses in every mode, `full` included, and
+below the ask line too (a read of `.env*` a product forbids); an ask rule puts the act to the
+person in every mode; an allow rule stands in for the person only where the mode would have
+asked. Among the rules that match, the strongest decides (`deny` > `ask` > `allow`) whatever
+order the rows were written in — first-match was defeatable by row order. A rule's inputs may be
+patterns: `**` crosses `/`, `*` and `?` stay within a segment, `[…]` is a class, a `*` at the
+very end takes the rest as the prefix rule always did; matched against the input as the tool
+receives it — a path relative to the primary root, or `name/…` for another root, which is what
+anchors a pattern to a root without a second vocabulary.
+
+**Why.** Claude Code's rules hold in `bypassPermissions`; Codex's execpolicy amendments hold
+across sandbox modes; a product that cannot forbid `rm -rf` in `full` or ask before every write
+under `finance/` has no policy, only a mode. The shipped governance had rules only after the
+mode said *ask*, which made a deny rule silent exactly where it mattered.
+
+**Not built.** Rules that reach into an input's structure beyond top-level keys; a rule over
+the tool's *effects* rather than its name (that is what a mode is).

@@ -91,14 +91,21 @@ class ModeGovernance(GovernancePort):
             # **Never fall back to a wider mode.** The dangerous failure is silent widening: a typo
             # resolving to whatever the default happens to be. Refuse, and say which name it was.
             return Refuse(f"{name!r} is not a mode here; known modes are {self.known}")
+        # **Deny, then the ceiling, then ask, then the mode, then allow** (D85) — Claude Code's
+        # order, with the ceiling where a ceiling goes. A deny or an ask rule holds in every mode,
+        # `full` included; an allow rule only stands in for the person where the mode would have
+        # asked, because a rule never widens a ceiling — and neither does an ask: what the mode
+        # does not permit is refused, not put to the person.
+        ruled = await self._ruled(context, name)
+        if ruled == "deny":
+            return Refuse(f"a rule refuses this act in mode {mode.name!r}")
         if not effects.narrows(mode.ceiling):
             return Refuse(f"mode {mode.name!r} does not permit this")
+        if ruled == "ask":
+            return Ask(f"a rule asks before this act in mode {mode.name!r}")
         if mode.ask_above is not None and not effects.narrows(mode.ask_above):
-            ruled = await self._ruled(context, name)
             if ruled == "allow":
                 return Allow()
-            if ruled == "deny":
-                return Refuse(f"a rule in mode {mode.name!r} refuses this act")
             return Ask(f"mode {mode.name!r} asks before this: {_why(effects, mode.ask_above)}")
         return Allow()
 
