@@ -273,7 +273,8 @@ export class HarnessClient {
       this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
-    list: () => this.call<{ threads: JsonValue[] }>("thread/list", {}),
+    /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
+    list: () => this.call<{ threads: (JsonValue & { held_by?: string | null })[] }>("thread/list", {}),
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
     rollback: (thread_id: string, to_turn: number) => this.call<{ thread: JsonValue }>("thread/rollback", { thread_id, to_turn }),
     archive: (thread_id: string) => this.call<{ archived: string }>("thread/archive", { thread_id }),
@@ -290,7 +291,11 @@ export class HarnessClient {
      * Start a turn and iterate what happens — events, items and activity tagged with the thread —
      * until the turn's record comes back as `{ kind: "done", turn }`.
      */
-    start: (thread_id: string, text: string): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
+    start: (
+      thread_id: string,
+      text: string,
+      options: { when?: "enqueue" | "reject" | "interrupt" } = {},
+    ): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
       const queue: (TurnLine | { kind: "done"; turn: TurnRecord })[] = [];
       let wake: (() => void) | null = null;
       const push = (line: TurnLine | { kind: "done"; turn: TurnRecord }) => {
@@ -304,7 +309,7 @@ export class HarnessClient {
         }),
       );
       let finished = false;
-      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text })
+      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text, ...(options.when ? { when: options.when } : {}) })
         .then((result) => push({ kind: "done", turn: result.turn }))
         .catch((error: Error) => push({ kind: "done", turn: { id: "", run_id: "", prompt: text, at: "", outcome: "failed", text: String(error) } }))
         .finally(() => {

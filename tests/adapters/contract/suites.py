@@ -337,6 +337,42 @@ class ThreadStoreContract:
         assert [t.id for t in await store.list()] == ["a"]
         assert sorted(t.id for t in await store.list(include_archived=True)) == ["a", "b"]
 
+    async def test_one_holder_at_a_time_and_a_holder_keeps_its_own(self) -> None:
+        """D81: a hold is exclusive while it lives; the holder may take it again and renew it;
+        release frees it for the next; a stranger's release changes nothing."""
+        from shadow_hdk.kernel import ThreadRecord
+
+        store = self.store()
+        await store.create(ThreadRecord(id="t", root="/w", created_at="2026-01-01T00:00:00+00:00"))
+        assert await store.held_by("t") is None
+        assert await store.hold("t", "alpha", ttl_seconds=30) is True
+        assert await store.hold("t", "beta", ttl_seconds=30) is False
+        assert await store.held_by("t") == "alpha"
+        assert await store.hold("t", "alpha", ttl_seconds=30) is True, "its own, again"
+        assert await store.renew("t", "alpha", ttl_seconds=30) is True
+        assert await store.renew("t", "beta", ttl_seconds=30) is False
+        await store.release("t", "beta")
+        assert await store.held_by("t") == "alpha", "a stranger's release changes nothing"
+        await store.release("t", "alpha")
+        assert await store.held_by("t") is None
+        assert await store.hold("t", "beta", ttl_seconds=30) is True
+
+    async def test_a_hold_lapses_when_nobody_renews_it(self) -> None:
+        """The process that held it died: after the ttl the thread is free, the next holder takes
+        it, and the dead one's renewal says so."""
+        import asyncio
+
+        from shadow_hdk.kernel import ThreadRecord
+
+        store = self.store()
+        await store.create(ThreadRecord(id="t", root="/w", created_at="2026-01-01T00:00:00+00:00"))
+        assert await store.hold("t", "alpha", ttl_seconds=0.2) is True
+        await asyncio.sleep(0.35)
+        assert await store.held_by("t") is None, "lapsed"
+        assert await store.hold("t", "beta", ttl_seconds=30) is True
+        assert await store.renew("t", "alpha", ttl_seconds=30) is False, "lost, and told"
+        assert await store.held_by("t") == "beta"
+
 
 class StoreContract:
     """Override `store` with a fresh, empty store each call (D66)."""

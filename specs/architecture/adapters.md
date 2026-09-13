@@ -290,3 +290,5 @@ read elsewhere?* — is an `Ask`, not a tool.
 | `SinkPortContract` | accepts every `Proposal` shape; never raises for a well-formed one |
 | `ObserverPortContract` | accepts every event kind; a raising observer does not fail a run |
 | `ClockPortContract` | `now()` is monotone non-decreasing; `new_id()` never repeats within a process |
+| `StoreContract` | rows round-trip; `put` replaces; a version moves per collection, and deleting nothing moves nothing (D66) |
+| `ThreadStoreContract` | a record round-trips field for field (pending questions included, D80); listing hides archived unless asked; **one holder at a time** — a hold is exclusive while it lives, its holder keeps and renews it, release frees it, a stranger's release changes nothing, and it lapses when nobody renews (D81) |

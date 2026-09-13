@@ -68,3 +68,32 @@ graph in a task and its `finally` waited for that task, which was blocked on a q
 would answer. Every `thread/close` with a card open would have hung the same way. The reader's
 cancellation now cancels the drive, and the question is withdrawn (D59). Filed and closed in the
 same group, RED first.
+
+### [DECISION] 2026-09-14 — D81: one thread, one holder; a second turn is a named choice
+
+**Decision.** The `ThreadStore` port says who holds a thread: `hold(thread_id, holder,
+ttl_seconds)`, `renew`, `release`, `held_by` — a lease on the store's own clock, because two
+processes cannot agree on one of theirs. `Thread.open` and `resume` take it for the `holder` they
+are given, renew it every third of its life while the thread is open, release it at close;
+`ThreadHeld` names the holder when another process has it, and a hold nobody renews lapses
+(30 s) so a dead host is out of the way. `ServeHost` names itself `host:pid:nonce`. `thread/list`
+rows carry `held_by`. `turn(text, when=)` — `enqueue` (the default; the turn lock, now named),
+`reject` (`TurnRunning`, naming the running turn; nothing recorded), `interrupt` (the running
+turn stopped as `interrupt()` stops it, ending `cancelled`; this one starts). A thread opened
+without a holder takes no hold: the in-process shape with nothing to share the store with.
+
+**Why.** One app server behind every surface is one process per thread, and the industry says
+so plainly: LangGraph Server locks a thread per run and names its double-texting strategies
+(reject · enqueue · interrupt · rollback); Codex's app-server owns its threads outright. A lease
+rather than a lock because the process that holds it can die; a name rather than a boolean
+because the person who is refused should know by whom.
+
+**Not built.** `rollback` as a fourth strategy: the harness's `thread/rollback` is a fork of the
+first N turns (D62), a different thing from discarding a running turn's effects, which a
+provider's transcript cannot do.
+
+**Found on the way.** A second turn arriving while one ran was refused *no steps left* (BUG-042):
+the remaining was read before the turn lock, while the running turn's reservation held everything;
+it is read under the lock now, where the earlier turn has settled. The plan's `TurnRecord.started_as`
+is not added: an interrupted turn's outcome already says what happened to it, and `enqueue` is
+nothing the record needs to remember.

@@ -21,8 +21,16 @@ create table if not exists threads (
     created_at text not null,
     archived integer not null default 0,
     record text not null
-)
+);
+create table if not exists holds (
+    thread_id text primary key,
+    holder text not null,
+    until real not null
+);
 """
+
+NOW = "(julianday('now') - 2440587.5) * 86400.0"
+"""Unix seconds on the database's own clock (D81) — what every process agrees on."""
 
 
 class SqliteThreads(ThreadStore):
@@ -31,7 +39,7 @@ class SqliteThreads(ThreadStore):
     def __init__(self, path: Path | str) -> None:
         self._path = str(path)
         with self._connect() as connection:
-            connection.execute(SCHEMA)
+            connection.executescript(SCHEMA)
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self._path)
@@ -84,6 +92,55 @@ class SqliteThreads(ThreadStore):
             from dataclasses import replace
 
             await self.save(replace(found, archived=True))
+
+    # ------------------------------------------------------------------ one holder (D81)
+
+    async def hold(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        def write() -> bool:
+            with self._connect() as connection:
+                # Free, lapsed, or already this holder's: take it. Otherwise the insert conflicts
+                # with a live hold and does nothing — the row count says which.
+                taken = connection.execute(
+                    f"insert into holds (thread_id, holder, until) values (?, ?, {NOW} + ?) "
+                    "on conflict(thread_id) do update set holder = excluded.holder, "
+                    "until = excluded.until "
+                    f"where holds.holder = excluded.holder or holds.until <= {NOW}",
+                    (thread_id, holder, ttl_seconds),
+                ).rowcount
+                return taken > 0
+
+        return await asyncio.to_thread(write)
+
+    async def renew(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        def write() -> bool:
+            with self._connect() as connection:
+                renewed = connection.execute(
+                    f"update holds set until = {NOW} + ? "
+                    f"where thread_id = ? and holder = ? and until > {NOW}",
+                    (ttl_seconds, thread_id, holder),
+                ).rowcount
+                return renewed > 0
+
+        return await asyncio.to_thread(write)
+
+    async def release(self, thread_id: str, holder: str) -> None:
+        def write() -> None:
+            with self._connect() as connection:
+                connection.execute(
+                    "delete from holds where thread_id = ? and holder = ?", (thread_id, holder)
+                )
+
+        await asyncio.to_thread(write)
+
+    async def held_by(self, thread_id: str) -> str | None:
+        def read() -> str | None:
+            with self._connect() as connection:
+                found = connection.execute(
+                    f"select holder from holds where thread_id = ? and until > {NOW}", (thread_id,)
+                ).fetchone()
+            return str(found[0]) if found else None
+
+        return await asyncio.to_thread(read)
 
 
 __all__ = ["SqliteThreads"]

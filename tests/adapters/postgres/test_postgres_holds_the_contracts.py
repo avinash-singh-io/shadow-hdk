@@ -31,7 +31,12 @@ def _fresh(kind: str) -> Any:
     from shadow_hdk.adapters.postgres import PostgresStore, PostgresThreads
 
     with psycopg.connect(URL, autocommit=True) as connection:
-        for table in ("shadow_hdk_rows", "shadow_hdk_versions", "shadow_hdk_threads"):
+        for table in (
+            "shadow_hdk_rows",
+            "shadow_hdk_versions",
+            "shadow_hdk_threads",
+            "shadow_hdk_holds",
+        ):
             connection.execute(f"drop table if exists {table}")
     return PostgresStore(URL) if kind == "store" else PostgresThreads(URL)
 

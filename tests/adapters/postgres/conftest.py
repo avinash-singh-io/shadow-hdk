@@ -14,6 +14,7 @@ TABLES = (
     "shadow_hdk_rows",
     "shadow_hdk_versions",
     "shadow_hdk_threads",
+    "shadow_hdk_holds",
     "checkpoints",
     "checkpoint_blobs",
     "checkpoint_writes",

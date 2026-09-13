@@ -17,13 +17,13 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from shadow_hdk.kernel import EffectProfile, Event, Lease, ThreadRecord
 from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime.items import Fold, as_json
-from shadow_hdk.runtime.threads import Thread
+from shadow_hdk.runtime.threads import Thread, When
 from shadow_hdk.wire.protocol import (
     ACTIVITY,
     APPROVAL_REQUEST,
@@ -251,8 +251,17 @@ class ThreadMethods:
         self.threads.clear()
 
     async def _list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        """Every thread in the store, each row saying who holds it now (D81) — `None` when
+        nobody does, so a page knows which it may resume."""
         host = self._host_or_raise()
-        return {"threads": [_thread_json(t) for t in await host.list()]}
+        store = getattr(host, "threads", None)
+        who = getattr(store, "held_by", None)
+        rows = []
+        for record in await host.list():
+            row = _thread_json(record)
+            row["held_by"] = await who(record.id) if who is not None else None
+            rows.append(row)
+        return {"threads": rows}
 
     async def _fork(self, params: dict[str, Any]) -> dict[str, Any]:
         return {"thread": _thread_json(await self._thread(params).fork())}
@@ -305,12 +314,15 @@ class ThreadMethods:
     # ------------------------------------------------------------------ the turn
 
     async def _turn(self, params: dict[str, Any]) -> dict[str, Any]:
+        """`when` (D81) names what this turn does while one runs: `enqueue` (the default),
+        `reject` — the refusal names the running turn — or `interrupt`."""
         thread = self._thread(params)
         text = str(params.get("text", ""))
+        when = cast(When, str(params.get("when", "enqueue") or "enqueue"))
         fold = Fold()
         count = 0
         # **One fold, both sides of the wire** (D46) — the same one `run` uses.
-        async for event in thread.turn(text):
+        async for event in thread.turn(text, when=when):
             count += 1
             await self._peer.notify(
                 EVENT, {"thread_id": thread.id, "event": json.loads(dump(event, Event))}

@@ -15,10 +15,11 @@ phase: 29
 - [x] records: D79, D80; backlog; changelog; adapters.md; wire.md; the file structure
 
 ## Group 2 — one thread, one holder
-- [ ] `ThreadStore.acquire/renew/release`; the three implementations; the contract suite
-- [ ] `Thread.open/resume` acquire and renew; `ThreadHeld` refused with the holder; `thread/list` `held_by`
-- [ ] `turn/start {when}`: enqueue · reject · interrupt; `TurnRecord.started_as`
-- [ ] records: D81; wire.md
+- [x] `ThreadStore.hold/renew/release/held_by`; the three implementations; the contract suite
+- [x] `Thread.open/resume` hold and renew; `ThreadHeld` refused with the holder; `thread/list` `held_by`
+- [x] `turn/start {when}`: enqueue · reject · interrupt (`TurnRecord.started_as` not added — the record already says)
+- [x] BUG-042 — a second turn refused *no steps left* — found and closed
+- [x] records: D81; wire.md; adapters.md
 
 ## Group 3 — identity on the thread, scope on the rows
 - [ ] `thread/start {principal, attributes}` → the record and every judgement's context

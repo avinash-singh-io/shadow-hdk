@@ -10,7 +10,10 @@ behind `shadow-hdk serve` for a host in any language and behind `a_thread` for a
 
 from __future__ import annotations
 
+import os
+import socket
 import sys
+import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -218,6 +221,9 @@ class ServeHost:
         )
         self.store: Any = self.stores.store
         self.threads: ThreadStore = self.stores.threads
+        self.holder = f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:8]}"
+        """This process's name on every thread it holds (D81): host, pid, a nonce — so a second
+        process on the same store is refused by a name a person can find."""
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
         self.skills = skills_for(self.store)
@@ -358,6 +364,7 @@ class ServeHost:
             provider=called,
             thread_id=thread_id,
             workspace=workspace,
+            holder=self.holder,
         )
         self.provider = called
         return thread
@@ -411,6 +418,7 @@ class ServeHost:
             checkpointer=await self.checkpointer(),
             rules=self.rules,
             modes=self.modes,
+            holder=self.holder,
         )
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:

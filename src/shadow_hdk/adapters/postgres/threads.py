@@ -17,7 +17,12 @@ create table if not exists shadow_hdk_threads (
     created_at text not null,
     archived boolean not null default false,
     record jsonb not null
-)
+);
+create table if not exists shadow_hdk_holds (
+    thread_id text primary key,
+    holder text not null,
+    until timestamptz not null
+);
 """
 
 
@@ -68,6 +73,51 @@ class PostgresThreads(ThreadStore):
         found = await self.get(thread_id)
         if found is not None:
             await self.save(replace(found, archived=True))
+
+    # ------------------------------------------------------------------ one holder (D81)
+
+    async def hold(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        pool = await self._pooled.pool()
+        async with pool.connection() as connection:
+            taken = await connection.execute(
+                "insert into shadow_hdk_holds (thread_id, holder, until) "
+                "values (%s, %s, now() + make_interval(secs => %s)) "
+                "on conflict (thread_id) do update set holder = excluded.holder, "
+                "until = excluded.until "
+                "where shadow_hdk_holds.holder = excluded.holder "
+                "or shadow_hdk_holds.until <= now()",
+                (thread_id, holder, ttl_seconds),
+            )
+            return bool(taken.rowcount > 0)
+
+    async def renew(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        pool = await self._pooled.pool()
+        async with pool.connection() as connection:
+            renewed = await connection.execute(
+                "update shadow_hdk_holds set until = now() + make_interval(secs => %s) "
+                "where thread_id = %s and holder = %s and until > now()",
+                (ttl_seconds, thread_id, holder),
+            )
+            return bool(renewed.rowcount > 0)
+
+    async def release(self, thread_id: str, holder: str) -> None:
+        pool = await self._pooled.pool()
+        async with pool.connection() as connection:
+            await connection.execute(
+                "delete from shadow_hdk_holds where thread_id = %s and holder = %s",
+                (thread_id, holder),
+            )
+
+    async def held_by(self, thread_id: str) -> str | None:
+        pool = await self._pooled.pool()
+        async with pool.connection() as connection:
+            found = await (
+                await connection.execute(
+                    "select holder from shadow_hdk_holds where thread_id = %s and until > now()",
+                    (thread_id,),
+                )
+            ).fetchone()
+        return str(found[0]) if found else None
 
 
 __all__ = ["PostgresThreads"]

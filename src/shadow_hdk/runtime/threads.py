@@ -23,10 +23,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import time
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import JsonValue
 
@@ -79,6 +80,32 @@ from shadow_hdk.runtime.offer import InProcessOffer, Offer
 from shadow_hdk.runtime.session import LeaseMeter
 
 TURN = "turn"
+
+HOLD_SECONDS = 30.0
+"""How long a hold on a thread lives without renewal (D81): a host that died is out of the way
+within half a minute; a live one renews every third of it."""
+
+When = Literal["enqueue", "reject", "interrupt"]
+"""What a second turn does while one runs (D81): wait its turn, be refused, or stop the first."""
+
+
+class ThreadHeld(RuntimeError):
+    """The thread is open in another process (D81): the store says who holds it."""
+
+    def __init__(self, thread_id: str, holder: str) -> None:
+        super().__init__(f"thread {thread_id!r} is held by {holder!r}")
+        self.thread_id = thread_id
+        self.holder = holder
+
+
+class TurnRunning(RuntimeError):
+    """A turn is running and the caller asked not to wait (`when="reject"`, D81)."""
+
+    def __init__(self, thread_id: str, turn_id: str) -> None:
+        super().__init__(f"thread {thread_id!r} is running {turn_id}")
+        self.thread_id = thread_id
+        self.turn_id = turn_id
+
 
 TURN_EFFECTS = EffectProfile(
     reads=ScopeSet(everything=True),
@@ -174,6 +201,34 @@ class InMemoryThreads(ThreadStore):
 
     def __init__(self) -> None:
         self._threads: dict[str, ThreadRecord] = {}
+        self._holds: dict[str, tuple[str, float]] = {}
+        """thread id → (holder, until) on the process's monotonic clock (D81)."""
+
+    def _holder(self, thread_id: str) -> str | None:
+        held = self._holds.get(thread_id)
+        if held is None or held[1] <= time.monotonic():
+            return None
+        return held[0]
+
+    async def hold(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        current = self._holder(thread_id)
+        if current is not None and current != holder:
+            return False
+        self._holds[thread_id] = (holder, time.monotonic() + ttl_seconds)
+        return True
+
+    async def renew(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        if self._holder(thread_id) != holder:
+            return False
+        self._holds[thread_id] = (holder, time.monotonic() + ttl_seconds)
+        return True
+
+    async def release(self, thread_id: str, holder: str) -> None:
+        if self._holder(thread_id) == holder:
+            del self._holds[thread_id]
+
+    async def held_by(self, thread_id: str) -> str | None:
+        return self._holder(thread_id)
 
     async def create(self, thread: ThreadRecord) -> None:
         self._threads[thread.id] = thread
@@ -213,8 +268,15 @@ class Thread:
         checkpointer: Any = None,
         modes: Any = None,
         rules: Any = None,
+        holder: str = "",
+        hold_seconds: float = HOLD_SECONDS,
     ) -> None:
         self._record = record
+        self.holder = holder
+        """Who holds this thread (D81) — the process's name on the store's lease; empty when the
+        thread was opened without one, which takes no hold."""
+        self._hold_seconds = hold_seconds
+        self._renewing: asyncio.Task[None] | None = None
         self._rules = rules
         """The host's act-rule registry (D65), handed to every turn's run."""
         self._agent = agent
@@ -266,8 +328,13 @@ class Thread:
         provider: str = "",
         thread_id: str | None = None,
         workspace: Workspace | None = None,
+        holder: str = "",
+        hold_seconds: float = HOLD_SECONDS,
     ) -> Thread:
         """Start a thread: the record created, the registry served, the provider opened.
+
+        `holder` names this process on the thread's hold (D81): taken here, renewed while the
+        thread is open, released at close; `ThreadHeld` when another process has it.
 
         `workspace` names the roots (D76) — one or many; `root` alone is the one-root workspace.
         The record carries both: `root` the primary for a one-root reader, `roots` the whole.
@@ -300,9 +367,12 @@ class Thread:
             checkpointer=checkpointer,
             modes=modes,
             rules=rules,
+            holder=holder,
+            hold_seconds=hold_seconds,
         )
         if modes is not None and (spec := modes.get(mode)) is not None:
             thread._behaviour = spec.behaviour
+        await thread._take_hold()
         await thread._start()
         return thread
 
@@ -321,9 +391,12 @@ class Thread:
         checkpointer: Any = None,
         modes: Any = None,
         rules: Any = None,
+        holder: str = "",
+        hold_seconds: float = HOLD_SECONDS,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
-        it kept one), the turns kept, the numbering continued."""
+        it kept one), the turns kept, the numbering continued. `ThreadHeld` when another process
+        holds it (D81) — nothing is read as left by a dead host while a live one has the thread."""
         record = await store.get(thread_id)
         if record is None:
             raise KeyError(f"no thread {thread_id!r} in the store")
@@ -338,12 +411,35 @@ class Thread:
             checkpointer=checkpointer,
             modes=modes,
             rules=rules,
+            holder=holder,
+            hold_seconds=hold_seconds,
         )
         if modes is not None and (spec := modes.get(record.mode)) is not None:
             thread._behaviour = spec.behaviour
+        await thread._take_hold()
         await thread._settle_what_the_last_host_left()
         await thread._start()
         return thread
+
+    async def _take_hold(self) -> None:
+        """The hold (D81), and the task that renews it every third of its life. A thread opened
+        without a holder takes none."""
+        if not self.holder:
+            return
+        if not await self._store.hold(self.id, self.holder, ttl_seconds=self._hold_seconds):
+            other = await self._store.held_by(self.id)
+            raise ThreadHeld(self.id, other or "another holder")
+        every = self._hold_seconds / 3
+
+        async def renewing() -> None:
+            while True:
+                await asyncio.sleep(every)
+                if not await self._store.renew(
+                    self.id, self.holder, ttl_seconds=self._hold_seconds
+                ):
+                    return  # lost: the hold lapsed and another took it; nothing to renew
+
+        self._renewing = asyncio.create_task(renewing())
 
     async def _settle_what_the_last_host_left(self) -> None:
         """A turn still `running` on a record nobody is running is one the last host died in
@@ -425,6 +521,13 @@ class Thread:
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await holder
             self._holder = None
+        if self._renewing is not None:
+            self._renewing.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._renewing
+            self._renewing = None
+        if self.holder:
+            await self._store.release(self.id, self.holder)
 
     # ------------------------------------------------------------------ what it is
 
@@ -447,25 +550,39 @@ class Thread:
 
     # ------------------------------------------------------------------ turning
 
-    async def turn(self, text: str) -> AsyncIterator[Event]:
+    async def turn(self, text: str, *, when: When = "enqueue") -> AsyncIterator[Event]:
         """One exchange: the person's text in, the run's events out, the record kept.
 
         The turn is a run of one step, `turn-N`, whose component drives the provider session;
         the provider's tool calls arrive through the registry, attached to this run for the
         turn's duration, and are child runs under the step — so a host folds them under the
         turn's item (D62).
+
+        `when` says what this turn does while another runs (D81): `enqueue` waits its turn (the
+        default); `reject` raises `TurnRunning` and records nothing; `interrupt` stops the
+        running turn — it ends `cancelled`, as `interrupt()` ends it — and starts this one.
         """
+        if when not in ("enqueue", "reject", "interrupt"):
+            raise ValueError(f"when={when!r}: one of enqueue, reject, interrupt")
         if self._holder is None:
             raise RuntimeError("the thread is closed")
+        if self._turning.locked():
+            if when == "reject":
+                raise TurnRunning(self.id, self._record.turns[-1].id)
+            if when == "interrupt":
+                await self.interrupt()
         if self._session is None:
             # An interrupted provider that could not be told was closed; a turn reopens it.
             self._session = await self._open_provider()
-        if (left := self._meter.remaining().ceiling).max_steps <= 0:
-            raise RuntimeError("the thread has no steps left")
-        if self._kept:
-            text = "\n\n".join((*self._kept, text))
-            self._kept.clear()
         async with self._turning:
+            # What is left is read here, under the lock: a running turn reserves everything the
+            # thread has, and a turn that waited its turn (D81) reads the meter after that
+            # reservation settled — read before, it saw nothing left and was refused.
+            if (left := self._meter.remaining().ceiling).max_steps <= 0:
+                raise RuntimeError("the thread has no steps left")
+            if self._kept:
+                text = "\n\n".join((*self._kept, text))
+                self._kept.clear()
             number = len(self._record.turns) + 1
             turn_id = f"{TURN}-{number}"
             run_id = self._ports.clock.new_id()
@@ -969,4 +1086,14 @@ def _call_line(question: PendingQuestion) -> str:
     return f"{question.component}({json.dumps(inputs)})"
 
 
-__all__ = ["TURN", "TURN_EFFECTS", "InMemoryThreads", "Offered", "Thread"]
+__all__ = [
+    "HOLD_SECONDS",
+    "TURN",
+    "TURN_EFFECTS",
+    "InMemoryThreads",
+    "Offered",
+    "Thread",
+    "ThreadHeld",
+    "TurnRunning",
+    "When",
+]

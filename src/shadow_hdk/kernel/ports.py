@@ -325,7 +325,13 @@ class Store(Protocol):
 @runtime_checkable
 class ThreadStore(Protocol):
     """Where threads live (D62). A port, so a product keeps them in its own tables — or does not
-    use threads at all and drives turns directly; the runtime never requires one."""
+    use threads at all and drives turns directly; the runtime never requires one.
+
+    **One thread, one holder** (D81): the store that keeps a thread says who holds it. A hold is
+    a lease — a holder's name and a time to live — taken at open, renewed while the thread is
+    open, released at close, and lapsed when the process that held it died without releasing.
+    The store's own clock decides a lapse: two processes cannot agree on one of theirs.
+    """
 
     async def create(self, thread: ThreadRecord) -> None: ...
 
@@ -334,6 +340,25 @@ class ThreadStore(Protocol):
     async def save(self, thread: ThreadRecord) -> None: ...
 
     async def list(self, *, include_archived: bool = False) -> tuple[ThreadRecord, ...]: ...
+
+    async def archive(self, thread_id: str) -> None: ...
+
+    async def hold(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        """Take the thread for `holder`, or keep it: `True` when it is free, lapsed, or already
+        this holder's; `False` when another holder has it and the hold has not lapsed."""
+        ...
+
+    async def renew(self, thread_id: str, holder: str, *, ttl_seconds: float) -> bool:
+        """Extend a hold this holder has. `False` means it was lost — lapsed and taken."""
+        ...
+
+    async def release(self, thread_id: str, holder: str) -> None:
+        """Let go, if this holder has it; another's hold is not touched."""
+        ...
+
+    async def held_by(self, thread_id: str) -> str | None:
+        """Who holds the thread now, or `None` when nobody does or the hold has lapsed."""
+        ...
 
 
 @runtime_checkable
