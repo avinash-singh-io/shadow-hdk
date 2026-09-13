@@ -4,8 +4,8 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-13 (v0.27.2 — the approval cards; BUG-040)
-> **Current Phase**: **29 — one app server behind every surface** (`phase-29-one-app-server`; opened 2026-09-14 from the research note and the owner's decision: the record chooses its store, a parked run survives, one thread one holder, identity and scope, batteries live, the budget on the record, the field's rules, operations; releases as 0.28.0). Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
+> **Last Updated**: 2026-09-14 (v0.28.0 — Phase 29, one app server behind every surface; D79–D86)
+> **Current Phase**: **none — Phase 29 (one app server behind every surface) is complete and released as v0.28.0**: the record chooses its store (D79), a parked turn survives the host (D80), one thread one holder (D81), identity on the thread and scope on the rows (D82), batteries live (D83), the budget on the record (D84), the rules the field has (D85), operations and the per-run token closed (D86); BUG-041, BUG-042 and ENH-013 closed on the way. Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
 > wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
 > workflow for eighteen names, which never ran; v0.27.0 makes them one — `shadow-hdk` with
@@ -14,12 +14,17 @@ type: Status
 > The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
 > `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
 > chosen per thread and added live, the environment and the provider following the mode
-> (BUG-032, D76), minted skills kept. Next: Phase 29 (context engineering) and Phase 30
+> (BUG-032, D76), minted skills kept. Next: Phase 30 (context engineering) and Phase 31
 > (collaboration), the owner's call.
 >
-> 1,439 tests; mypy strict over 377 files; one distribution, `shadow-hdk`, at **0.27.2**, MIT, on PyPI.
+> 1,514 tests; mypy strict over 400 files; one distribution, `shadow-hdk`, at **0.28.0**, MIT, on PyPI.
 >
-> **Latest Release**: **v0.27.2**, released 2026-09-13 — the React example's approval cards:
+> **Latest Release**: **v0.28.0**, released 2026-09-14 — Phase 29, one app server behind every
+> surface (D79–D86): `[store] url` (sqlite | Postgres, the `[postgres]` extra), a parked turn
+> resumed after a restart, a thread's hold, `principal`/`attributes` and `scope`, batteries as
+> rows, `budget`/`spent` on the record, `ask` and `deny` rules in every mode, `/healthz` and
+> `admin/*`. Contract change (new parameters and methods; the `ThreadStore` port grew), so a
+> *Pins* row. Before it **v0.27.2**, released 2026-09-13 — the React example's approval cards:
 > a call the mode asks about is one item, named and kept across its park (BUG-040). Before it
 > **v0.27.1** — the example's first connect: the SSE stream opens with a frame (BUG-038), the
 > TypeScript client runs in a browser and is a package (BUG-039). Before it **v0.27.0** — one distribution with extras (D78);
@@ -89,6 +94,8 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 | 27 | Batteries and the facade | Complete, merged | **v0.24.0** |
 | 28 | The workspace | Complete, merged | **v0.25.0** |
 | — | the packages as published artefacts; published to PyPI | Complete, merged | **v0.26.0**, **v0.26.1** |
+| — | one distribution with extras (D78); the React example's finds | Complete, merged | **v0.27.0**, **v0.27.1**, **v0.27.2** |
+| 29 | One app server behind every surface | Complete, merged | **v0.28.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -109,7 +116,6 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 29 — one app server behind every surface | `phase-29-one-app-server` | active | group 1 of 7 (the store as a choice; a parked run survives) |
 
 ## Upcoming Phases
 

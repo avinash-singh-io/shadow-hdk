@@ -200,3 +200,32 @@ Managed Agents authenticate at the API. The debt was a design from before the sh
 
 **Not built.** Metrics endpoints, structured logs, rate limits: a product's platform has these;
 the harness gives it a health answer and the listings to build them from.
+
+### [NOTE] 2026-09-14 — Closed: seven groups, one release
+
+Every group landed on the phase branch with CI green (the Postgres service container running
+the contract suites on every push), RED first, the load-bearing assertions mutation-checked
+(group 1: the removal of a settled question, the sqlite checkpointer, the `parked` marking, the
+host's checkpointer on the wire; group 2: the renewal task, the release at close). Two bugs found
+on the way and closed in the same groups: BUG-041 (a cancelled reader of `run()` hung on a drive
+waiting for nobody) and BUG-042 (a second turn refused *no steps left* while one ran); ENH-013
+closed by D84. Released as **v0.28.0**: a contract change (new parameters on `thread/start` and
+`turn/start`, `pending` on `thread/resume`, `held_by`/`principal`/`attributes`/`budget`/`spent`
+on thread rows, `admin/*`, `/healthz`, `version` in `initialize`; the `ThreadStore` port grew by
+`archive`, `hold`, `renew`, `release`, `held_by`), the TypeScript client grown to match, the
+React example to be re-pinned and its tour run once against the wheel.
+
+## Verification Evidence
+
+Captured fresh 2026-09-14 on the phase branch at close, before landing, with
+`SHADOW_HDK_TEST_POSTGRES_URL=postgresql://localhost/shadow_hdk_test` (the desk's Postgres 16.14):
+
+- `uv run ruff check` → `All checks passed!`
+- `uv run ruff format --check` → exit 0
+- `uv run mypy` → `Success: no issues found in 400 source files`
+- `uv run pytest -q --timeout 120 -p no:cacheprovider --ignore=tests/runtime/test_benchmark.py` → `1524 passed, 2 skipped, 12 deselected, 85 warnings in 151.83s (0:02:31)`
+- `uv run pytest tests/runtime/test_benchmark.py -q -s` → `100 steps in 10 nested subgraphs: 63.6 ms (0.636 ms/step, best of 9)`; `4 passed`
+- `tests/test_versions.py` → EXPECTED `0.28.0`
+- CI on every group's push: `ci` green ×7 (`gh run list --branch phase-29-one-app-server`)
+- RED first, every group: group 1 `No module named 'shadow_hdk.serve.stores'`, `Thread.open() got an unexpected keyword argument 'checkpointer'` (none — it existed unpassed: the served thread had no checkpointer), the crash image's `pending` empty, `wait_for(reader, 2)` → `TimeoutError` (BUG-041); group 2 the four contract tests of a hold, `Thread.open() got an unexpected keyword argument 'holder'`, `RuntimeError: the thread has no steps left` (BUG-042); group 3 `Thread.open() got an unexpected keyword argument 'principal'`, `Context(... principal=None ...)` on the tool step; group 4 `assert None == {'id': 'reference', 'on': True}`; group 5 `unexpected keyword argument 'budget'`; group 6 nine of eleven failing, `assert 'rule' in "mode 'read-only' does not permit this"`; group 7 four of four failing
+- Mutations killed: group 1 ×4 (`2 failed`, `4 failed`, `1 failed`, and the settled-question removal only after `test_a_question_answered_mid_turn_is_off_the_record_before_the_next_opens` was added — the first version of the test could not tell), group 2 ×2 (`2 failed`, `3 failed`)

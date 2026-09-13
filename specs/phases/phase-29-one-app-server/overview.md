@@ -2,7 +2,7 @@
 type: Phase
 phase: 29
 name: one-app-server
-status: active
+status: complete
 topics: [store, postgres, checkpointer, parked, lease, concurrency, principal, scope, batteries, budget, rules, operations]
 deps: [phase-28-the-workspace]
 ---

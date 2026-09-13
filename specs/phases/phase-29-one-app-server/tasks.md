@@ -42,5 +42,5 @@ phase: 29
 - [x] the per-run token closed as a decision (D86); wire.md
 
 ## The release
-- [ ] schemas regenerated; the TypeScript client grown and its smoke green; the demo's tour updated and run once against the wheel
-- [ ] the architecture documents; Verification Evidence fresh in this history; 0.28.0 tagged, released, on PyPI; the demo pinned; the board's Pins row
+- [x] schemas unchanged (none of the grown contracts is a published schema); the TypeScript client grown and built; the demo's tour updated and run once against the wheel — after the release, in `shadow-hdk-demo`
+- [x] the architecture documents; Verification Evidence fresh in this history; 0.28.0 tagged, released, on PyPI; the demo pinned; the board's Pins row
