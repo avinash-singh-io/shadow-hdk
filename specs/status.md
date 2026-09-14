@@ -4,8 +4,8 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — Phase 31 complete; Epic 0008 continues
-> **Current Phase**: **Phase 32 — one agent surface** is ready to start on the stacked epic branch.
+> **Last Updated**: 2026-09-15 — Phase 32 started; Epic 0008 continues
+> **Current Phase**: **Phase 32 — one agent surface** is active on the stacked epic branch.
 > Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
 > requirements before anything is built on their selection. Phase 33 (authority at the act) remains
 > derived and independent after 31. The epic releases once as **v0.30.0**.
@@ -117,7 +117,7 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 32 — one agent surface | `phase-32-one-agent-surface` | ready | strict RED evaluator is first; no implementation yet |
+| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 0 — lock the strict RED lifecycle evaluator |
 
 ## Unreleased Epic Checkpoints
 
