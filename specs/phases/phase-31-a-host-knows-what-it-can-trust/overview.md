@@ -2,7 +2,7 @@
 type: Phase
 status: in-progress
 epic: production-boundary
-tags: []
+tags: [capabilities, requirements, providers, environment, compatibility, evidence, wire]
 deps: []
 ---
 
