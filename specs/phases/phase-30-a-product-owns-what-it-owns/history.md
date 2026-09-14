@@ -109,3 +109,18 @@ nothing.
 copying our tests, and wrote its own provider double (Intent Studio's 0043 P2); and it
 subclassed `Approvals` to change the runtime's side (`_CardAsks`) because the runtime's side and
 the host's were one object.
+
+### [DECISION] 2026-09-14 — D92: governance composed by routing; refusals a client can switch on
+
+**Decision.** `adapters.modes.Routed(by_component={...}, otherwise=...)` — a `GovernancePort`
+that hands each judgement to the port named for the component in the context and the rest to
+`otherwise`; total, held to the governance contract. `ERROR_KINDS` in `wire/protocol.py` is the
+vocabulary of `error.data.kind`: `thread_held {thread_id, holder}`, `turn_running {thread_id,
+turn_id}`, `not_found` (a `KeyError`, a missing file), `invalid` (a `ValueError`), `version_mismatch`,
+`unknown_method`, `refused` (every other application *no*), `gone`; `peer.py` writes it beside
+the code and the sentence, naming the runtime's exceptions by class name so the wire's core
+imports nothing above it; the TypeScript client raises `RemoteError` with `kind` and `detail`.
+
+**Why.** A product with two governments (its record's constitution, the machine's mode) wrote a
+port subclass to route between them; a client switching on a refusal had a sentence and, by
+accident, a class name. Both are now contracts.

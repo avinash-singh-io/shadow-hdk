@@ -1,9 +1,9 @@
 """Every implementation of a port is held to that port's contract, or exempt with a reason (TD-004).
 
 The contract suites in `shadow_hdk.testing.contracts` (shipped, D91) are what makes a port a port
-rather than a convention: an unknown id is an observation and not an exception, a registration round-trips
-through JSON, an observation does too. Seven of fourteen adapters ran against them, and the other
-seven were the ones nothing held to the shape.
+rather than a convention: an unknown id is an observation and not an exception, a registration
+round-trips through JSON, an observation does too. Seven of fourteen adapters ran against them,
+and the other seven were the ones nothing held to the shape.
 
 **That is BUG-007's shape.** There, `mypy_path` omitted three packages and the wire — the one
 package outside the net — was where nine errors sat. A net that covers half the surface reports on
@@ -57,6 +57,7 @@ CONTRACTED: dict[str, str] = {
     "ModeGovernance": "tests/adapters/modes/test_modes.py",
     "OpenTelemetryObserver": "tests/adapters/otel/test_otel_is_an_observer.py",
     "RuleGovernance": "tests/adapters/modes/test_rules.py",
+    "Routed": "tests/adapters/modes/test_routed_governance.py",
     "SkillComponents": "tests/adapters/agent/test_the_skill_registry_is_a_component.py",
     "StdoutObserver": "tests/adapters/basic/test_basic.py",
     "StdoutSink": "tests/adapters/basic/test_basic.py",

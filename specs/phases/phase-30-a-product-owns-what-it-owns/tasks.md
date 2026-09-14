@@ -19,7 +19,7 @@ phase: 30
 - [x] `Questions` port; `Approvals` implements it; records: D91
 
 ## Group 4 — routed governance; typed refusals
-- [ ] `Routed`; `ERROR_KINDS` and `error.data`; the TypeScript client's `RemoteError.kind`; records: D92
+- [x] `Routed`; `ERROR_KINDS` and `error.data`; the TypeScript client's `RemoteError.kind`; records: D92
 
 ## Group 5 — a parked run behind our port; the record versioned
 - [ ] `RunStore`, the saver over it, `InMemoryRunStore`, the contract and durability tests

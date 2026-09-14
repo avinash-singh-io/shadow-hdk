@@ -130,6 +130,34 @@ const SESSION_HEADER = "x-shadow-hdk-session";
 
 type Pending = { resolve: (value: JsonValue) => void; reject: (reason: Error) => void };
 
+/** What `error.data.kind` may say (D92) — the vocabulary a page switches on. */
+export type ErrorKind =
+  | "thread_held"
+  | "turn_running"
+  | "not_found"
+  | "invalid"
+  | "version_mismatch"
+  | "unknown_method"
+  | "refused"
+  | "gone";
+
+/** The harness refused or failed a call: its code, its sentence, and a `kind` to switch on
+ *  with the detail a page acts on — a held thread's `holder`, a running turn's `turn_id`. */
+export class RemoteError extends Error {
+  readonly code: number;
+  readonly kind: ErrorKind;
+  readonly detail: { [key: string]: JsonValue };
+  constructor(code: number, message: string, data: JsonValue) {
+    super(message);
+    this.name = "RemoteError";
+    this.code = code;
+    const record = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+    const { kind, ...detail } = record as { kind?: ErrorKind } & { [key: string]: JsonValue };
+    this.kind = kind ?? "refused";
+    this.detail = detail;
+  }
+}
+
 export class HarnessClient {
   private readonly address: string;
   private readonly token?: string;
@@ -238,8 +266,8 @@ export class HarnessClient {
       if (!waiting) return;
       this.pending.delete(frame.id);
       if ("error" in frame && frame.error) {
-        const error = frame.error as { message?: string };
-        waiting.reject(new Error(error.message ?? JSON.stringify(frame.error)));
+        const error = frame.error as { code?: number; message?: string; data?: JsonValue };
+        waiting.reject(new RemoteError(error.code ?? -32000, error.message ?? JSON.stringify(frame.error), error.data ?? null));
       } else {
         waiting.resolve((frame.result ?? null) as JsonValue);
       }

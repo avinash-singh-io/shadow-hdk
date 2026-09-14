@@ -132,6 +132,10 @@ fresh, its memory kept (`AgentPort.open(resume=)`).
 - **Approvals cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Approvals` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
   environment, sent as the first line before MCP.
+- **Refusals are typed** (D92): every error carries `data.kind` from the published `ERROR_KINDS`
+  — `thread_held {thread_id, holder}`, `turn_running {thread_id, turn_id}`, `not_found`,
+  `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone` — beside the code and the
+  sentence; the TypeScript client raises `RemoteError` with `kind` and `detail`.
 - **Operations** (D86): `GET /healthz` answers without a bearer — ok, the kit's version, the
   sessions and threads open — for a load balancer, saying nothing a stranger could use;
   `initialize` says the kit's version beside the protocol's; `admin/sessions` and `admin/threads`,

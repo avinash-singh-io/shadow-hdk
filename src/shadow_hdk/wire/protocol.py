@@ -110,6 +110,22 @@ HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAI
 RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})
 
 
+ERROR_KINDS: tuple[str, ...] = (
+    "thread_held",
+    "turn_running",
+    "not_found",
+    "invalid",
+    "version_mismatch",
+    "unknown_method",
+    "refused",
+    "gone",
+)
+"""What `error.data.kind` may say (D92) — the vocabulary a client switches on, beside the code
+and the sentence. `thread_held` carries `thread_id` and `holder`; `turn_running` carries
+`thread_id` and `turn_id`; the rest carry nothing more. `refused` is every other application
+*no*; `gone` the other end leaving."""
+
+
 class WireError(Exception):
     """Something the protocol itself refused."""
 
