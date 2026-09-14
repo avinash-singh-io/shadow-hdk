@@ -109,3 +109,16 @@ job only runs when asked.
 
 **`test_bare_harness.py`** — an MCP-shaped stub component, an agent component, a sub-agent, allow-all
 governance, the stdout sink; the marker comes off, and the CI job fails if it is ever re-added.
+
+## Cases — Phase 31
+
+- `kernel/test_capabilities.py` locks the closed capability vocabularies, evidence validation,
+  conservative unknown, total mismatch ordering and JSON round trips.
+- provider tests prove absent facts remain unknown, malformed nested records fail by path, shipped
+  Claude Code/Codex/OpenCode matrices are explicit, and discovery carries the same record.
+- environment tests use fake matrices for every axis and the machine's live confinement proof;
+  workspace writes and denied network are not allowed to imply confined reads or denied secrets.
+- construction tests require refusal before agent open and identical accepted selections through
+  `a_thread`, `Harness`, `ServeHost`, JSON-RPC protocol 2 and the generated TypeScript client.
+- `wire/test_schemas.py` pins the schema publisher to this repository, preventing a default build
+  from silently writing generated contracts outside the checkout (BUG-045).

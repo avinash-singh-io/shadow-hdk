@@ -6,6 +6,11 @@ The shipped composition, behind the wire. `shadow-hdk serve harness.toml --http`
 offer, and whichever provider is signed in here — behind the wire's thread methods, so a host in
 any language opens a thread, turns it, answers what it asks, switches modes and reads the store.
 
+`ServeHost(requirements=ExecutionRequirements(...))` sets the process default, and
+`thread/start {requirements: ...}` may narrow it per thread. Provider facts and the environment's
+proven boundary are selected before the agent opens; a mismatch is typed and complete. Protocol 2
+adds `providers/list`, `capabilities/check`, and the accepted `capabilities` on start/resume.
+
 ```toml
 # harness.toml — what serve needs now; the full facade is Phase 27
 [environment]

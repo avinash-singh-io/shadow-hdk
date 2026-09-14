@@ -12,6 +12,7 @@ What is in it, and where it is designed (`intent-ecosystem/vision/09-the-agentic
 | `composition` | `Invoke · Sequence · FanOut · Until · Await`, `Composition` | §5 |
 | `observations` | `Completed · Refused · Asked · Failed · Pending`, `Proposal` | §6 |
 | `leases` | `Lease` with a ceiling and a floor, and `carve` | §7 |
+| `capabilities` | provider/environment facts and evidence, host requirements, total compatibility and selection | D96–D98 |
 | `events` | `Started · Composed · Invoked · Observed · Proposed · Refused · Asked · Spawned · Ended` | §7 |
 | `ports` | the six protocols a host or adapter implements | §3, §7 |
 | `contracts` | JSON Schema export and the round-trip helpers | §3b |

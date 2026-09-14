@@ -69,3 +69,11 @@ Affects-specs: specs/architecture/wire.md; specs/architecture/testing.md
 Detail: The documented module command resolved its default two directories above the repository and created an external generated schema directory. BUG-045 records the defect; the output was inspected and removed, a failing exact-target test was added, and the default now resolves to this repository.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-15 — Capability truth is published at every consumer door
+Topics: capabilities, requirements, provider-evidence, environment, wire, testing
+Affects-phases: phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface, phase-33-authority-at-the-act
+Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md; README.md; docs/consuming.md; docs/packages/kernel.md; docs/packages/providers.md; docs/packages/runtime.md; docs/packages/serve.md; docs/packages/wire.md; docs/migrations/0.30.md
+Detail: The additive Phase 31 contracts are now recorded in the constitutional specs, package guides and consumer migration note. The matrix preserves provider differences and the environment note explicitly distinguishes confined writes and denied network from machine-wide reads and ambient secrets; 53 focused document, parity and schema checks pass.
+
+---

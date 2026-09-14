@@ -51,9 +51,11 @@ whichever it is.
 ```
 host ──► runtime   thread/start {root | roots: [{name, path}…], mode, provider, name,
                                  principal, attributes,                     (who it is for — D82)
-                                 budget: {steps, seconds, cents}}           (its own ceiling — D84)
+                                 budget: {steps, seconds, cents},           (its own ceiling — D84)
+                                 requirements: {provider, environment}}     (what the host will trust — D96)
                        → thread_id · root (the primary) · roots · environment (the sandbox's mode)
                          · mode · modes (in the thread's scope) · principal · attributes
+                         · capabilities (the accepted provider/environment selection)
 host ──► runtime   thread/resume → … · turns · pending  (the questions the last host left — D80)
 host ──► runtime   thread/close · list (each row: held_by — D81) · fork · rollback · archive
 host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
@@ -76,6 +78,8 @@ host ──► runtime   modes/list · rules/list {thread_id?}   everything, or 
 host ──► runtime   tools/list {thread_id}        what the agent is offered now, each with the mode's
                                                  judgement (allow · ask · refuse) and its source (D73)
 host ──► runtime   skills/list                   the composition's skills, with their sources (D73)
+host ──► runtime   providers/list                detection plus the evidence-backed capability record
+host ──► runtime   capabilities/check            prove and compare a candidate without opening an agent/thread
 host ──► runtime   files/list · files/read {root, path}   under the thread's roots only (D69, D76)
 host ◄── runtime   event · item · activity       (tagged with the thread; one fold, runtime-side — D46)
 host ◄── runtime   approval_request · input_request · request_withdrawn
@@ -94,6 +98,14 @@ else — the studio is that page. A resident provider is told the catalogue chan
 (`notifications/tools/list_changed`) and, because Claude Code was measured to keep its list
 anyway (BUG-032), is reopened on its own session after a mode change or a root added — its list
 fresh, its memory kept (`AgentPort.open(resume=)`).
+
+**Protocol 2 is the capability boundary (Phase 31).** `thread/start` and the persisted version-3
+thread record carry `ExecutionRequirements`; `thread/resume` rechecks them rather than trusting an
+old selection. Success returns the complete accepted `ExecutionSelection`. Failure is the typed
+`capability_mismatch` error with every provider-then-environment gap, required and available values,
+and the evidence used. Unknown never satisfies an explicit requirement. `providers/list` exposes
+facts; `capabilities/check` proves and compares a candidate without opening its agent or creating a
+thread. JSON Schema and the generated TypeScript client publish the same shapes and protocol number.
 
 ## Rules already fixed
 

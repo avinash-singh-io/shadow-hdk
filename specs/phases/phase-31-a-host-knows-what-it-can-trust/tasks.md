@@ -29,6 +29,6 @@ epic: production-boundary
 - [x] Verify serve, wire, generated-client and parity suites
 
 ## Group 4 — Evidence, docs and epic checkpoint
-- [/] Publish the capability matrix and 0.29.1 migration note; record known unknowns without overstating confinement
+- [x] Publish the capability matrix and 0.29.1 migration note; record known unknowns without overstating confinement
 - [ ] Run ruff check, format check, mypy strict, full pytest, document invariants, schema drift and benchmark
 - [ ] Append phase evidence/history, mark Phase 31 complete, and derive Phases 32 and 33 without releasing

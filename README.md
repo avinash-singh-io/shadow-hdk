@@ -480,6 +480,34 @@ a phase — `opencode` was added without a line of Python. And the selection sur
 adapter: transports declare themselves through entry points, so a third party can ship one this
 repository has never heard of.
 
+Before a provider opens, a product may require the execution facts it depends on. Shadow compares
+those requirements with the provider record and the environment's proven boundary; an absent fact
+is `unknown` and does not satisfy an explicit requirement.
+
+| shipped agent | tool path | session | interrupt | stream | reasoning | tokens | cost |
+|---|---|---|---|---|---|---|---|
+| Claude Code | controlled | resumable | native | live | yes | yes | yes |
+| Codex CLI | uncontrolled | resumable | terminate | live | unknown | yes | no |
+| OpenCode | controlled | process | none | final | unknown | unknown | unknown |
+
+```python
+from shadow_hdk.kernel import ExecutionRequirements, ProviderRequirements
+from shadow_hdk.serve import Harness
+
+harness = Harness(
+    ".",
+    requirements=ExecutionRequirements(
+        provider=ProviderRequirements(tool_path="controlled", streaming="live")
+    ),
+)
+```
+
+The evidence and measurement date live beside each value in the provider file. Over protocol 2,
+`providers/list` returns those facts and `capabilities/check` tests a candidate without opening its
+agent or a thread; `thread/start` returns the accepted selection or a typed `capability_mismatch`.
+See [migrating from 0.29.1 to 0.30](docs/migrations/0.30.md) for the additive Python contract and
+the wire-version change.
+
 The trade, stated plainly: when a subscription drives, **its** loop runs, not ours — our patterns
 and compositions do not apply (D43). You cannot buy an agent and also own its loop. If you need our
 loop, that is what `ModelPort` is for.
@@ -500,6 +528,12 @@ env = await LocalEnvironment.open(Path("./work"), mode="workspace-write")
 
 `SandboxEnvironment` is the same six operations in a box somebody else built — OpenSandbox first —
 proven by two denials (D50).
+
+The capability report does not turn those two proofs into broader claims. On the measured macOS
+workspace mode, writes are confined to the workspace and network is denied, while reads are
+machine-wide and process secrets are ambient. Require `reads_within`, `writes_within`, denied
+network/secrets or `proven=True` only when the product genuinely needs those properties; Shadow
+will refuse construction when the current environment cannot establish them.
 
 A **workspace is one or many roots** (D76) — the primary, where a relative path resolves, and
 the rest addressed by name (`sales/notes.md`), the shape of VS Code's multi-root, Claude Code's

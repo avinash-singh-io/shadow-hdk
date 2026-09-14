@@ -128,6 +128,27 @@ noted fallback, not adopted: two libraries for one job is a smell.
 **Usage is honest.** A provider that reports no token count yields `Usage(None, None, None)` —
 *unknown*, never zero. The meter treats unknown as unknown.
 
+**Selection is evidence-backed (Phase 31, D96–D98).** Every provider record carries a typed
+`ProviderCapabilities`: tool path (`controlled` through `uncontrolled`), session continuity,
+interruptibility, streaming, reasoning and token/cost reporting. Each fact may carry measured,
+derived, declared or unknown evidence; omission means `unknown`, never permission. `detect()` keeps
+that record on `Available`, so discovery and construction compare the same facts. A host states
+`ProviderRequirements`; the total compatibility check reports every mismatch in stable axis order
+and construction refuses before the provider is opened.
+
+The shipped records are deliberately unequal rather than normalized into a fictional common
+denominator:
+
+| provider | tool path | session | interrupt | stream | reasoning | tokens | cost |
+|---|---|---|---|---|---|---|---|
+| Claude Code | controlled | resumable | native | live | yes | yes | yes |
+| Codex CLI | uncontrolled | resumable | terminate | live | unknown | yes | no |
+| OpenCode | controlled | process | none | final | unknown | unknown | unknown |
+
+Those are facts measured or derived at the dates in the provider files, not promises about future
+versions. A third-party or handed provider starts entirely unknown unless its adapter supplies an
+explicit record.
+
 ## The modes adapter — governance as data
 
 ```python
@@ -308,6 +329,15 @@ it refuses a re-open honestly — a second root or another mode there is another
 Every command runs on the runtime's leash inside the box — a timeout, a capped output, the
 operator's environment withheld, the process tree killed with the step (D35). Widening — *may I
 read elsewhere?* — is an `Ask`, not a tool.
+
+`capabilities_of(isolation, mode)` projects the effective environment into
+`EnvironmentCapabilities`: maximum read/write reach, network posture, secret posture and whether
+the boundary was proven. Requirements are upper bounds (`reads_within`, `writes_within`) plus
+optional denied-network, denied-secrets and proof requirements. On the measured macOS local
+workspace mode, writes are workspace-confined and network is denied, while reads remain
+machine-wide and process secrets remain ambient; the report says exactly that. `LocalEnvironment`
+and `SandboxEnvironment` reject an incompatible `EnvironmentRequirements` with the same typed
+`IncompatibleCapabilities` result used at every other construction door.
 
 ## Contract suites — what every adapter must pass, and what a product runs against its own
 
