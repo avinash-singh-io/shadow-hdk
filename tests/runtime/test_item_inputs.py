@@ -42,3 +42,12 @@ def test_an_over_limit_projection_is_explicit_instead_of_silently_cut() -> None:
             "bytes": len(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()),
         }
     }
+
+
+def test_the_exact_byte_limit_is_kept() -> None:
+    empty_size = len(json.dumps({"text": ""}, separators=(",", ":")).encode())
+    payload = {"text": "x" * (ITEM_INPUT_BYTES - empty_size)}
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+
+    assert len(encoded) == ITEM_INPUT_BYTES
+    assert items([_invoked(payload)])[0].inputs == payload

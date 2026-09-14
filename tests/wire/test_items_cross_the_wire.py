@@ -96,6 +96,13 @@ async def test_the_steps_that_crossed_are_the_steps_the_events_fold_to() -> None
     assert [s.outcome for s in host.items] == [s.outcome for s in items(events)]
 
 
+async def test_invocation_inputs_cross_on_the_folded_item_without_client_reconstruction() -> None:
+    host, _events = await over_a_loopback(reasoning="why this input matters")
+
+    assert host.items[0].component == "thinks"
+    assert host.items[0].inputs == {"thought": "why this input matters"}
+
+
 async def test_a_thought_crosses_the_wire_inside_its_step() -> None:
     """The twelfth kind, end to end: `Reasoning` is in the union, so it crosses as an event — and
     the step it folds into carries it."""

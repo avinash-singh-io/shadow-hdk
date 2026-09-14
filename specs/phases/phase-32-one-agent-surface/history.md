@@ -53,3 +53,11 @@ Affects-specs: specs/architecture/adapters.md#The agent adapter; docs/migrations
 Detail: ModelAgent reuses the existing governed model loop under the same Thread, host selection and product-facing lifecycle as a CLI-owned agent. The adapter keeps model usage honest when unreported, maps a parked child step back to its durable run for later settlement, and cancels an active provider call on Thread.interrupt; 187 focused lifecycle tests and three destructive mutations verify routing, cancellation and parked-child identity.
 
 ---
+
+### [FEATURE] 2026-09-15 — Item carries the invocation inputs once
+Topics: item-inputs, agent-surface, wire, typescript, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/wire.md#The thread, crossed; docs/migrations/0.30.md
+Detail: The shared Fold now projects each Invoked input into Item.inputs, preserves it through reopen/freeze and the wire, and emits an explicit byte-counted omission marker above the 64 KiB canonical JSON boundary. Python contracts, the published schema and generated TypeScript all carry the field; 67 focused checks and three destructive mutations verify retention, the exact bound and crossed projection.
+
+---

@@ -18,12 +18,12 @@ epic: production-boundary
 - [x] Verify model/CLI parity for turn, parking, holding, spend, cancellation, resume and activity
 
 ## Group 2 — The item says what was invoked
-- [/] Carry bounded canonical `Item.inputs` through the fold and Python contracts
-- [ ] Carry the field through wire, schemas and generated TypeScript without client-side reconstruction
-- [ ] Verify fold history, JSON round trips, schema drift and TypeScript compile
+- [x] Carry bounded canonical `Item.inputs` through the fold and Python contracts
+- [x] Carry the field through wire, schemas and generated TypeScript without client-side reconstruction
+- [x] Verify fold history, JSON round trips, schema drift and TypeScript compile
 
 ## Group 3 — One reusable stream session
-- [ ] Extract monotone ids, bounded replay, single attachment, cursor and grace expiry behind an injected clock
+- [/] Extract monotone ids, bounded replay, single attachment, cursor and grace expiry behind an injected clock
 - [ ] Make HTTP/SSE consume the shared session and remove the private duplicate
 - [ ] Verify in-process state-machine/property tests and the existing D94 reconnect integrations
 

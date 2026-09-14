@@ -23,9 +23,12 @@ record that ends mid-step — still folds; the last step says `running`.
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator, Iterable
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal
+
+from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import (
@@ -54,6 +57,14 @@ Outcome = Literal[
     "acted",
 ]
 
+ITEM_INPUT_BYTES = 64 * 1024
+"""Maximum canonical JSON size duplicated into an Item projection.
+
+The authoritative ``Invoked`` event retains the whole value. An item is a render projection and
+can be emitted repeatedly on live/client surfaces, so a larger input becomes one explicit marker
+instead of an ambiguous string cut or an unbounded second copy.
+"""
+
 
 @dataclass(frozen=True)
 class Item:
@@ -67,6 +78,8 @@ class Item:
     run_id: RunId
     step: StepId
     component: str | None = None
+    inputs: JsonValue = None
+    """Canonical inputs, or a typed JSON omission marker when the projection is too large."""
     reasoning: str = ""
     outcome: Outcome = "running"
     observation: Observation | None = None
@@ -87,6 +100,7 @@ class _Open:
     run_id: RunId
     step: StepId
     component: str | None = None
+    inputs: JsonValue = None
     reasoning: list[str] = field(default_factory=list)
     outcome: Outcome = "running"
     observation: Observation | None = None
@@ -101,6 +115,7 @@ class _Open:
             run_id=self.run_id,
             step=self.step,
             component=self.component,
+            inputs=self.inputs,
             reasoning="".join(self.reasoning),
             outcome=self.outcome,
             observation=self.observation,
@@ -167,6 +182,7 @@ class Fold:
             run_id=waited.run_id,
             step=waited.step,
             component=waited.component,
+            inputs=waited.inputs,
             reasoning=[waited.reasoning] if waited.reasoning else [],
             usage=waited.usage,
             at=waited.at,
@@ -184,6 +200,7 @@ class Fold:
             case Invoked():
                 opened = self._step(event.run_id, event.step)
                 opened.component = event.component
+                opened.inputs = _project_inputs(event.inputs)
                 opened.at = event.at
             case Observed():
                 opened = self._step(event.run_id, event.step)
@@ -275,6 +292,24 @@ async def run_items(events: AsyncIterator[Event], *, nested: bool = False) -> As
             yield done
 
 
+def _project_inputs(value: JsonValue) -> JsonValue:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+    if len(encoded) <= ITEM_INPUT_BYTES:
+        return value
+    return {
+        "$shadow": {
+            "kind": "omitted",
+            "reason": "too_large",
+            "bytes": len(encoded),
+        }
+    }
+
+
 def as_json(item: Item) -> dict[str, Any]:
     """The projection, as a client on the wire receives it."""
     from shadow_hdk.kernel.contracts import adapter_for
@@ -283,4 +318,4 @@ def as_json(item: Item) -> dict[str, Any]:
     return dumped
 
 
-__all__ = ["Fold", "Item", "Outcome", "as_json", "items", "run_items"]
+__all__ = ["ITEM_INPUT_BYTES", "Fold", "Item", "Outcome", "as_json", "items", "run_items"]

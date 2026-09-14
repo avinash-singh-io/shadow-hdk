@@ -177,6 +177,10 @@
           "default": null,
           "title": "Component"
         },
+        "inputs": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
         "observation": {
           "anyOf": [
             {

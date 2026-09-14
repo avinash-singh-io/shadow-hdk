@@ -45,6 +45,9 @@ export interface Item {
 at?: At
 children?: Children
 component?: Component
+inputs?: {
+[k: string]: unknown
+}
 observation?: Observation
 outcome?: Outcome
 parent?: Parent

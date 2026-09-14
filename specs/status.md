@@ -117,7 +117,7 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 2 — carry bounded invocation inputs; Group 1 green |
+| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 3 — extract one reusable stream session; Groups 1–2 green |
 
 ## Unreleased Epic Checkpoints
 
