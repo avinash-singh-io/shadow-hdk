@@ -5,6 +5,17 @@ this package; this package depends on nothing but pydantic, and only for the pub
 """
 
 from shadow_hdk.kernel.activity import Activity
+from shadow_hdk.kernel.capabilities import (
+    CapabilityEvidence,
+    CapabilityMismatch,
+    Compatibility,
+    EnvironmentCapabilities,
+    EnvironmentRequirements,
+    ExecutionRequirements,
+    ProviderCapabilities,
+    ProviderRequirements,
+    check_compatibility,
+)
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -117,6 +128,15 @@ from shadow_hdk.kernel.threads import (
 from shadow_hdk.kernel.workspace import Root, Workspace
 
 __all__ = [
+    "CapabilityEvidence",
+    "CapabilityMismatch",
+    "Compatibility",
+    "EnvironmentCapabilities",
+    "EnvironmentRequirements",
+    "ExecutionRequirements",
+    "ProviderCapabilities",
+    "ProviderRequirements",
+    "check_compatibility",
     "Root",
     "Workspace",
     "Root",

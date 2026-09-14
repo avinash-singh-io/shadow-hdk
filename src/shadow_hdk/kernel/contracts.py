@@ -11,6 +11,12 @@ from typing import Any, overload
 
 from pydantic import JsonValue, TypeAdapter
 
+from shadow_hdk.kernel.capabilities import (
+    Compatibility,
+    EnvironmentCapabilities,
+    ExecutionRequirements,
+    ProviderCapabilities,
+)
 from shadow_hdk.kernel.components import Component, Registration
 from shadow_hdk.kernel.composition import Composition
 from shadow_hdk.kernel.effects import EffectProfile
@@ -26,6 +32,10 @@ from shadow_hdk.kernel.ports import (
 from shadow_hdk.kernel.providers import Provider
 
 CONTRACTS: dict[str, Any] = {
+    "ProviderCapabilities": ProviderCapabilities,
+    "EnvironmentCapabilities": EnvironmentCapabilities,
+    "ExecutionRequirements": ExecutionRequirements,
+    "Compatibility": Compatibility,
     "EffectProfile": EffectProfile,
     "Component": Component,
     "Registration": Registration,

@@ -8,12 +8,12 @@ epic: production-boundary
 > Verify before claiming done (Rule 12).
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 ## Group 0 — The capability algebra *(blocks)*
-- [ ] RED: unknown, evidence, ordering, contradictions and JSON round trips
-- [ ] Implement/export provider capabilities, environment capabilities, execution requirements, mismatches and total compatibility
-- [ ] Verify focused kernel tests, schemas and mutations
+- [x] RED: unknown, evidence, ordering, contradictions and JSON round trips
+- [x] Implement/export provider capabilities, environment capabilities, execution requirements, mismatches and total compatibility
+- [x] Verify focused kernel tests, schemas and mutations
 
 ## Group 1 — Providers tell the measured truth
-- [ ] RED: absent capability is unknown; malformed/contradictory provider records refuse by path; detection carries capabilities
+- [/] RED: absent capability is unknown; malformed/contradictory provider records refuse by path; detection carries capabilities
 - [ ] Record measured Claude Code, Codex and OpenCode capabilities; cover the API-model seam
 - [ ] Verify provider library, surface, resolution and public-export tests
 

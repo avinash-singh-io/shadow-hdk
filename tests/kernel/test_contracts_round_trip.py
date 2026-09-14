@@ -13,6 +13,7 @@ from shadow_hdk.kernel import (
     Ask,
     Binding,
     Ceiling,
+    Compatibility,
     Completed,
     Component,
     Composed,
@@ -21,6 +22,8 @@ from shadow_hdk.kernel import (
     Context,
     EffectProfile,
     Ended,
+    EnvironmentCapabilities,
+    ExecutionRequirements,
     FanOut,
     Floor,
     Interface,
@@ -34,6 +37,7 @@ from shadow_hdk.kernel import (
     Proposal,
     Proposed,
     Provenance,
+    ProviderCapabilities,
     Refused,
     Registration,
     ScopeSet,
@@ -82,6 +86,10 @@ PROVIDER = Provider(
 """A provider crosses the wire because a host in another language reads the library too."""
 
 EXAMPLES = {
+    "ProviderCapabilities": (ProviderCapabilities(), ProviderCapabilities),
+    "EnvironmentCapabilities": (EnvironmentCapabilities(), EnvironmentCapabilities),
+    "ExecutionRequirements": (ExecutionRequirements(), ExecutionRequirements),
+    "Compatibility": (Compatibility(), Compatibility),
     "EffectProfile": (
         EffectProfile(reads=ScopeSet(everything=True), reversible=False),
         EffectProfile,
