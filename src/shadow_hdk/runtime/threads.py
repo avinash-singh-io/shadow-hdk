@@ -32,6 +32,7 @@ from typing import Any
 from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
+    RECORD_VERSION,
     Ceiling,
     Completed,
     Lease,
@@ -209,6 +210,7 @@ class Thread:
             principal=principal,
             attributes=given,
             budget=budget,
+            version=RECORD_VERSION,
         )
         thread = cls(record, _unopened(), store=store, holder=holder, hold_seconds=hold_seconds)
         await thread._take_hold(create=True)
@@ -261,6 +263,11 @@ class Thread:
         thread = cls(record, _unopened(), store=store, holder=holder, hold_seconds=hold_seconds)
         await thread._take_hold(create=False)
         try:
+            if record.version < RECORD_VERSION:
+                # A record from an older kit, written back in this one's shape (D93): every
+                # field it lacked has its default, and the version now says so.
+                thread._record = _replace(record, version=RECORD_VERSION)
+                await store.save(thread._record)
             await thread._settle_what_the_last_host_left()
             thread.conversation = await Conversation.open(
                 agent=agent,

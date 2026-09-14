@@ -22,8 +22,8 @@ phase: 30
 - [x] `Routed`; `ERROR_KINDS` and `error.data`; the TypeScript client's `RemoteError.kind`; records: D92
 
 ## Group 5 — a parked run behind our port; the record versioned
-- [ ] `RunStore`, the saver over it, `InMemoryRunStore`, the contract and durability tests
-- [ ] `ThreadRecord.version`; the migration note; records: D93
+- [x] `RunStore`, the saver over it, `InMemoryRunStore`, the contract and durability tests
+- [x] `ThreadRecord.version`; the migration note; records: D93
 
 ## Group 6 — sessions that idle out; a stream that survives a drop
 - [ ] `idle_seconds`; the wire's frame ids, grace period, reattach and replay; the TypeScript client reconnects; records: D94

@@ -124,3 +124,27 @@ imports nothing above it; the TypeScript client raises `RemoteError` with `kind`
 **Why.** A product with two governments (its record's constitution, the machine's mode) wrote a
 port subclass to route between them; a client switching on a refusal had a sentence and, by
 accident, a class name. Both are now contracts.
+
+### [DECISION] 2026-09-14 — D93: a parked run behind a port of ours; the record versioned
+
+**Decision.** `RunStore` is a kernel port — `put(run_id, key, blob)`, `get`, `list(run_id,
+prefix=)` sorted by key, `delete(run_id)` — and `runtime.checkpoints.saver_over(run_store)` is
+the runtime library's checkpointer over it: every checkpoint and every pending write a row of
+bytes under the run's id, serialised by the library's own serde; async only, as the library's
+own database savers are. A product keeps parked runs in its own tables with four methods and
+no knowledge of the library: `ServeHost(run_store=)`, `stores_for(run_store=)`. The shipped
+SQLite and Postgres savers stay the fast path; `InMemoryRunStore` for tests; `RunStoreContract`
+shipped. Measured: a run parked through one saver finishes through another over the same store,
+the step before the park not redone; two runs on one store do not cross. `ThreadRecord.version`:
+1 for every record before the field (0.28.0's five fields all default), `RECORD_VERSION = 2` for
+this kit's writes; an older record picked up is written back in this shape and says so.
+
+**Why.** Store and ThreadStore were ports with suites; where a parked run slept was
+`BaseCheckpointSaver`, typed `Any` through the kit — the runtime library leaking into the
+persistence contract, and a product not on our two backends left to implement a dozen methods
+of somebody else's. And a product mapping the record to columns learned of a moved shape from a
+failing insert.
+
+**The migration note this release carries.** A rule written before D82 (0.28.0) has no `scope`
+and is for everyone; a product that kept rules from earlier releases should read them and scope
+the ones that were a person's — the kit cannot know whose they were.

@@ -60,10 +60,16 @@ class _Backend:
 
 
 def stores_for(
-    url: str | None, *, store: Any = None, threads: Any = None, checkpointer: Any = None
+    url: str | None,
+    *,
+    store: Any = None,
+    threads: Any = None,
+    checkpointer: Any = None,
+    run_store: Any = None,
 ) -> Stores:
     """The three the url names, or the ones handed in — each handed-in part replaces the one the
-    url would have made. A scheme nobody implements is refused with the ones that are."""
+    url would have made; `run_store` (D93) is a product's own `RunStore`, and the checkpointer is
+    the library's saver over it. A scheme nobody implements is refused with the ones that are."""
     chosen = url or MEMORY
     scheme = chosen.split("://", 1)[0] if "://" in chosen else ""
     if scheme == "memory":
@@ -81,6 +87,10 @@ def stores_for(
     async def opened() -> tuple[Any, Any]:
         if checkpointer is not None:
             return checkpointer, None  # the host that made it closes it
+        if run_store is not None:
+            from shadow_hdk.runtime.checkpoints import saver_over
+
+            return saver_over(run_store), None  # the product's own tables, behind our port
         saver, closer = await backend.checkpointer()
         return saver, closer
 

@@ -364,6 +364,23 @@ class ThreadStore(Protocol):
 
 
 @runtime_checkable
+class RunStore(Protocol):
+    """Where a parked run sleeps (D93): bytes by run id and key. The runtime library's
+    checkpointer is built over this port (`runtime.checkpoints.saver_over`), so a product keeps
+    parked runs in its own tables with four methods and no knowledge of the library. `list` is
+    sorted by key; `delete` forgets everything a run kept. The shipped SQLite and Postgres
+    savers stay the fast path and do not go through it."""
+
+    async def put(self, run_id: str, key: str, blob: bytes) -> None: ...
+
+    async def get(self, run_id: str, key: str) -> bytes | None: ...
+
+    async def list(self, run_id: str, *, prefix: str = "") -> tuple[tuple[str, bytes], ...]: ...
+
+    async def delete(self, run_id: str) -> None: ...
+
+
+@runtime_checkable
 class Questions(Protocol):
     """Who answers a run's questions (D91): the port the runtime asks through when a policy
     says *ask* or an agent asks the person. `ask` registers the request and waits for its

@@ -246,6 +246,9 @@ is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offe
 restart with source `store`; every proposal still reaches the sink behind it. The composition
 installs as one distribution, `shadow-hdk`, the shipped providers' transports (`jsonl` for
 Claude Code and Codex, `acp` for OpenCode) in the base and the specialised SDKs as extras (D78).
+**A parked run behind a port of ours** (D93): `RunStore` — four methods over bytes — with the
+runtime library's checkpointer built over it (`runtime.checkpoints.saver_over`), so a product on
+its own database keeps parked runs there with no knowledge of the library; `ServeHost(run_store=)`.
 **Which batteries are on is rows** (D83): `[tools] batteries` seeds the store's `wanted`
 collection (`{id, on}`) at the host's first open, a row already there left as it is, and from
 then on the store rules — `store/put wanted ddgs {"id": "ddgs", "on": true}` opens it at the next

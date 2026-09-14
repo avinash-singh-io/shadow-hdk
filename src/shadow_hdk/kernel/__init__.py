@@ -83,6 +83,7 @@ from shadow_hdk.kernel.ports import (
     ObserverPort,
     Questions,
     Refuse,
+    RunStore,
     SinkPort,
     Store,
     ThreadStore,
@@ -105,6 +106,7 @@ from shadow_hdk.kernel.providers import (
 from shadow_hdk.kernel.questions import Request
 from shadow_hdk.kernel.rules import ActRule
 from shadow_hdk.kernel.threads import (
+    RECORD_VERSION,
     PendingQuestion,
     Spent,
     ThreadId,
@@ -202,10 +204,12 @@ __all__ = [
     "ActRule",
     "ThreadId",
     "PendingQuestion",
+    "RECORD_VERSION",
     "Spent",
     "ThreadRecord",
     "Questions",
     "Request",
+    "RunStore",
     "Store",
     "ThreadStore",
     "TurnId",

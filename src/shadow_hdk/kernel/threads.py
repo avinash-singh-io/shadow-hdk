@@ -20,6 +20,12 @@ from shadow_hdk.kernel.workspace import Root
 ThreadId = str
 TurnId = str
 
+RECORD_VERSION = 2
+"""The shape of `ThreadRecord` as this kit writes it (D93): 1 was every record before 0.28.0
+(no `pending`, `principal`, `attributes`, `budget`, `spent`); 2 has them, and `version` itself.
+A record read without the field is 1; every field since has a default, so an old record loads,
+and the version says which fields it was written with."""
+
 
 @dataclass(frozen=True)
 class TurnRecord:
@@ -113,6 +119,18 @@ class ThreadRecord:
     spent: Spent = field(default_factory=Spent)
     """What the thread has spent (D84), saved at the end of every turn; `remaining` is the
     budget less this, however many times the thread is resumed."""
+    version: int = 1
+    """The shape this record was written with (D93): `RECORD_VERSION` for this kit's writes, 1
+    for a record from before the field existed. A product mapping the record to columns reads
+    it before it reads the rest."""
 
 
-__all__ = ["PendingQuestion", "Spent", "ThreadId", "ThreadRecord", "TurnId", "TurnRecord"]
+__all__ = [
+    "RECORD_VERSION",
+    "PendingQuestion",
+    "Spent",
+    "ThreadId",
+    "ThreadRecord",
+    "TurnId",
+    "TurnRecord",
+]

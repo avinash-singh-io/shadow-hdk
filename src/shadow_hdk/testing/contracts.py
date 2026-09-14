@@ -413,6 +413,35 @@ class StoreContract:
         assert await store.version("c") == before, "deleting nothing changes nothing"
 
 
+class RunStoreContract:
+    """Override `run_store` with a fresh, empty store each call (D93)."""
+
+    def run_store(self) -> Any:
+        raise NotImplementedError
+
+    async def test_bytes_round_trip_by_run_and_key_and_list_is_sorted(self) -> None:
+        store = self.run_store()
+        assert await store.get("r1", "cp/a") is None
+        await store.put("r1", "cp/b", b"two")
+        await store.put("r1", "cp/a", b"one")
+        await store.put("r1", "wr/a/1", b"w")
+        await store.put("r2", "cp/a", b"other")
+        assert await store.get("r1", "cp/a") == b"one"
+        assert await store.list("r1") == (("cp/a", b"one"), ("cp/b", b"two"), ("wr/a/1", b"w"))
+        assert await store.list("r1", prefix="cp/") == (("cp/a", b"one"), ("cp/b", b"two"))
+        await store.put("r1", "cp/a", b"replaced")
+        assert await store.get("r1", "cp/a") == b"replaced", "put replaces"
+
+    async def test_delete_forgets_one_run_and_leaves_the_rest(self) -> None:
+        store = self.run_store()
+        await store.put("r1", "cp/a", b"one")
+        await store.put("r2", "cp/a", b"two")
+        await store.delete("r1")
+        assert await store.list("r1") == () and await store.get("r1", "cp/a") is None
+        assert await store.list("r2") == (("cp/a", b"two"),)
+        await store.delete("nobody")  # nothing to forget is not an error
+
+
 class QuestionsContract:
     """Override `questions` with a fresh implementation of the `Questions` port (D91), and
     `answer(questions, request, answer)` with how a person answers on it — the host's side,
@@ -472,6 +501,7 @@ __all__ = [
     "ModelPortContract",
     "ObserverPortContract",
     "QuestionsContract",
+    "RunStoreContract",
     "SinkPortContract",
     "StoreContract",
     "ThreadStoreContract",
