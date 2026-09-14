@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from shadow_hdk.adapters.environment.backends import Box, IsolationBackend, prove_box
+from shadow_hdk.kernel.capabilities import EnvironmentRequirements
 from shadow_hdk.kernel.observations import Observation
 from shadow_hdk.kernel.workspace import Workspace
 from shadow_hdk.runtime.environment import (
@@ -29,9 +30,17 @@ class SandboxEnvironment(Environment):
         timeout_s: float = 60.0,
         output_limit: int = 64_000,
         at: str = "",
+        requirements: EnvironmentRequirements | None = None,
     ) -> None:
         assert isinstance(isolation, Isolation)
-        super().__init__(root, mode=mode, isolation=isolation, source="sandbox", at=at)
+        super().__init__(
+            root,
+            mode=mode,
+            isolation=isolation,
+            source="sandbox",
+            at=at,
+            requirements=requirements,
+        )
         self._box = box
         self._timeout_s = timeout_s
         self._output_limit = output_limit
@@ -46,6 +55,7 @@ class SandboxEnvironment(Environment):
         timeout_s: float = 60.0,
         output_limit: int = 64_000,
         at: str = "",
+        requirements: EnvironmentRequirements | None = None,
     ) -> SandboxEnvironment:
         """Open a box, prove it, and refuse a mode it cannot make true — closing the box on the
         way out, because a refused environment must not leave a sandbox running."""
@@ -67,6 +77,7 @@ class SandboxEnvironment(Environment):
             timeout_s=timeout_s,
             output_limit=output_limit,
             at=at,
+            requirements=requirements,
         )
 
     def _prove_now(self, workspace: Workspace, mode: Mode) -> Isolation:

@@ -133,6 +133,26 @@ class Compatibility:
         return not self.mismatches
 
 
+class IncompatibleCapabilities(RuntimeError):
+    """Construction refused with the complete typed result and the facts it compared."""
+
+    def __init__(
+        self,
+        compatibility: Compatibility,
+        *,
+        available_provider: ProviderCapabilities | None = None,
+        available_environment: EnvironmentCapabilities | None = None,
+    ) -> None:
+        self.compatibility = compatibility
+        self.available_provider = available_provider
+        self.available_environment = available_environment
+        detail = ", ".join(
+            f"{gap.subject}.{gap.axis} needs {gap.required}, has {gap.available}"
+            for gap in compatibility.mismatches
+        )
+        super().__init__(f"execution capabilities are incompatible: {detail}")
+
+
 def _evidence_for(
     evidence: tuple[CapabilityEvidence, ...], axis: str
 ) -> CapabilityEvidence:

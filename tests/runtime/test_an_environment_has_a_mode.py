@@ -14,10 +14,23 @@ for confinement and cannot have it must know rather than find out.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from shadow_hdk.kernel import ScopeSet
-from shadow_hdk.runtime.environment import CannotEnforce, Isolation, effects_of, requires
+from shadow_hdk.kernel import (
+    EnvironmentRequirements,
+    IncompatibleCapabilities,
+    ScopeSet,
+)
+from shadow_hdk.runtime.environment import (
+    CannotEnforce,
+    Environment,
+    Isolation,
+    capabilities_of,
+    effects_of,
+    requires,
+)
 
 WORKSPACE = ScopeSet.of("workspace")
 EVERYTHING = ScopeSet(everything=True)
@@ -71,6 +84,40 @@ def test_contained_is_the_proof_and_nothing_else() -> None:
     contained; one in `workspace-write` on a host with no sandbox is not, whatever it wanted."""
     assert effects_of(FULLY, "full", "run").contained is True
     assert effects_of(OPEN, "workspace-write", "run").contained is False
+
+
+def test_capabilities_are_the_effective_isolation_times_mode() -> None:
+    confined = capabilities_of(CONFINED, "workspace-write")
+
+    assert confined.reads == "machine"
+    assert confined.writes == "workspace"
+    assert confined.network == "denied"
+    assert confined.secrets == "unknown"
+    assert confined.proven is True
+
+    read_only = capabilities_of(CONFINED, "read-only")
+    assert read_only.writes == "none"
+
+    open_host = capabilities_of(Isolation.none(), "full")
+    assert open_host.reads == "machine"
+    assert open_host.writes == "machine"
+    assert open_host.network == "available"
+    assert open_host.secrets == "ambient"
+    assert open_host.proven is False
+
+
+def test_stricter_requirements_refuse_construction_with_the_typed_result(tmp_path: Path) -> None:
+    with pytest.raises(IncompatibleCapabilities) as refused:
+        Environment(
+            tmp_path,
+            mode="workspace-write",
+            isolation=CONFINED,
+            requirements=EnvironmentRequirements(
+                reads_within="workspace", secrets="denied", proven=True
+            ),
+        )
+
+    assert [gap.axis for gap in refused.value.compatibility.mismatches] == ["reads", "secrets"]
 
 
 # ------------------------------------------------------------------ enforced or refused

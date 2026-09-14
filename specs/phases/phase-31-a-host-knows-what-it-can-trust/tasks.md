@@ -18,12 +18,12 @@ epic: production-boundary
 - [x] Verify provider library, surface, resolution and public-export tests
 
 ## Group 2 — Environments tell the proven truth
-- [/] RED: strict read/secret requirements fail against local macOS capabilities; fake matrices cover every axis
-- [ ] Project `Isolation` into environment capabilities and match stricter requirements without changing existing modes
-- [ ] Verify environment contract, confinement and live-proof tests available on this machine
+- [x] RED: strict read/secret requirements fail against local macOS capabilities; fake matrices cover every axis
+- [x] Project `Isolation` into environment capabilities and match stricter requirements without changing existing modes
+- [x] Verify environment contract, confinement and live-proof tests available on this machine
 
 ## Group 3 — One selection decision on every door
-- [ ] RED: incompatible requirements refuse before provider/environment open; Python and wire details match
+- [/] RED: incompatible requirements refuse before provider/environment open; Python and wire details match
 - [ ] Wire requirements through `Harness`, `ServeHost` and thread start; expose discovery/compatibility over protocol
 - [ ] Regenerate JSON Schemas and TypeScript types; bump the wire protocol for the new meaning
 - [ ] Verify serve, wire, generated-client and parity suites

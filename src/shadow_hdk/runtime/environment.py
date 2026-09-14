@@ -34,6 +34,17 @@ from typing import Literal
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.capabilities import (
+    AccessBoundary,
+    CapabilityEvidence,
+    EnvironmentCapabilities,
+    EnvironmentRequirements,
+    ExecutionRequirements,
+    IncompatibleCapabilities,
+    ProviderCapabilities,
+    SecretPosture,
+    check_compatibility,
+)
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -64,11 +75,20 @@ class Isolation:
     proven: bool
     """Whether a denial was *watched* (D36). A wrapper that says it confines and was never seen
     denying anything is a claim, and `requires` does not accept a claim for a confined mode."""
+    secrets_denied: bool | None = None
+    """True when denial is established, false when secrets remain reachable, and None when this
+    mechanism has not established either. Read confinement alone is not proof of secret denial."""
 
     @classmethod
     def none(cls) -> Isolation:
         """An ordinary host with nothing around the process: all reachable, nothing proven."""
-        return cls(writes_confined=False, reads_confined=False, network_denied=False, proven=False)
+        return cls(
+            writes_confined=False,
+            reads_confined=False,
+            network_denied=False,
+            proven=False,
+            secrets_denied=False,
+        )
 
 
 class CannotEnforce(RuntimeError):
@@ -108,6 +128,65 @@ def requires(isolation: Isolation, mode: Mode) -> None:
             f"mode {mode!r} needs {', '.join(missing)}, and this environment cannot provide it; "
             f"ask for 'full' and accept that it reaches the machine, or run it somewhere confined"
         )
+
+
+def capabilities_of(isolation: Isolation, mode: Mode) -> EnvironmentCapabilities:
+    """Project what is true through the selected mode; never promote a claim into proof."""
+    writes: AccessBoundary = (
+        "none"
+        if mode == "read-only"
+        else ("workspace" if isolation.writes_confined else "machine")
+    )
+    secrets: SecretPosture = (
+        "denied"
+        if isolation.secrets_denied is True
+        else ("ambient" if isolation.secrets_denied is False else "unknown")
+    )
+    evidence = (
+        CapabilityEvidence(
+            "reads",
+            "derived",
+            "isolation confines reads" if isolation.reads_confined else "reads are not confined",
+        ),
+        CapabilityEvidence(
+            "writes",
+            "derived",
+            "read-only mode offers no writes"
+            if mode == "read-only"
+            else (
+                "isolation confines writes" if isolation.writes_confined else "writes are open"
+            ),
+        ),
+        CapabilityEvidence(
+            "network",
+            "derived",
+            "isolation denies network" if isolation.network_denied else "network is available",
+        ),
+        CapabilityEvidence(
+            "secrets",
+            "derived" if isolation.secrets_denied is not None else "unknown",
+            (
+                "isolation denies ambient secrets"
+                if isolation.secrets_denied is True
+                else "ambient secrets remain reachable"
+                if isolation.secrets_denied is False
+                else ""
+            ),
+        ),
+        CapabilityEvidence(
+            "proof",
+            "measured" if isolation.proven else "unknown",
+            "construction-time denial probes" if isolation.proven else "",
+        ),
+    )
+    return EnvironmentCapabilities(
+        reads="workspace" if isolation.reads_confined else "machine",
+        writes=writes,
+        network="denied" if isolation.network_denied else "available",
+        secrets=secrets,
+        proven=isolation.proven,
+        evidence=evidence,
+    )
 
 
 def effects_of(isolation: Isolation, mode: Mode, operation: Operation) -> EffectProfile:
@@ -189,8 +268,17 @@ class Environment(ComponentPort):
         source: str = "environment",
         at: str = "",
         workspace: Workspace | None = None,
+        requirements: EnvironmentRequirements | None = None,
     ) -> None:
         requires(isolation, mode)
+        available = capabilities_of(isolation, mode)
+        compatibility = check_compatibility(
+            ProviderCapabilities(),
+            available,
+            ExecutionRequirements(environment=requirements or EnvironmentRequirements()),
+        )
+        if not compatibility.ok:
+            raise IncompatibleCapabilities(compatibility, available_environment=available)
         # One root or many (D76): `workspace` names them; `root` alone is the one-root workspace
         # every earlier caller meant, and `self.root` stays the primary's path for them.
         self.workspace: Workspace = resolved(workspace or Workspace.of(root or Path.cwd()))
@@ -199,6 +287,11 @@ class Environment(ComponentPort):
         self.isolation = isolation
         self._source = source
         self._at = at
+        self._requirements = requirements
+
+    @property
+    def capabilities(self) -> EnvironmentCapabilities:
+        return capabilities_of(self.isolation, self.mode)
 
     @property
     def roots(self) -> tuple[Root, ...]:
@@ -242,6 +335,16 @@ class Environment(ComponentPort):
         wanted_mode: Mode = mode or self.mode
         isolation = self._prove_now(wanted_workspace, wanted_mode)
         requires(isolation, wanted_mode)
+        available = capabilities_of(isolation, wanted_mode)
+        compatibility = check_compatibility(
+            ProviderCapabilities(),
+            available,
+            ExecutionRequirements(
+                environment=self._requirements or EnvironmentRequirements()
+            ),
+        )
+        if not compatibility.ok:
+            raise IncompatibleCapabilities(compatibility, available_environment=available)
         self.workspace = wanted_workspace
         self.root = Path(wanted_workspace.primary.path)
         self.mode = wanted_mode
@@ -403,6 +506,7 @@ __all__ = [
     "Operation",
     "OutsideTheRoot",
     "effects_of",
+    "capabilities_of",
     "requires",
 ]
 

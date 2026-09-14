@@ -45,3 +45,11 @@ Affects-specs: specs/architecture/adapters.md
 Detail: RED named seven missing behaviors: absent facts, nested validation paths, shipped matrices and detection exposure. GREEN adds a conservative capability record to every provider, validated nested TOML with per-axis evidence, measured/derived records for Claude Code, Codex and OpenCode, and the same record for model-provider adapters. Fresh gates: 90 provider/kernel contract tests, ruff and mypy pass.
 
 ---
+
+### [FEATURE] 2026-09-15 — Environment truth is the effective isolation and mode
+Topics: capabilities, environment, sandbox, proof, secrets, tdd
+Affects-phases: phase-31-a-host-knows-what-it-can-trust, phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/adapters.md
+Detail: RED failed at the absent typed incompatibility. GREEN projects isolation through mode, distinguishes denied, ambient and unknown secrets, exposes the report on every environment, and refuses stricter requirements with the complete compatibility result. The live macOS proof confirms workspace-confined writes and denied network while reporting machine-wide reads and ambient secrets. Fresh gates: 83 broader tests pass (one expected inverse-platform skip), the focused live file has 12 passes, and ruff/mypy pass.
+
+---
