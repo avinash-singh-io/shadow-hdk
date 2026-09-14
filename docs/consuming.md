@@ -70,8 +70,16 @@ waits. Three ways to answer:
 - **Later** — `turn/start {on_question: "park"}` for a request that must return (D88): the turn
   ends `parked`, the question is on the record, the parked act sleeps in the checkpointer;
   `approvals/answer` on any later request runs it and the agent is told at its next turn. A
-  host that is there but cannot decide now answers `{kind: "park"}` for one question.
+  host that is there but cannot decide now answers `{kind: "park"}` for one question. The
+  agent's own question (`ask_person`) parks the same way (0.29.1, BUG-044): the agent hears
+  *not now* and stops; the person's text, given later, is folded ahead of the next prompt.
 - **After a restart** (D80) — the same: the question comes back with `thread/resume`.
+
+In-process the same three are `Thread.turn(text, on_question=)`, `Thread.pending` (the kept
+questions, each with its `turn`), `Thread.settle(handle, answer) -> events`, and
+`Approvals.answer(handle, Parked())`. A page or an API that lists questions lists the live ones
+and the kept ones together (`approvals/pending` does; a kept one carries `turn`), and shows a
+kept one as such — the React example's card says *kept — answer when ready*.
 
 ## What is measured, and where
 
