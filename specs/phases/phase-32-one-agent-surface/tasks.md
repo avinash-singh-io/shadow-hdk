@@ -13,12 +13,12 @@ epic: production-boundary
 - [x] Verify focused evaluator tests fail for the intended missing behavior before implementation
 
 ## Group 1 — A model is an agent below the thread
-- [/] Implement `ModelAgent` over `ModelPort` and only its handed `ToolSource`
-- [ ] Route API-model providers through the existing host candidate/capability-selection seam
-- [ ] Verify model/CLI parity for turn, parking, holding, spend, cancellation, resume and activity
+- [x] Implement `ModelAgent` over `ModelPort` and only its handed `ToolSource`
+- [x] Route API-model providers through the existing host candidate/capability-selection seam
+- [x] Verify model/CLI parity for turn, parking, holding, spend, cancellation, resume and activity
 
 ## Group 2 — The item says what was invoked
-- [ ] Carry bounded canonical `Item.inputs` through the fold and Python contracts
+- [/] Carry bounded canonical `Item.inputs` through the fold and Python contracts
 - [ ] Carry the field through wire, schemas and generated TypeScript without client-side reconstruction
 - [ ] Verify fold history, JSON round trips, schema drift and TypeScript compile
 

@@ -11,10 +11,12 @@ from shadow_hdk.kernel import (
     EnvironmentRequirements,
     ExecutionRequirements,
     IncompatibleCapabilities,
+    ModelResponse,
     ProviderCapabilities,
     ProviderRequirements,
 )
 from shadow_hdk.runtime.environment import Mode
+from shadow_hdk.runtime.testing import ScriptedModel
 from shadow_hdk.serve import Harness, ServeHost, Settings, a_thread
 from shadow_hdk.testing import ScriptedAgent
 
@@ -44,6 +46,25 @@ async def test_an_incompatible_handed_provider_is_refused_before_open(tmp_path: 
             await host.open(root="", mode="", want=None, name="")
 
         assert agent.opened == 0
+        assert refused.value.compatibility.mismatches[0].axis == "tool_path"
+        assert refused.value.available_provider is UNCONTROLLED
+    finally:
+        await host.aclose()
+
+
+async def test_an_incompatible_handed_model_uses_the_same_pre_open_gate(tmp_path: Path) -> None:
+    model = ScriptedModel([ModelResponse(text="must not be called")])
+    host = ServeHost(
+        Settings(root=tmp_path, mode=MODE),
+        model=model,
+        provider_capabilities=UNCONTROLLED,
+        requirements=STRICT,
+    )
+    try:
+        with pytest.raises(IncompatibleCapabilities) as refused:
+            await host.open(root="", mode="", want=None, name="")
+
+        assert model.requests == []
         assert refused.value.compatibility.mismatches[0].axis == "tool_path"
         assert refused.value.available_provider is UNCONTROLLED
     finally:

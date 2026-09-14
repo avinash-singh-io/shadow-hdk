@@ -22,9 +22,11 @@ from pathlib import Path
 from typing import Any, cast
 
 from shadow_hdk.adapters.agent import (
+    ModelAgent,
     SkillComponents,
     SkillRegistry,
     shipped_skills,
+    single,
     store_skills,
 )
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
@@ -52,7 +54,7 @@ from shadow_hdk.kernel import (
     select_execution,
 )
 from shadow_hdk.kernel.contracts import adapter_for, dump
-from shadow_hdk.kernel.ports import AgentPort
+from shadow_hdk.kernel.ports import AgentPort, ModelPort
 from shadow_hdk.providers import (
     Available,
     detect,
@@ -228,6 +230,7 @@ class ServeHost:
         settings: Settings,
         *,
         agent: AgentPort | None = None,
+        model: ModelPort | None = None,
         governance: Any = None,
         sink: Any = None,
         store: Any = None,
@@ -242,6 +245,8 @@ class ServeHost:
         `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
         would have made, and a host that hands all three never reads the url. `run_store` (D93)
         is a product's own `RunStore` — the checkpointer is then the library's saver over it."""
+        if agent is not None and model is not None:
+            raise ValueError("hand either agent= or model=, not both")
         self.settings = settings
         self._governance = governance
         self._sink = sink
@@ -268,11 +273,13 @@ class ServeHost:
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
         self._batteries_seeded = False
-        self._agent = agent
+        self._agent = agent or (
+            ModelAgent(model=model, pattern=single) if model is not None else None
+        )
         self._handed_capabilities = provider_capabilities or ProviderCapabilities()
         self.requirements = requirements or ExecutionRequirements()
         self._selections: dict[str, ExecutionSelection] = {}
-        self.provider = ""
+        self.provider = "handed model" if model is not None else ""
 
     async def wanted(self) -> tuple[str, ...]:
         """Which batteries are wanted **now** (D83): the store's `wanted` rows (`{id, on}`),
@@ -664,6 +671,7 @@ async def a_thread(
     rules: Any = None,
     store: Any = None,
     agent: AgentPort | None = None,
+    model: ModelPort | None = None,
     batteries: Sequence[str] = (),
     batteries_dir: Path | None = None,
     provider_capabilities: ProviderCapabilities | None = None,
@@ -678,11 +686,14 @@ async def a_thread(
     beside it (D63). `batteries` names what to switch on (D70) — opened for the thread's life,
     read from the shipped files, `batteries_dir` and the store; `agent` hands a provider in.
     """
+    if agent is not None and model is not None:
+        raise ValueError("hand either agent= or model=, not both")
     root.mkdir(parents=True, exist_ok=True)
     execution = requirements or ExecutionRequirements()
     available: Available | None = None
-    if agent is not None:
-        opened, called = agent, "handed in"
+    if agent is not None or model is not None:
+        opened = agent or ModelAgent(model=cast(ModelPort, model), pattern=single)
+        called = "handed in" if agent is not None else "handed model"
         capabilities = provider_capabilities or ProviderCapabilities()
     else:
         available = await ready(want)

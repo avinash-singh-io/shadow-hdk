@@ -129,10 +129,18 @@ class _Turnwise:
     A new one per call, so nothing survives an invocation that should not.
     """
 
-    def __init__(self, agent: AgentComponent, context: RunContext) -> None:
+    def __init__(
+        self,
+        agent: AgentComponent,
+        context: RunContext,
+        *,
+        model: ModelPort | None = None,
+    ) -> None:
         self.agent = agent
         self.pattern = agent.pattern
         self.ctx = context
+        self.model = model
+        """A model owned by an AgentPort adapter; absent means the run's ordinary ModelPort."""
         self.messages: list[Message] = []
         self.held: dict[str, str] = {}
         """Results too large for the model's context; kept for the run, paged by `recall` (D47)."""
@@ -140,6 +148,7 @@ class _Turnwise:
         self.nudged = False
         self.proposed = 0
         self.turns = 0
+        self._pending: tuple[str, Composition, tuple[ToolCall, ...]] | None = None
         self.helpers: dict[str, str] = {}
         """The model's own names for its helpers — `@1`, `@2` — over the runtime's run ids. A
         model asked to carry a uuid between turns will eventually carry the wrong one."""
@@ -172,6 +181,26 @@ class _Turnwise:
             parked_again = await self._answer_the_child(back.kept, back.answer)
             if parked_again is not None:
                 return parked_again
+        return await self._continue()
+
+    async def resume(self, answer: Any) -> Observation:
+        """Continue a child the loop parked when the loop itself is hosted as an AgentSession."""
+        pending = self._pending
+        if pending is None:
+            return Failed("the model loop has no parked tool call to resume")
+        handle, composition, calls = pending
+        self._pending = None
+        parked_again = await self._absorb(
+            handle,
+            await self.ctx.children.send(handle, answer),
+            composition,
+            calls,
+        )
+        if parked_again is not None:
+            return parked_again
+        return await self._continue()
+
+    async def _continue(self) -> Observation:
         for turn in range(self.turns, self.pattern.max_turns):
             if (await self.ctx.remaining_now()).ceiling.max_steps <= 0:
                 return self.finished("lease_exhausted")
@@ -179,7 +208,7 @@ class _Turnwise:
             # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
             # meta-tool (BUG-001), and that is our refusal, not a provider's failure.
             request = ModelRequest(tuple(self.messages), await self.catalogue())
-            model = self.ctx.ports.model
+            model = self.model or self.ctx.ports.model
             if model is None:
                 return self.finished(
                     "failed", text="this run has no model port; the agent cannot converse"
@@ -500,13 +529,19 @@ class _Turnwise:
             (e for e in events if e.kind == "approval_requested" and e.run_id == handle), None
         )
         if question is not None and await self.ctx.children.is_held(handle):
-            await self.ctx.keep(self._snapshot(handle, composition, calls))
+            kept = self._snapshot(handle, composition, calls)
+            self._pending = (handle, composition, calls)
+            await self.ctx.keep(kept)
             return ApprovalRequest(
                 question=getattr(question, "question", "may this continue?"),
-                handle=handle,
+                # The enclosing AgentSession re-raises this question in its own run. It needs the
+                # child step here so Conversation can associate that outer question with the
+                # child run it already observed and later settle the exact checkpoint.
+                handle=getattr(question, "step", ""),
                 component=getattr(question, "component", None),
                 inputs=getattr(question, "inputs", None),
             )
+        self._pending = None
         observed: dict[str, Observation] = {}
         for event in events:
             if event.kind == "observed":
@@ -619,6 +654,9 @@ class _Turnwise:
     def charge(self, usage: Usage | None) -> None:
         """Accumulate what the model cost, so the parent's meter can charge it (`_usage_of`)."""
         if usage is None:
+            # A model answered but did not report usage. That is unknown, not a free call: once
+            # any turn is unreported no later known turn can make the aggregate known again.
+            self.spent = Usage(None, None, None)
             return
         self.spent = Usage(
             input_tokens=_add(self.spent.input_tokens, usage.input_tokens),
@@ -744,4 +782,4 @@ def _add(left: int | None, right: int | None) -> int | None:
     return left + right
 
 
-__all__ = ["AgentComponent"]
+__all__ = ["AgentComponent", "_Turnwise"]

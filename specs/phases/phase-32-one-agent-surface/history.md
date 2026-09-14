@@ -37,3 +37,19 @@ Affects-specs: specs/architecture/wire.md#The thread, crossed
 Detail: While mapping the private HTTP session into the locked evaluator, `stream_of` was found to yield the same numbered live frame twice. BUG-049 records the defect; the shared session's replay-then-live-once test is the Phase 32 fix boundary, rather than a separate patch beside the extraction.
 
 ---
+
+### [EVALUATOR] 2026-09-15 — Model interruption is RED at the provider call
+Topics: model-agent, agent-surface, cancellation, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/adapters.md#The agent adapter
+Detail: A blocked ModelPort call now exercises Thread.interrupt through the new adapter. Before the cancellation path exists, interrupt marks the run but only closes a flag on the model session; the provider call remains blocked and the focused evaluator times out instead of recording a cancelled turn.
+
+---
+
+### [FEATURE] 2026-09-15 — ModelPort is an AgentPort below the durable Thread
+Topics: model-agent, agent-surface, capability-selection, cancellation, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/adapters.md#The agent adapter; docs/migrations/0.30.md
+Detail: ModelAgent reuses the existing governed model loop under the same Thread, host selection and product-facing lifecycle as a CLI-owned agent. The adapter keeps model usage honest when unreported, maps a parked child step back to its durable run for later settlement, and cancels an active provider call on Thread.interrupt; 187 focused lifecycle tests and three destructive mutations verify routing, cancellation and parked-child identity.
+
+---

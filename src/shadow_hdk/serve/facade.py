@@ -91,6 +91,7 @@ class Harness:
         budget: Budget | None = None,
         registry_name: str = "tools",
         agent: Any = None,
+        model: Any = None,
         governance: Any = None,
         sink: Any = None,
         observer: Any = None,
@@ -112,6 +113,7 @@ class Harness:
         self.host = ServeHost(
             self.settings,
             agent=agent,
+            model=model,
             governance=governance,
             sink=sink,
             provider_capabilities=provider_capabilities,
