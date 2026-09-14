@@ -133,6 +133,15 @@ class Compatibility:
         return not self.mismatches
 
 
+@dataclass(frozen=True)
+class ExecutionSelection:
+    """The provider/environment facts accepted at one construction boundary."""
+
+    provider: ProviderCapabilities
+    environment: EnvironmentCapabilities
+    compatibility: Compatibility
+
+
 class IncompatibleCapabilities(RuntimeError):
     """Construction refused with the complete typed result and the facts it compared."""
 
@@ -151,6 +160,22 @@ class IncompatibleCapabilities(RuntimeError):
             for gap in compatibility.mismatches
         )
         super().__init__(f"execution capabilities are incompatible: {detail}")
+
+
+def select_execution(
+    provider: ProviderCapabilities,
+    environment: EnvironmentCapabilities,
+    requirements: ExecutionRequirements,
+) -> ExecutionSelection:
+    """Return the accepted pair or refuse with the same complete result every surface carries."""
+    compatibility = check_compatibility(provider, environment, requirements)
+    if not compatibility.ok:
+        raise IncompatibleCapabilities(
+            compatibility,
+            available_provider=provider,
+            available_environment=environment,
+        )
+    return ExecutionSelection(provider, environment, compatibility)
 
 
 def _evidence_for(

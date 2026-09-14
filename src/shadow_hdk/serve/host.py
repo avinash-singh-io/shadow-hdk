@@ -10,6 +10,7 @@ behind `shadow-hdk serve` for a host in any language and behind `a_thread` for a
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import sys
@@ -18,7 +19,7 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from shadow_hdk.adapters.agent import (
     SkillComponents,
@@ -39,9 +40,28 @@ from shadow_hdk.adapters.modes import (
     store_rules,
 )
 from shadow_hdk.adapters.recording import SocketOffer
-from shadow_hdk.kernel import Ceiling, Lease, ThreadStore, Workspace
+from shadow_hdk.kernel import (
+    Ceiling,
+    EnvironmentRequirements,
+    ExecutionRequirements,
+    ExecutionSelection,
+    Lease,
+    ProviderCapabilities,
+    ThreadStore,
+    Workspace,
+    select_execution,
+)
+from shadow_hdk.kernel.contracts import adapter_for, dump
 from shadow_hdk.kernel.ports import AgentPort
-from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
+from shadow_hdk.providers import (
+    Available,
+    detect,
+    environment_for,
+    open_with,
+    ready,
+    search_dirs,
+    shipped,
+)
 from shadow_hdk.runtime import Approvals, Ports
 from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
@@ -137,6 +157,8 @@ async def workshop(
     batteries: Sequence[Any] = (),
     skills: SkillRegistry | None = None,
     workspace: Workspace | None = None,
+    environment: LocalEnvironment | None = None,
+    requirements: EnvironmentRequirements | None = None,
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
 
@@ -150,13 +172,14 @@ async def workshop(
     the environment refuses to exist rather than quietly widen, and that reaches the person,
     because it is the right thing for them to see.
     """
-    environment = await LocalEnvironment.open(
+    environment = environment or await LocalEnvironment.open(
         root,
         mode=mode,
         timeout_s=60.0,
         output_limit=32_000,
         at="2026-09-11T00:00:00+00:00",
         workspace=workspace,
+        requirements=requirements,
     )
     chosen_from = SkillComponents(
         skills if skills is not None else skills_for(store),
@@ -211,6 +234,8 @@ class ServeHost:
         threads: ThreadStore | None = None,
         checkpointer: Any = None,
         run_store: Any = None,
+        provider_capabilities: ProviderCapabilities | None = None,
+        requirements: ExecutionRequirements | None = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
         opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
@@ -244,6 +269,9 @@ class ServeHost:
         self.battery_problems: dict[str, str] = {}
         self._batteries_seeded = False
         self._agent = agent
+        self._handed_capabilities = provider_capabilities or ProviderCapabilities()
+        self.requirements = requirements or ExecutionRequirements()
+        self._selections: dict[str, ExecutionSelection] = {}
         self.provider = ""
 
     async def wanted(self) -> tuple[str, ...]:
@@ -340,18 +368,99 @@ class ServeHost:
         self.batteries_opened = ()
         await self.stores.aclose()
 
-    async def _provider(self, want: str | None, root: Path) -> tuple[AgentPort, str]:
+    async def _provider_candidate(
+        self, want: str | None
+    ) -> tuple[AgentPort | None, Available | None, ProviderCapabilities, str]:
+        """Resolve and probe, but do not open the provider's execution process yet."""
         if self._agent is not None:
-            return self._agent, self.provider or "handed in"
+            return (
+                self._agent,
+                None,
+                self._handed_capabilities,
+                self.provider or "handed in",
+            )
         available = await ready(want or self.settings.want)
-        assert available.binary is not None, "a ready provider has a binary"
-        opened = await open_with(
+        called = f"{available.provider.called} {available.version or ''}".strip()
+        return None, available, available.capabilities, called
+
+    async def _open_candidate(
+        self,
+        handed: AgentPort | None,
+        available: Available | None,
+        root: Path,
+    ) -> AgentPort:
+        if handed is not None:
+            return handed
+        assert available is not None and available.binary is not None
+        opened: AgentPort = await open_with(
             available.provider,
             binary=available.binary,
             env=environment_for(available.provider, base={}, search=search_dirs()),
             workspace=root,
         )
-        return opened, f"{available.provider.called} {available.version or ''}".strip()
+        return opened
+
+    def _requirements(self, given: Any = None) -> ExecutionRequirements:
+        if given is None:
+            return self.requirements
+        if isinstance(given, ExecutionRequirements):
+            return given
+        return cast(
+            ExecutionRequirements,
+            adapter_for(ExecutionRequirements).validate_python(given),
+        )
+
+    def capabilities_for(self, thread_id: str) -> ExecutionSelection:
+        try:
+            return self._selections[thread_id]
+        except KeyError:
+            raise KeyError(f"no capability selection for thread {thread_id!r}") from None
+
+    async def check_capabilities(
+        self,
+        *,
+        mode: str = "",
+        want: str | None = None,
+        requirements: Any = None,
+        root: str = "",
+    ) -> ExecutionSelection:
+        """Probe and prove a pair without opening the provider agent or a thread."""
+        execution = self._requirements(requirements)
+        _handed, _available, provider, _called = await self._provider_candidate(want)
+        policy_mode = mode or self.settings.mode
+        environment_mode = await self._environment_for(policy_mode)
+        workspace = Workspace.of(Path(root or self.settings.root))
+        for each in workspace.roots:
+            Path(each.path).mkdir(parents=True, exist_ok=True)
+        environment = await LocalEnvironment.open(
+            Path(workspace.primary.path),
+            mode=environment_mode,
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            return select_execution(provider, environment.capabilities, execution)
+        finally:
+            await environment.close()
+
+    async def provider_listing(self) -> list[dict[str, Any]]:
+        """The shipped provider records with this machine's detection and capability evidence."""
+        providers = list(shipped().values())
+        available = await detect(providers)
+        return [
+            {
+                "id": item.provider.id,
+                "name": item.provider.called,
+                "kind": item.provider.kind,
+                "status": item.status,
+                "binary": str(item.binary) if item.binary is not None else None,
+                "version": item.version,
+                "message": item.message,
+                "install_hint": item.install_hint,
+                "capabilities": json.loads(dump(item.capabilities, ProviderCapabilities)),
+            }
+            for item in available
+        ]
 
     async def open(
         self,
@@ -366,6 +475,7 @@ class ServeHost:
         principal: str = "",
         attributes: Any = None,
         budget: Any = None,
+        requirements: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -377,7 +487,25 @@ class ServeHost:
         where = Path(workspace.primary.path).resolve()
         policy_mode = mode or self.settings.mode
         environment_mode = await self._environment_for(policy_mode)
-        agent, called = await self._provider(want, where)
+        execution = self._requirements(requirements)
+        handed, available, provider_capabilities, called = await self._provider_candidate(want)
+        environment = await LocalEnvironment.open(
+            where,
+            mode=environment_mode,
+            timeout_s=60.0,
+            output_limit=32_000,
+            at="2026-09-11T00:00:00+00:00",
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(
+                provider_capabilities, environment.capabilities, execution
+            )
+            agent = await self._open_candidate(handed, available, where)
+        except BaseException:
+            await environment.close()
+            raise
         ports = await workshop(
             where,
             mode=environment_mode,
@@ -387,6 +515,7 @@ class ServeHost:
             batteries=await self._battery_ports(),
             skills=self.skills,
             workspace=workspace,
+            environment=environment,
         )
         thread = await Thread.open(
             agent=agent,
@@ -408,7 +537,10 @@ class ServeHost:
             attributes=attributes if isinstance(attributes, dict) else None,
             budget=self._budget_of(budget),
             idle_seconds=self.settings.idle_seconds,
+            requirements=execution,
         )
+        self._selections[thread.id] = selection
+        thread.execution = selection
         self.provider = called
         return thread
 
@@ -461,7 +593,25 @@ class ServeHost:
         environment_mode = mode_named(record.environment) or await self._environment_for(
             record.mode or self.settings.mode
         )
-        agent, _called = await self._provider(None, where)
+        execution = record.requirements
+        handed, available, provider_capabilities, _called = await self._provider_candidate(None)
+        environment = await LocalEnvironment.open(
+            where,
+            mode=environment_mode,
+            timeout_s=60.0,
+            output_limit=32_000,
+            at="2026-09-11T00:00:00+00:00",
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(
+                provider_capabilities, environment.capabilities, execution
+            )
+            agent = await self._open_candidate(handed, available, where)
+        except BaseException:
+            await environment.close()
+            raise
         ports = await workshop(
             where,
             mode=environment_mode,
@@ -471,8 +621,9 @@ class ServeHost:
             batteries=await self._battery_ports(),
             skills=self.skills,
             workspace=workspace,
+            environment=environment,
         )
-        return await Thread.resume(
+        thread = await Thread.resume(
             thread_id,
             agent=agent,
             ports=self._handed(ports, observer),
@@ -486,6 +637,9 @@ class ServeHost:
             holder=self.holder,
             idle_seconds=self.settings.idle_seconds,
         )
+        self._selections[thread.id] = selection
+        thread.execution = selection
+        return thread
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:
         """The shipped ports, with whatever this host was handed in their place."""
@@ -516,6 +670,8 @@ async def a_thread(
     agent: AgentPort | None = None,
     batteries: Sequence[str] = (),
     batteries_dir: Path | None = None,
+    provider_capabilities: ProviderCapabilities | None = None,
+    requirements: ExecutionRequirements | None = None,
 ) -> AsyncIterator[Thread]:
     """A thread on the provider signed in here, its tools this run's, inside the workshop — the
     Python-side door onto the same composition `serve` puts behind the wire.
@@ -527,25 +683,44 @@ async def a_thread(
     read from the shipped files, `batteries_dir` and the store; `agent` hands a provider in.
     """
     root.mkdir(parents=True, exist_ok=True)
+    execution = requirements or ExecutionRequirements()
+    available: Available | None = None
     if agent is not None:
         opened, called = agent, "handed in"
+        capabilities = provider_capabilities or ProviderCapabilities()
     else:
         available = await ready(want)
         assert available.binary is not None, "a ready provider has a binary"
-        opened = await open_with(
-            available.provider,
-            binary=available.binary,
-            env=environment_for(available.provider, base={}, search=search_dirs()),
-            workspace=root,
-        )
         called = f"{available.provider.called} {available.version or ''}".strip()
+        capabilities = available.capabilities
+        opened = None
     modes = modes_for(store, files=root / ".harness" / "modes")  # live: rows and files (D66)
-    started, problems = await open_batteries(
-        batteries_for(store, files=batteries_dir or root / ".harness" / "batteries"), batteries
-    )
-    for battery_id, problem in problems.items():
-        print(f"battery {battery_id!r}: {problem}", file=sys.stderr)
+    started: tuple[OpenedBattery, ...] = ()
     try:
+        environment = await LocalEnvironment.open(
+            root,
+            mode=mode,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(capabilities, environment.capabilities, execution)
+            if opened is None:
+                assert available is not None and available.binary is not None
+                opened = await open_with(
+                    available.provider,
+                    binary=available.binary,
+                    env=environment_for(available.provider, base={}, search=search_dirs()),
+                    workspace=root,
+                )
+        except BaseException:
+            await environment.close()
+            raise
+        started, problems = await open_batteries(
+            batteries_for(store, files=batteries_dir or root / ".harness" / "batteries"),
+            batteries,
+        )
+        for battery_id, problem in problems.items():
+            print(f"battery {battery_id!r}: {problem}", file=sys.stderr)
         thread = await Thread.open(
             agent=opened,
             ports=replace(
@@ -556,6 +731,7 @@ async def a_thread(
                     store=store,
                     modes=modes,
                     batteries=tuple(b.port for b in started if b.port is not None),
+                    environment=environment,
                 ),
                 observer=observer,
             ),
@@ -568,7 +744,9 @@ async def a_thread(
             modes=modes,
             mode=mode,
             provider=called,
+            requirements=execution,
         )
+        thread.execution = selection
         try:
             yield thread
         finally:

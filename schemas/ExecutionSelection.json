@@ -1,0 +1,260 @@
+{
+  "$defs": {
+    "CapabilityEvidence": {
+      "description": "Why one capability value may be believed, without carrying a secret or probe output.",
+      "properties": {
+        "at": {
+          "default": "",
+          "title": "At",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "measured",
+            "derived",
+            "declared",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis"
+      ],
+      "title": "CapabilityEvidence",
+      "type": "object"
+    },
+    "CapabilityMismatch": {
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/CapabilityEvidence"
+        },
+        "required": {
+          "title": "Required",
+          "type": "string"
+        },
+        "subject": {
+          "enum": [
+            "provider",
+            "environment"
+          ],
+          "title": "Subject",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "axis",
+        "required",
+        "available",
+        "evidence"
+      ],
+      "title": "CapabilityMismatch",
+      "type": "object"
+    },
+    "Compatibility": {
+      "properties": {
+        "mismatches": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CapabilityMismatch"
+          },
+          "title": "Mismatches",
+          "type": "array"
+        }
+      },
+      "title": "Compatibility",
+      "type": "object"
+    },
+    "EnvironmentCapabilities": {
+      "description": "The effective environment boundary for one mode, established by proof or an honest no.",
+      "properties": {
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CapabilityEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "network": {
+          "default": "unknown",
+          "enum": [
+            "denied",
+            "available",
+            "unknown"
+          ],
+          "title": "Network",
+          "type": "string"
+        },
+        "proven": {
+          "default": false,
+          "title": "Proven",
+          "type": "boolean"
+        },
+        "reads": {
+          "default": "unknown",
+          "enum": [
+            "none",
+            "workspace",
+            "machine",
+            "unknown"
+          ],
+          "title": "Reads",
+          "type": "string"
+        },
+        "secrets": {
+          "default": "unknown",
+          "enum": [
+            "denied",
+            "ambient",
+            "unknown"
+          ],
+          "title": "Secrets",
+          "type": "string"
+        },
+        "writes": {
+          "default": "unknown",
+          "enum": [
+            "none",
+            "workspace",
+            "machine",
+            "unknown"
+          ],
+          "title": "Writes",
+          "type": "string"
+        }
+      },
+      "title": "EnvironmentCapabilities",
+      "type": "object"
+    },
+    "ProviderCapabilities": {
+      "description": "What a provider can honestly offer to a host. Every omitted axis is unknown.",
+      "properties": {
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CapabilityEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "interrupt": {
+          "default": "unknown",
+          "enum": [
+            "native",
+            "terminate",
+            "none",
+            "unknown"
+          ],
+          "title": "Interrupt",
+          "type": "string"
+        },
+        "reasoning": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "session": {
+          "default": "unknown",
+          "enum": [
+            "resumable",
+            "process",
+            "none",
+            "unknown"
+          ],
+          "title": "Session",
+          "type": "string"
+        },
+        "streaming": {
+          "default": "unknown",
+          "enum": [
+            "live",
+            "final",
+            "none",
+            "unknown"
+          ],
+          "title": "Streaming",
+          "type": "string"
+        },
+        "tool_path": {
+          "default": "unknown",
+          "enum": [
+            "controlled",
+            "observed",
+            "uncontrolled",
+            "unavailable",
+            "unknown"
+          ],
+          "title": "Tool Path",
+          "type": "string"
+        },
+        "usage_cost": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Usage Cost",
+          "type": "string"
+        },
+        "usage_tokens": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Usage Tokens",
+          "type": "string"
+        }
+      },
+      "title": "ProviderCapabilities",
+      "type": "object"
+    }
+  },
+  "description": "The provider/environment facts accepted at one construction boundary.",
+  "properties": {
+    "compatibility": {
+      "$ref": "#/$defs/Compatibility"
+    },
+    "environment": {
+      "$ref": "#/$defs/EnvironmentCapabilities"
+    },
+    "provider": {
+      "$ref": "#/$defs/ProviderCapabilities"
+    }
+  },
+  "required": [
+    "provider",
+    "environment",
+    "compatibility"
+  ],
+  "title": "ExecutionSelection",
+  "type": "object"
+}

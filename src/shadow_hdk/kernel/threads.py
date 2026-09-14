@@ -14,17 +14,17 @@ from typing import Literal
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.capabilities import ExecutionRequirements
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.workspace import Root
 
 ThreadId = str
 TurnId = str
 
-RECORD_VERSION = 2
-"""The shape of `ThreadRecord` as this kit writes it (D93): 1 was every record before 0.28.0
-(no `pending`, `principal`, `attributes`, `budget`, `spent`); 2 has them, and `version` itself.
-A record read without the field is 1; every field since has a default, so an old record loads,
-and the version says which fields it was written with."""
+RECORD_VERSION = 3
+"""The shape of `ThreadRecord` as this kit writes it: 1 was every record before 0.28.0; 2 added
+pending, identity, budget, spend and `version`; 3 keeps accepted execution requirements. A record
+read without the field is 1 and every later field defaults, so old records still load."""
 
 
 @dataclass(frozen=True)
@@ -119,6 +119,9 @@ class ThreadRecord:
     spent: Spent = field(default_factory=Spent)
     """What the thread has spent (D84), saved at the end of every turn; `remaining` is the
     budget less this, however many times the thread is resumed."""
+    requirements: ExecutionRequirements = field(default_factory=ExecutionRequirements)
+    """The execution properties accepted when this thread opened, kept so a resume rechecks them
+    instead of silently falling back to the host's current defaults."""
     version: int = 1
     """The shape this record was written with (D93): `RECORD_VERSION` for this kit's writes, 1
     for a record from before the field existed. A product mapping the record to columns reads

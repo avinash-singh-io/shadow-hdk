@@ -19,7 +19,17 @@ import uuid
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-from shadow_hdk.kernel import EffectProfile, Event, Lease, Spent, ThreadRecord
+from shadow_hdk.kernel import (
+    Compatibility,
+    EffectProfile,
+    EnvironmentCapabilities,
+    Event,
+    ExecutionSelection,
+    Lease,
+    ProviderCapabilities,
+    Spent,
+    ThreadRecord,
+)
 from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime.items import Fold, as_json
@@ -32,12 +42,14 @@ from shadow_hdk.wire.protocol import (
     APPROVALS_ANSWER,
     APPROVALS_PENDING,
     BATTERIES_LIST,
+    CAPABILITIES_CHECK,
     EVENT,
     FILES_LIST,
     FILES_READ,
     INPUT_REQUEST,
     ITEM,
     MODES_LIST,
+    PROVIDERS_LIST,
     REQUEST_WITHDRAWN,
     RULES_LIST,
     RUN_CANCEL,
@@ -87,6 +99,7 @@ class ThreadHost(Protocol):
         principal: str = "",
         attributes: Any = None,
         budget: Any = None,
+        requirements: Any = None,
     ) -> Thread: ...
 
     async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
@@ -185,6 +198,8 @@ class ThreadMethods:
             (FILES_LIST, self._files_list),
             (FILES_READ, self._files_read),
             (BATTERIES_LIST, self._batteries_list),
+            (PROVIDERS_LIST, self._providers_list),
+            (CAPABILITIES_CHECK, self._capabilities_check),
             (TOOLS_LIST, self._tools_list),
             (SKILLS_LIST, self._skills_list),
             (ADMIN_SESSIONS, self._admin_sessions),
@@ -231,13 +246,18 @@ class ThreadMethods:
             **({"principal": str(params["principal"])} if params.get("principal") else {}),
             **({"attributes": params["attributes"]} if params.get("attributes") else {}),
             **({"budget": params["budget"]} if params.get("budget") is not None else {}),
+            **(
+                {"requirements": params["requirements"]}
+                if params.get("requirements") is not None
+                else {}
+            ),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread.ports.observer  # the wire's own observer, re-tagged
         if isinstance(observer, ActivityToWire):
             observer._thread_id = thread.id  # noqa: SLF001
         self.threads[thread.id] = thread
-        return {
+        result = {
             "thread_id": thread.id,
             **_workspace_json(thread),
             "provider": thread.record.provider,
@@ -245,6 +265,8 @@ class ThreadMethods:
             "modes": await self._modes(host, thread),
             **_identity_json(thread),
         }
+        result["capabilities"] = _selection_json(_selection_of(host, thread.id))
+        return result
 
     async def _resume(self, params: dict[str, Any]) -> dict[str, Any]:
         host = self._host_or_raise()
@@ -264,7 +286,7 @@ class ThreadMethods:
                 INPUT_REQUEST if question.kind == "input" else APPROVAL_REQUEST,
                 {"thread_id": thread.id, "request": _pending_json(question)},
             )
-        return {
+        result = {
             "thread_id": thread.id,
             **_workspace_json(thread),
             "provider": thread.record.provider,
@@ -274,6 +296,8 @@ class ThreadMethods:
             "pending": [_pending_json(q) for q in thread.pending],
             **_identity_json(thread),
         }
+        result["capabilities"] = _selection_json(_selection_of(host, thread.id))
+        return result
 
     async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
         thread = self._thread(params)
@@ -577,6 +601,24 @@ class ThreadMethods:
         listing = getattr(host, "battery_listing", None)
         return {"batteries": await listing() if listing is not None else []}
 
+    async def _providers_list(self, _params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        listing = getattr(host, "provider_listing", None)
+        return {"providers": await listing() if listing is not None else []}
+
+    async def _capabilities_check(self, params: dict[str, Any]) -> dict[str, Any]:
+        host = self._host_or_raise()
+        check = getattr(host, "check_capabilities", None)
+        if check is None:
+            raise RuntimeError("this thread host does not expose capability selection")
+        selected = await check(
+            mode=str(params.get("mode", "") or ""),
+            want=params.get("provider") or None,
+            requirements=params.get("requirements"),
+            root=str(params.get("root", "") or ""),
+        )
+        return {"capabilities": _selection_json(selected)}
+
     # ------------------------------------------------------------------ the registries (Phase 28)
 
     async def _tools_list(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -686,6 +728,20 @@ def _scope_of(thread: Thread) -> dict[str, Any]:
 
 def _identity_json(thread: Thread) -> dict[str, Any]:
     return {"principal": thread.record.principal, "attributes": dict(thread.record.attributes)}
+
+
+def _selection_json(selection: ExecutionSelection) -> dict[str, Any]:
+    selected: dict[str, Any] = json.loads(dump(selection, ExecutionSelection))
+    return selected
+
+
+def _selection_of(host: ThreadHost, thread_id: str) -> ExecutionSelection:
+    selected = getattr(host, "capabilities_for", None)
+    if selected is not None:
+        return cast(ExecutionSelection, selected(thread_id))
+    return ExecutionSelection(
+        ProviderCapabilities(), EnvironmentCapabilities(), Compatibility()
+    )
 
 
 def _pending_json(question: Any) -> dict[str, Any]:

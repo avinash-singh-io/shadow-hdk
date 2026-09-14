@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-PROTOCOL_VERSION = "1"
+PROTOCOL_VERSION = "2"
 """Bumped when a message's meaning changes. Not the package version: a package may release many
 times without the wire's vocabulary moving, and a client generated from published schemas cares
 about this number rather than ours."""
@@ -89,6 +89,8 @@ SKILLS_LIST = "skills/list"
 BATTERIES_LIST = "batteries/list"
 """What the serving process has switched on (D70): every battery it knows, on, off or unavailable
 and why."""
+PROVIDERS_LIST = "providers/list"
+CAPABILITIES_CHECK = "capabilities/check"
 # operations (D86): what the process holds, for whoever runs it — behind the bearer
 ADMIN_SESSIONS = "admin/sessions"
 ADMIN_THREADS = "admin/threads"
@@ -113,6 +115,7 @@ RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE}
 ERROR_KINDS: tuple[str, ...] = (
     "thread_held",
     "turn_running",
+    "capability_mismatch",
     "not_found",
     "invalid",
     "version_mismatch",
@@ -147,6 +150,7 @@ __all__ = [
     "APPROVALS_PENDING",
     "APPROVAL_REQUEST",
     "BATTERIES_LIST",
+    "CAPABILITIES_CHECK",
     "INPUT_REQUEST",
     "MODES_LIST",
     "REQUEST_WITHDRAWN",
@@ -177,6 +181,7 @@ __all__ = [
     "CONTEXT_PROPOSE",
     "CONTEXT_REMAINING",
     "EVENT",
+    "ERROR_KINDS",
     "FILES_LIST",
     "FILES_READ",
     "HOST_DRIVES",
@@ -184,6 +189,7 @@ __all__ = [
     "INVOKE",
     "JUDGE",
     "PROPOSE",
+    "PROVIDERS_LIST",
     "PROTOCOL_VERSION",
     "REGISTRATIONS",
     "RESUME",

@@ -115,7 +115,7 @@ merged and released**: 1,566 tests, mypy strict over 418 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | in progress | Group 3 — construction and wire RED |
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | in progress | Group 4 — evidence and phase checkpoint |
 
 ## Upcoming Phases
 

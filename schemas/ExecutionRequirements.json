@@ -1,0 +1,172 @@
+{
+  "$defs": {
+    "EnvironmentRequirements": {
+      "description": "Maximum reach a host accepts from the effective environment.",
+      "properties": {
+        "network": {
+          "anyOf": [
+            {
+              "const": "denied",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network"
+        },
+        "proven": {
+          "default": false,
+          "title": "Proven",
+          "type": "boolean"
+        },
+        "reads_within": {
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "workspace",
+                "machine"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reads Within"
+        },
+        "secrets": {
+          "anyOf": [
+            {
+              "const": "denied",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secrets"
+        },
+        "writes_within": {
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "workspace",
+                "machine"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Writes Within"
+        }
+      },
+      "title": "EnvironmentRequirements",
+      "type": "object"
+    },
+    "ProviderRequirements": {
+      "description": "Minimum provider properties a host requires. `None`/`False` means no requirement.",
+      "properties": {
+        "interrupt": {
+          "anyOf": [
+            {
+              "enum": [
+                "native",
+                "terminate"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interrupt"
+        },
+        "reasoning": {
+          "default": false,
+          "title": "Reasoning",
+          "type": "boolean"
+        },
+        "session": {
+          "anyOf": [
+            {
+              "enum": [
+                "resumable",
+                "process"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session"
+        },
+        "streaming": {
+          "anyOf": [
+            {
+              "enum": [
+                "live",
+                "final"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Streaming"
+        },
+        "tool_path": {
+          "anyOf": [
+            {
+              "enum": [
+                "controlled",
+                "observed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Path"
+        },
+        "usage_cost": {
+          "default": false,
+          "title": "Usage Cost",
+          "type": "boolean"
+        },
+        "usage_tokens": {
+          "default": false,
+          "title": "Usage Tokens",
+          "type": "boolean"
+        }
+      },
+      "title": "ProviderRequirements",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "environment": {
+      "$ref": "#/$defs/EnvironmentRequirements"
+    },
+    "provider": {
+      "$ref": "#/$defs/ProviderRequirements"
+    }
+  },
+  "title": "ExecutionRequirements",
+  "type": "object"
+}

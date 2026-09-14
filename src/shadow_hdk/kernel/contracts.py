@@ -15,6 +15,7 @@ from shadow_hdk.kernel.capabilities import (
     Compatibility,
     EnvironmentCapabilities,
     ExecutionRequirements,
+    ExecutionSelection,
     ProviderCapabilities,
 )
 from shadow_hdk.kernel.components import Component, Registration
@@ -35,6 +36,7 @@ CONTRACTS: dict[str, Any] = {
     "ProviderCapabilities": ProviderCapabilities,
     "EnvironmentCapabilities": EnvironmentCapabilities,
     "ExecutionRequirements": ExecutionRequirements,
+    "ExecutionSelection": ExecutionSelection,
     "Compatibility": Compatibility,
     "EffectProfile": EffectProfile,
     "Component": Component,

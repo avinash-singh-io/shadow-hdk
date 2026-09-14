@@ -53,3 +53,19 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/adapters.md
 Detail: RED failed at the absent typed incompatibility. GREEN projects isolation through mode, distinguishes denied, ambient and unknown secrets, exposes the report on every environment, and refuses stricter requirements with the complete compatibility result. The live macOS proof confirms workspace-confined writes and denied network while reporting machine-wide reads and ambient secrets. Fresh gates: 83 broader tests pass (one expected inverse-platform skip), the focused live file has 12 passes, and ruff/mypy pass.
 
 ---
+
+### [FEATURE] 2026-09-15 — One capability selection guards every construction door
+Topics: capabilities, requirements, compatibility, serve, facade, wire, thread, typescript, tdd
+Affects-phases: phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface
+Affects-specs: specs/architecture/adapters.md; specs/architecture/wire.md; specs/architecture/runtime.md
+Detail: Seven RED failures named the missing host/facade arguments, retained selection, typed wire refusal and provider discovery. GREEN resolves/proves the pair before opening an agent, persists requirements on record version 3 for resume, returns the accepted selection from direct Python and protocol v2, and adds `providers/list` plus `capabilities/check`; JSON Schemas and generated TypeScript types move together. Fresh broader gate: 229 tests pass with one expected inverse-platform skip; ruff, mypy and TypeScript compilation pass.
+
+---
+
+### [DISCOVERY] 2026-09-15 — Schema publisher escaped the repository after D78
+Topics: wire, schemas, spec-drift
+Affects-phases: phase-31-a-host-knows-what-it-can-trust
+Affects-specs: specs/architecture/wire.md; specs/architecture/testing.md
+Detail: The documented module command resolved its default two directories above the repository and created an external generated schema directory. BUG-045 records the defect; the output was inspected and removed, a failing exact-target test was added, and the default now resolves to this repository.
+
+---

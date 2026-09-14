@@ -18,9 +18,13 @@ from pathlib import Path
 
 import pytest
 
-from shadow_hdk.wire.schemas import published
+from shadow_hdk.wire.schemas import DEFAULT, published
 
 PUBLISHED = Path(__file__).resolve().parents[2] / "schemas"
+
+
+def test_the_default_publisher_target_is_this_repository() -> None:
+    assert DEFAULT == PUBLISHED
 
 
 def test_every_contract_is_published() -> None:

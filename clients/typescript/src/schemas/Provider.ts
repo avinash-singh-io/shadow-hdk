@@ -1,5 +1,5 @@
 // GENERATED from schemas/*.json by clients/typescript/generate.mjs — do not edit.
-// protocol_version 1. Regenerate with `npm run generate`; the invariant
+// protocol_version 2. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type AuthFailurePatterns = string[]
@@ -7,6 +7,18 @@ export type AuthProbe = string[]
 export type BackfillEnv = string[]
 export type Bin = string
 export type BinEnvKey = (string | null)
+export type At = string
+export type Axis = string
+export type Kind = ("measured" | "derived" | "declared" | "unknown")
+export type Source = string
+export type Evidence = CapabilityEvidence[]
+export type Interrupt = ("native" | "terminate" | "none" | "unknown")
+export type Reasoning = ("yes" | "no" | "unknown")
+export type Session = ("resumable" | "process" | "none" | "unknown")
+export type Streaming = ("live" | "final" | "none" | "unknown")
+export type ToolPath = ("controlled" | "observed" | "uncontrolled" | "unavailable" | "unknown")
+export type UsageCost = ("yes" | "no" | "unknown")
+export type UsageTokens = ("yes" | "no" | "unknown")
 export type AllowArg = string
 export type AllowOverride = string
 export type AllowToolPrefix = string
@@ -16,8 +28,8 @@ export type BehaviourArgs = BehaviourArg[]
 export type CostUsdAt = string
 export type DeltaKindAt = string
 export type DeltaOn = string[]
-export type At = string
-export type Kind = string
+export type At1 = string
+export type Kind1 = string
 export type On = string
 export type Deltas = Delta[]
 export type Disallow = string[]
@@ -47,7 +59,7 @@ export type FallbackBins = string[]
 export type Id = string
 export type InjectsTools = (string | null)
 export type InstallHint = string
-export type Kind1 = ("model" | "agent")
+export type Kind2 = ("model" | "agent")
 export type LaunchArgs = string[]
 export type MinimumVersion = (string | null)
 export type Name = string
@@ -70,12 +82,13 @@ auth_probe?: AuthProbe
 backfill_env?: BackfillEnv
 bin: Bin
 bin_env_key?: BinEnvKey
+capabilities?: ProviderCapabilities
 dialect?: (Dialect | null)
 fallback_bins?: FallbackBins
 id: Id
 injects_tools?: InjectsTools
 install_hint?: InstallHint
-kind: Kind1
+kind: Kind2
 launch_args?: LaunchArgs
 minimum_version?: MinimumVersion
 name?: Name
@@ -83,6 +96,28 @@ set_env?: SetEnv
 strip_env?: StripEnv
 transport?: Transport
 version_probe?: VersionProbe
+}
+/**
+ * What a provider can honestly offer to a host. Every omitted axis is unknown.
+ */
+export interface ProviderCapabilities {
+evidence?: Evidence
+interrupt?: Interrupt
+reasoning?: Reasoning
+session?: Session
+streaming?: Streaming
+tool_path?: ToolPath
+usage_cost?: UsageCost
+usage_tokens?: UsageTokens
+}
+/**
+ * Why one capability value may be believed, without carrying a secret or probe output.
+ */
+export interface CapabilityEvidence {
+at?: At
+axis: Axis
+kind?: Kind
+source?: Source
 }
 /**
  * How to read one CLI's line-delimited JSON event stream (D40).
@@ -146,8 +181,8 @@ flag: Flag
  * what activity kind it becomes, and where its text sits in the event.
  */
 export interface Delta {
-at: At
-kind: Kind
+at: At1
+kind: Kind1
 on: On
 }
 /**

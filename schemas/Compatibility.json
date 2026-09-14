@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "CapabilityEvidence": {
+      "description": "Why one capability value may be believed, without carrying a secret or probe output.",
+      "properties": {
+        "at": {
+          "default": "",
+          "title": "At",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "measured",
+            "derived",
+            "declared",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis"
+      ],
+      "title": "CapabilityEvidence",
+      "type": "object"
+    },
+    "CapabilityMismatch": {
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/CapabilityEvidence"
+        },
+        "required": {
+          "title": "Required",
+          "type": "string"
+        },
+        "subject": {
+          "enum": [
+            "provider",
+            "environment"
+          ],
+          "title": "Subject",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "axis",
+        "required",
+        "available",
+        "evidence"
+      ],
+      "title": "CapabilityMismatch",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "mismatches": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CapabilityMismatch"
+      },
+      "title": "Mismatches",
+      "type": "array"
+    }
+  },
+  "title": "Compatibility",
+  "type": "object"
+}

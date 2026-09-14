@@ -9,6 +9,10 @@
 import type { Event } from "./schemas/Event.js";
 import type { Item } from "./schemas/Item.js";
 import type { Activity } from "./schemas/Activity.js";
+import type { ExecutionRequirements } from "./schemas/ExecutionRequirements.js";
+import type { ExecutionSelection } from "./schemas/ExecutionSelection.js";
+import type { ProviderCapabilities } from "./schemas/ProviderCapabilities.js";
+import { PROTOCOL_VERSION } from "./schemas.js";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -81,6 +85,20 @@ export interface Started {
   /** Who the thread is for, and the product's words about it (D82). */
   principal: string;
   attributes: { [key: string]: JsonValue };
+  /** The exact provider/environment facts accepted for this thread. */
+  capabilities: ExecutionSelection;
+}
+
+export interface ProviderRow {
+  id: string;
+  name: string;
+  kind: "model" | "agent";
+  status: "ready" | "absent" | "not-signed-in" | "too-old" | "unknown";
+  binary: string | null;
+  version: string | null;
+  message: string | null;
+  install_hint: string;
+  capabilities: ProviderCapabilities;
 }
 
 export interface Resumed extends Started {
@@ -140,6 +158,7 @@ type Pending = { resolve: (value: JsonValue) => void; reject: (reason: Error) =>
 export type ErrorKind =
   | "thread_held"
   | "turn_running"
+  | "capability_mismatch"
   | "not_found"
   | "invalid"
   | "version_mismatch"
@@ -200,7 +219,7 @@ export class HarnessClient {
       this.reader = this.readForever(resolve, reject);
     });
     await opened;
-    await this.call("initialize", { protocol_version: "1" });
+    await this.call("initialize", { protocol_version: PROTOCOL_VERSION });
   }
 
   close(): void {
@@ -366,6 +385,7 @@ export class HarnessClient {
       attributes?: { [key: string]: JsonValue };
       /** This thread's own ceiling over the file's default (D84); what it spends is on its record. */
       budget?: { steps?: number; seconds?: number; cents?: number | null };
+      requirements?: ExecutionRequirements;
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
@@ -485,6 +505,15 @@ export class HarnessClient {
   readonly modes = { list: (thread_id?: string) => this.call<{ modes: Started["modes"] }>("modes/list", thread_id ? { thread_id } : {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
   readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
+  /** Providers this process can detect, with evidence-backed execution facts. */
+  readonly providers = {
+    list: () => this.call<{ providers: ProviderRow[] }>("providers/list", {}),
+  };
+  /** Prove a provider/environment pair without opening an agent or a thread. */
+  readonly capabilities = {
+    check: (params: { root?: string; mode?: string; provider?: string; requirements?: ExecutionRequirements }) =>
+      this.call<{ capabilities: ExecutionSelection }>("capabilities/check", params as unknown as { [key: string]: JsonValue }),
+  };
   /** Every rule, or — with a thread — the ones in that thread's scope (D82). */
   readonly rules = { list: (thread_id?: string) => this.call<{ rules: JsonValue[] }>("rules/list", thread_id ? { thread_id } : {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };

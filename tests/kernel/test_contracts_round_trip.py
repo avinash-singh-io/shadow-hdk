@@ -24,6 +24,7 @@ from shadow_hdk.kernel import (
     Ended,
     EnvironmentCapabilities,
     ExecutionRequirements,
+    ExecutionSelection,
     FanOut,
     Floor,
     Interface,
@@ -89,6 +90,10 @@ EXAMPLES = {
     "ProviderCapabilities": (ProviderCapabilities(), ProviderCapabilities),
     "EnvironmentCapabilities": (EnvironmentCapabilities(), EnvironmentCapabilities),
     "ExecutionRequirements": (ExecutionRequirements(), ExecutionRequirements),
+    "ExecutionSelection": (
+        ExecutionSelection(ProviderCapabilities(), EnvironmentCapabilities(), Compatibility()),
+        ExecutionSelection,
+    ),
     "Compatibility": (Compatibility(), Compatibility),
     "EffectProfile": (
         EffectProfile(reads=ScopeSet(everything=True), reversible=False),
