@@ -8,12 +8,12 @@ epic: production-boundary
 > Verify before claiming done (Rule 12).
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 ## Group 0 — Lock one lifecycle evaluator *(blocks)*
-- [/] RED: one scenario suite fails only on the missing model-agent path and missing shared fields/session contracts
-- [ ] Lock item-input JSON/bounds, stream-session state transitions and bearer-source precedence/adversarial cases
-- [ ] Verify focused evaluator tests fail for the intended missing behavior before implementation
+- [x] RED: one scenario suite fails only on the missing model-agent path and missing shared fields/session contracts
+- [x] Lock item-input JSON/bounds, stream-session state transitions and bearer-source precedence/adversarial cases
+- [x] Verify focused evaluator tests fail for the intended missing behavior before implementation
 
 ## Group 1 — A model is an agent below the thread
-- [ ] Implement `ModelAgent` over `ModelPort` and only its handed `ToolSource`
+- [/] Implement `ModelAgent` over `ModelPort` and only its handed `ToolSource`
 - [ ] Route API-model providers through the existing host candidate/capability-selection seam
 - [ ] Verify model/CLI parity for turn, parking, holding, spend, cancellation, resume and activity
 

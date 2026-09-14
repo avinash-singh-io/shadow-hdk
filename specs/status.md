@@ -117,7 +117,7 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 0 — lock the strict RED lifecycle evaluator |
+| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 1 — adapt ModelPort below Thread; Group 0 RED locked |
 
 ## Unreleased Epic Checkpoints
 
