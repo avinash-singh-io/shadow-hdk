@@ -133,9 +133,7 @@ def requires(isolation: Isolation, mode: Mode) -> None:
 def capabilities_of(isolation: Isolation, mode: Mode) -> EnvironmentCapabilities:
     """Project what is true through the selected mode; never promote a claim into proof."""
     writes: AccessBoundary = (
-        "none"
-        if mode == "read-only"
-        else ("workspace" if isolation.writes_confined else "machine")
+        "none" if mode == "read-only" else ("workspace" if isolation.writes_confined else "machine")
     )
     secrets: SecretPosture = (
         "denied"
@@ -153,9 +151,7 @@ def capabilities_of(isolation: Isolation, mode: Mode) -> EnvironmentCapabilities
             "derived",
             "read-only mode offers no writes"
             if mode == "read-only"
-            else (
-                "isolation confines writes" if isolation.writes_confined else "writes are open"
-            ),
+            else ("isolation confines writes" if isolation.writes_confined else "writes are open"),
         ),
         CapabilityEvidence(
             "network",
@@ -339,9 +335,7 @@ class Environment(ComponentPort):
         compatibility = check_compatibility(
             ProviderCapabilities(),
             available,
-            ExecutionRequirements(
-                environment=self._requirements or EnvironmentRequirements()
-            ),
+            ExecutionRequirements(environment=self._requirements or EnvironmentRequirements()),
         )
         if not compatibility.ok:
             raise IncompatibleCapabilities(compatibility, available_environment=available)

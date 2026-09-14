@@ -499,9 +499,7 @@ class ServeHost:
             requirements=execution.environment,
         )
         try:
-            selection = select_execution(
-                provider_capabilities, environment.capabilities, execution
-            )
+            selection = select_execution(provider_capabilities, environment.capabilities, execution)
             agent = await self._open_candidate(handed, available, where)
         except BaseException:
             await environment.close()
@@ -605,9 +603,7 @@ class ServeHost:
             requirements=execution.environment,
         )
         try:
-            selection = select_execution(
-                provider_capabilities, environment.capabilities, execution
-            )
+            selection = select_execution(provider_capabilities, environment.capabilities, execution)
             agent = await self._open_candidate(handed, available, where)
         except BaseException:
             await environment.close()

@@ -77,3 +77,11 @@ Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; sp
 Detail: The additive Phase 31 contracts are now recorded in the constitutional specs, package guides and consumer migration note. The matrix preserves provider differences and the environment note explicitly distinguishes confined writes and denied network from machine-wide reads and ambient secrets; 53 focused document, parity and schema checks pass.
 
 ---
+
+### [DISCOVERY] 2026-09-15 — The configured build gate removed the dependencies its next gates need
+Topics: testing, mypy, ci, landing
+Affects-phases: phase-31-a-host-knows-what-it-can-trust
+Affects-specs: specs/config.md; specs/backlog/backlog.md
+Detail: The configured `uv sync --all-packages` succeeded by uninstalling 29 optional packages, after which full pytest and mypy could not import the Postgres, MQTT, LangChain and OpenSandbox adapters. BUG-046 is closed by making the build command match CI's all-extras install; the completion gate also caught and formatted five Phase 31 files before any checkpoint claim.
+
+---

@@ -12,7 +12,7 @@ type: Config
 | language | python |
 | framework | langgraph |
 | test_command | uv run pytest |
-| build_command | uv sync --all-packages |
+| build_command | uv sync --all-packages --all-extras |
 | publish_target | pypi |
 | git_forge | github |
 | release_command | gh release create |

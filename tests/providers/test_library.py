@@ -112,9 +112,7 @@ def test_a_model_provider_uses_the_same_capability_record() -> None:
         ),
     ],
 )
-def test_malformed_capabilities_are_refused_by_path(
-    capabilities: object, problem: str
-) -> None:
+def test_malformed_capabilities_are_refused_by_path(capabilities: object, problem: str) -> None:
     with pytest.raises(MalformedProvider, match=problem.replace(".", r"\.")):
         provider_from_data(
             {"id": "x", "kind": "agent", "bin": "x", "capabilities": capabilities},

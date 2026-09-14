@@ -739,9 +739,7 @@ def _selection_of(host: ThreadHost, thread_id: str) -> ExecutionSelection:
     selected = getattr(host, "capabilities_for", None)
     if selected is not None:
         return cast(ExecutionSelection, selected(thread_id))
-    return ExecutionSelection(
-        ProviderCapabilities(), EnvironmentCapabilities(), Compatibility()
-    )
+    return ExecutionSelection(ProviderCapabilities(), EnvironmentCapabilities(), Compatibility())
 
 
 def _pending_json(question: Any) -> dict[str, Any]:

@@ -178,9 +178,7 @@ def select_execution(
     return ExecutionSelection(provider, environment, compatibility)
 
 
-def _evidence_for(
-    evidence: tuple[CapabilityEvidence, ...], axis: str
-) -> CapabilityEvidence:
+def _evidence_for(evidence: tuple[CapabilityEvidence, ...], axis: str) -> CapabilityEvidence:
     return next((item for item in evidence if item.axis == axis), CapabilityEvidence(axis))
 
 
