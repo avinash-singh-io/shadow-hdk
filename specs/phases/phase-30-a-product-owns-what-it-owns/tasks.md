@@ -26,7 +26,7 @@ phase: 30
 - [x] `ThreadRecord.version`; the migration note; records: D93
 
 ## Group 6 — sessions that idle out; a stream that survives a drop
-- [ ] `idle_seconds`; the wire's frame ids, grace period, reattach and replay; the TypeScript client reconnects; records: D94
+- [x] `idle_seconds`; the wire's frame ids, grace period, reattach and replay; the TypeScript client reconnects; records: D94
 
 ## The release
 - [ ] the `consuming` page under `docs/`; the architecture documents; Verification Evidence; 0.29.0 tagged and released; the demo pinned; the board's Pins row

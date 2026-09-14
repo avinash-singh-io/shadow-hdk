@@ -15,7 +15,7 @@ from shadow_hdk.kernel import Ceiling, Floor, Lease
 
 KNOWN: dict[str, set[str]] = {
     "environment": {"root", "mode"},
-    "provider": {"want"},
+    "provider": {"want", "idle_seconds"},
     "store": {"path", "url"},
     "modes": {"dir"},
     "registry": {"name"},
@@ -49,6 +49,9 @@ class Settings:
     `workspace-write`, `full` — or one from files or the store. The sandbox mode follows from it;
     an unknown id is refused at `open`, against the registry read then."""
     want: str | None = None
+    idle_seconds: float | None = None
+    """`[provider] idle_seconds = 1800`: a thread's provider session closed after that long
+    without a turn and reopened on its own session id at the next (D94); nothing keeps it."""
     store: str | None = None
     """Where the record lives (D79): a url — `sqlite:///…/live.sqlite`, `postgresql://…` — that
     fills the store, the thread store and the checkpointer at once (`serve.stores_for`); `None`
@@ -113,6 +116,9 @@ def load_settings(path: Path | str) -> Settings:
     store = store_url(raw.get("store", {}), base=base, name=where.name)
     modes_dir = raw.get("modes", {}).get("dir")
     want = raw.get("provider", {}).get("want") or None
+    idle = raw.get("provider", {}).get("idle_seconds")
+    if idle is not None and (not isinstance(idle, int | float) or isinstance(idle, bool)):
+        raise ValueError(f"{where.name}: [provider] idle_seconds must be a number of seconds")
     tools = raw.get("tools", {})
     wanted = tools.get("batteries", [])
     if not isinstance(wanted, list) or not all(isinstance(b, str) for b in wanted):
@@ -131,6 +137,7 @@ def load_settings(path: Path | str) -> Settings:
         root=root,
         mode=mode,
         want=str(want) if want else None,
+        idle_seconds=float(idle) if idle is not None else None,
         store=store,
         modes_dir=(base / str(modes_dir)).resolve() if modes_dir else None,
         registry_name=str(raw.get("registry", {}).get("name", "tools") or "tools"),

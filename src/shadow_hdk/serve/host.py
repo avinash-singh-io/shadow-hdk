@@ -407,6 +407,7 @@ class ServeHost:
             principal=principal,
             attributes=attributes if isinstance(attributes, dict) else None,
             budget=self._budget_of(budget),
+            idle_seconds=self.settings.idle_seconds,
         )
         self.provider = called
         return thread
@@ -483,6 +484,7 @@ class ServeHost:
             rules=self.rules,
             modes=self.modes,
             holder=self.holder,
+            idle_seconds=self.settings.idle_seconds,
         )
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:

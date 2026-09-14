@@ -148,3 +148,27 @@ failing insert.
 **The migration note this release carries.** A rule written before D82 (0.28.0) has no `scope`
 and is for everyone; a product that kept rules from earlier releases should read them and scope
 the ones that were a person's — the kit cannot know whose they were.
+
+### [DECISION] 2026-09-14 — D94: sessions that idle out; a stream that survives a drop
+
+**Decision.** `Conversation.open(idle_seconds=)` / `Thread.open(idle_seconds=)` /
+`[provider] idle_seconds`: after that long without a turn the provider's session is closed —
+the conversation stays open, a thread stays held — and the next turn reopens it on its session
+id (D76), memory kept; nothing keeps it by default. The wire: every frame carries an `id:`; a
+session's runtime runs in a task of its own with its frames in an outbox (the last 5,000); when
+the stream drops the session stays for `grace_seconds` (60) and `GET /rpc` with the session
+header and `Last-Event-ID` reattaches and replays what was missed, each frame once in order; a
+second stream on an attached session is refused (409); past the grace the session's threads
+are closed and the id is gone (404); every session ends with the server. The TypeScript client
+reattaches so and reports `reconnecting` · `connected` · `lost`.
+
+**Why.** One app server, many people: a resident CLI per open thread until the session closed
+(Codex unloads after thirty idle minutes); and a page on a train lost the turn in flight with
+its stream (LangGraph Server's `join`, Codex's WebSocket reconnect). Measured: a turn run while
+nobody listened arrived whole on the reattached stream, from the frame after the last seen.
+
+**Two sessions of one process on one thread.** D81's hold is per process; within one, a
+`thread/resume` from a new session of a thread another session has open *takes it over* when
+that session's stream is gone (a page reloaded — its old session keeps the thread for the
+grace and would otherwise hold it), and is refused as `thread_held` naming the session when
+the stream is attached — two pages cannot drive one thread.

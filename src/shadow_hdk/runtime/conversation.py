@@ -257,8 +257,14 @@ class Conversation:
         session_id: str = "",
         turns_taken: int = 0,
         spent: Spent | None = None,
+        idle_seconds: float | None = None,
     ) -> None:
         self.id = conversation_id
+        self._idle_seconds = idle_seconds
+        """After this long without a turn the provider's session is closed (D94) — the
+        conversation stays open; the next turn reopens the provider on its session id. `None`
+        keeps the provider for the conversation's whole life."""
+        self._idling: asyncio.Task[None] | None = None
         self.mode = mode
         """The policy's mode id — what the governance selects by (the context key `mode`)."""
         self.principal = principal
@@ -338,13 +344,15 @@ class Conversation:
         session_id: str = "",
         turns_taken: int = 0,
         spent: Spent | None = None,
+        idle_seconds: float | None = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
         `modes` is given and knows it, its behaviour is the provider's. `principal` and
         `attributes` (D82) are on every judgement's context; a reserved attribute name is
         refused. `session_id`, `turns_taken` and `spent` are what a record hands back when the
-        conversation is picked up rather than started."""
+        conversation is picked up rather than started. `idle_seconds` (D94) closes the provider
+        after that long without a turn; the next turn reopens it on its session id."""
         if workspace is None:
             if root is None:
                 raise ValueError("a conversation needs a root or a workspace")
@@ -369,11 +377,35 @@ class Conversation:
             session_id=session_id,
             turns_taken=turns_taken,
             spent=spent,
+            idle_seconds=idle_seconds,
         )
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
         await conversation._start()
+        conversation._idle_from_now()
         return conversation
+
+    def _idle_from_now(self) -> None:
+        """Start the idle clock (D94): when it runs out with no turn begun, the provider's
+        session is closed and reopened on its id at the next turn. Restarted after every turn;
+        stopped while one runs."""
+        self._stop_idling()
+        if self._idle_seconds is None:
+            return
+
+        async def idling() -> None:
+            await asyncio.sleep(self._idle_seconds or 0)
+            if self._session is not None and self._current is None:
+                self._remember_session()
+                await self._session.close()
+                self._session = None
+
+        self._idling = asyncio.create_task(idling())
+
+    def _stop_idling(self) -> None:
+        if self._idling is not None:
+            self._idling.cancel()
+            self._idling = None
 
     async def _start(self) -> None:
         # **The offer lives in a task of its own.** A socket offer is an anyio listener and a task
@@ -434,6 +466,7 @@ class Conversation:
         self._session = await self._open_provider()
 
     async def close(self) -> None:
+        self._stop_idling()
         if self._session is not None:
             self._remember_session()
             await self._session.close()
@@ -524,8 +557,9 @@ class Conversation:
                 raise TurnRunning(self.id, self._running_turn)
             if when == "interrupt":
                 await self.interrupt()
+        self._stop_idling()
         if self._session is None:
-            # An interrupted provider that could not be told was closed; a turn reopens it.
+            # A provider closed for idling (D94), or interrupted and not told: a turn reopens it.
             self._session = await self._open_provider()
         async with self._turning:
             # What is left is read here, under the lock: a running turn reserves everything the
@@ -664,6 +698,7 @@ class Conversation:
                     tokens_known=tokens_known and not unreported,
                 )
                 self._meter.pause()
+                self._idle_from_now()
                 # **Kept, or withdrawn** (D88). A question answered `Parked` stays open on the
                 # turn — the run that sleeps on it is in the checkpointer; every other question
                 # still open when the turn ended was withdrawn from whoever was asked (D59).

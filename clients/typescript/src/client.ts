@@ -20,6 +20,12 @@ export interface ClientOptions {
   /** Answer the runtime's own requests (a component on this side). Rarely needed for threads. */
   onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
   fetch?: typeof fetch;
+  /** Reattach to the same session when the stream drops (D94) — replaying what was missed —
+   *  retrying for about this long before giving up (default 60 s, the server's grace). `0` never
+   *  reconnects. */
+  reconnectSeconds?: number;
+  /** Told when the stream drops and when it is back, and when the session is gone for good. */
+  onStream?: (state: "reconnecting" | "connected" | "lost") => void;
 }
 
 export interface ApprovalRequest {
@@ -169,6 +175,9 @@ export class HarnessClient {
   private readonly listeners = new Map<string, Set<(params: JsonValue) => void>>();
   private reader: Promise<void> | null = null;
   private abort = new AbortController();
+  private lastEventId: number | null = null;
+  private readonly reconnectSeconds: number;
+  private readonly onStream?: ClientOptions["onStream"];
 
   constructor(options: ClientOptions) {
     this.address = options.address.replace(/\/$/, "");
@@ -179,6 +188,8 @@ export class HarnessClient {
     // function calls the real one with no `this` at all, the supplied one included.
     const underlying = options.fetch ?? fetch;
     this.doFetch = (input, init) => underlying(input, init);
+    this.reconnectSeconds = options.reconnectSeconds ?? 60;
+    this.onStream = options.onStream;
   }
 
   // ---------------------------------------------------------------- the session
@@ -219,8 +230,48 @@ export class HarnessClient {
     }
     this.sessionId = response.headers.get(SESSION_HEADER);
     ready();
+    await this.readStream(response.body);
+    // The stream ended and we did not close it: the session is still there for a while (D94).
+    // Reattach with the last frame seen, replaying what was missed; give up when the server
+    // says the session is gone, or after the grace.
+    while (!this.abort.signal.aborted && this.reconnectSeconds > 0) {
+      this.onStream?.("reconnecting");
+      const body = await this.reattach();
+      if (body === null) break;
+      this.onStream?.("connected");
+      await this.readStream(body);
+    }
+    if (!this.abort.signal.aborted) {
+      this.onStream?.("lost");
+      for (const waiting of this.pending.values()) waiting.reject(new Error("the stream ended and the session is gone"));
+      this.pending.clear();
+    }
+  }
+
+  /** `GET /rpc` with the session header and `Last-Event-ID`, retried with a widening pause for
+   *  about `reconnectSeconds`; `null` when the session is gone (404) or the time is up. */
+  private async reattach(): Promise<ReadableStream<Uint8Array> | null> {
+    const deadline = Date.now() + this.reconnectSeconds * 1000;
+    let pause = 500;
+    while (Date.now() < deadline && !this.abort.signal.aborted) {
+      try {
+        const headers = this.headers();
+        if (this.lastEventId !== null) headers["last-event-id"] = String(this.lastEventId);
+        const response = await this.doFetch(`${this.address}/rpc`, { headers, signal: this.abort.signal });
+        if (response.status === 404) return null;
+        if (response.ok && response.body) return response.body;
+      } catch {
+        // not reachable yet: wait and try again
+      }
+      await new Promise((r) => setTimeout(r, pause));
+      pause = Math.min(pause * 2, 5000);
+    }
+    return null;
+  }
+
+  private async readStream(body: ReadableStream<Uint8Array>): Promise<void> {
     const decoder = new TextDecoder();
-    const reader = response.body.getReader();
+    const reader = body.getReader();
     let buffer = "";
     try {
       for (;;) {
@@ -232,12 +283,13 @@ export class HarnessClient {
           const frame = buffer.slice(0, cut);
           buffer = buffer.slice(cut + 2);
           for (const line of frame.split("\n")) {
-            if (line.startsWith("data: ")) await this.onFrame(JSON.parse(line.slice(6)) as JsonValue);
+            if (line.startsWith("id: ")) this.lastEventId = Number(line.slice(4));
+            else if (line.startsWith("data: ")) await this.onFrame(JSON.parse(line.slice(6)) as JsonValue);
           }
         }
       }
     } catch (error) {
-      if (!this.abort.signal.aborted) throw error;
+      if (!this.abort.signal.aborted) return; // the stream broke: the caller reattaches
     }
   }
 

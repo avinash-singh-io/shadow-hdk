@@ -250,6 +250,10 @@ class ThreadMethods:
         host = self._host_or_raise()
         self._relaying(host)
         thread_id = str(params.get("thread_id", ""))
+        take_over = getattr(self._admin, "take_over", None)
+        if take_over is not None:
+            # A page reloaded (D94): the thread its old session still holds, closed there first.
+            await take_over(thread_id, self)
         thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
         self.threads[thread.id] = thread
         # A question the last host left open (D80) is offered again: pushed the way a live one
@@ -276,6 +280,12 @@ class ThreadMethods:
         await thread.close()
         del self.threads[thread.id]
         return {"closed": thread.id}
+
+    async def close_one(self, thread_id: str) -> None:
+        """One thread closed and forgotten — taken over by another session (D94)."""
+        thread = self.threads.pop(thread_id, None)
+        if thread is not None:
+            await thread.close()
 
     async def close_all(self) -> None:
         """What this wire opened, closed with it: a session that ends — the page reloaded, the

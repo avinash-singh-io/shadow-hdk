@@ -296,3 +296,14 @@ def test_a_sigterm_ends_serve_http_even_with_a_page_holding_the_stream(tmp_path:
         if child.poll() is None:
             child.kill()
             child.wait(timeout=5)
+
+
+def test_settings_read_the_idle_time(tmp_path: Path) -> None:
+    (tmp_path / "harness.toml").write_text(
+        '[provider]\nwant = "codex"\nidle_seconds = 1800\n', encoding="utf-8"
+    )
+    assert load_settings(tmp_path / "harness.toml").idle_seconds == 1800.0
+    assert Settings(root=tmp_path).idle_seconds is None
+    (tmp_path / "harness.toml").write_text('[provider]\nidle_seconds = "soon"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="idle_seconds"):
+        load_settings(tmp_path / "harness.toml")

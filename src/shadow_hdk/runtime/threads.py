@@ -179,6 +179,7 @@ class Thread:
         principal: str = "",
         attributes: Mapping[str, JsonValue] | None = None,
         budget: Ceiling | None = None,
+        idle_seconds: float | None = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
 
@@ -229,6 +230,7 @@ class Thread:
                 principal=principal,
                 attributes=given,
                 conversation_id=record.id,
+                idle_seconds=idle_seconds,
             )
         except BaseException:
             await thread._let_go_of_hold()
@@ -252,6 +254,7 @@ class Thread:
         rules: Any = None,
         holder: str = "",
         hold_seconds: float = HOLD_SECONDS,
+        idle_seconds: float | None = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
@@ -286,6 +289,7 @@ class Thread:
                 session_id=record.session_id,
                 turns_taken=len(record.turns),
                 spent=record.spent,
+                idle_seconds=idle_seconds,
             )
         except BaseException:
             await thread._let_go_of_hold()

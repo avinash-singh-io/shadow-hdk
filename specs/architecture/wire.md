@@ -132,6 +132,14 @@ fresh, its memory kept (`AgentPort.open(resume=)`).
 - **Approvals cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Approvals` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
   environment, sent as the first line before MCP.
+- **A session outlives its stream** (D94): every frame carries an `id:`; the runtime runs in a
+  task of the session's own, its frames kept in an outbox (the last 5,000); when the stream
+  drops the session stays for a grace (60 s by default, `grace_seconds`) and `GET /rpc` with the
+  session header and `Last-Event-ID` reattaches, replaying what was missed, each frame once in
+  order; a second stream on an attached session is refused (409); past the grace the session's
+  threads are closed and its id is gone (404). The TypeScript client reattaches so, and says
+  `reconnecting` · `connected` · `lost` through `onStream`. A thread's provider idles out
+  (`[provider] idle_seconds`, D94) and is reopened on its session id at the next turn.
 - **Refusals are typed** (D92): every error carries `data.kind` from the published `ERROR_KINDS`
   — `thread_held {thread_id, holder}`, `turn_running {thread_id, turn_id}`, `not_found`,
   `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone` — beside the code and the

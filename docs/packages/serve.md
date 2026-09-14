@@ -13,6 +13,7 @@ root = "."
 mode = "workspace-write"      # read-only | workspace-write | full
 [provider]
 want = ""                     # claude-code | codex | opencode | "" for the first ready
+idle_seconds = 1800           # a thread's CLI closed after this long idle, reopened at the next turn (D94)
 [store]
 path = "live.sqlite"          # modes, rules, skills, switches, threads, parked runs — live, no restart
 # url = "postgresql://…"      # or Postgres, with the [postgres] extra: the same three, one choice (D79)
