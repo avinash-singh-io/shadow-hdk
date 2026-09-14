@@ -37,3 +37,11 @@ Affects-specs: specs/architecture/adapters.md; specs/architecture/wire.md
 Detail: RED first failed because `CapabilityEvidence` did not exist. GREEN adds typed provider and environment facts, caller requirements, evidence per axis and a total compatibility result in stable provider-then-environment order; unknown never satisfies a production requirement. Fresh gates: 32 focused tests, ruff and mypy all pass.
 
 ---
+
+### [FEATURE] 2026-09-15 — Provider records expose measured capability truth
+Topics: capabilities, provider-evidence, providers, api-model, tdd
+Affects-phases: phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface
+Affects-specs: specs/architecture/adapters.md
+Detail: RED named seven missing behaviors: absent facts, nested validation paths, shipped matrices and detection exposure. GREEN adds a conservative capability record to every provider, validated nested TOML with per-axis evidence, measured/derived records for Claude Code, Codex and OpenCode, and the same record for model-provider adapters. Fresh gates: 90 provider/kernel contract tests, ruff and mypy pass.
+
+---

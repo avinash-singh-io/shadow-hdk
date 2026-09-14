@@ -13,12 +13,12 @@ epic: production-boundary
 - [x] Verify focused kernel tests, schemas and mutations
 
 ## Group 1 — Providers tell the measured truth
-- [/] RED: absent capability is unknown; malformed/contradictory provider records refuse by path; detection carries capabilities
-- [ ] Record measured Claude Code, Codex and OpenCode capabilities; cover the API-model seam
-- [ ] Verify provider library, surface, resolution and public-export tests
+- [x] RED: absent capability is unknown; malformed/contradictory provider records refuse by path; detection carries capabilities
+- [x] Record measured Claude Code, Codex and OpenCode capabilities; cover the API-model seam
+- [x] Verify provider library, surface, resolution and public-export tests
 
 ## Group 2 — Environments tell the proven truth
-- [ ] RED: strict read/secret requirements fail against local macOS capabilities; fake matrices cover every axis
+- [/] RED: strict read/secret requirements fail against local macOS capabilities; fake matrices cover every axis
 - [ ] Project `Isolation` into environment capabilities and match stricter requirements without changing existing modes
 - [ ] Verify environment contract, confinement and live-proof tests available on this machine
 

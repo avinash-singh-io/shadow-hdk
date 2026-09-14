@@ -115,7 +115,7 @@ merged and released**: 1,566 tests, mypy strict over 418 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | in progress | Group 1 — provider truth RED |
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | in progress | Group 2 — environment truth RED |
 
 ## Upcoming Phases
 

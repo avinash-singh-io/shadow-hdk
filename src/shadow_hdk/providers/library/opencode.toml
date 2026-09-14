@@ -48,3 +48,47 @@ install_hint = "brew install sst/tap/opencode  (then `opencode auth login`)"
 name = "OPENCODE_DISABLE_PROJECT_CONFIG"
 value = "true"
 
+[capabilities]
+tool_path = "controlled"
+session = "process"
+interrupt = "none"
+streaming = "final"
+reasoning = "unknown"
+usage_tokens = "unknown"
+usage_cost = "unknown"
+
+[[capabilities.evidence]]
+axis = "tool_path"
+kind = "derived"
+source = "ACP filesystem and terminal callbacks pass through Shadow governance"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "session"
+kind = "derived"
+source = "ACP session is resident for one host process; session/load is not wired"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "interrupt"
+kind = "derived"
+source = "the ACP adapter exposes no native turn interrupt"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "streaming"
+kind = "derived"
+source = "the ACP session uses AgentSession final-chunk fallback"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "reasoning"
+kind = "unknown"
+
+[[capabilities.evidence]]
+axis = "usage_tokens"
+kind = "unknown"
+
+[[capabilities.evidence]]
+axis = "usage_cost"
+kind = "unknown"
