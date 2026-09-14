@@ -15,8 +15,10 @@ from typing import Any, cast
 
 import pytest
 
-from shadow_hdk.kernel import Completed, Observed
-from shadow_hdk.runtime import Approvals, Approve, Parked
+from shadow_hdk.kernel import Completed, Observed, Refused
+from shadow_hdk.runtime import Approvals, Approve, Parked, Ports
+from shadow_hdk.runtime.person import person_components
+from shadow_hdk.runtime.testing import FixedClock, ListSink
 from shadow_hdk.runtime.threads import InMemoryThreads, Thread
 from shadow_hdk.serve.stores import stores_for
 from tests.runtime.test_a_conversation_without_a_record import Agent, Seen, Writes, _lease, _ports
@@ -118,3 +120,45 @@ async def test_without_a_handle_a_park_is_the_refusal_it_always_was(tmp_path: Pa
         assert thread.pending == () and writes.wrote == []
     finally:
         await thread.close()
+
+
+async def test_the_agents_own_question_parks_and_the_agent_is_told_not_now(tmp_path: Path) -> None:
+    """BUG-044: `ask_person` parked — by `on_question="park"` or a host answering `Parked` — must
+    tell the agent "not now" and keep the question, not hand it the text `Parked()` as the
+    person's answer. Later the answer is folded ahead of the next prompt, as `settle` does."""
+    stores = stores_for(f"sqlite:///{tmp_path}/live.sqlite")
+    agent = Agent(
+        [([("ask_person", {"question": "which colour?"})], "asked; stopping"), ([], "ok")]
+    )
+    thread = await Thread.open(
+        agent=cast(Any, agent),
+        ports=Ports(
+            model=None,
+            components=(person_components(),),
+            governance=Seen(),
+            sink=ListSink(),
+            clock=FixedClock(),
+        ),
+        store=stores.threads,
+        root=tmp_path / "work",
+        lease=_lease(),
+        approvals=Approvals(),
+        checkpointer=await stores.checkpointer(),
+    )
+    agent.reach = thread.registry.call
+    try:
+        [e async for e in thread.turn("ask me", on_question="park")]
+        assert thread.record.turns[-1].outcome == "parked"
+        (question,) = thread.pending
+        assert question.kind == "input" and question.question == "which colour?"
+        (answer,) = agent.answers
+        assert isinstance(answer, Refused), answer
+        assert "not now" in answer.reason and "Parked()" not in answer.reason
+
+        events = await thread.settle(question.handle, "blue")
+        assert events == [] and thread.pending == ()
+        [e async for e in thread.turn("next")]
+        assert "which colour?" in agent.prompts[-1] and "blue" in agent.prompts[-1]
+    finally:
+        await thread.close()
+        await stores.aclose()

@@ -34,7 +34,7 @@ from shadow_hdk.kernel.ports import (
     ModelResponse,
     Refuse,
 )
-from shadow_hdk.runtime import Approvals, Ports, RunOptions
+from shadow_hdk.runtime import Approvals, Parked, Ports, RunOptions
 from shadow_hdk.runtime.items import Fold, Item, as_json
 from shadow_hdk.wire.channel import Channel, channel_pair
 from shadow_hdk.wire.peer import Peer
@@ -179,15 +179,20 @@ class RuntimeSide:
         )
         if isinstance(answer, Allow | Ask | Refuse):
             answer = json.loads(dump(answer, Judgement))
+        elif isinstance(answer, Parked):
+            answer = {"kind": "park"}  # D88: kept for later, as the wire spells it
         return {"answer": answer}
 
     async def _context_request_input(self, params: dict[str, Any]) -> Any:
-        """The agent's own question crosses and waits (D65); the text comes back, or `None`."""
+        """The agent's own question crosses and waits (D65); the text comes back, or `None` —
+        or `{"kind": "park"}` when the host kept it for later (D88, BUG-044)."""
         if self.live is None:
             raise RuntimeError("nothing is running, so there is nobody to ask")
         answer = await self.live.request_input(
             str(params.get("question", "")), step=params.get("step")
         )
+        if isinstance(answer, Parked):
+            return {"answer": {"kind": "park"}}
         return {"answer": answer}
 
     async def _context_activity(self, params: dict[str, Any]) -> None:

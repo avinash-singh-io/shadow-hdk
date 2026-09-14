@@ -35,6 +35,7 @@ from shadow_hdk.kernel.ports import (
 )
 
 if TYPE_CHECKING:
+    from shadow_hdk.runtime.approvals import Parked
     from shadow_hdk.runtime.cancel import Cancellation
     from shadow_hdk.runtime.children import Children
     from shadow_hdk.runtime.emit import Emitter
@@ -472,12 +473,13 @@ class RunContext:
         again (principle 6: once)."""
         return self._emitter.recorded(kind)
 
-    async def request_input(self, question: str, *, step: str | None = None) -> str | None:
+    async def request_input(self, question: str, *, step: str | None = None) -> str | Parked | None:
         """The agent's own question to the person (D65): `InputRequested` on the record, the
         answer as text through the same handle the approvals use. `None` when nobody was there —
-        a component says so and fails, rather than inventing an answer."""
+        a component says so and fails, rather than inventing an answer. `Parked` when the host
+        kept the question for later (D88, BUG-044): not an answer, and never the person's words."""
         from shadow_hdk.kernel.events import InputRequested
-        from shadow_hdk.runtime.approvals import Request
+        from shadow_hdk.runtime.approvals import Parked, Request
 
         where = step if step is not None else (self.step or "")
         handle = f"{self.run_id}:{where}:{self._emitter.seq + 1}"
@@ -490,6 +492,8 @@ class RunContext:
         answered = await approvals.ask(
             Request(handle=handle, run_id=self.run_id, step=where, question=question, kind="input")
         )
+        if isinstance(answered, Parked):
+            return answered
         return str(answered) if answered is not None else None
 
     async def keep(self, value: JsonValue, *, step: str | None = None) -> None:

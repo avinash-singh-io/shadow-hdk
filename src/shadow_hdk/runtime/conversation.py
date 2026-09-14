@@ -780,8 +780,14 @@ class Conversation:
             if on_question == "park":
                 self._park(question)
         elif isinstance(event, Observed | RefusedEvent):
+            # The step answered, so its questions are closed — except one answered `Parked`
+            # (D88): the step's refusal is the agent being told "not now", and the question
+            # stays open for whoever keeps the record (BUG-044: the agent's own question).
+            parked: set[str] = getattr(self._approvals, "parked", set())
             self._open_questions = [
-                q for q in self._open_questions if not (q.step == event.step and q.turn == turn_id)
+                q
+                for q in self._open_questions
+                if not (q.step == event.step and q.turn == turn_id) or q.handle in parked
             ]
 
     def _park(self, question: PendingQuestion) -> None:

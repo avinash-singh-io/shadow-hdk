@@ -10,7 +10,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**One distribution, `shadow-hdk` `0.29.0`, MIT, on PyPI.** 1,560 tests; `mypy --strict` over 418 files;
+**One distribution, `shadow-hdk` `0.29.1`, MIT, on PyPI.** 1,566 tests; `mypy --strict` over 418 files;
 0.594 ms of runtime overhead per step.
 
 ---
