@@ -107,6 +107,13 @@ and the evidence used. Unknown never satisfies an explicit requirement. `provide
 facts; `capabilities/check` proves and compares a candidate without opening its agent or creating a
 thread. JSON Schema and the generated TypeScript client publish the same shapes and protocol number.
 
+**Phase 32 keeps one visible agent contract.** Whether the host supplied an `AgentPort` or a
+`ModelPort` adapted by `ModelAgent`, the product still starts and resumes the same `Thread` and
+receives the same turns, items, activity, usage, questions and capability selection. Every `Item`
+also carries the component's JSON `inputs`, copied through the fold and wire up to a 64 KiB
+canonical encoding; above the bound, an explicit omission marker carries the encoded byte count.
+The complete `Invoked` event remains authoritative.
+
 ## Rules already fixed
 
 > **Corrected 2026-09-10 (BUG-006); decided 2026-09-14 (D86).** This section listed the run
@@ -123,7 +130,10 @@ thread. JSON Schema and the generated TypeScript client publish the same shapes 
 
 - **Authentication is the deployment's bearer** (D86, closing the run-token debt of BUG-006): one
   token on the HTTP door, held by the product's backend, never by a browser; the person's
-  identity travels on the thread (D82). The runtime never holds a host credential.
+  identity travels on the thread (D82). The runtime never holds a host credential. Source
+  precedence is a permission-checked `--token-file`, then `SHADOW_HDK_TOKEN`, then the documented
+  local-only `--token` fallback. The file is one bounded UTF-8 line, regular, not a symlink,
+  current-user owned and inaccessible to group/other; failures never disclose the value.
 - **Schemas are published** from `shadow_hdk.kernel.contracts.all_schemas()`; a TypeScript client
   is generated from them and is a *client*, never a port of the runtime (`09` §3b). The client is a
   package a product installs (`clients/typescript`, by path until it is on npm), and it runs in a
@@ -144,12 +154,17 @@ thread. JSON Schema and the generated TypeScript client publish the same shapes 
 - **Approvals cross** (D57, D58): `context.keep` and `context.resumed` carry a parked component's state and answer; `context.ask` carries a live question to the `Approvals` handle the runtime side owns.
 - **The registry socket is authenticated** (D52): a per-serve token from `secrets` in the relay's
   environment, sent as the first line before MCP.
-- **A session outlives its stream** (D94): every frame carries an `id:`; the runtime runs in a
-  task of the session's own, its frames kept in an outbox (the last 5,000); when the stream
+- **A session outlives its stream** (D94): `runtime.StreamSession` owns this state independently of
+  HTTP — monotone ids, a bounded outbox (the last 5,000), one attachment, typed stale cursor and
+  grace expiry under an injected clock. Every durable frame carries an `id:`; the runtime runs in a
+  task of the session's own; when the stream
   drops the session stays for a grace (60 s by default, `grace_seconds`) and `GET /rpc` with the
   session header and `Last-Event-ID` reattaches, replaying what was missed, each frame once in
-  order; a second stream on an attached session is refused (409); past the grace the session's
-  threads are closed and its id is gone (404). The TypeScript client reattaches so, and says
+  order; a second stream on an attached session is refused (409), and an expired replay cursor is
+  gone (410); past the grace the session's threads are closed and its id is gone (404). An idle
+  HTTP stream emits a comment heartbeat after 15 seconds without allocating an id or touching
+  replay/the record. The TypeScript client treats 45 seconds without bytes as a silent drop,
+  cancels the body, reattaches with its last id, and says
   `reconnecting` · `connected` · `lost` through `onStream`. A thread's provider idles out
   (`[provider] idle_seconds`, D94) and is reopened on its session id at the next turn.
 - **Refusals are typed** (D92): every error carries `data.kind` from the published `ERROR_KINDS`

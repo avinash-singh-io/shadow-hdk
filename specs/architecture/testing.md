@@ -122,3 +122,21 @@ governance, the stdout sink; the marker comes off, and the CI job fails if it is
   `a_thread`, `Harness`, `ServeHost`, JSON-RPC protocol 2 and the generated TypeScript client.
 - `wire/test_schemas.py` pins the schema publisher to this repository, preventing a default build
   from silently writing generated contracts outside the checkout (BUG-045).
+
+## Cases — Phase 32
+
+- `runtime/test_one_agent_surface.py` drives the same Thread lifecycle through a CLI-style
+  `AgentPort` and a `ModelAgent`: tools, parking/settlement, holding, usage, activity, resume and
+  interruption. A blocked model call must be cancelled at the provider call, and unknown usage
+  stays unmetered.
+- `runtime/test_item_inputs.py` proves exact canonical-JSON retention through 64 KiB and the typed
+  omission marker above it; wire/schema/client tests prove the field crosses without a second fold.
+- `runtime/test_streams.py` locks monotone bounded replay, replay-then-live-once, single attachment,
+  typed stale cursors, injected-clock grace expiry, and heartbeats that allocate no id and enter no
+  replay record.
+- HTTP D94 integration proves the 15-second heartbeat, unique frame ids, reattachment with
+  `Last-Event-ID`, and terminal stale-cursor behavior. The deterministic TypeScript silence smoke
+  proves 45-second-default recovery without waiting on wall time.
+- serve authentication tests lock file → environment → local-flag precedence, duplicate-source
+  refusal, owner/regular-file/non-symlink/permission/size/UTF-8/one-line checks, argv secrecy and
+  redacted failures.

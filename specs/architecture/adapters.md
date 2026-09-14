@@ -14,7 +14,7 @@ type: Architecture
 | adapter | port | phase | notes |
 |---|---|---|---|
 | `basic` — allow-all, **`Controlled`** (only controlled satisfies consent-before-effect, D30), stdout sink, **file sink** (JSON lines, on disk before it returns), callback observer, system clock, **callable** | governance · sink · observer · clock · component | 0 | `callable` turns a Python function into a component; it is how a product registers its own tools |
-| `agent` | component | 0 | the model loop as a component (D1); patterns decide its meta-tools (D3) |
+| `agent` | component · agent | 0 · 32 | the model loop as a component (D1), and `ModelAgent` as the same loop below `AgentPort`; patterns decide its meta-tools (D3) |
 | `langchain` | model | 1 | one adapter over LangChain's integrations; `stream` for tokens |
 | `mcp` | component | 1 | an MCP server's tools become components; annotations fill half a profile |
 | `modes` | governance | 1 · 25 · 28 | a mode is a ceiling profile plus an ask line — data; since D64 a `ModeSpec` is policy + behaviour + presentation, and since D76 it names the environment mode it needs; four ship — `read-only`, `ask`, `workspace-write`, `full` — and the rest are files or store rows |
@@ -95,6 +95,14 @@ class AgentComponent(ComponentPort):
 **The floor.** If the model says *done* before `lease.floor.min_steps`, the adapter nudges once —
 *"you have not tried N things yet"* — and accepts the second answer. A model trained to be agreeable
 gives up early; the floor is the honest counter, and one nudge is the whole of it.
+
+**One product surface (Phase 32).** `ModelAgent(model, pattern)` implements `AgentPort` by running
+this same loop against only the `ToolSource` handed to `open`. A `ModelPort` can therefore enter
+`Thread`, `a_thread`, `Harness` or `ServeHost` through `model=` while a CLI enters through
+`agent=`; construction refuses both together. The choice is below the durable boundary, so turn,
+parking, holding, capability selection, usage, activity, interruption and resume retain one shape.
+Interruption cancels an active model call, a parked child maps back to its durable run, and absent
+provider usage remains unknown/unmetered rather than zero.
 
 **Skills are a registry, offered as a component** (Phase 24, D54–D56). `SkillRegistry` is a union
 of sources — `DirectorySkills` (shipped, or a team's directory of TOML), the host's own kept ones,

@@ -134,7 +134,7 @@ last two are what a *thread* and the *registries* keep their state in (D62, D66)
 | `SinkPort` | `propose(proposal)` | `basic` — stdout, a file that survives a crash, a callback |
 | `ObserverPort` | `on(event)` | `basic`, `otel` |
 | `ClockPort` | `now()`, `new_id()` | `basic`, and a fixed clock for tests |
-| `AgentPort` | `open(tools, workspace, behaviour, resume)` → a resident session | `jsonl` — Claude Code, Codex; `acp` — OpenCode, anything speaking ACP |
+| `AgentPort` | `open(tools, workspace, behaviour, resume)` → one agent session | `agent.ModelAgent` — any `ModelPort`; `jsonl` — Claude Code, Codex; `acp` — OpenCode, anything speaking ACP |
 | `ThreadStore` | `create`, `save`, `get`, `list` a thread record (the shipped ones also `archive`) | `runtime` (memory), `basic` (sqlite) |
 | `Store` | `put`, `get`, `delete`, `list`, `version` on a collection of JSON rows | `runtime` (memory), `basic` (sqlite); yours behind your database |
 
@@ -166,8 +166,9 @@ Claude Code's session): the provider opened once and held, its record kept throu
 you implement or take as shipped (sqlite), resumable, forkable, listable. A **turn** is one
 exchange — one run of the thread, under a ceiling carved from the thread's lease. An **item** is
 what you render: a fold of the events into what the agent thought, reached for, got back, spawned,
-was refused, asked and spent, each tool call a child item under the turn. **Activity** is the
-stream beside it.
+was refused, asked and spent, each tool call a child item under the turn. `Item.inputs` is the
+invoked JSON through a 64 KiB canonical bound, then an explicit omission marker; the full event
+remains authoritative. **Activity** is the stream beside it.
 
 ```python
 from shadow_hdk.runtime.threads import Thread
@@ -413,6 +414,10 @@ shadow-hdk serve --http --page examples/studio/page.html --root ./work --mode wo
 
 Over `--http` a client opens the session with `GET /rpc` (an SSE stream; the session id comes
 back in `x-shadow-hdk-session`) and posts JSON-RPC frames to `POST /rpc` with that header. The
+stream sends a 15-second idle heartbeat and keeps bounded numbered frames for reconnect; the
+TypeScript client treats 45 seconds without bytes as a dropped link and reattaches from its last
+id. For a non-loopback listener, use a private `--token-file` or `SHADOW_HDK_TOKEN`; `--token` is
+the local-only fallback. The
 methods: `thread/start` · `thread/resume` · `thread/close` · `thread/list` · `thread/fork` ·
 `thread/rollback` · `thread/archive` · `thread/set_mode` · `thread/set_option` ·
 `thread/remaining` · `turn/start` · `turn/steer` · `turn/interrupt` · `approvals/pending` ·
@@ -448,7 +453,9 @@ nothing local (D69) — what the page does, a product in any language does the s
 Two ways to pay for the thinking, and the harness governs both the same way.
 
 **Bring your own key.** A `ModelPort` — `LangChainModel` reaches OpenAI and every OpenAI-compatible
-endpoint, Anthropic, Ollama, Bedrock, Vertex, Mistral. Your loop, your patterns, your tools.
+endpoint, Anthropic, Ollama, Bedrock, Vertex, Mistral. `ModelAgent` puts that model loop below the
+same `AgentPort`/`Thread` surface as a subscription-backed CLI: your patterns and your tools,
+without a second product lifecycle.
 
 **Bring your own subscription.** Many people already pay for a coding agent — Claude Code, OpenCode,
 Codex — and that is inference already bought. An `AgentPort` drives one that is already installed and
@@ -509,8 +516,8 @@ See [migrating from 0.29.1 to 0.30](docs/migrations/0.30.md) for the additive Py
 the wire-version change.
 
 The trade, stated plainly: when a subscription drives, **its** loop runs, not ours — our patterns
-and compositions do not apply (D43). You cannot buy an agent and also own its loop. If you need our
-loop, that is what `ModelPort` is for.
+and compositions do not apply (D43). When a `ModelPort` drives through `ModelAgent`, our loop and
+patterns run. Both choices still produce the same thread, turn, item, activity and control surface.
 
 ### Where effects land — the environment
 

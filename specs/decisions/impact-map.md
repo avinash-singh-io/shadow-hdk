@@ -25,7 +25,7 @@ entry carries matching `Topics:`.
 | capabilities, requirements, provider-evidence, compatibility | specs/architecture/adapters.md; specs/architecture/wire.md | Providers; The thread, crossed |
 | authority, revisions, effect-authorization, act-time | specs/architecture/runtime.md | The governed step; Acting |
 | effect-journal, reconciliation, unknown-outcome, receipts | specs/architecture/runtime.md; specs/architecture/wire.md | Acting; The record |
-| model-agent, agent-surface, item-inputs, stream-session, heartbeat | specs/architecture/adapters.md; specs/architecture/wire.md | The agent adapter; The thread, crossed |
+| model-agent, agent-surface, item-inputs, stream-session, heartbeat, authentication, typescript | specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md | The agent adapter; Modules; The thread, crossed; Cases |
 | dynamic-planning, scheduling, generative-ui, collaboration, evolution | specs/planning/roadmap.md | Timeline; What comes next; Guiding Principles |
 | mypy, ci, landing | specs/architecture/testing.md | Layers |
 | spec-drift | specs/architecture/file-structure.md | (whole file) |

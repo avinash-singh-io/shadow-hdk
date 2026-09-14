@@ -33,6 +33,6 @@ epic: production-boundary
 - [x] Verify heartbeat timing, silent-drop recovery, argv secrecy, permission refusal and log redaction
 
 ## Group 5 — Evidence and epic checkpoint
-- [/] Update architecture/package/migration docs with one agent and stream surface
-- [ ] Run build, ruff check, format check, mypy strict, full pytest, parity/schema/client drift and benchmark
+- [x] Update architecture/package/migration docs with one agent and stream surface
+- [/] Run build, ruff check, format check, mypy strict, full pytest, parity/schema/client drift and benchmark
 - [ ] Append phase evidence/history, mark Phase 32 complete and continue Phase 33 without releasing

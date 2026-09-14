@@ -93,3 +93,11 @@ Affects-specs: specs/architecture/wire.md#The thread, crossed; docs/migrations/0
 Detail: Idle HTTP streams now emit 15-second SSE comments from StreamSession without allocating an id or record, and the TypeScript client treats 45 seconds without bytes as a dropped link before reattaching with its last event id. Serve resolves a permission-checked regular token file before SHADOW_HDK_TOKEN before the documented local-only flag; 20 focused checks and five destructive mutations verify framing, silence detection, cursor retention, precedence, permissions and redaction.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-15 — One-agent and stream contracts synchronized
+Topics: model-agent, agent-surface, item-inputs, stream-session, heartbeat, authentication, typescript
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md; docs/migrations/0.30.md; docs/packages/adapters-agent.md; docs/packages/runtime.md; docs/packages/serve.md; docs/packages/wire.md; clients/typescript/README.md; README.md
+Detail: Completion sync documents the already-approved additive Phase 32 contracts: ModelAgent below the common Thread surface, bounded Item.inputs, runtime-owned reconnect state, ephemeral heartbeat/client silence recovery and permission-checked bearer sources. The phase index was regenerated; the decision index rewrite was rejected because the generator would erase the repository's canonical D1–D106 map, recorded as BUG-050.
+
+---

@@ -9,3 +9,9 @@ Protocol 2 publishes the Phase 31 capability boundary: requirements on `thread/s
 selection on start/resume, provider discovery through `providers/list`, dry selection through
 `capabilities/check`, and complete typed `capability_mismatch` refusals. JSON Schemas and the
 TypeScript client are generated from the same kernel contracts.
+
+Phase 32 adds `Item.inputs` to that generated contract, with an explicit marker when canonical JSON
+exceeds the 64 KiB projection bound. HTTP/SSE now consumes `runtime.StreamSession`: bounded replay,
+one attachment, typed cursor/grace expiry, and an ephemeral 15-second heartbeat. The TypeScript
+client defaults to a 45-second silence deadline and reattaches with its last event id; heartbeats
+are link frames and never become durable events.
