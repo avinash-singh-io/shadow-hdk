@@ -8,9 +8,15 @@ type: Roadmap
 
 ## Vision
 
-A governed, composable agent runtime any system can adopt by implementing six ports — from one
-deterministic agent with a few tools to dynamic multi-agent work acting on the physical world —
-growing only by adapters and pattern files, never by runtime branches.
+**Shadow** is a generic harness system with two progressive surfaces over one architecture:
+**Shadow HDK**, the construction kit of contracts, primitives, components, patterns, runtime and
+adapters; and **Shadow Harness**, the ready-to-run reference assembly built entirely from those
+public HDK parts. A user may run the defaults, configure them, compose different parts, extend them,
+or replace every port without changing runtimes.
+
+It spans one deterministic workflow with a few tools, model-assisted workflows, agent-owned loops,
+and dynamic multi-agent work acting on software or the physical world. It grows by data, adapters,
+patterns and host-owned components, never by runtime branches on a provider, product or use case.
 
 ## Order
 
@@ -18,23 +24,27 @@ growing only by adapters and pattern files, never by runtime branches.
 needs exists; where two are free at once, the one that closes a gap in the runtime's own story comes
 first.
 
-**Adopters do not appear in this document.** The harness is a library: it is finished when its own
-contracts hold, not when somebody has used them. Which release of which product a phase happens to
-unblock is a fact about that product, and it lives in the shared roadmap
+**Adopters do not define the contracts in this document.** A real adopter may expose and prioritize
+a generic gap, but the harness is finished only when its own contracts hold, not when one caller has
+patched around them. Which release of which product a phase unblocks is recorded in the shared roadmap
 (`intent-ecosystem/vision/10-the-roadmap.md`) with the joins on `intent-ecosystem/lanes/board.md`.
 Keeping it there is what stops this plan from being re-ordered by somebody else's schedule — and
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-12, late
+## Where this stands — 2026-09-15
 
-**Phases 0–28 are done** and v0.25.0 is released. Phase 28 built what the owner's review asked
-for: the workspace as one or many roots chosen per conversation and added while it runs; a mode
-that moves all three of its surfaces together — what the OS enforces, what the policy judges,
-what the model is told it has (the provider reopened on its own session, its memory kept); the
-`ask` mode; the registries visible; and two governance holes closed (a child judged in its
-parent's context; every CLI built-in off). What remains is 29 (context engineering) and 30
-(collaboration), the owner's call.
+**Phases 0–30 are done** and v0.29.1 is released. The HDK is consumable through `run`,
+`Conversation`, durable `Thread`, `Harness.load()` and `shadow-hdk serve`; it has static workflows,
+model-driven agents, hybrid patterns, sub-agents, providers, environments, tools, skills,
+governance, stores and a language-neutral wire.
+
+The next release is Epic 0008, **the production boundary**. Intent Studio's local-host review found
+four generic seams rather than a product-specific patch list: a host cannot yet state requirements
+and compare them with machine-readable provider/environment capabilities; a model-backed agent does
+not yet share the durable `Thread` surface; an approved step is not re-evaluated against authority
+that narrowed while it was parked; and irreversible effects do not yet share one crash-safe
+transaction and journal. Phases 31–33 close those seams and release together as **v0.30.0**.
 
 ### Where this stood — 2026-09-12, night
 
@@ -163,8 +173,16 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 28 | The workspace | **DONE** · `phase-28-the-workspace` | 25, 26, 27 | the registries visible (`tools/list`, `skills/list` — D73); a child judged in its parent's context (D74); the `ask` mode and every CLI built-in off (D75); one or many roots per thread, named at `thread/start` and added live, the environment and the provider following the mode (`--resume`), minted skills kept in the store (D76) |
 | 29 | One app server behind every surface | **DONE** · v0.28.0 | 28 | the record chooses its store (SQLite or Postgres — Store, ThreadStore, checkpointer from one url); a parked run survives; one thread one holder and a named concurrency strategy; identity on the thread, scope on the rows; batteries live; the budget on the record; ask and deny rules that hold in every mode, path patterns; health, admin, the per-run token decided |
 | 30 | A product owns what it owns | **DONE** · v0.29.0 | 29 | the governed turn without the record (`Conversation`); a park on purpose; the agent streams; tokens and running time on the record; the contract suites shipped and a `Questions` port; routed governance and typed refusals; a parked run behind a port of ours and the record versioned; sessions that idle out and a stream that survives a drop |
-| 31 | Context engineering | planned | 21, 22 | compaction that triggers itself; Code Mode over the socket; memory consumed |
-| 32 | Collaboration | planned | 23, 24 | agents as peers; a second agent protocol as a file plus one adapter; the next providers measured |
+| 31 | A host knows what it can trust | **PLANNED** · Epic 0008 | 30 | typed provider/environment capabilities and evidence; typed execution requirements; conservative compatibility and refusal, in-process and over the wire |
+| 32 | One agent surface | **PLANNED** · Epic 0008 | 31 | `ModelAgent`; model/CLI `Thread` parity; `Item.inputs`; reusable stream session, heartbeat and safer bearer input |
+| 33 | Authority at the act | **PLANNED** · Epic 0008 | 31 | revisioned authority; `stage -> authorize -> execute -> reconcile`; single-use grants; durable journal, receipts, unknown outcomes and recovery |
+| 34 | Shadow Harness, built to unfold | planned | 32, 33 | `HarnessSpec`; primitive -> component -> pattern -> blueprint -> preset -> runnable reference harness; every layer replaceable |
+| 35 | Context engineering | planned | 32 | compaction that triggers itself; Code Mode over the socket; memory consumed |
+| 36 | Dynamic planning | planned | 34, 35 | an agent proposes the same workflow/harness artifacts a user composes; the host admits them under capability, authority, depth, fan-out and budget limits |
+| 37 | Durable triggers and scheduling | planned | 33, 34 | one-shot and recurring triggers; durable, idempotent run creation; retry and missed-run policy |
+| 38 | The UI plane | planned | 32, 34 | activity and generative-UI adapters; reusable host components; declarative UI has no execution authority |
+| 39 | Collaboration | planned | 33, 36 | agents as peers; remote delegation; a second agent protocol as an adapter; peer capability discovery |
+| 40 | Evaluation and governed evolution | planned | 35, 36 | locked evaluators; replay and shadow comparison; versioned proposals; human-approved rollout and rollback |
 
 ## What comes next — the consumable line
 
@@ -190,34 +208,27 @@ files; the phases after it are capability, not readiness.
 | 28 | The workspace | 25, 26, 27 | What a conversation works on, chosen by the product: a `Workspace` of named roots — the primary where relative paths resolve, the rest addressed `name/path` (VS Code's multi-root, Claude Code's `--add-dir`, Codex's `writable_roots`) — named at `thread/start` or taken from the host's default, **added live** with the confinement proof re-run over the new set; the file tools and `files/*` across roots; the scope stays `workspace`, a rule says the path. A mode names the environment mode it needs and `set_mode` re-opens the environment when that differs. The offered registry tells a resident CLI its catalogue changed. The host's sink keeps what a run proposes. |
 | 29 | One app server behind every surface | 28 | What a hosted harness owes the product that puts every surface behind it — see `phases/phase-29-one-app-server/overview.md`; opened from `research/2026-09-14-how-comparable-runtimes-do-it.md` |
 | 30 | A product owns what it owns | 29 | What a development kit owes the products built on it — see `phases/phase-30-a-product-owns-what-it-owns/overview.md`; opened from `research/2026-09-14-what-a-harness-development-kit-owes-its-products.md` |
-| 31 | Context engineering | 21, 22 | Compaction that triggers itself (D18's meta-tool made automatic at a threshold). **Code Mode**: a script the agent writes runs in the environment and calls the run's registry directly — which the socket (D42, D44) already permits — so only what it prints enters context. Memory consumed as a component, never built. |
-| 32 | Collaboration | 23, 24 | Agents as peers: a second agent protocol as a transport (D40 makes it a file plus one adapter); a run that delegates to another host's run over the wire; Codex and the next three providers measured rather than transcribed. |
+| 31 | A host knows what it can trust | 30 | A host states typed execution requirements. Providers and environments report typed capabilities plus evidence, with unknown as the conservative default. Selection succeeds with a compatible pair or refuses with every mismatch, identically in process and over the wire. |
+| 32 | One agent surface | 31 | A model-backed agent is an `AgentPort` and therefore a durable `Thread`, not a second product runner. `Item.inputs` closes the projection gap. The wire's stream session becomes reusable in process, with heartbeat, silence detection and safer bearer input. |
+| 33 | Authority at the act | 31 | Principal, workspace, policy, registry, provider configuration and mode become an explicit revisioned authority. An irreversible effect is staged, authorized once by the host, executed only after an act-time recheck, and reconciled from a durable journal to a receipt or an explicit unknown outcome. |
+| 34 | Shadow Harness, built to unfold | 32, 33 | The ready-made surface is formalized without a second runtime: one `HarnessSpec` expands through primitive, component, pattern, blueprint and preset to Shadow Harness. A user can stop at any layer or materialize the next one down. |
+| 35 | Context engineering | 32 | Compaction triggers itself at a declared threshold. Code Mode runs in the environment and calls the run registry so only what it prints enters context. Memory is consumed behind a component port, never built into the runtime. |
+| 36 | Dynamic planning | 34, 35 | A planner proposes the same typed composition or harness artifact a developer authors. Plans, phases, parallel workers and sub-agents are data; the host validates tools, authority, depth, fan-out and budgets before compilation. A deterministic workflow may contain model-backed components without becoming an agent-owned loop. |
+| 37 | Durable triggers and scheduling | 33, 34 | Time, webhook and external-event triggers create durable run requests. The scheduler owns timing, not authority; idempotent creation, retry policy, catch-up and cancellation are explicit. |
+| 38 | The UI plane | 32, 34 | Generic activity projections cross an AG-UI-style adapter; declarative generative UI crosses an A2UI-style adapter and is rendered by host-owned components. A generated view can propose interaction but never acquire execution authority. |
+| 39 | Collaboration | 33, 36 | Agents become peers through transport adapters such as A2A: capability discovery, remote delegation and correlated child runs, with the receiving host retaining its own authority. |
+| 40 | Evaluation and governed evolution | 35, 36 | Frozen evaluators precede optimization. Accepted traces feed replay and shadow comparison; improvements are versioned proposals requiring human approval, pinned rollout and rollback rather than self-installation. |
 
 ## Epics
 
-| Epic | Phases |
-|---|---|
-| 0001 the bare harness | 0, 1, 2 |
-| 0002 the workspace, and driving another agent | 3, 4, 5 |
-| 0003 composition at scale | 6, 7, 8, 9 |
-| 0004 governance as rows | 10 |
-| 0005 the body | 11, 13 |
-| 0006 derivation | 12 |
-| 0007 the environment | 15, 16 |
-| — the audit | 17, 18, 19 |
-| 0009 bring your own provider | 20 |
-| 0010 the visible agent | 21 |
-| 0011 the environment | 22 |
-| 0012 a host, in any language | 23 |
-| 0013 the skill registry | 24 |
-| 0014 the host's controls | 25 |
-| 0015 any language | 26 |
-| 0016 batteries and the facade | 27 |
-| 0017 context engineering | 28 |
-| 0018 collaboration | 29 |
+Only multi-phase units with an actual record under `specs/epics/` carry an epic id. Other rows in
+the timeline are phases, not retrospective pseudo-epics.
 
-Only 0001 is created at founding; each later epic is brainstormed once when reached, its decisions
-already settled by `09` where `09` speaks.
+| Epic | Phases | Status |
+|---|---|---|
+| 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
+| 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
+| **0008 production boundary** | **31, 32, 33** | **planned; one v0.30.0 release** |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable
@@ -230,3 +241,8 @@ already settled by `09` where `09` speaks.
 8. **A product's vocabulary is the product's.** The registry's name, the labels on activity, the wording of a question, the names of modes: data the host supplies with defaults, never a string a product would have to fork to change.
 9. **Simple by default, deep by choice.** A harness is a file and three lines; the same file drives `serve` for a host in another language; every port stays open for a product that composes by hand.
 10. **Data changes live; code changes restart.** Modes, behaviours, rules, skills, tools, providers, budgets, vocabulary are registries with a store source, changed by CRUD at runtime and read at the next step; only contracts, the loop, ports, adapters and transports are code, and only code needs a restart.
+11. **One Shadow, progressively disclosed.** Shadow Harness is the ready-made assembly; Shadow HDK is what it unfolds into. Run, configure, compose, extend or replace are depths of control over one system, not separate products.
+12. **Execution style is orthogonal to workflow shape.** A static workflow may call models; an agent may emit a deterministic multi-phase workflow; a hybrid may bind both. The runtime executes one composition grammar and does not branch on those labels.
+13. **A dynamic plan is an untrusted proposal.** The model may propose tools, phases, workers and sub-agents. The host admits only a typed plan whose capabilities, authority, budget, depth and fan-out fit; the planner never grants itself authority.
+14. **Controlled is stronger than observed.** Recording that an external provider acted is useful evidence, not proof that Shadow authorized the act. A controlled irreversible effect has an act-time authorization and a receipt or explicit unknown outcome.
+15. **Open standards at the edge, one canonical model inside.** MCP, A2A, UI protocols, CloudEvents, OpenTelemetry, OpenAPI/JSON Schema, OAuth/OIDC and OCI are adapters or encodings at the boundary. No external standard gets to fork the kernel's semantics.
