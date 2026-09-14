@@ -117,7 +117,7 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 4 — heartbeat, silence recovery and safer bearer input; Groups 1–3 green |
+| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 5 — synchronize docs and run the phase gate; Groups 1–4 green |
 
 ## Unreleased Epic Checkpoints
 

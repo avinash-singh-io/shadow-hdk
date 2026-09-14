@@ -28,11 +28,11 @@ epic: production-boundary
 - [x] Verify in-process state-machine/property tests and the existing D94 reconnect integrations
 
 ## Group 4 — Silent links and safer bearer input
-- [/] Add idle heartbeat frames and generated-client silence detection/reattach without durable record writes
-- [ ] Add environment and permission-checked token-file sources with explicit precedence; retain the flag as local-only
-- [ ] Verify heartbeat timing, silent-drop recovery, argv secrecy, permission refusal and log redaction
+- [x] Add idle heartbeat frames and generated-client silence detection/reattach without durable record writes
+- [x] Add environment and permission-checked token-file sources with explicit precedence; retain the flag as local-only
+- [x] Verify heartbeat timing, silent-drop recovery, argv secrecy, permission refusal and log redaction
 
 ## Group 5 — Evidence and epic checkpoint
-- [ ] Update architecture/package/migration docs with one agent and stream surface
+- [/] Update architecture/package/migration docs with one agent and stream surface
 - [ ] Run build, ruff check, format check, mypy strict, full pytest, parity/schema/client drift and benchmark
 - [ ] Append phase evidence/history, mark Phase 32 complete and continue Phase 33 without releasing

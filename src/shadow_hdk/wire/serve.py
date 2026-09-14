@@ -71,6 +71,9 @@ GRACE_SECONDS = 60.0
 """How long a session outlives its stream (D94): a page on a train reconnects within it and
 misses nothing; past it the session's threads are closed and the id is gone."""
 
+HEARTBEAT_SECONDS = 15.0
+"""Idle time before an attached SSE link gets an ephemeral comment frame."""
+
 
 @dataclass
 class Session:
@@ -138,6 +141,7 @@ def build_app(
     threads: Any = None,
     page: Path | None = None,
     grace_seconds: float = GRACE_SECONDS,
+    heartbeat_seconds: float | None = HEARTBEAT_SECONDS,
 ) -> Any:
     """A Starlette app serving one runtime per connected host.
 
@@ -253,7 +257,11 @@ def build_app(
         session_id = secrets.token_urlsafe(16)
         to_host_send, to_host_receive = anyio.create_memory_object_stream[str](float("inf"))
         from_host_send, from_host_receive = anyio.create_memory_object_stream[str](float("inf"))
-        session_stream = StreamSession[str](capacity=KEPT_FRAMES, grace_seconds=grace_seconds)
+        session_stream = StreamSession[str](
+            capacity=KEPT_FRAMES,
+            grace_seconds=grace_seconds,
+            heartbeat_seconds=heartbeat_seconds,
+        )
         session = Session(
             id=session_id,
             to_host=to_host_send,
@@ -354,6 +362,7 @@ async def served_over_http(
     threads: Any = None,
     page: Path | None = None,
     grace_seconds: float = GRACE_SECONDS,
+    heartbeat_seconds: float | None = HEARTBEAT_SECONDS,
 ) -> AsyncIterator[str]:
     """Listen on an ephemeral localhost port, and yield the address to connect to.
 
@@ -373,7 +382,12 @@ async def served_over_http(
             "not built, so serving beyond localhost would issue a session to anyone who asked"
         )
     app = build_app(
-        clock=clock, token=token, threads=threads, page=page, grace_seconds=grace_seconds
+        clock=clock,
+        token=token,
+        threads=threads,
+        page=page,
+        grace_seconds=grace_seconds,
+        heartbeat_seconds=heartbeat_seconds,
     )
     config = uvicorn.Config(app, host=host, port=0, log_level="warning")
     server = uvicorn.Server(config)

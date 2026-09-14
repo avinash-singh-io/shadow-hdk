@@ -207,6 +207,22 @@ async def test_a_second_stream_on_an_attached_session_is_refused(tmp_path: Path)
         await host.aclose()
 
 
+async def test_an_idle_http_stream_gets_an_ephemeral_heartbeat(tmp_path: Path) -> None:
+    host = ServeHost(Settings(root=tmp_path, mode=ENFORCEABLE), agent=ScriptedProvider())
+    try:
+        with anyio.fail_after(10):
+            async with served_over_http(threads=host, heartbeat_seconds=0.02) as address:
+                async with httpx.AsyncClient(timeout=5) as http:
+                    async with http.stream("GET", f"{address}/rpc") as response:
+                        lines = response.aiter_lines()
+                        assert await anext(lines) == ": session open"
+                        assert await anext(lines) == ""
+                        assert await anext(lines) == ": heartbeat"
+                        assert await anext(lines) == ""
+    finally:
+        await host.aclose()
+
+
 async def test_a_reload_takes_its_thread_over_but_a_live_page_is_not_robbed(tmp_path: Path) -> None:
     """Two sessions of one process on one thread (D94): the thread of a session whose stream is
     gone is taken over by a `thread/resume` from another — a page reloaded; the thread of a

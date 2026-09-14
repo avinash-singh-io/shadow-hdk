@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 import pytest
+
 from shadow_hdk.serve.authentication import TOKEN_ENV, resolve_bearer
 
 
@@ -55,3 +57,38 @@ def test_duplicate_token_file_sources_are_ambiguous_without_reading_either(tmp_p
         resolve_bearer(["--token-file", str(first), "--token-file", str(second)], environ={})
     assert "first-secret" not in str(refused.value)
     assert "second-secret" not in str(refused.value)
+
+
+def test_a_link_or_multiline_file_is_refused_without_disclosure(tmp_path: Path) -> None:
+    token_file = tmp_path / "bearer"
+    token_file.write_text("line-one\nline-two", encoding="utf-8")
+    token_file.chmod(0o600)
+    linked = tmp_path / "linked"
+    linked.symlink_to(token_file)
+
+    with pytest.raises(ValueError, match="regular file") as linked_error:
+        resolve_bearer(["--token-file", str(linked)], environ={})
+    assert "line-one" not in str(linked_error.value)
+
+    with pytest.raises(ValueError, match="one line") as multiline_error:
+        resolve_bearer(["--token-file", str(token_file)], environ={})
+    assert "line-one" not in str(multiline_error.value)
+
+
+def test_the_cli_can_take_the_production_bearer_without_putting_it_in_argv(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import anyio
+
+    from shadow_hdk.serve.__main__ import USAGE, main
+
+    secret = "environment-only-secret"
+    called: list[tuple[Any, ...]] = []
+    monkeypatch.setenv(TOKEN_ENV, secret)
+    monkeypatch.setattr(anyio, "run", lambda *args: called.append(args))
+
+    arguments = ["serve", "--http", "--port", "9876"]
+    assert main(arguments) == 0
+    assert secret not in arguments
+    assert called and called[0][3] == secret
+    assert "local development only" in USAGE

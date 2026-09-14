@@ -77,3 +77,19 @@ Affects-specs: none
 Detail: The two `_sse` yield sites are the replay loop and the later live loop, not consecutive live emissions; the last-replayed guard and D94 unique-id assertion already covered the seam. The backlog row is deprecated with the correction, while the shared extraction still makes replay-then-live-once a direct state-machine property.
 
 ---
+
+### [EVALUATOR] 2026-09-15 — HTTP heartbeat and client silence recovery are RED
+Topics: heartbeat, stream-session, typescript, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/wire.md#The thread, crossed
+Detail: A live HTTP test requires an idle connection to receive an SSE heartbeat comment, while a deterministic TypeScript fake transport holds a link silently open and requires reattachment with its last event id. The server test fails on the absent heartbeat option and the client build fails on the absent silenceSeconds contract before either path is implemented.
+
+---
+
+### [FEATURE] 2026-09-15 — Silent links recover and production bearers stay out of argv
+Topics: heartbeat, stream-session, typescript, authentication, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/wire.md#The thread, crossed; docs/migrations/0.30.md
+Detail: Idle HTTP streams now emit 15-second SSE comments from StreamSession without allocating an id or record, and the TypeScript client treats 45 seconds without bytes as a dropped link before reattaching with its last event id. Serve resolves a permission-checked regular token file before SHADOW_HDK_TOKEN before the documented local-only flag; 20 focused checks and five destructive mutations verify framing, silence detection, cursor retention, precedence, permissions and redaction.
+
+---
