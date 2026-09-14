@@ -62,8 +62,8 @@ host ──► runtime   thread/set_option · remaining   (budget − spent, acr
 host ──► runtime   turn/start {when: enqueue | reject | interrupt,   → the turn's record, when it ends
                                on_question: wait | park}
                        (D81: a second turn waits, is refused naming the running one, or stops it;
-                        D88: `park` ends the turn `parked` at its first question, kept for a later
-                        `approvals/answer`)
+                        D88: `park` ends the turn `parked` at its first question — a tool call's or
+                        the agent's own (BUG-044) — kept for a later `approvals/answer`)
 host ──► runtime   turn/steer · turn/interrupt · run/cancel
 host ──► runtime   approvals/pending · approvals/answer  (approve · deny · approve_and_add_rule · park · {text})
                        a left question (D80) is settled by its thread: the parked act runs from its

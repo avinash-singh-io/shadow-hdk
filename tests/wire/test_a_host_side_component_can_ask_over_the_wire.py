@@ -179,6 +179,45 @@ async def test_the_agents_own_question_crosses_and_the_text_comes_back() -> None
     assert done[-1].observation == Completed({"answer": "purple"})
 
 
+async def test_a_park_of_the_agents_own_question_crosses_as_not_now() -> None:
+    """BUG-044 over the wire: the runtime side answers the input question `Parked` (D88); the
+    host-side `ask_person` hears "not now" — a refusal naming the question — not the text
+    `Parked()` as the person's words."""
+    import asyncio
+
+    from shadow_hdk.kernel import Binding, Composition, Invoke, Refused
+    from shadow_hdk.runtime import Parked
+    from shadow_hdk.runtime.person import person_components
+
+    ports = Ports(
+        model=None,
+        components=(person_components(),),
+        governance=AllowAll(),
+        sink=ListSink(),
+        clock=FixedClock(),
+    )
+    options = RunOptions(lease=Lease(Ceiling(10, 60, None), Floor(0)), run_id="w4")
+    plan = Composition((Invoke("q1", "ask_person", (Binding("question", value="hue?"),)),))
+
+    async with loopback(ports) as (host, runtime):
+        await host.initialize()
+
+        async def park_it() -> None:
+            pending = await asyncio.wait_for(runtime_questions(runtime).next(), 20)
+            runtime_questions(runtime).answer(pending.handle, Parked())
+
+        task = asyncio.create_task(park_it())
+        with anyio.fail_after(60):
+            await host.run(plan, options)
+        await task
+        after = list(host.events)
+
+    done = [e for e in after if e.kind == "observed" and e.step == "q1"]
+    assert isinstance(done[-1].observation, Refused), done[-1].observation
+    assert "not now" in done[-1].observation.reason and "hue?" in done[-1].observation.reason
+    assert "Parked()" not in done[-1].observation.reason
+
+
 def runtime_questions(runtime: Any) -> Any:
     """The runtime side's `Approvals`, where the host process holds it."""
     return runtime.approvals

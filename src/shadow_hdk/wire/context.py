@@ -32,7 +32,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
-from shadow_hdk.runtime import Ports, Resumed, RunContext, RunOptions
+from shadow_hdk.runtime import Parked, Ports, Resumed, RunContext, RunOptions
 from shadow_hdk.wire.peer import Peer
 from shadow_hdk.wire.protocol import (
     CONTEXT_ACTIVITY,
@@ -53,12 +53,15 @@ from shadow_hdk.wire.protocol import (
 
 
 def _as_answer(raw: Any) -> Any:
-    """A judgement arrives as JSON and is loaded back; anything else is what the host said."""
+    """A judgement arrives as JSON and is loaded back; a park (D88) as `Parked`; anything else
+    is what the host said."""
     from shadow_hdk.kernel.contracts import load
     from shadow_hdk.kernel.ports import Judgement
 
     if isinstance(raw, dict) and raw.get("kind") in ("allow", "ask", "refuse"):
         return load(json.dumps(raw), Judgement)
+    if isinstance(raw, dict) and raw.get("kind") == "park":
+        return Parked()
     return raw
 
 
@@ -151,12 +154,15 @@ class WireRunContext(RunContext):
         )
         return _as_answer(answered.get("answer"))
 
-    async def request_input(self, question: str, *, step: str | None = None) -> str | None:
-        """The agent's own question crosses and waits on the runtime side's handle (D65)."""
+    async def request_input(self, question: str, *, step: str | None = None) -> str | Parked | None:
+        """The agent's own question crosses and waits on the runtime side's handle (D65); a
+        park comes back as `Parked` (D88, BUG-044), never as text."""
         answered = await self._peer.call(
             CONTEXT_REQUEST_INPUT, {"question": question, "step": step or self._step}
         )
-        answer = answered.get("answer") if isinstance(answered, dict) else None
+        answer = _as_answer(answered.get("answer") if isinstance(answered, dict) else None)
+        if isinstance(answer, Parked):
+            return answer
         return str(answer) if answer is not None else None
 
     async def activity(self, kind: str, text: str, *, step: str | None = None) -> None:

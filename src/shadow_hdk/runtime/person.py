@@ -22,12 +22,19 @@ from shadow_hdk.kernel import (
     Interface,
     Observation,
     Provenance,
+    Refused,
     Registration,
 )
 from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.runtime.approvals import Parked
 from shadow_hdk.runtime.bindings import current_run
 
 ASK_PERSON = "ask_person"
+PARKED_INPUT_REASON = (
+    "not now: your question {question!r} is kept for the person, who will answer on a later "
+    "request — you will be told what they said at your next turn. Say what you asked and why, "
+    "then stop."
+)
 
 
 class PersonComponents(ComponentPort):
@@ -74,6 +81,11 @@ class PersonComponents(ComponentPort):
         answered = await context.request_input(question)
         if answered is None:
             return Failed("nobody was there to answer: the run has no Approvals handle")
+        if isinstance(answered, Parked):
+            # **Kept, not answered** (D88, BUG-044): the person will answer on a later request
+            # and the agent hears it then, folded ahead of its next prompt — never as this
+            # call's output.
+            return Refused(PARKED_INPUT_REASON.format(question=question))
         return Completed({"answer": answered})
 
 

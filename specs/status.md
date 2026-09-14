@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-14 (v0.29.0 — Phase 30, a product owns what it owns; D87–D94)
+> **Last Updated**: 2026-09-14 (v0.29.1 — BUG-044: the agent's own question parks too)
 > **Current Phase**: **none — Phase 30 (a product owns what it owns) is complete and released as v0.29.0**: the governed turn without the record (D87), a park on purpose (D88), the agent streams (D89), tokens and running time on the record (D90), the contracts shipped and a `Questions` port (D91), routed governance and typed refusals (D92), a parked run behind a port of ours and the record versioned (D93), sessions that idle out and a stream that survives a drop (D94); the guide for a product is `docs/consuming.md`. Before it: **Phase 29 (one app server behind every surface) is complete and released as v0.28.0**: the record chooses its store (D79), a parked turn survives the host (D80), one thread one holder (D81), identity on the thread and scope on the rows (D82), batteries live (D83), the budget on the record (D84), the rules the field has (D85), operations and the per-run token closed (D86); BUG-041, BUG-042 and ENH-013 closed on the way. Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
 > packages as published artefacts (the providers wheel built for the first time, BUG-035; every
 > wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
@@ -17,9 +17,9 @@ type: Status
 > (BUG-032, D76), minted skills kept. Next: Phase 31 (context engineering) and Phase 32
 > (collaboration), the owner's call.
 >
-> 1,560 tests; mypy strict over 418 files; one distribution, `shadow-hdk`, at **0.29.0**, MIT, on PyPI.
+> 1,566 tests; mypy strict over 418 files; one distribution, `shadow-hdk`, at **0.29.1**, MIT, on PyPI.
 >
-> **Latest Release**: **v0.29.0**, released 2026-09-14 — Phase 30, a product owns what it owns
+> **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
 > on `Spent`, `shadow_hdk.testing`, `Questions`, `Routed`, typed refusals, `RunStore`,
 > `ThreadRecord.version`, `idle_seconds`, a stream that reattaches. Contract change (additions;
