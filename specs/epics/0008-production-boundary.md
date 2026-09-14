@@ -2,7 +2,7 @@
 type: Epic
 id: "0008"
 slug: production-boundary
-status: planned
+status: in-progress
 owner: Avinash
 started: "2026-09-14T18:44:36.704Z"
 phases: [phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface, phase-33-authority-at-the-act]
@@ -50,9 +50,9 @@ Phases 32 and 33 are independent after Phase 31. The epic releases once, after b
 
 > Checkable. "It works" is not a criterion.
 
-- [ ] A host submits typed execution requirements and receives either a compatible provider/environment selection or a typed mismatch naming every unmet or unknown requirement
-- [ ] Claude Code, Codex, OpenCode and API-model fixtures expose measured capability records; an omitted fact has the conservative value and cannot satisfy a strict requirement
-- [ ] `LocalEnvironment` reports write confinement and network denial without claiming read confinement; asking it for repository-only reads or secret denial refuses construction
+- [x] A host submits typed execution requirements and receives either a compatible provider/environment selection or a typed mismatch naming every unmet or unknown requirement
+- [x] Claude Code, Codex, OpenCode and API-model fixtures expose measured capability records; an omitted fact has the conservative value and cannot satisfy a strict requirement
+- [x] `LocalEnvironment` reports write confinement and network denial without claiming read confinement; asking it for repository-only reads or secret denial refuses construction
 - [ ] Model-backed and CLI-backed agents both run through `Thread` with the same turn, parking, holding, spend, cancellation, resume and activity contracts
 - [ ] A folded `Item` carries the invoked inputs through the Python and TypeScript surfaces, subject to the existing payload/offloading policy
 - [ ] The reusable stream session proves frame ids, bounded replay, heartbeat, silence detection and reattachment in-process and through `serve`

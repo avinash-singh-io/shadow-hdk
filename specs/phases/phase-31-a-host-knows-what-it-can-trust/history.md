@@ -1,6 +1,6 @@
 ---
 type: History
-status: in-progress
+status: complete
 epic: production-boundary
 ---
 
@@ -83,5 +83,29 @@ Topics: testing, mypy, ci, landing
 Affects-phases: phase-31-a-host-knows-what-it-can-trust
 Affects-specs: specs/config.md; specs/backlog/backlog.md
 Detail: The configured `uv sync --all-packages` succeeded by uninstalling 29 optional packages, after which full pytest and mypy could not import the Postgres, MQTT, LangChain and OpenSandbox adapters. BUG-046 is closed by making the build command match CI's all-extras install; the completion gate also caught and formatted five Phase 31 files before any checkpoint claim.
+
+---
+
+### [DISCOVERY] 2026-09-15 — Historical metadata failed the current spec-conformance audit
+Topics: spec-drift, testing, landing
+Affects-phases: phase-31-a-host-knows-what-it-can-trust
+Affects-specs: specs/adhoc/TD-009/pull-request-body.md; specs/decisions/index.md; specs/backlog/backlog.md
+Detail: The optional OKF closeout check found one historical artifact without frontmatter and a reserved index with frontmatter it must not carry. BUG-047 records the exact red audit; only metadata is changed and the historical content remains intact.
+
+---
+
+### [NOTE] 2026-09-15 — Phase 31 verified as the first unreleased epic checkpoint
+Topics: capabilities, requirements, compatibility, testing, landing
+Affects-phases: phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface, phase-33-authority-at-the-act
+Affects-specs: specs/status.md; specs/planning/roadmap.md; specs/epics/0008-production-boundary.md
+Detail: The final tree passes build sync with every extra, Ruff lint and formatting, strict mypy over 422 source files, 1,600 non-live tests with 12 platform/service skips and 12 live deselections, 55 explicit document/decision/schema/benchmark checks, config validation and OKF over 185 specs. Phase 31 is complete but deliberately untagged and unmerged; Phases 32 and 33 are fully derived and the one v0.30.0 release remains behind the final epic gate.
+
+---
+
+### [DISCOVERY] 2026-09-15 — The decision index could not see epic decision tables
+Topics: spec-drift, testing, epic
+Affects-phases: phase-31-a-host-knows-what-it-can-trust
+Affects-specs: specs/decisions/index.md; tests/invariants/test_the_decisions_index_is_true.py; specs/backlog/backlog.md
+Detail: Adding D95–D106 to the decision index produced a red invariant because its declaration parser recognized headings and history entries but not momentum's canonical epic table. BUG-048 closes the format gap in the invariant rather than duplicating the decisions; both index directions are re-run before checkpoint completion.
 
 ---

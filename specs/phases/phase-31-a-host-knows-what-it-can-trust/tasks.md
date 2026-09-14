@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 epic: production-boundary
 ---
 # Phase 31 — A host knows what it can trust — Tasks
@@ -30,5 +30,5 @@ epic: production-boundary
 
 ## Group 4 — Evidence, docs and epic checkpoint
 - [x] Publish the capability matrix and 0.29.1 migration note; record known unknowns without overstating confinement
-- [ ] Run ruff check, format check, mypy strict, full pytest, document invariants, schema drift and benchmark
-- [ ] Append phase evidence/history, mark Phase 31 complete, and derive Phases 32 and 33 without releasing
+- [x] Run ruff check, format check, mypy strict, full pytest, document invariants, schema drift and benchmark
+- [x] Append phase evidence/history, mark Phase 31 complete, and derive Phases 32 and 33 without releasing

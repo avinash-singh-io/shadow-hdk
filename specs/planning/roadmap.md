@@ -34,14 +34,15 @@ it.
 
 ## Where this stands — 2026-09-15
 
-**Phases 0–30 are done** and v0.29.1 is released. The HDK is consumable through `run`,
+**Phases 0–30 are merged and released; Phase 31 is complete on the unreleased Epic 0008 stack.**
+The latest public version remains v0.29.1. The HDK is consumable through `run`,
 `Conversation`, durable `Thread`, `Harness.load()` and `shadow-hdk serve`; it has static workflows,
 model-driven agents, hybrid patterns, sub-agents, providers, environments, tools, skills,
 governance, stores and a language-neutral wire.
 
 The next release is Epic 0008, **the production boundary**. Intent Studio's local-host review found
-four generic seams rather than a product-specific patch list: a host cannot yet state requirements
-and compare them with machine-readable provider/environment capabilities; a model-backed agent does
+four generic seams rather than a product-specific patch list. The first is now closed: a host states
+requirements and compares them with machine-readable provider/environment capabilities. A model-backed agent does
 not yet share the durable `Thread` surface; an approved step is not re-evaluated against authority
 that narrowed while it was parked; and irreversible effects do not yet share one crash-safe
 transaction and journal. Phases 31–33 close those seams and release together as **v0.30.0**.
@@ -173,7 +174,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 28 | The workspace | **DONE** · `phase-28-the-workspace` | 25, 26, 27 | the registries visible (`tools/list`, `skills/list` — D73); a child judged in its parent's context (D74); the `ask` mode and every CLI built-in off (D75); one or many roots per thread, named at `thread/start` and added live, the environment and the provider following the mode (`--resume`), minted skills kept in the store (D76) |
 | 29 | One app server behind every surface | **DONE** · v0.28.0 | 28 | the record chooses its store (SQLite or Postgres — Store, ThreadStore, checkpointer from one url); a parked run survives; one thread one holder and a named concurrency strategy; identity on the thread, scope on the rows; batteries live; the budget on the record; ask and deny rules that hold in every mode, path patterns; health, admin, the per-run token decided |
 | 30 | A product owns what it owns | **DONE** · v0.29.0 | 29 | the governed turn without the record (`Conversation`); a park on purpose; the agent streams; tokens and running time on the record; the contract suites shipped and a `Questions` port; routed governance and typed refusals; a parked run behind a port of ours and the record versioned; sessions that idle out and a stream that survives a drop |
-| 31 | A host knows what it can trust | **PLANNED** · Epic 0008 | 30 | typed provider/environment capabilities and evidence; typed execution requirements; conservative compatibility and refusal, in-process and over the wire |
+| 31 | A host knows what it can trust | **DONE on epic branch; unreleased** · Epic 0008 | 30 | typed provider/environment capabilities and evidence; typed execution requirements; conservative compatibility and refusal, in-process and over the wire |
 | 32 | One agent surface | **PLANNED** · Epic 0008 | 31 | `ModelAgent`; model/CLI `Thread` parity; `Item.inputs`; reusable stream session, heartbeat and safer bearer input |
 | 33 | Authority at the act | **PLANNED** · Epic 0008 | 31 | revisioned authority; `stage -> authorize -> execute -> reconcile`; single-use grants; durable journal, receipts, unknown outcomes and recovery |
 | 34 | Shadow Harness, built to unfold | planned | 32, 33 | `HarnessSpec`; primitive -> component -> pattern -> blueprint -> preset -> runnable reference harness; every layer replaceable |
@@ -228,7 +229,7 @@ the timeline are phases, not retrospective pseudo-epics.
 |---|---|---|
 | 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
-| **0008 production boundary** | **31, 32, 33** | **planned; one v0.30.0 release** |
+| **0008 production boundary** | **31, 32, 33** | **in progress; Phase 31 complete; one v0.30.0 release** |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable

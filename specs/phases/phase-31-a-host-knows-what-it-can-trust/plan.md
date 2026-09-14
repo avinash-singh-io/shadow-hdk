@@ -1,6 +1,6 @@
 ---
 type: Plan
-status: in-progress
+status: complete
 epic: production-boundary
 ---
 

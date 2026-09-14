@@ -4,13 +4,14 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — Epic 0008 production-boundary approved
-> **Current Phase**: **Phase 31 — a host knows what it can trust**, first phase of Epic 0008.
-> It establishes typed provider/environment capabilities, evidence and host execution requirements
-> before anything is built on their selection. Phases 32 (one agent surface) and 33 (authority at
-> the act) follow; 32 and 33 are independent after 31. The epic releases once as **v0.30.0**.
+> **Last Updated**: 2026-09-15 — Phase 31 complete; Epic 0008 continues
+> **Current Phase**: **Phase 32 — one agent surface** is ready to start on the stacked epic branch.
+> Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
+> requirements before anything is built on their selection. Phase 33 (authority at the act) remains
+> derived and independent after 31. The epic releases once as **v0.30.0**.
 >
-> 1,566 tests; mypy strict over 418 files; one distribution, `shadow-hdk`, at **0.29.1**, MIT, on PyPI.
+> 1,600 non-live tests; mypy strict over 422 files; one distribution, `shadow-hdk`, still at
+> **0.29.1**, MIT, on PyPI. Phase 31 is pushed but intentionally unmerged and unreleased.
 >
 > **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
@@ -50,8 +51,9 @@ components and records through the sink. One distribution — kernel, runtime, w
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
-merged and released**: 1,566 tests, mypy strict over 418 files, one distribution at 0.29.1. Epic
-0008 is the v0.30.0 production-boundary release train.
+merged and released; Phase 31 is complete on the unreleased epic stack**: 1,600 non-live tests,
+mypy strict over 422 files, one public distribution at 0.29.1. Epic 0008 is the v0.30.0
+production-boundary release train.
 
 ## Completed Phases
 
@@ -115,7 +117,13 @@ merged and released**: 1,566 tests, mypy strict over 418 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | in progress | Group 4 — evidence and phase checkpoint |
+| 32 — one agent surface | `phase-32-one-agent-surface` | ready | strict RED evaluator is first; no implementation yet |
+
+## Unreleased Epic Checkpoints
+
+| Phase | Branch | Evidence | Release |
+|-------|--------|----------|---------|
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | 1,600 full-suite passes; 422 typed files; docs/schema/benchmark green | waits for Phase 33 and v0.30.0 |
 
 ## Upcoming Phases
 
@@ -125,7 +133,6 @@ merged and released**: 1,566 tests, mypy strict over 418 files, one distribution
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
-| 31 — a host knows what it can trust | 30 | requirements are matched against honest capabilities or refused by name |
 | 32 — one agent surface | 31 | CLI and API-model agents use one durable product-facing lifecycle |
 | 33 — authority at the act | 31 | controlled irreversible effects are current-authority, journaled and recoverable |
 | 34 — Shadow Harness, built to unfold | 32, 33 | the ready-made harness and HDK are progressive layers of one system |
@@ -144,8 +151,8 @@ merged and released**: 1,566 tests, mypy strict over 418 files, one distribution
 
 ## Next Actions
 
-1. Derive and start Phase 31 from Epic 0008; lock its capability evaluator/contracts before implementation
-2. Complete Phases 31–33 with fresh evidence at each boundary; one merge and one v0.30.0 release at epic completion
+1. Start Phase 32 from its derived strict-TDD plan; lock the one-agent lifecycle evaluator before implementation
+2. Complete Phases 32–33 with fresh evidence at each boundary; one merge and one v0.30.0 release at epic completion
 3. Hand v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
 4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
 

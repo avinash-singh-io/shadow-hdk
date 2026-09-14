@@ -22,18 +22,26 @@ ROOT = Path(__file__).resolve().parents[2]
 SPECS = ROOT / "specs"
 INDEX = SPECS / "decisions" / "index.md"
 
-HEADING = re.compile(r"^## D(\d+) —|^### \[DECISION\][^\n]*\bD(\d+):", re.MULTILINE)
+DECLARATION = re.compile(
+    r"^## D(\d+) —|^### \[DECISION\][^\n]*\bD(\d+):|^\| D(\d+) \|",
+    re.MULTILINE,
+)
 ROW = re.compile(r"^\| D(\d+) \| [^|]+ \| \[`([^`]+)`\]", re.MULTILINE)
 
 
+def decision_numbers(text: str) -> set[int]:
+    """Decision headings, history entries and an epic's canonical decision-table rows."""
+    return {int(next(value for value in match if value)) for match in DECLARATION.findall(text)}
+
+
 def declared() -> dict[int, Path]:
-    """Every `D<n>` heading under `specs/`, and the document it is in."""
+    """Every declared `D<n>` under `specs/`, and the document it is in."""
     found: dict[int, Path] = {}
     for document in sorted(SPECS.rglob("*.md")):
         if document == INDEX:
             continue
-        for first, second in HEADING.findall(document.read_text(encoding="utf-8")):
-            found.setdefault(int(first or second), document)
+        for number in decision_numbers(document.read_text(encoding="utf-8")):
+            found.setdefault(number, document)
     return found
 
 
@@ -64,7 +72,7 @@ def test_every_row_points_at_a_document_that_contains_it() -> None:
             wrong.append(f"D{number}: {where} does not exist")
             continue
         text = document.read_text(encoding="utf-8")
-        if not any(int(a or b) == number for a, b in HEADING.findall(text)):
+        if number not in decision_numbers(text):
             wrong.append(f"D{number}: {where} does not contain it")
 
     assert not wrong, "\n  ".join(["the index points somewhere wrong:", *wrong])

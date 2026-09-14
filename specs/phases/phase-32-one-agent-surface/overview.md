@@ -1,12 +1,12 @@
 ---
 type: Phase
-status: complete
+status: in-progress
 epic: production-boundary
-tags: [capabilities, requirements, providers, environment, compatibility, evidence, wire]
-deps: []
+tags: [agent-port, model-port, thread, items, streaming, heartbeat, authentication]
+deps: [phase-31-a-host-knows-what-it-can-trust]
 ---
 
-# Phase 31 — A host knows what it can trust
+# Phase 32 — One agent surface
 
 > **Derived, not brainstormed.**
 > Generated from `specs/epics/0008-production-boundary.md` on 2026-09-15 with no
@@ -16,11 +16,11 @@ deps: []
 
 ## Goal
 
-A host states the execution properties it requires and receives either a provider/environment pair
-whose capabilities are known to satisfy them or a typed mismatch naming what is absent, weaker or
-unknown. The same facts and decision are available through the Python surface, `Harness`, `serve`
-and the generated TypeScript client. No product has to reverse-engineer a provider TOML, infer
-security from a mode's name, or turn missing evidence into permission.
+A product opens one durable `Thread` whether its reasoning comes from an API-backed `ModelPort` or
+a subscription-backed CLI `AgentPort`. The adapter difference stays below the host lifecycle:
+turns, tool offers, parking, spend, cancellation, resume and activity remain one contract. The
+same phase closes the item-projection input gap and extracts the stream-session behavior already
+proven by HTTP so in-process hosts and wire clients share replay, heartbeat and silence semantics.
 
 ## Inherited decisions
 
@@ -43,59 +43,65 @@ security from a mode's name, or turn missing evidence into permission.
 
 **In:**
 
-- Kernel value types for capability evidence, provider capabilities, environment capabilities,
-  execution requirements, mismatches and the total compatibility result
-- Conservative defaults and one compatibility function; unknown is not false and never satisfies
-  a strict requirement
-- Measured capability records for the shipped Claude Code, Codex and OpenCode providers, plus the
-  API-model seam; loader validation rejects contradictory or malformed records
-- The existing `Isolation` proof exposed as environment capabilities, including the explicit fact
-  that this macOS local environment does not confine reads or deny ambient secrets
-- Requirement-aware selection at thread/harness construction; typed refusal before a provider or
-  effectful environment is opened when the pair cannot meet the request
-- Provider/capability discovery and requirement results over the wire and in the TypeScript client
-- Contract suites, generated schemas, documentation and a migration note for consumers of 0.29.1
+- A first-party `ModelAgent` implementing `AgentPort` over any `ModelPort`, using the existing
+  agent pattern/tool loop rather than adding a second thread runner
+- Provider construction that chooses model-backed or CLI-backed agency below `Thread`, retaining
+  Phase 31 capability selection and evidence on either path
+- `Item.inputs` from the existing `Invoked` event through Python, JSON Schema, wire and generated
+  TypeScript surfaces, under one bounded/redacted projection rule
+- A reusable in-process stream-session abstraction: monotone frame ids, bounded outbox, one active
+  attachment, grace period, replay after a cursor and explicit expiry
+- `serve` rewritten to consume that abstraction, plus heartbeat frames and client silence/reattach
+  behavior that never changes the durable run record
+- Bearer input by environment variable or permission-checked token file; the command-line flag
+  remains an explicitly local-development convenience with documented precedence
+- Contract tests proving model and CLI agents share the product-facing lifecycle
 
 **Out:**
 
-- `ModelAgent`, `Item.inputs`, reusable stream sessions, heartbeat and bearer input — Phase 32
-- Authority revisions, effect authorizations, the effect journal and recovery — Phase 33
-- Product-specific provider labels, workspace policy, cloud job leases or Intent Studio schemas
-- New provider transports, stricter capabilities a provider cannot actually prove, or reading a
-  person's configuration/credentials to manufacture evidence
+- Authority revisions, effect grants, act-time rechecks, the effect journal and reconciliation —
+  Phase 33
+- Presets, blueprints and progressive `HarnessSpec` materialization — Phase 34
+- Product authentication, tenancy, frontend state, message schema or domain activity vocabulary
+- Replacing provider SDKs, provider loops, SSE/JSON-RPC or the host's durable store
+- Dynamic planning, scheduling, generative UI and peer-agent protocols
 
 ## Deliverables
 
 | Deliverable | Verification |
 |---|---|
-| Pure typed capability/requirement algebra with conservative defaults | kernel unit/property tests; JSON round-trip contracts |
-| Provider capability records and loader validation | provider library tests plus one mutation per load-bearing field |
-| Environment capability report derived from the existing proof | local/fake environment tests, including strict-read and secret-denial refusal |
-| Requirement-aware in-process selection | provider/environment compatibility and harness/thread construction tests |
-| Wire and TypeScript parity | schema drift invariant, wire integration tests and `tsc --noEmit` |
-| Consumer documentation and capability matrix | document invariant and examples exercised by tests |
+| `ModelAgent` over `ModelPort`, exposed through the same construction path as CLI agents | agent-port contract; scripted model/tool/activity/usage tests; `Thread` parity scenarios |
+| `Item.inputs` on every public projection | fold unit tests; JSON round trip; wire and generated TypeScript drift tests |
+| Reusable bounded stream session consumed by `serve` | in-process lifecycle/property tests; existing reconnect integration rewritten against it |
+| Heartbeat, silence detection and reattachment | deterministic-clock session tests; live HTTP integration without sleeps where controllable |
+| Safer bearer sources | precedence, permissions, redaction and subprocess argv tests |
+| Migration and capability documentation | document invariant; examples and generated client compile |
 
 ## Acceptance criteria
 
 > Checkable. "It works" is not a criterion.
 
-1. An omitted provider or environment capability is represented as unknown and fails a requirement
-   that asks for it; it is never silently promoted to supported.
-2. Capability values cannot express contradictory states such as both controlled and ungoverned
-   tool execution; evidence says measured, derived, declared or unknown and carries a human-readable
-   source without credentials.
-3. Claude Code reports a closed governed tool path and resumable session; Codex reports its own MCP
-   and native-tool limitations; OpenCode reports only what its ACP bridge and measured file prove.
-4. `LocalEnvironment` reports confined writes, denied network and broad reads. A requirement for
-   repository-only reads or denied ambient secrets refuses construction on this machine.
-5. A host requiring a controlled tool path cannot accidentally select a provider with ungoverned
-   native paths; the mismatch names the provider, axis, required value, available value and evidence.
-6. A requirement accepted in-process is accepted over the wire, and a refusal has the same typed
-   details in Python and TypeScript.
-7. Existing callers that state no requirements retain 0.29.1 behavior; the migration note explains
-   that this is compatibility, not a production safety claim.
-8. The non-live quality gate is green and every new public type appears in generated schemas and the
-   API export invariants.
+1. A caller can hand a `ModelPort` and open a `Thread`; no product-owned runner or alternate
+   conversation record is needed.
+2. Model-backed and CLI-backed scripted providers pass the same tests for turn, park/settle, hold,
+   spend, cancellation, resume and activity ordering.
+3. `ModelAgent` exposes only the `ToolSource` it is handed, routes every tool call through it, and
+   reports the model's usage/activity without manufacturing unknown values.
+4. Phase 31 selection remains truthful for both provider kinds: an API-model record and its
+   evidence are checked before its session opens, exactly as for a CLI agent.
+5. Every folded item created from `Invoked` retains the canonical JSON inputs in Python and across
+   protocol/schema/TypeScript boundaries; over-limit or sensitive payload handling is one explicit
+   rule rather than client-specific truncation.
+6. A stream session assigns strictly monotone ids, keeps a bounded replay window, permits one live
+   attachment, replays only frames after a supplied cursor and expires after its grace period.
+7. The HTTP/SSE server uses the reusable session rather than retaining a private implementation;
+   existing D94 reconnect behavior remains green.
+8. Heartbeats make a silent connection observable without adding events/items to the durable
+   record, and a client that crosses its silence deadline reattaches using the last frame id.
+9. A production bearer can be supplied without appearing in process arguments. Ambiguous or
+   insecure token-file input is refused by name, and no error/log includes the bearer value.
+10. Existing 0.29.1 CLI-backed callers preserve behavior when they do not opt into new model or
+    stream APIs; the full non-live gate and generated-client compile are green.
 
 ## Run policy (inherited)
 

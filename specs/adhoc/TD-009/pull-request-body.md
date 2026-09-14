@@ -1,3 +1,7 @@
+---
+type: Artifact
+---
+
 # Phases 0–19: the harness, and everything the audit found
 
 One pull request for a linear stack of 162 commits. Each phase branched from the one before, so
