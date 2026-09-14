@@ -23,12 +23,12 @@ epic: production-boundary
 - [x] Verify fold history, JSON round trips, schema drift and TypeScript compile
 
 ## Group 3 — One reusable stream session
-- [/] Extract monotone ids, bounded replay, single attachment, cursor and grace expiry behind an injected clock
-- [ ] Make HTTP/SSE consume the shared session and remove the private duplicate
-- [ ] Verify in-process state-machine/property tests and the existing D94 reconnect integrations
+- [x] Extract monotone ids, bounded replay, single attachment, cursor and grace expiry behind an injected clock
+- [x] Make HTTP/SSE consume the shared session and remove the private duplicate
+- [x] Verify in-process state-machine/property tests and the existing D94 reconnect integrations
 
 ## Group 4 — Silent links and safer bearer input
-- [ ] Add idle heartbeat frames and generated-client silence detection/reattach without durable record writes
+- [/] Add idle heartbeat frames and generated-client silence detection/reattach without durable record writes
 - [ ] Add environment and permission-checked token-file sources with explicit precedence; retain the flag as local-only
 - [ ] Verify heartbeat timing, silent-drop recovery, argv secrecy, permission refusal and log redaction
 

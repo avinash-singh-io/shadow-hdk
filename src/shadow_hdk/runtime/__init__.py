@@ -24,10 +24,20 @@ from shadow_hdk.runtime.bindings import Ports, Resumed, RunContext, RunOptions, 
 from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.conversation import Conversation, Turned
 from shadow_hdk.runtime.loop import resume, run
+from shadow_hdk.runtime.streams import (
+    AlreadyAttached,
+    CursorExpired,
+    StreamAttachment,
+    StreamExpired,
+    StreamFrame,
+    StreamSession,
+)
 from shadow_hdk.runtime.trust import Trust
 
 __all__ = [
     "Cancellation",
+    "AlreadyAttached",
+    "CursorExpired",
     "Pending",
     "Ports",
     "ApprovalAnswer",
@@ -42,6 +52,10 @@ __all__ = [
     "Resumed",
     "RunContext",
     "RunOptions",
+    "StreamAttachment",
+    "StreamExpired",
+    "StreamFrame",
+    "StreamSession",
     "Trust",
     "current_run",
     "resume",

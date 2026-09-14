@@ -5,6 +5,9 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+
 from shadow_hdk.runtime.streams import (
     AlreadyAttached,
     CursorExpired,
@@ -17,17 +20,37 @@ pytestmark = pytest.mark.anyio
 class ManualClock:
     def __init__(self) -> None:
         self.sleepers: list[tuple[float, asyncio.Event]] = []
+        self.cancelled: list[float] = []
 
     async def sleep(self, seconds: float) -> None:
         event = asyncio.Event()
         self.sleepers.append((seconds, event))
-        await event.wait()
+        try:
+            await event.wait()
+        except asyncio.CancelledError:
+            self.cancelled.append(seconds)
+            raise
 
     async def advance(self) -> None:
         await asyncio.sleep(0)
         for _seconds, event in self.sleepers:
             event.set()
         await asyncio.sleep(0)
+
+
+@given(
+    values=st.lists(st.integers(), min_size=1, max_size=50),
+    capacity=st.integers(min_value=1, max_value=10),
+)
+def test_every_retained_replay_is_the_monotone_suffix(values: list[int], capacity: int) -> None:
+    session = StreamSession[int](capacity=capacity)
+    kept = [session.keep(value) for value in values]
+    retained = kept[-capacity:]
+    oldest = retained[0].id
+    assert oldest is not None
+
+    assert session.replay(after=oldest - 1) == tuple(retained)
+    assert [frame.id for frame in session.replay()] == list(range(oldest, len(values) + 1))
 
 
 async def test_ids_are_monotone_replay_is_bounded_and_a_stale_cursor_is_typed() -> None:
@@ -72,6 +95,8 @@ async def test_detach_expires_after_injected_grace_and_reattach_cancels_it() -> 
     await asyncio.sleep(0)
     assert [seconds for seconds, _event in clock.sleepers] == [10]
     second = session.attach()
+    await asyncio.sleep(0)
+    assert clock.cancelled == [10]
     await clock.advance()
     assert expired == [], "reattachment cancelled the old grace"
     second.detach()

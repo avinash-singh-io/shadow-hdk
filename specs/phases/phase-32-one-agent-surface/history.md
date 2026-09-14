@@ -61,3 +61,19 @@ Affects-specs: specs/architecture/wire.md#The thread, crossed; docs/migrations/0
 Detail: The shared Fold now projects each Invoked input into Item.inputs, preserves it through reopen/freeze and the wire, and emits an explicit byte-counted omission marker above the 64 KiB canonical JSON boundary. Python contracts, the published schema and generated TypeScript all carry the field; 67 focused checks and three destructive mutations verify retention, the exact bound and crossed projection.
 
 ---
+
+### [FEATURE] 2026-09-15 — One transport-independent stream session
+Topics: stream-session, heartbeat, wire, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: specs/architecture/wire.md#The thread, crossed; specs/architecture/runtime.md
+Detail: Runtime StreamSession now owns monotone bounded replay, typed stale cursors, exactly one attachment, injected-clock grace expiry and ephemeral idle heartbeats. HTTP/SSE consumes this primitive rather than owning another queue/outbox/timer implementation; 22 focused state/property and D94 integration tests plus four destructive mutations verify the boundary.
+
+---
+
+### [NOTE] 2026-09-15 — BUG-049 was an invalid reading, not a duplicate-frame defect
+Topics: stream-session, wire, tdd
+Affects-phases: phase-32-one-agent-surface
+Affects-specs: none
+Detail: The two `_sse` yield sites are the replay loop and the later live loop, not consecutive live emissions; the last-replayed guard and D94 unique-id assertion already covered the seam. The backlog row is deprecated with the correction, while the shared extraction still makes replay-then-live-once a direct state-machine property.
+
+---
