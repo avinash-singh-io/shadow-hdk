@@ -172,3 +172,30 @@ nobody listened arrived whole on the reattached stream, from the frame after the
 that session's stream is gone (a page reloaded — its old session keeps the thread for the
 grace and would otherwise hold it), and is refused as `thread_held` naming the session when
 the stream is attached — two pages cannot drive one thread.
+
+### [NOTE] 2026-09-14 — Closed: six groups, one release
+
+Every group landed on the phase branch RED first with CI green (one commit's CI failed on a
+long docstring line, fixed in the next); the load-bearing assertions mutation-checked (group 1:
+the offer's `Parked` branch removed → three park tests fail; the agent's text activity removed →
+the streaming test fails). Released as **v0.29.0**: a contract change — additions only:
+`turn/start {on_question}`, `approvals/answer {kind: "park"}`, `error.data.kind`, frame `id:`s
+and reattach on the SSE door, `admin/sessions` rows say `attached`; `RunOptions.approvals`
+typed on the `Questions` port; the `ModelChunk` from the port's default `stream` carries
+`reasoning`; `Spent` grew tokens; `ThreadRecord` grew `version`; `Thread` is built on
+`Conversation` with every method it had. The guide for a product is `docs/consuming.md`.
+
+## Verification Evidence
+
+Captured fresh 2026-09-14 on the phase branch at close, before landing, with
+`SHADOW_HDK_TEST_POSTGRES_URL=postgresql://localhost/shadow_hdk_test` (the desk's Postgres 16.14):
+
+- `uv run ruff check` → `All checks passed!`
+- `uv run ruff format --check` → exit 0
+- `uv run mypy` → `Success: no issues found in 418 source files`
+- `uv run pytest -q --timeout 120 -p no:cacheprovider --ignore=tests/runtime/test_benchmark.py` → `1570 passed, 2 skipped, 12 deselected, 85 warnings in 158.78s (0:02:38)`
+- `uv run pytest tests/runtime/test_benchmark.py -q -s` → `100 steps in 10 nested subgraphs: 59.2 ms (0.592 ms/step, best of 9)`; `4 passed`
+- `tests/test_versions.py` → EXPECTED `0.29.0`
+- The TypeScript client: `npm run check` and `npm run build` clean; `test_the_typescript_client_talks_to_serve` green in the suite
+- RED first, every group: group 1 `No module named 'shadow_hdk.runtime.conversation'`, `Thread.open() got an unexpected keyword argument` (none — the park), the streaming double's `complete` called once where zero was expected; group 2 `'Spent' object has no attribute 'input_tokens'`, `assert 2600 == 3600` (idle counted); group 3 `cannot import name 'CallbackObserver'` then the shipped module's `__all__`; group 4 `cannot import name 'ERROR_KINDS'`; group 5 `cannot import name 'RunStore'`; group 6 `unexpected keyword argument 'idle_seconds'`, `served_over_http() got an unexpected keyword argument 'grace_seconds'`
+- Found on the way: the studio example's reload test expected a session's threads closed the moment its stream ended — with D94 a reload *takes the thread over*, and a live page is not robbed (`thread_held` naming the session), both tested

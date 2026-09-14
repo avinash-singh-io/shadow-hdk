@@ -2,7 +2,7 @@
 type: Phase
 phase: 30
 name: a-product-owns-what-it-owns
-status: active
+status: complete
 topics: [turn, conversation, park, streaming, tokens, contracts, questions, governance, errors, run-store, versioning, idle, reconnect]
 deps: [phase-29-one-app-server]
 ---

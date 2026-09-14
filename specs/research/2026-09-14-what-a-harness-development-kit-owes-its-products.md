@@ -152,6 +152,8 @@ again, so a *Pins* row):
 Q13 (a Python client; the TS client on npm) and Q14–Q16 are named, not scheduled: Q13 waits on
 the runner protocol (join J5) and the owner's word on npm; Q14–Q16 are P3.
 
+**Done — 0.29.0 (Phase 30, D87–D94)**: groups 1–6 as planned; the guide is `docs/consuming.md`.
+
 **What Intent Studio does in the same period, to consume it right**: pin the release; keep a
 resident thread per intent on a `ThreadStore` over its Postgres (Q3 — `_CardAsks` and
 `parked.py` go); set `principal` from its backend (D82); drop `StreamingLangChainModel` when

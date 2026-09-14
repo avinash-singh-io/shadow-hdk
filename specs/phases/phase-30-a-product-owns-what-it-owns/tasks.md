@@ -29,4 +29,4 @@ phase: 30
 - [x] `idle_seconds`; the wire's frame ids, grace period, reattach and replay; the TypeScript client reconnects; records: D94
 
 ## The release
-- [ ] the `consuming` page under `docs/`; the architecture documents; Verification Evidence; 0.29.0 tagged and released; the demo pinned; the board's Pins row
+- [x] `docs/consuming.md`; the architecture documents; Verification Evidence; 0.29.0 tagged and released; the demo pinned; the board's Pins row
