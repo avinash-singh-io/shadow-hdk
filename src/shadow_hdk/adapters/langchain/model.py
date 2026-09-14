@@ -68,23 +68,32 @@ class LangChainModel(ModelPort):
         return self._response(answer)
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[ModelChunk]:
-        usage: Usage | None = None
-        calls: tuple[ToolCall, ...] = ()
+        """The answer as the provider writes it (D89): every delta of text and of thinking as its
+        own chunk, in order; the tool calls and the usage off the **merged** message on the last
+        chunk — merged the way LangChain merges chunks (`+`), so a call whose arguments arrive in
+        fragments is one call, whole, and never a fragment a reader could mistake for one."""
+        merged: Any = None
         # `aclosing` so the provider's own generator — and the HTTP stream under it — is closed the
         # moment we stop reading, whether we finished or a consumer walked away mid-answer.
         stream = self._bind(request).astream(_to_langchain(request.messages))
         async with aclosing(stream):
             async for piece in stream:
-                found = _usage_of(piece)
-                if found is not None:
-                    usage = self._priced(found)
-                calls = calls or _calls_of(piece)
+                merged = piece if merged is None else merged + piece
+                thought = _reasoning_of(piece)
+                if thought:
+                    yield ModelChunk(reasoning=thought)
                 text = _text_of(piece)
                 # Empty deltas are noise, not content: a provider that sends five frames of which
                 # one carries words has produced one piece of answer, and saying otherwise would
                 # make a run look like it streamed when it did not.
                 if text:
                     yield ModelChunk(text=text)
+        usage: Usage | None = None
+        calls: tuple[ToolCall, ...] = ()
+        if merged is not None:
+            found = _usage_of(merged)
+            usage = self._priced(found) if found is not None else None
+            calls = _calls_of(merged)
         yield ModelChunk(tool_calls=calls, usage=usage, done=True)
 
     # ------------------------------------------------------------------ translation

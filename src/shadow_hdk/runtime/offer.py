@@ -23,9 +23,15 @@ from shadow_hdk.kernel import Binding, Ceiling, Composition, Invoke, Observation
 from shadow_hdk.kernel.events import ApprovalRequested, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import ToolSource
+from shadow_hdk.runtime.approvals import Parked
 from shadow_hdk.runtime.bindings import RunContext
 
 REFUSED_NOT_RUNNING = "no turn is running, so there is nothing to call into"
+PARKED_REASON = (
+    "not now: the person will be asked about {name} later, and the call is kept — it runs once "
+    "they approve, and you will be told what came of it at your next turn. Say what you "
+    "proposed and why, then stop."
+)
 
 
 class Offer(Protocol):
@@ -130,6 +136,11 @@ class Routing:
             answer = await context.request_approval(
                 question, step=step, about=(name, dict(arguments or {}))
             )
+            if isinstance(answer, Parked):
+                # **Kept, not answered** (D88). The child stays asleep in the checkpointer with
+                # the question on it; whoever keeps the record settles it later and tells the
+                # provider then. Now the provider hears that, and is asked to stop.
+                return Refused(PARKED_REASON.format(name=name))
             if not await context.children.is_held(handle):
                 break
             observation, question = outcome_of(await context.children.send(handle, answer), step)
@@ -172,4 +183,11 @@ class InProcessOffer(Routing):
         yield ()
 
 
-__all__ = ["REFUSED_NOT_RUNNING", "InProcessOffer", "Offer", "Routing", "outcome_of"]
+__all__ = [
+    "PARKED_REASON",
+    "REFUSED_NOT_RUNNING",
+    "InProcessOffer",
+    "Offer",
+    "Routing",
+    "outcome_of",
+]

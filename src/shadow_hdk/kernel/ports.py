@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
-from typing import Annotated, Literal, Protocol, runtime_checkable
+from typing import Annotated, Any, Literal, Protocol, runtime_checkable
 
 from pydantic import Field, JsonValue
 
@@ -38,6 +38,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.observations import Observation, Proposal
 from shadow_hdk.kernel.providers import Behaviour
+from shadow_hdk.kernel.questions import Request
 from shadow_hdk.kernel.threads import ThreadRecord
 from shadow_hdk.kernel.usage import Usage as Usage
 
@@ -124,6 +125,7 @@ class ModelPort(Protocol):
             tool_calls=response.tool_calls,
             usage=response.usage,
             done=True,
+            reasoning=response.reasoning,
         )
 
 
@@ -359,6 +361,35 @@ class ThreadStore(Protocol):
     async def held_by(self, thread_id: str) -> str | None:
         """Who holds the thread now, or `None` when nobody does or the hold has lapsed."""
         ...
+
+
+@runtime_checkable
+class RunStore(Protocol):
+    """Where a parked run sleeps (D93): bytes by run id and key. The runtime library's
+    checkpointer is built over this port (`runtime.checkpoints.saver_over`), so a product keeps
+    parked runs in its own tables with four methods and no knowledge of the library. `list` is
+    sorted by key; `delete` forgets everything a run kept. The shipped SQLite and Postgres
+    savers stay the fast path and do not go through it."""
+
+    async def put(self, run_id: str, key: str, blob: bytes) -> None: ...
+
+    async def get(self, run_id: str, key: str) -> bytes | None: ...
+
+    async def list(self, run_id: str, *, prefix: str = "") -> tuple[tuple[str, bytes], ...]: ...
+
+    async def delete(self, run_id: str) -> None: ...
+
+
+@runtime_checkable
+class Questions(Protocol):
+    """Who answers a run's questions (D91): the port the runtime asks through when a policy
+    says *ask* or an agent asks the person. `ask` registers the request and waits for its
+    answer — an approval's `approve` · `deny` · `approve_and_add_rule` · `park`, or an input's
+    text; a `None` from an input means nobody was there. A host that stops waiting (the run
+    cancelled, the asker gone) is told through whatever the implementation offers beside this;
+    the port itself is one method, so a product implements it without inheriting ours."""
+
+    async def ask(self, request: Request) -> Any: ...
 
 
 @runtime_checkable

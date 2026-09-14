@@ -210,17 +210,23 @@ class ServeHost:
         store: Any = None,
         threads: ThreadStore | None = None,
         checkpointer: Any = None,
+        run_store: Any = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
         opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
         `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
-        would have made, and a host that hands all three never reads the url."""
+        would have made, and a host that hands all three never reads the url. `run_store` (D93)
+        is a product's own `RunStore` — the checkpointer is then the library's saver over it."""
         self.settings = settings
         self._governance = governance
         self._sink = sink
         self.approvals = Approvals()
         self.stores: Stores = stores_for(
-            settings.store, store=store, threads=threads, checkpointer=checkpointer
+            settings.store,
+            store=store,
+            threads=threads,
+            checkpointer=checkpointer,
+            run_store=run_store,
         )
         self.store: Any = self.stores.store
         self.threads: ThreadStore = self.stores.threads
@@ -401,6 +407,7 @@ class ServeHost:
             principal=principal,
             attributes=attributes if isinstance(attributes, dict) else None,
             budget=self._budget_of(budget),
+            idle_seconds=self.settings.idle_seconds,
         )
         self.provider = called
         return thread
@@ -477,6 +484,7 @@ class ServeHost:
             rules=self.rules,
             modes=self.modes,
             holder=self.holder,
+            idle_seconds=self.settings.idle_seconds,
         )
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:

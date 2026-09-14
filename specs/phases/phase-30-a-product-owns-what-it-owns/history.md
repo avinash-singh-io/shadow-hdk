@@ -1,0 +1,201 @@
+---
+type: History
+phase: 30
+---
+
+# History — Phase 30
+
+Append-only. Decisions as `### [DECISION] date — D<n>: title`; the index in
+`specs/decisions/index.md` is regenerated from them.
+
+### [NOTE] 2026-09-14 — Opened, from the research note and the owner's go
+
+`specs/research/2026-09-14-what-a-harness-development-kit-owes-its-products.md` read sixteen
+things a kit owes against the field and against Intent Studio's fifteen harness modules; the
+owner: *"go ahead, write the phase and run it in autonomous mode"*, after confirming the
+architecture must stay generic — the note's admission rule is this phase's rule. Context
+engineering and collaboration move to 31 and 32. A CI flake seen on the docs branch's run
+(`tests/adapters/mqtt/test_review_findings.py::test_a_fault_in_routing_does_not_kill_the_network_thread`
+— the subscription acknowledgement timed out on a loaded runner; green on the next run) is
+filed as BUG-043 and not chased here.
+
+### [DECISION] 2026-09-14 — D87: the governed turn as a primitive — `Conversation`
+
+**Decision.** `runtime/conversation.py`: `Conversation.open(agent=, ports=, root= | workspace=,
+lease=, registry=, approvals=, checkpointer=, modes=, rules=, mode=, principal=, attributes=)` —
+one provider session opened on the served registry; `turn(text, when=, on_question=, began=)`
+runs one turn as a run of one step and yields every event; `last: Turned` is what it came to
+(the turn as a record would remember it, what it spent, the questions it left open);
+`tools()`, `set_mode` (answering `Changed` or `None`), `add_root`, `set_option`, `steer`,
+`interrupt`, `close`; `resume_parked` wakes a child from the checkpointer; `tell` folds a line
+ahead of the next prompt. Nothing of a record: no store, no `ThreadRecord`, no hold. `Thread`
+is a `Conversation` plus a record, a store and a hold — every method it had, over the
+conversation, the record kept in step (`began` writes the turn down before it runs, the open
+questions as they open, the outcome and the spend when it ends); every test of `Thread` passed
+unchanged.
+
+**Why.** The Agents SDK's `Runner.run` runs a turn over the product's own session; the Agent
+SDK's `query()` and ADK's `Runner` likewise: a product that owns its conversation gets the turn
+without the container. Ours could not: to run one governed CLI turn a product opened a `Thread`
+per turn over an in-memory store with a one-entry fake mode registry.
+
+### [DECISION] 2026-09-14 — D88: a park on purpose
+
+**Decision.** `Parked` is an answer on the host's handle (`approvals/answer {kind: "park"}`):
+the offer returns the provider a refusal that says the call is kept and will run once approved
+— and asks it to stop — and does **not** wake the child, which stays asleep in the checkpointer
+with the question on it; `Approvals.parked` remembers the handle. A turn whose questions were
+answered so ends `parked` (`Turned.pending` carries them); `Thread` keeps them on the record, and
+`settle` runs the act from its checkpoint on any later request and tells the agent at its next
+turn — D80's machinery, for a host that chose to. `turn(on_question="park")` answers every
+question of the turn so, without a host in the loop; `turn/start {on_question}` crosses. A
+question neither answered nor parked when the turn ends is withdrawn, as D59 says.
+
+**Why.** A request/response product cannot hold a turn open while a person thinks; LangGraph's
+`interrupt` ends the request and a later one resumes. D80 covered the host that died — the
+research note's second read found that a turn ended on purpose withdrew its questions, and the
+product had built the on-purpose case itself (`_CardAsks`, `parked.py`, in memory, lost on
+restart).
+
+### [DECISION] 2026-09-14 — D89: the agent streams
+
+**Decision.** `AgentComponent` reads the model through `ModelPort.stream`: every delta of
+thinking and of text is activity beside the record the moment it arrives (D63), the response is
+assembled from the chunks — text and reasoning concatenated, the tool calls and the usage off
+the chunks that carry them — and the record is what a completed turn's was: the reasoning once,
+the answer once. A port without a stream of its own (implemented structurally, or one whose
+`stream` is not a stream) answers in one piece through `complete`, and that piece is activity.
+`ModelChunk` from the port's default `stream`, the scripted double and the wire's `RemoteModel`
+carries `reasoning`. `LangChainModel.stream` merges chunks the way LangChain merges them, yields
+every thinking delta as its own chunk, and reads the tool calls and the usage off the merged
+message on the last chunk — a call whose arguments arrive in fragments is one call, whole.
+
+**Why.** Every runtime in the field streams; a product streamed *underneath* `complete` with a
+model wrapper that folded chunks back (ENH-065, join J5). Closed here.
+
+### [DECISION] 2026-09-14 — D90: tokens and running time on the record
+
+**Decision.** `Spent.input_tokens`, `.output_tokens` and `.unmetered` (D84 grown): the meter
+counts every call's tokens — the turn's own and its children's, since every call the turn
+caused is the turn's to count — and a call that reported none (a provider turn with no usage,
+a model call with no counts) makes the count a floor, said by `unmetered`, never a zero. A
+thread's `seconds` are its turns' running time: the conversation's meter is paused between
+turns (`LeaseMeter.pause`/`unpause`) and runs only while a turn, or a settled act, runs — D33's
+rule for a run, held for the thread. Carried across openings with the rest of `spent`.
+
+**Why.** A subscription is *tokens counted, no price* — the field's runtimes keep usage on the
+container, and the product folded `usage` events into its own ledger for want of it. And the
+thread's clock ran from its opening: a thread left open overnight with one ten-second turn
+had spent its hour by sitting there (the React header read `58 min` two minutes in).
+
+**Correction.** This is a change in what `thread/remaining` says for an open, idle thread —
+more, and truthfully.
+
+### [DECISION] 2026-09-14 — D91: the contracts ship; the runtime asks through a `Questions` port
+
+**Decision.** `shadow_hdk.testing` is the front door for a product's tests: `contracts` — every
+port's suite (component, model, governance, sink, observer, clock, store, thread store, and now
+`QuestionsContract`), moved out of the kit's tests into the wheel so a product proves its own
+implementation with the very tests the kit's adapters pass; `providers.ScriptedAgent` — an
+`AgentPort` double that calls the tools it is scripted to through the offer and keeps what it
+was told and what it heard; the runtime's doubles re-exported. The kit's own adapter tests
+import the suites from there. `Questions` is a kernel port (`ask(request) -> answer`; `Request`
+is a kernel contract now); the runtime asks through it (`RunOptions.approvals: Questions`);
+the host's `Approvals` implements it beside its own side (`next`, `answer`, `pending`,
+withdrawals, `parked`); a product's own way of asking implements one method and inherits
+nothing.
+
+**Why.** A product implementing `ThreadStore` over its tables could not run the suite without
+copying our tests, and wrote its own provider double (Intent Studio's 0043 P2); and it
+subclassed `Approvals` to change the runtime's side (`_CardAsks`) because the runtime's side and
+the host's were one object.
+
+### [DECISION] 2026-09-14 — D92: governance composed by routing; refusals a client can switch on
+
+**Decision.** `adapters.modes.Routed(by_component={...}, otherwise=...)` — a `GovernancePort`
+that hands each judgement to the port named for the component in the context and the rest to
+`otherwise`; total, held to the governance contract. `ERROR_KINDS` in `wire/protocol.py` is the
+vocabulary of `error.data.kind`: `thread_held {thread_id, holder}`, `turn_running {thread_id,
+turn_id}`, `not_found` (a `KeyError`, a missing file), `invalid` (a `ValueError`), `version_mismatch`,
+`unknown_method`, `refused` (every other application *no*), `gone`; `peer.py` writes it beside
+the code and the sentence, naming the runtime's exceptions by class name so the wire's core
+imports nothing above it; the TypeScript client raises `RemoteError` with `kind` and `detail`.
+
+**Why.** A product with two governments (its record's constitution, the machine's mode) wrote a
+port subclass to route between them; a client switching on a refusal had a sentence and, by
+accident, a class name. Both are now contracts.
+
+### [DECISION] 2026-09-14 — D93: a parked run behind a port of ours; the record versioned
+
+**Decision.** `RunStore` is a kernel port — `put(run_id, key, blob)`, `get`, `list(run_id,
+prefix=)` sorted by key, `delete(run_id)` — and `runtime.checkpoints.saver_over(run_store)` is
+the runtime library's checkpointer over it: every checkpoint and every pending write a row of
+bytes under the run's id, serialised by the library's own serde; async only, as the library's
+own database savers are. A product keeps parked runs in its own tables with four methods and
+no knowledge of the library: `ServeHost(run_store=)`, `stores_for(run_store=)`. The shipped
+SQLite and Postgres savers stay the fast path; `InMemoryRunStore` for tests; `RunStoreContract`
+shipped. Measured: a run parked through one saver finishes through another over the same store,
+the step before the park not redone; two runs on one store do not cross. `ThreadRecord.version`:
+1 for every record before the field (0.28.0's five fields all default), `RECORD_VERSION = 2` for
+this kit's writes; an older record picked up is written back in this shape and says so.
+
+**Why.** Store and ThreadStore were ports with suites; where a parked run slept was
+`BaseCheckpointSaver`, typed `Any` through the kit — the runtime library leaking into the
+persistence contract, and a product not on our two backends left to implement a dozen methods
+of somebody else's. And a product mapping the record to columns learned of a moved shape from a
+failing insert.
+
+**The migration note this release carries.** A rule written before D82 (0.28.0) has no `scope`
+and is for everyone; a product that kept rules from earlier releases should read them and scope
+the ones that were a person's — the kit cannot know whose they were.
+
+### [DECISION] 2026-09-14 — D94: sessions that idle out; a stream that survives a drop
+
+**Decision.** `Conversation.open(idle_seconds=)` / `Thread.open(idle_seconds=)` /
+`[provider] idle_seconds`: after that long without a turn the provider's session is closed —
+the conversation stays open, a thread stays held — and the next turn reopens it on its session
+id (D76), memory kept; nothing keeps it by default. The wire: every frame carries an `id:`; a
+session's runtime runs in a task of its own with its frames in an outbox (the last 5,000); when
+the stream drops the session stays for `grace_seconds` (60) and `GET /rpc` with the session
+header and `Last-Event-ID` reattaches and replays what was missed, each frame once in order; a
+second stream on an attached session is refused (409); past the grace the session's threads
+are closed and the id is gone (404); every session ends with the server. The TypeScript client
+reattaches so and reports `reconnecting` · `connected` · `lost`.
+
+**Why.** One app server, many people: a resident CLI per open thread until the session closed
+(Codex unloads after thirty idle minutes); and a page on a train lost the turn in flight with
+its stream (LangGraph Server's `join`, Codex's WebSocket reconnect). Measured: a turn run while
+nobody listened arrived whole on the reattached stream, from the frame after the last seen.
+
+**Two sessions of one process on one thread.** D81's hold is per process; within one, a
+`thread/resume` from a new session of a thread another session has open *takes it over* when
+that session's stream is gone (a page reloaded — its old session keeps the thread for the
+grace and would otherwise hold it), and is refused as `thread_held` naming the session when
+the stream is attached — two pages cannot drive one thread.
+
+### [NOTE] 2026-09-14 — Closed: six groups, one release
+
+Every group landed on the phase branch RED first with CI green (one commit's CI failed on a
+long docstring line, fixed in the next); the load-bearing assertions mutation-checked (group 1:
+the offer's `Parked` branch removed → three park tests fail; the agent's text activity removed →
+the streaming test fails). Released as **v0.29.0**: a contract change — additions only:
+`turn/start {on_question}`, `approvals/answer {kind: "park"}`, `error.data.kind`, frame `id:`s
+and reattach on the SSE door, `admin/sessions` rows say `attached`; `RunOptions.approvals`
+typed on the `Questions` port; the `ModelChunk` from the port's default `stream` carries
+`reasoning`; `Spent` grew tokens; `ThreadRecord` grew `version`; `Thread` is built on
+`Conversation` with every method it had. The guide for a product is `docs/consuming.md`.
+
+## Verification Evidence
+
+Captured fresh 2026-09-14 on the phase branch at close, before landing, with
+`SHADOW_HDK_TEST_POSTGRES_URL=postgresql://localhost/shadow_hdk_test` (the desk's Postgres 16.14):
+
+- `uv run ruff check` → `All checks passed!`
+- `uv run ruff format --check` → exit 0
+- `uv run mypy` → `Success: no issues found in 418 source files`
+- `uv run pytest -q --timeout 120 -p no:cacheprovider --ignore=tests/runtime/test_benchmark.py` → `1570 passed, 2 skipped, 12 deselected, 85 warnings in 158.78s (0:02:38)`
+- `uv run pytest tests/runtime/test_benchmark.py -q -s` → `100 steps in 10 nested subgraphs: 59.2 ms (0.592 ms/step, best of 9)`; `4 passed`
+- `tests/test_versions.py` → EXPECTED `0.29.0`
+- The TypeScript client: `npm run check` and `npm run build` clean; `test_the_typescript_client_talks_to_serve` green in the suite
+- RED first, every group: group 1 `No module named 'shadow_hdk.runtime.conversation'`, `Thread.open() got an unexpected keyword argument` (none — the park), the streaming double's `complete` called once where zero was expected; group 2 `'Spent' object has no attribute 'input_tokens'`, `assert 2600 == 3600` (idle counted); group 3 `cannot import name 'CallbackObserver'` then the shipped module's `__all__`; group 4 `cannot import name 'ERROR_KINDS'`; group 5 `cannot import name 'RunStore'`; group 6 `unexpected keyword argument 'idle_seconds'`, `served_over_http() got an unexpected keyword argument 'grace_seconds'`
+- Found on the way: the studio example's reload test expected a session's threads closed the moment its stream ended — with D94 a reload *takes the thread over*, and a live page is not robbed (`thread_held` naming the session), both tested

@@ -15,9 +15,11 @@ from shadow_hdk.adapters.modes.registry import (
     shipped_modes,
     store_modes,
 )
+from shadow_hdk.adapters.modes.routed import Routed
 from shadow_hdk.adapters.modes.rules import Rule, RuleGovernance, RuleSet, Selected
 
 __all__ = [
+    "Routed",
     "ActRules",
     "FileModes",
     "StoreModes",

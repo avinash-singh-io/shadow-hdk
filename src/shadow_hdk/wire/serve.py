@@ -21,8 +21,11 @@ callbacks, which is a confused deputy with a tidy error message.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import secrets
+import time
+from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -53,9 +56,21 @@ class QueueChannel:
             await self.outbound.aclose()
 
 
+KEPT_FRAMES = 5000
+"""How many frames a session keeps for a reconnect (D94): what a turn in flight produces while
+nobody listens, several times over. Older frames fall off the front; a reconnect from before
+them starts from what is kept."""
+
+GRACE_SECONDS = 60.0
+"""How long a session outlives its stream (D94): a page on a train reconnects within it and
+misses nothing; past it the session's threads are closed and the id is gone."""
+
+
 @dataclass
 class Session:
-    """One connected host. Its own id, its own queues, its own runtime."""
+    """One host's session (D94): its runtime runs in a task of its own, its frames go into an
+    outbox with ids, and a stream attaches to the outbox — or detaches and reattaches within
+    the grace, replaying what it missed. The stream is a view; the session is the thing."""
 
     id: str
     to_host: MemoryObjectSendStream[str]
@@ -63,6 +78,28 @@ class Session:
     runtime: Any = None
     events: MemoryObjectReceiveStream[str] | None = field(default=None)
     opened_at: str = ""
+    outbox: deque[tuple[int, str]] = field(default_factory=lambda: deque(maxlen=KEPT_FRAMES))
+    next_id: int = 1
+    live: asyncio.Queue[tuple[int, str]] | None = None
+    """The attached stream's queue; `None` while no stream is attached."""
+    detached_at: float | None = None
+    grace: asyncio.Task[None] | None = None
+    ended: bool = False
+
+    def keep(self, frame: str) -> tuple[int, str]:
+        numbered = (self.next_id, frame)
+        self.next_id += 1
+        self.outbox.append(numbered)
+        if self.live is not None:
+            self.live.put_nowait(numbered)
+        return numbered
+
+    def missed_since(self, last_seen: int | None) -> list[tuple[int, str]]:
+        """What the outbox holds after the last frame a reconnecting stream saw — everything
+        kept, for a stream that saw nothing."""
+        if last_seen is None:
+            return list(self.outbox)
+        return [(fid, frame) for fid, frame in self.outbox if fid > last_seen]
 
 
 class Sessions:
@@ -76,12 +113,27 @@ class Sessions:
             {
                 "id": session.id,
                 "opened_at": session.opened_at,
+                "attached": session.live is not None,
                 "threads": sorted(session.runtime.threads.threads)
                 if session.runtime is not None
                 else [],
             }
             for session in self.by_id.values()
         ]
+
+    async def take_over(self, thread_id: str, by: Any) -> None:
+        """A thread open in another session of this process (D94): closed there when that
+        session's stream is gone — a page reloaded resumes its thread; refused, naming the
+        session, when its stream is attached — two pages cannot drive one thread."""
+        from shadow_hdk.runtime.threads import ThreadHeld
+
+        for session in list(self.by_id.values()):
+            methods = session.runtime.threads if session.runtime is not None else None
+            if methods is None or methods is by or thread_id not in methods.threads:
+                continue
+            if session.live is not None:
+                raise ThreadHeld(thread_id, f"session {session.id}")
+            await methods.close_one(thread_id)
 
     def open_threads(self) -> int:
         return sum(len(s["threads"]) for s in self._sync_sessions())
@@ -99,6 +151,7 @@ def build_app(
     token: str | None = None,
     threads: Any = None,
     page: Path | None = None,
+    grace_seconds: float = GRACE_SECONDS,
 ) -> Any:
     """A Starlette app serving one runtime per connected host.
 
@@ -131,11 +184,89 @@ def build_app(
             return JSONResponse({"error": "unauthorised"}, status_code=401)
         return None
 
+    running: dict[str, asyncio.Task[None]] = {}
+
+    async def end_session(session: Session) -> None:
+        """The session's threads go with it (D69), its runtime stops, its id is forgotten."""
+        if session.ended:
+            return
+        session.ended = True
+        sessions.pop(session.id, None)
+        if session.grace is not None:
+            session.grace.cancel()
+        with anyio.CancelScope(shield=True):
+            await session.runtime.threads.close_all()
+        task = running.pop(session.id, None)
+        if task is not None:
+            task.cancel()
+
+    async def serve_session(session: Session, to_host_receive: Any) -> None:
+        """The session's runtime and its outbox, in a task of their own — not the stream's, so
+        the session outlives the stream (D94)."""
+        async with anyio.create_task_group() as group:
+            group.start_soon(session.runtime.peer.serve_forever, group)
+            async for frame in to_host_receive:
+                session.keep(frame)
+
+    async def grace_then_end(session: Session) -> None:
+        await asyncio.sleep(grace_seconds)
+        if session.live is None:
+            await end_session(session)
+
+    def stream_of(session: Session, last_seen: int | None) -> AsyncIterator[bytes]:
+        async def frames() -> AsyncIterator[bytes]:
+            # The stream opens with a comment frame, as SSE has it: a Node front (a dev proxy,
+            # a product's backend) holds the response's headers — the session id among them —
+            # until the first body byte, and the first frame was a reply to a call the client
+            # cannot make without the id. A client ignores a line that is not `data:`.
+            yield b": session open\n\n"
+            live: asyncio.Queue[tuple[int, str]] = asyncio.Queue()
+            session.live = live
+            if session.grace is not None:
+                session.grace.cancel()
+                session.grace = None
+            session.detached_at = None
+            # **Replay, then live** (D94): what the outbox holds after the last frame this
+            # stream saw, then everything from now on — each frame once, in order, by its id.
+            replayed = 0
+            try:
+                for fid, frame in session.missed_since(last_seen):
+                    replayed = fid
+                    yield _sse(fid, frame)
+                while True:
+                    fid, frame = await live.get()
+                    if fid <= replayed:
+                        continue  # arrived while the replay was on its way; already sent
+                    yield _sse(fid, frame)
+            finally:
+                if session.live is live:
+                    session.live = None
+                    session.detached_at = time.monotonic()
+                    if not session.ended:
+                        session.grace = asyncio.create_task(grace_then_end(session))
+
+        return frames()
+
     async def open_session(request: Request) -> Response:
         """The SSE stream. Opening it *is* opening a session — the id comes back in a header, and
-        every frame the runtime sends travels down this response."""
+        every frame the runtime sends travels down this response. With the session header it is
+        a **reattach** (D94): the stream a page lost, picked up where `Last-Event-ID` left it."""
         if refused := unauthorised(request):
             return refused
+        wanted = request.headers.get(SESSION_HEADER)
+        if wanted:
+            session = sessions.get(wanted)
+            if session is None or session.ended:
+                return JSONResponse({"error": "no such session"}, status_code=404)
+            if session.live is not None:
+                return JSONResponse({"error": "the session has a stream attached"}, status_code=409)
+            last = request.headers.get("last-event-id")
+            last_seen = int(last) if last and last.isdigit() else None
+            return StreamingResponse(
+                stream_of(session, last_seen),
+                media_type="text/event-stream",
+                headers={SESSION_HEADER: session.id, "cache-control": "no-store"},
+            )
         session_id = secrets.token_urlsafe(16)
         to_host_send, to_host_receive = anyio.create_memory_object_stream[str](float("inf"))
         from_host_send, from_host_receive = anyio.create_memory_object_stream[str](float("inf"))
@@ -145,7 +276,7 @@ def build_app(
             from_host=from_host_send,
             opened_at=_stamp(clock),
         )
-        # The runtime reads what the host POSTs and writes into the SSE stream.
+        # The runtime reads what the host POSTs and writes into the outbox.
         channel = QueueChannel(outbound=to_host_send, inbound=from_host_receive)
         session.runtime = RuntimeSide(
             channel,
@@ -155,30 +286,9 @@ def build_app(
             admin=known,
         )
         sessions[session_id] = session
-
-        async def frames() -> AsyncIterator[bytes]:
-            # The stream opens with a comment frame, as SSE has it: a Node front (a dev proxy,
-            # a product's backend) holds the response's headers — the session id among them —
-            # until the first body byte, and the first frame was a reply to a call the client
-            # cannot make without the id. A client ignores a line that is not `data:`.
-            yield b": session open\n\n"
-            async with anyio.create_task_group() as group:
-                group.start_soon(session.runtime.peer.serve_forever, group)
-                try:
-                    async for frame in to_host_receive:
-                        # SSE framing: `data:` line, blank line. The payload is one JSON message,
-                        # and `json.dumps` escapes newlines, so a frame never spans two events.
-                        yield f"data: {frame}\n\n".encode()
-                finally:
-                    sessions.pop(session_id, None)
-                    # The session's threads go with it (D69) — shielded, because this runs as
-                    # the response is being cancelled and a close must still finish.
-                    with anyio.CancelScope(shield=True):
-                        await session.runtime.threads.close_all()
-                    group.cancel_scope.cancel()
-
+        running[session_id] = asyncio.create_task(serve_session(session, to_host_receive))
         return StreamingResponse(
-            frames(),
+            stream_of(session, None),
             media_type="text/event-stream",
             headers={SESSION_HEADER: session_id, "cache-control": "no-store"},
         )
@@ -191,7 +301,7 @@ def build_app(
             # 400 rather than 404: the request is malformed, not aimed at something missing.
             return JSONResponse({"error": f"missing {SESSION_HEADER}"}, status_code=400)
         session = sessions.get(session_id)
-        if session is None:
+        if session is None or session.ended:
             return JSONResponse({"error": "no such session"}, status_code=404)
         await session.from_host.send(json.dumps(await request.json()))
         # Accepted, not answered. The reply travels down the SSE stream like everything else, so
@@ -215,7 +325,12 @@ def build_app(
             return JSONResponse({"error": "no page is served here; talk to /rpc"}, status_code=404)
         return HTMLResponse(page.read_text(encoding="utf-8"))
 
-    return Starlette(
+    async def end_all() -> None:
+        """Every session ended — the process is stopping: its threads closed, nothing held."""
+        for session in list(sessions.values()):
+            await end_session(session)
+
+    app = Starlette(
         routes=[
             Route("/", the_page),
             Route("/healthz", healthz, methods=["GET"]),
@@ -223,6 +338,14 @@ def build_app(
             Route("/rpc", post_frame, methods=["POST"]),
         ]
     )
+    app.state.end_sessions = end_all
+    return app
+
+
+def _sse(fid: int, frame: str) -> bytes:
+    """SSE framing: an `id:` line, a `data:` line, a blank line. The payload is one JSON message,
+    and `json.dumps` escapes newlines, so a frame never spans two events."""
+    return f"id: {fid}\ndata: {frame}\n\n".encode()
 
 
 def _stamp(clock: Any) -> str:
@@ -244,6 +367,7 @@ async def served_over_http(
     token: str | None = None,
     threads: Any = None,
     page: Path | None = None,
+    grace_seconds: float = GRACE_SECONDS,
 ) -> AsyncIterator[str]:
     """Listen on an ephemeral localhost port, and yield the address to connect to.
 
@@ -262,12 +386,10 @@ async def served_over_http(
             f"{host!r} is not loopback and no token was given: the run token wire.md describes is "
             "not built, so serving beyond localhost would issue a session to anyone who asked"
         )
-    config = uvicorn.Config(
-        build_app(clock=clock, token=token, threads=threads, page=page),
-        host=host,
-        port=0,
-        log_level="warning",
+    app = build_app(
+        clock=clock, token=token, threads=threads, page=page, grace_seconds=grace_seconds
     )
+    config = uvicorn.Config(app, host=host, port=0, log_level="warning")
     server = uvicorn.Server(config)
     finished = anyio.Event()
 
@@ -300,6 +422,9 @@ async def served_over_http(
             server.should_exit = True
             with anyio.move_on_after(5):
                 await finished.wait()
+            # The sessions that outlived their streams (D94) end with the server.
+            with anyio.CancelScope(shield=True):
+                await app.state.end_sessions()
             group.cancel_scope.cancel()
 
 
@@ -320,7 +445,9 @@ async def serve_http_forever(
     try:
         await server.serve()
     finally:
-        # What the host holds for the process — a battery's server (D70) — ends with it.
+        # The sessions that outlived their streams (D94) end with the server, then what the host
+        # holds for the process — a battery's server (D70).
+        await app.state.end_sessions()
         closer = getattr(threads, "aclose", None)
         if closer is not None:
             await closer()

@@ -15,7 +15,7 @@ from pydantic import JsonValue
 
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.kernel.ports import ComponentPort
-from tests.adapters.contract import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 
 class TestALocalEnvironmentIsAComponentPort(ComponentPortContract):

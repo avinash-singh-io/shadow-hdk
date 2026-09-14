@@ -23,7 +23,7 @@ from shadow_hdk.kernel import EffectProfile, Event, Lease, Spent, ThreadRecord
 from shadow_hdk.kernel.activity import Activity
 from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.runtime.items import Fold, as_json
-from shadow_hdk.runtime.threads import Thread, When
+from shadow_hdk.runtime.threads import OnQuestion, Thread, When
 from shadow_hdk.wire.protocol import (
     ACTIVITY,
     ADMIN_SESSIONS,
@@ -233,7 +233,7 @@ class ThreadMethods:
             **({"budget": params["budget"]} if params.get("budget") is not None else {}),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
-        observer = thread._ports.observer  # noqa: SLF001 — the wire's own observer, re-tagged
+        observer = thread.ports.observer  # the wire's own observer, re-tagged
         if isinstance(observer, ActivityToWire):
             observer._thread_id = thread.id  # noqa: SLF001
         self.threads[thread.id] = thread
@@ -250,6 +250,10 @@ class ThreadMethods:
         host = self._host_or_raise()
         self._relaying(host)
         thread_id = str(params.get("thread_id", ""))
+        take_over = getattr(self._admin, "take_over", None)
+        if take_over is not None:
+            # A page reloaded (D94): the thread its old session still holds, closed there first.
+            await take_over(thread_id, self)
         thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
         self.threads[thread.id] = thread
         # A question the last host left open (D80) is offered again: pushed the way a live one
@@ -276,6 +280,12 @@ class ThreadMethods:
         await thread.close()
         del self.threads[thread.id]
         return {"closed": thread.id}
+
+    async def close_one(self, thread_id: str) -> None:
+        """One thread closed and forgotten — taken over by another session (D94)."""
+        thread = self.threads.pop(thread_id, None)
+        if thread is not None:
+            await thread.close()
 
     async def close_all(self) -> None:
         """What this wire opened, closed with it: a session that ends — the page reloaded, the
@@ -356,14 +366,17 @@ class ThreadMethods:
 
     async def _turn(self, params: dict[str, Any]) -> dict[str, Any]:
         """`when` (D81) names what this turn does while one runs: `enqueue` (the default),
-        `reject` — the refusal names the running turn — or `interrupt`."""
+        `reject` — the refusal names the running turn — or `interrupt`. `on_question` (D88):
+        `wait` puts a question to the host live; `park` keeps it and ends the turn `parked`, for
+        a host whose request must return — `approvals/answer` settles it later."""
         thread = self._thread(params)
         text = str(params.get("text", ""))
         when = cast(When, str(params.get("when", "enqueue") or "enqueue"))
+        on_question = cast(OnQuestion, str(params.get("on_question", "wait") or "wait"))
         fold = Fold()
         count = 0
         # **One fold, both sides of the wire** (D46) — the same one `run` uses.
-        async for event in thread.turn(text, when=when):
+        async for event in thread.turn(text, when=when, on_question=on_question):
             count += 1
             await self._peer.notify(
                 EVENT, {"thread_id": thread.id, "event": json.loads(dump(event, Event))}
@@ -371,7 +384,12 @@ class ThreadMethods:
             fold.feed(event)
             for done in fold.closed_now:
                 await self._peer.notify(ITEM, {"thread_id": thread.id, "item": as_json(done)})
-        return {"events": count, "turn": _turn_json(thread.record.turns[-1])}
+        last = thread.conversation.last
+        ended = next(
+            (t for t in thread.record.turns if last is not None and t.id == last.id),
+            thread.record.turns[-1],
+        )
+        return {"events": count, "turn": _turn_json(ended)}
 
     async def _steer(self, params: dict[str, Any]) -> dict[str, Any]:
         taken = await self._thread(params).steer(str(params.get("text", "")))
@@ -436,10 +454,11 @@ class ThreadMethods:
 
     async def _answer(self, params: dict[str, Any]) -> dict[str, Any]:
         """The host's answer, as JSON: `{"kind": "approve"}`, `{"kind": "deny", "reason"}`,
-        `{"kind": "approve_and_add_rule", "rule": {...}}` — or `{"text": "..."}` for an input
-        request. The runtime's `accept_answer` reads these shapes (D65). A question a running
-        turn waits on is answered live; one the last host left (D80) is settled by its thread —
-        the parked act runs from its checkpoint, and what happened goes down the stream."""
+        `{"kind": "approve_and_add_rule", "rule": {...}}`, `{"kind": "park"}` (kept for a later
+        request — D88) — or `{"text": "..."}` for an input request. The runtime's
+        `accept_answer` reads these shapes (D65). A question a running turn waits on is
+        answered live; one a turn left (D80, D88) is settled by its thread — the parked act
+        runs from its checkpoint, and what happened goes down the stream."""
         host = self._host_or_raise()
         answer = params.get("answer")
         if isinstance(answer, dict) and "text" in answer and "kind" not in answer:

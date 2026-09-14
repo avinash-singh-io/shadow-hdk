@@ -39,7 +39,7 @@ from shadow_hdk.runtime.testing import (
     make_registration,
 )
 from shadow_hdk.runtime.threads import InMemoryThreads, Thread
-from tests.adapters.contract.suites import ComponentPortContract, ThreadStoreContract
+from shadow_hdk.testing.contracts import ComponentPortContract, ThreadStoreContract
 
 pytestmark = pytest.mark.anyio
 
@@ -320,7 +320,7 @@ class TestTheTurnComponentsIsAComponentPort(ComponentPortContract):
 
     def port(self) -> Any:
         from shadow_hdk.kernel import Completed
-        from shadow_hdk.runtime.threads import _turn_registration, _TurnComponents
+        from shadow_hdk.runtime.conversation import _turn_registration, _TurnComponents
 
         async def handler(_inputs: Any) -> Any:
             return Completed({"text": "ok"})

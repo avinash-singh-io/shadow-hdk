@@ -192,16 +192,14 @@ async def test_a_reload_resumes_the_thread_and_reads_its_turns(tmp_path: Path) -
                 )
                 tid = started["thread_id"]
                 await first.peer.call("turn/start", {"thread_id": tid, "text": "one"})
-            # The first session is gone: what it opened is closed with it, so the provider it
-            # held does not outlive the page that held it.
-            for _ in range(200):
-                if host.writer.closed == 1:
-                    break
-                await anyio.sleep(0.02)
-            assert host.writer.closed == 1, "a session that ends closes its threads"
+            # The first session's stream is gone, and the session keeps its thread for a grace
+            # (D94) — a page on a train reattaches. A reload is a new session: resuming the
+            # thread takes it over, and the old session's provider is closed then.
+            assert host.writer.closed == 0
             async with connect_to(address, _ports()) as second:
                 await second.initialize()
                 resumed = await second.peer.call("thread/resume", {"thread_id": tid})
+                assert host.writer.closed == 1, "taken over: the old session's provider closed"
                 assert [t["prompt"] for t in resumed["turns"]] == ["one"]
                 assert resumed["root"] == str(tmp_path)
                 done = await second.peer.call("turn/start", {"thread_id": tid, "text": "two"})

@@ -61,9 +61,6 @@ class HangsUpOn:
             "working", (ToolCall(f"t{self.turns}", "look", {"topic": "x"}),), usage=A_TURN
         )
 
-    async def stream(self, _request: ModelRequest) -> Any:  # pragma: no cover — never streamed here
-        raise NotImplementedError
-
 
 async def drive(model: HangsUpOn) -> list[Event]:
     tools = CallableComponents(registered_by="tests", at="2026-01-01T00:00:00+00:00")

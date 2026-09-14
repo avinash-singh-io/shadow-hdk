@@ -10,7 +10,7 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**One distribution, `shadow-hdk` `0.28.0`, MIT, on PyPI.** 1,514 tests; `mypy --strict` over 400 files;
+**One distribution, `shadow-hdk` `0.29.0`, MIT, on PyPI.** 1,560 tests; `mypy --strict` over 418 files;
 0.594 ms of runtime overhead per step.
 
 ---
@@ -203,7 +203,13 @@ chooses its store** (D79): `[store] url = "sqlite:///live.sqlite"` or `"postgres
 the store, the threads and the checkpointer at once, so a turn parked on a question outlives the
 process that asked it (D80); a thread has one holder at a time (D81), is opened for a principal
 whose rules and modes are scoped to them (D82), on a budget kept on its record (D84); a `deny`
-or an `ask` rule holds in every mode, `full` included (D85).
+or an `ask` rule holds in every mode, `full` included (D85). **A product owns what it owns**
+(Phase 30): the governed turn without the record (`Conversation`, D87), a question a turn parks
+on purpose for a later request (D88), an agent that streams (D89), tokens on the record (D90),
+the contract suites shipped so a product proves its own stores (D91), governance composed by
+routing and refusals a client can switch on (D92), a parked run behind a port of ours (D93),
+sessions that idle out and a stream that survives a drop (D94) — the guide is
+[`docs/consuming.md`](docs/consuming.md).
 
 Two things keep a long run cheap: above `catalogue_threshold` the model sees a name and a line
 per tool and pulls a schema with `describe` when it reaches for one; past `offload_over` a large
@@ -635,7 +641,7 @@ or on demand with `gh workflow run live.yml`.
 
 ## Status
 
-Phases 0–29 are complete, merged and released; `specs/status.md` is the live record and
+Phases 0–30 are complete, merged and released; `specs/status.md` is the live record and
 `specs/planning/roadmap.md` the plan. The backlog holds no P0, P1 or P2.
 
 **What is deliberately not proven here**, because each needs something a laptop does not have:
@@ -647,7 +653,7 @@ irreversible step must produce an `Acted` whichever port it came through, and wh
 signed — are open decisions rather than missing code.
 
 The low-level design is in [`specs/architecture/overview.md`](specs/architecture/overview.md); the
-eighty-six decisions behind it are mapped in
+ninety-four decisions behind it are mapped in
 [`specs/decisions/index.md`](specs/decisions/index.md).
 
 MIT.

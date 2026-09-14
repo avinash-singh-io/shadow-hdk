@@ -13,7 +13,7 @@ import pytest
 
 from shadow_hdk.adapters.basic import SqliteThreads
 from shadow_hdk.kernel import ThreadRecord, TurnRecord
-from tests.adapters.contract.suites import ThreadStoreContract
+from shadow_hdk.testing.contracts import ThreadStoreContract
 
 pytestmark = pytest.mark.anyio
 

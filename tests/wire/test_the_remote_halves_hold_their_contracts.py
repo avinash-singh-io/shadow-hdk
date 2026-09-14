@@ -39,13 +39,13 @@ from shadow_hdk.runtime.testing import (
     ScriptedModel,
     make_registration,
 )
-from shadow_hdk.wire.sides import loopback
-from tests.adapters.contract import (
+from shadow_hdk.testing.contracts import (
     ComponentPortContract,
     GovernancePortContract,
     ModelPortContract,
     SinkPortContract,
 )
+from shadow_hdk.wire.sides import loopback
 
 
 async def _echo(inputs: JsonValue) -> Observation:

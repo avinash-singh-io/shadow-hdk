@@ -22,20 +22,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
-
-@dataclass(frozen=True)
-class Request:
-    """One request a component is waiting on: for approval of an act, or for the person's input."""
-
-    handle: str
-    run_id: str
-    step: str
-    question: str
-    component: str | None = None
-    """What it is about — the component and inputs the step would run with (BUG-026)."""
-    inputs: Any = None
-    kind: str = "approval"
-    """`approval` or `input`."""
+from shadow_hdk.kernel.questions import Request
 
 
 @dataclass(frozen=True)
@@ -63,11 +50,21 @@ class ApproveAndAddRule:
     kind: str = "approve_and_add_rule"
 
 
-ApprovalAnswer = Approve | Deny | ApproveAndAddRule
+@dataclass(frozen=True)
+class Parked:
+    """Not now: keep the question (D88). The call is not run and not refused for good — the run
+    that asked stays asleep in the checkpointer, the provider is told the call is kept and asked
+    to stop, and whoever keeps the record settles it on a later request (`Thread.settle`)."""
+
+    kind: str = "park"
+
+
+ApprovalAnswer = Approve | Deny | ApproveAndAddRule | Parked
 
 
 class Approvals:
-    """The host's handle: requests arrive on `next()`, answers go in through `answer()`. A rule
+    """The host's handle — the kernel's `Questions` port (D91), with the host's side beside it:
+    requests arrive on `next()`, answers go in through `answer()`. A rule
     that comes with an answer is kept by the run's registry (`RunOptions.rules`, D65) — the
     runtime adds it on either answer path, live or on resume, and proposes it through the sink."""
 
@@ -78,6 +75,8 @@ class Approvals:
         self._pending: dict[str, Request] = {}
         self._arrivals: asyncio.Queue[Request] = asyncio.Queue()
         self._withdrawals: asyncio.Queue[Request] = asyncio.Queue()
+        self.parked: set[str] = set()
+        """The handles answered `Parked` (D88): kept for later by whoever keeps the record."""
 
     def pending(self) -> tuple[Request, ...]:
         """Every question nobody has answered yet, oldest first."""
@@ -99,6 +98,11 @@ class Approvals:
         self._pending.pop(handle, None)
         if waiting is None or waiting.done():
             return False
+        if isinstance(judgement, Parked) or (
+            isinstance(judgement, dict) and judgement.get("kind") == "park"
+        ):
+            self.parked.add(handle)
+            judgement = Parked()
         waiting.set_result(judgement)
         return True
 
@@ -119,4 +123,12 @@ class Approvals:
                 self._withdrawals.put_nowait(pending)
 
 
-__all__ = ["ApprovalAnswer", "Approvals", "Approve", "ApproveAndAddRule", "Deny", "Request"]
+__all__ = [
+    "ApprovalAnswer",
+    "Approvals",
+    "Approve",
+    "ApproveAndAddRule",
+    "Deny",
+    "Parked",
+    "Request",
+]

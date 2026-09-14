@@ -20,6 +20,12 @@ export interface ClientOptions {
   /** Answer the runtime's own requests (a component on this side). Rarely needed for threads. */
   onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
   fetch?: typeof fetch;
+  /** Reattach to the same session when the stream drops (D94) — replaying what was missed —
+   *  retrying for about this long before giving up (default 60 s, the server's grace). `0` never
+   *  reconnects. */
+  reconnectSeconds?: number;
+  /** Told when the stream drops and when it is back, and when the session is gone for good. */
+  onStream?: (state: "reconnecting" | "connected" | "lost") => void;
 }
 
 export interface ApprovalRequest {
@@ -37,6 +43,8 @@ export interface ApprovalRequest {
 export type Answer =
   | { kind: "approve" }
   | { kind: "deny"; reason?: string }
+  /** Not now (D88): the call is kept with the run that sleeps on it; answer it later, on any request. */
+  | { kind: "park" }
   | { kind: "approve_and_add_rule"; rule: { component: string; inputs?: Record<string, JsonValue>; decision?: "allow" | "deny"; mode?: string; note?: string } }
   | { text: string };
 
@@ -128,6 +136,34 @@ const SESSION_HEADER = "x-shadow-hdk-session";
 
 type Pending = { resolve: (value: JsonValue) => void; reject: (reason: Error) => void };
 
+/** What `error.data.kind` may say (D92) — the vocabulary a page switches on. */
+export type ErrorKind =
+  | "thread_held"
+  | "turn_running"
+  | "not_found"
+  | "invalid"
+  | "version_mismatch"
+  | "unknown_method"
+  | "refused"
+  | "gone";
+
+/** The harness refused or failed a call: its code, its sentence, and a `kind` to switch on
+ *  with the detail a page acts on — a held thread's `holder`, a running turn's `turn_id`. */
+export class RemoteError extends Error {
+  readonly code: number;
+  readonly kind: ErrorKind;
+  readonly detail: { [key: string]: JsonValue };
+  constructor(code: number, message: string, data: JsonValue) {
+    super(message);
+    this.name = "RemoteError";
+    this.code = code;
+    const record = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+    const { kind, ...detail } = record as { kind?: ErrorKind } & { [key: string]: JsonValue };
+    this.kind = kind ?? "refused";
+    this.detail = detail;
+  }
+}
+
 export class HarnessClient {
   private readonly address: string;
   private readonly token?: string;
@@ -139,6 +175,9 @@ export class HarnessClient {
   private readonly listeners = new Map<string, Set<(params: JsonValue) => void>>();
   private reader: Promise<void> | null = null;
   private abort = new AbortController();
+  private lastEventId: number | null = null;
+  private readonly reconnectSeconds: number;
+  private readonly onStream?: ClientOptions["onStream"];
 
   constructor(options: ClientOptions) {
     this.address = options.address.replace(/\/$/, "");
@@ -149,6 +188,8 @@ export class HarnessClient {
     // function calls the real one with no `this` at all, the supplied one included.
     const underlying = options.fetch ?? fetch;
     this.doFetch = (input, init) => underlying(input, init);
+    this.reconnectSeconds = options.reconnectSeconds ?? 60;
+    this.onStream = options.onStream;
   }
 
   // ---------------------------------------------------------------- the session
@@ -189,8 +230,48 @@ export class HarnessClient {
     }
     this.sessionId = response.headers.get(SESSION_HEADER);
     ready();
+    await this.readStream(response.body);
+    // The stream ended and we did not close it: the session is still there for a while (D94).
+    // Reattach with the last frame seen, replaying what was missed; give up when the server
+    // says the session is gone, or after the grace.
+    while (!this.abort.signal.aborted && this.reconnectSeconds > 0) {
+      this.onStream?.("reconnecting");
+      const body = await this.reattach();
+      if (body === null) break;
+      this.onStream?.("connected");
+      await this.readStream(body);
+    }
+    if (!this.abort.signal.aborted) {
+      this.onStream?.("lost");
+      for (const waiting of this.pending.values()) waiting.reject(new Error("the stream ended and the session is gone"));
+      this.pending.clear();
+    }
+  }
+
+  /** `GET /rpc` with the session header and `Last-Event-ID`, retried with a widening pause for
+   *  about `reconnectSeconds`; `null` when the session is gone (404) or the time is up. */
+  private async reattach(): Promise<ReadableStream<Uint8Array> | null> {
+    const deadline = Date.now() + this.reconnectSeconds * 1000;
+    let pause = 500;
+    while (Date.now() < deadline && !this.abort.signal.aborted) {
+      try {
+        const headers = this.headers();
+        if (this.lastEventId !== null) headers["last-event-id"] = String(this.lastEventId);
+        const response = await this.doFetch(`${this.address}/rpc`, { headers, signal: this.abort.signal });
+        if (response.status === 404) return null;
+        if (response.ok && response.body) return response.body;
+      } catch {
+        // not reachable yet: wait and try again
+      }
+      await new Promise((r) => setTimeout(r, pause));
+      pause = Math.min(pause * 2, 5000);
+    }
+    return null;
+  }
+
+  private async readStream(body: ReadableStream<Uint8Array>): Promise<void> {
     const decoder = new TextDecoder();
-    const reader = response.body.getReader();
+    const reader = body.getReader();
     let buffer = "";
     try {
       for (;;) {
@@ -202,12 +283,13 @@ export class HarnessClient {
           const frame = buffer.slice(0, cut);
           buffer = buffer.slice(cut + 2);
           for (const line of frame.split("\n")) {
-            if (line.startsWith("data: ")) await this.onFrame(JSON.parse(line.slice(6)) as JsonValue);
+            if (line.startsWith("id: ")) this.lastEventId = Number(line.slice(4));
+            else if (line.startsWith("data: ")) await this.onFrame(JSON.parse(line.slice(6)) as JsonValue);
           }
         }
       }
     } catch (error) {
-      if (!this.abort.signal.aborted) throw error;
+      if (!this.abort.signal.aborted) return; // the stream broke: the caller reattaches
     }
   }
 
@@ -236,8 +318,8 @@ export class HarnessClient {
       if (!waiting) return;
       this.pending.delete(frame.id);
       if ("error" in frame && frame.error) {
-        const error = frame.error as { message?: string };
-        waiting.reject(new Error(error.message ?? JSON.stringify(frame.error)));
+        const error = frame.error as { code?: number; message?: string; data?: JsonValue };
+        waiting.reject(new RemoteError(error.code ?? -32000, error.message ?? JSON.stringify(frame.error), error.data ?? null));
       } else {
         waiting.resolve((frame.result ?? null) as JsonValue);
       }
@@ -308,7 +390,7 @@ export class HarnessClient {
     start: (
       thread_id: string,
       text: string,
-      options: { when?: "enqueue" | "reject" | "interrupt" } = {},
+      options: { when?: "enqueue" | "reject" | "interrupt"; on_question?: "wait" | "park" } = {},
     ): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
       const queue: (TurnLine | { kind: "done"; turn: TurnRecord })[] = [];
       let wake: (() => void) | null = null;
@@ -323,7 +405,12 @@ export class HarnessClient {
         }),
       );
       let finished = false;
-      void this.call<{ turn: TurnRecord }>("turn/start", { thread_id, text, ...(options.when ? { when: options.when } : {}) })
+      void this.call<{ turn: TurnRecord }>("turn/start", {
+        thread_id,
+        text,
+        ...(options.when ? { when: options.when } : {}),
+        ...(options.on_question ? { on_question: options.on_question } : {}),
+      })
         .then((result) => push({ kind: "done", turn: result.turn }))
         .catch((error: Error) => push({ kind: "done", turn: { id: "", run_id: "", prompt: text, at: "", outcome: "failed", text: String(error) } }))
         .finally(() => {

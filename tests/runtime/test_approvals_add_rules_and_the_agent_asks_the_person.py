@@ -51,7 +51,7 @@ from shadow_hdk.runtime.testing import (
     ListSink,
     make_registration,
 )
-from tests.adapters.contract.suites import ComponentPortContract
+from shadow_hdk.testing.contracts import ComponentPortContract
 
 pytestmark = pytest.mark.anyio
 

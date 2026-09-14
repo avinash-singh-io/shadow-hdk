@@ -27,6 +27,7 @@ type: Architecture
 | `derivation` | component | 12 | total expressions over typed tables |
 | `otel` | observer | 14 | the run's shape as a trace over the OpenTelemetry API alone — ids, kinds, reasons, the lease, usage, an act's receipt; never a payload (D28) |
 | `devices` | component | 15 | one device contract, three roles (D31): a sensor reads `world`, an actuator writes it irreversibly with the lease read at the act and a receipt, a witness reports acts it did not command as observed receipts; fakes ship; MQTT (16), OPC-UA and ROS 2 (`[~]`) are adapters over it |
+| `modes` · `Routed` | governance | 30 | governance composed by routing (D92): one port per component name, another for the rest — a product's own constitution over its verbs, the shipped modes over the machine's operations, as one port |
 | `postgres` | store · thread store · checkpointer | 29 | the record on Postgres (D79): `PostgresStore` and `PostgresThreads` hold the same contracts the sqlite ones do, over `psycopg`'s async pool; the checkpointer is LangGraph's own `AsyncPostgresSaver`; `[store] url = "postgresql://…"` fills all three — `[postgres]` extra |
 | `mqtt` | component (devices) | 16 | MQTT topics as the three roles over `paho-mqtt` on 3.1.1: a subscribed topic is a sensor, a command topic an actuator (QoS 1; the receipt says `published`, or carries the device's own ack by key), an event topic a witness; the envelope is the payload (D32); a failed act breaks the link so nothing in flight is re-sent |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
@@ -245,6 +246,9 @@ is kept by the composition's sink (`KeepingSink`, ENH-011): a `skills` row, offe
 restart with source `store`; every proposal still reaches the sink behind it. The composition
 installs as one distribution, `shadow-hdk`, the shipped providers' transports (`jsonl` for
 Claude Code and Codex, `acp` for OpenCode) in the base and the specialised SDKs as extras (D78).
+**A parked run behind a port of ours** (D93): `RunStore` — four methods over bytes — with the
+runtime library's checkpointer built over it (`runtime.checkpoints.saver_over`), so a product on
+its own database keeps parked runs there with no knowledge of the library; `ServeHost(run_store=)`.
 **Which batteries are on is rows** (D83): `[tools] batteries` seeds the store's `wanted`
 collection (`{id, on}`) at the host's first open, a row already there left as it is, and from
 then on the store rules — `store/put wanted ddgs {"id": "ddgs", "on": true}` opens it at the next
@@ -305,7 +309,11 @@ Every command runs on the runtime's leash inside the box — a timeout, a capped
 operator's environment withheld, the process tree killed with the step (D35). Widening — *may I
 read elsewhere?* — is an `Ask`, not a tool.
 
-## Contract suites — what every adapter must pass
+## Contract suites — what every adapter must pass, and what a product runs against its own
+
+Shipped as `shadow_hdk.testing.contracts` (D91): a product implementing a port subclasses the
+suite in its own tests and hands it a fresh implementation; `shadow_hdk.testing.providers`
+ships a scripted `AgentPort` for the tests that open a thread on nothing.
 
 | suite | asserts |
 |---|---|

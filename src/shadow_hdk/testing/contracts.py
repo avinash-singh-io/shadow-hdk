@@ -1,4 +1,14 @@
-"""One abstract suite per port. Every adapter subclasses the one it implements.
+"""One abstract suite per port — shipped (D91), so a product proves its own implementation of a
+port with the very tests the kit's adapters pass. Every adapter subclasses the one it implements.
+
+    from shadow_hdk.testing.contracts import ThreadStoreContract
+
+    class TestMyThreadsIsAThreadStore(ThreadStoreContract):
+        def store(self) -> MyThreads:
+            return MyThreads(fresh_database())
+
+The suites are plain classes of `async def test_*` methods; run them with pytest and
+`pytest-asyncio` or anyio (`pytestmark = pytest.mark.anyio`), as this kit does.
 
 *"It implements the port"* is then a test result rather than a claim, and a new adapter cannot ship
 having satisfied only the parts of a protocol its author remembered.
@@ -403,9 +413,98 @@ class StoreContract:
         assert await store.version("c") == before, "deleting nothing changes nothing"
 
 
+class RunStoreContract:
+    """Override `run_store` with a fresh, empty store each call (D93)."""
+
+    def run_store(self) -> Any:
+        raise NotImplementedError
+
+    async def test_bytes_round_trip_by_run_and_key_and_list_is_sorted(self) -> None:
+        store = self.run_store()
+        assert await store.get("r1", "cp/a") is None
+        await store.put("r1", "cp/b", b"two")
+        await store.put("r1", "cp/a", b"one")
+        await store.put("r1", "wr/a/1", b"w")
+        await store.put("r2", "cp/a", b"other")
+        assert await store.get("r1", "cp/a") == b"one"
+        assert await store.list("r1") == (("cp/a", b"one"), ("cp/b", b"two"), ("wr/a/1", b"w"))
+        assert await store.list("r1", prefix="cp/") == (("cp/a", b"one"), ("cp/b", b"two"))
+        await store.put("r1", "cp/a", b"replaced")
+        assert await store.get("r1", "cp/a") == b"replaced", "put replaces"
+
+    async def test_delete_forgets_one_run_and_leaves_the_rest(self) -> None:
+        store = self.run_store()
+        await store.put("r1", "cp/a", b"one")
+        await store.put("r2", "cp/a", b"two")
+        await store.delete("r1")
+        assert await store.list("r1") == () and await store.get("r1", "cp/a") is None
+        assert await store.list("r2") == (("cp/a", b"two"),)
+        await store.delete("nobody")  # nothing to forget is not an error
+
+
+class QuestionsContract:
+    """Override `questions` with a fresh implementation of the `Questions` port (D91), and
+    `answer(questions, request, answer)` with how a person answers on it — the host's side,
+    which the port does not fix."""
+
+    def questions(self) -> Any:
+        raise NotImplementedError
+
+    async def answer(self, questions: Any, request: Any, answer: Any) -> None:
+        raise NotImplementedError
+
+    async def test_a_question_waits_for_its_answer_and_gets_it(self) -> None:
+        import asyncio
+
+        from shadow_hdk.kernel.questions import Request
+
+        questions = self.questions()
+        request = Request(handle="h1", run_id="r", step="s", question="may it?")
+        asking = asyncio.create_task(questions.ask(request))
+        await asyncio.sleep(0)
+        assert not asking.done(), "asked, not yet answered: the run waits"
+        await self.answer(questions, request, {"kind": "approve"})
+        assert await asyncio.wait_for(asking, 5) == {"kind": "approve"}
+
+    async def test_two_questions_are_answered_each_by_its_handle(self) -> None:
+        import asyncio
+
+        from shadow_hdk.kernel.questions import Request
+
+        questions = self.questions()
+        first = Request(handle="h1", run_id="r", step="s1", question="a?")
+        second = Request(handle="h2", run_id="r", step="s2", question="b?")
+        one = asyncio.create_task(questions.ask(first))
+        two = asyncio.create_task(questions.ask(second))
+        await asyncio.sleep(0)
+        await self.answer(questions, second, "B")
+        await self.answer(questions, first, "A")
+        assert await asyncio.wait_for(one, 5) == "A"
+        assert await asyncio.wait_for(two, 5) == "B"
+
+
 def an_observation() -> Observation:
     return Completed({"ok": True})
 
 
 def an_event() -> Event:
     return Started(run_id="run-1", seq=0, at="2026-01-01T00:00:00+00:00", lease=A_LEASE)
+
+
+__all__ = [
+    "A_CONTEXT",
+    "A_LEASE",
+    "A_PROVENANCE",
+    "ClockPortContract",
+    "ComponentPortContract",
+    "GovernancePortContract",
+    "ModelPortContract",
+    "ObserverPortContract",
+    "QuestionsContract",
+    "RunStoreContract",
+    "SinkPortContract",
+    "StoreContract",
+    "ThreadStoreContract",
+    "an_event",
+    "an_observation",
+]

@@ -22,6 +22,33 @@ from anyio.abc import TaskGroup
 
 from shadow_hdk.wire.channel import Channel
 
+
+def error_data(failed: BaseException) -> dict[str, Any]:
+    """`error.data` for a handler's refusal (D92): a `kind` from the published vocabulary and
+    the detail a client acts on. The classes are named here rather than imported, so the wire's
+    core reaches into no package above it."""
+    name = type(failed).__name__
+    if name == "ThreadHeld":
+        return {
+            "kind": "thread_held",
+            "thread_id": getattr(failed, "thread_id", ""),
+            "holder": getattr(failed, "holder", ""),
+        }
+    if name == "TurnRunning":
+        return {
+            "kind": "turn_running",
+            "thread_id": getattr(failed, "thread_id", ""),
+            "turn_id": getattr(failed, "turn_id", ""),
+        }
+    if name == "VersionMismatch":
+        return {"kind": "version_mismatch"}
+    if isinstance(failed, KeyError | FileNotFoundError):
+        return {"kind": "not_found"}
+    if isinstance(failed, ValueError | TypeError):
+        return {"kind": "invalid"}
+    return {"kind": "refused"}
+
+
 Handler = Callable[[dict[str, Any]], Awaitable[Any]]
 
 
@@ -139,7 +166,11 @@ class Peer:
         for message_id, waiting in list(self._waiting.items()):
             self._replies[message_id] = {
                 "id": message_id,
-                "error": {"code": GONE, "message": "the other end closed", "data": "Gone"},
+                "error": {
+                    "code": GONE,
+                    "message": "the other end closed",
+                    "data": {"kind": "gone"},
+                },
             }
             waiting.set()
         self._waiting.clear()
@@ -158,7 +189,11 @@ class Peer:
                 {
                     "jsonrpc": "2.0",
                     "id": message["id"],
-                    "error": {"code": -32601, "message": f"no method {method!r}"},
+                    "error": {
+                        "code": -32601,
+                        "message": f"no method {method!r}",
+                        "data": {"kind": "unknown_method"},
+                    },
                 }
             )
             return
@@ -172,7 +207,7 @@ class Peer:
                     "error": {
                         "code": REFUSED,
                         "message": f"{type(failed).__name__}: {failed}",
-                        "data": type(failed).__name__,
+                        "data": error_data(failed),
                     },
                 }
             )
@@ -197,7 +232,7 @@ class Peer:
         try:
             await self.channel.send(json.dumps(message))
         except (anyio.BrokenResourceError, anyio.ClosedResourceError) as gone:
-            raise RemoteError(GONE, "the other end closed", "Gone") from gone
+            raise RemoteError(GONE, "the other end closed", {"kind": "gone"}) from gone
 
 
 __all__ = ["GONE", "REFUSED", "Peer", "RemoteError"]

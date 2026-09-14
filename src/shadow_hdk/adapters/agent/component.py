@@ -32,6 +32,7 @@ from shadow_hdk.adapters.agent.pattern import (
     Pattern,
 )
 from shadow_hdk.adapters.agent.skills import Skill, missing_for
+from shadow_hdk.kernel.activity import TEXT, THINKING
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -55,7 +56,9 @@ from shadow_hdk.kernel.observations import (
 from shadow_hdk.kernel.ports import (
     ComponentPort,
     Message,
+    ModelPort,
     ModelRequest,
+    ModelResponse,
     ToolCall,
     Usage,
 )
@@ -182,7 +185,7 @@ class _Turnwise:
                     "failed", text="this run has no model port; the agent cannot converse"
                 )
             try:
-                response = await model.complete(request)
+                response = await self._streamed(model, request)
             except Exception as broken:  # noqa: BLE001 — the money is the point, not the crash
                 # **Spend that happened is spend that is recorded** (D33, BUG-012). This used to
                 # throw straight out of the component, and `step.py` turns that into `Failed` (D7)
@@ -575,6 +578,43 @@ class _Turnwise:
         return await self._absorb(handle, events, composition, calls)
 
     # ------------------------------------------------------------------ bookkeeping
+
+    async def _streamed(self, model: ModelPort, request: ModelRequest) -> ModelResponse:
+        """The model's answer as it is written (D89): every delta of thinking and of text is
+        activity beside the record the moment it arrives; the response is assembled from the
+        chunks — text and reasoning concatenated, the tool calls and the usage off the chunks
+        that carry them. A model without a stream of its own answers in one piece through the
+        port's default, and that piece is activity too."""
+        stream = getattr(model, "stream", None)
+        produced = stream(request) if stream is not None else None
+        if produced is None or not hasattr(produced, "__aiter__"):
+            # A port implemented structurally, without the protocol's default — or one whose
+            # `stream` is not a stream: it answers in one piece, and that piece is activity.
+            close = getattr(produced, "close", None)
+            if close is not None:
+                close()
+            response = await model.complete(request)
+            await self.ctx.activity(THINKING, response.reasoning)
+            await self.ctx.activity(TEXT, response.text)
+            return response
+        text: list[str] = []
+        reasoning: list[str] = []
+        calls: tuple[ToolCall, ...] = ()
+        usage: Usage | None = None
+        async for chunk in produced:
+            if chunk.reasoning:
+                reasoning.append(chunk.reasoning)
+                await self.ctx.activity(THINKING, chunk.reasoning)
+            if chunk.text:
+                text.append(chunk.text)
+                await self.ctx.activity(TEXT, chunk.text)
+            if chunk.tool_calls:
+                calls = (*calls, *chunk.tool_calls)
+            if chunk.usage is not None:
+                usage = chunk.usage
+        return ModelResponse(
+            text="".join(text), tool_calls=calls, usage=usage, reasoning="".join(reasoning)
+        )
 
     def charge(self, usage: Usage | None) -> None:
         """Accumulate what the model cost, so the parent's meter can charge it (`_usage_of`)."""

@@ -42,7 +42,7 @@ class AskingThreads(ScriptedThreads):
 
     async def open(self, **kw: Any) -> Any:
         thread = await super().open(**kw)
-        thread._rules = self.rules  # noqa: SLF001 — the double's registry, as serve would wire it
+        thread.conversation._rules = self.rules  # noqa: SLF001 — the double's registry, as serve would wire it
         return thread
 
 

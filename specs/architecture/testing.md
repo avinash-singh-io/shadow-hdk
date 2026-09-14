@@ -14,7 +14,7 @@ type: Architecture
 |---|---|---|
 | kernel unit + property | the order is an order; the meet is a greatest lower bound; leases carve | `tests/kernel/` ✅ |
 | runtime unit | the governed step, the compiler, leases, events, spawning, errors | `tests/runtime/` |
-| contract suites | every adapter satisfies the port it claims | `tests/adapters/contract/` |
+| contract suites | every adapter satisfies the port it claims — and so does a product's own implementation: the suites ship as `shadow_hdk.testing.contracts` (D91) | `src/shadow_hdk/testing/contracts.py`, run from `tests/adapters/<x>/` |
 | adapter tests | each adapter's own behaviour, against a fake of the thing it wraps — or the thing itself where a fake would prove nothing: the Postgres adapter runs against a real server named by `SHADOW_HDK_TEST_POSTGRES_URL` (CI's service container; the desk's own), and skips, saying so, without one (D79) | `tests/adapters/<x>/` |
 | determinism | two runs, same inputs, identical streams | `tests/runtime/test_replay.py` |
 | benchmark | the per-step budget holds (D11) | `tests/runtime/test_benchmark.py` |

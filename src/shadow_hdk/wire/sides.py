@@ -348,7 +348,7 @@ class HostSide:
         try:
             answered = await self.peer.call(INITIALIZE, {"protocol_version": protocol_version})
         except RemoteError as refused:
-            if refused.data == "VersionMismatch":
+            if isinstance(refused.data, dict) and refused.data.get("kind") == "version_mismatch":
                 raise VersionMismatch(str(refused)) from refused
             raise
         return Agreed(protocol_version=str(answered["protocol_version"]))
