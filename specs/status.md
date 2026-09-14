@@ -4,14 +4,14 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — Phase 32 started; Epic 0008 continues
-> **Current Phase**: **Phase 32 — one agent surface** is active on the stacked epic branch.
+> **Last Updated**: 2026-09-15 — Phase 32 complete; Epic 0008 continues
+> **Current Phase**: **Phase 33 — authority at the act** is next on the stacked epic branch.
 > Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
 > requirements before anything is built on their selection. Phase 33 (authority at the act) remains
-> derived and independent after 31. The epic releases once as **v0.30.0**.
+> derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
 >
-> 1,600 non-live tests; mypy strict over 422 files; one distribution, `shadow-hdk`, still at
-> **0.29.1**, MIT, on PyPI. Phase 31 is pushed but intentionally unmerged and unreleased.
+> 1,625 non-live tests; mypy strict over 429 files; one distribution, `shadow-hdk`, still at
+> **0.29.1**, MIT, on PyPI. Phases 31–32 are pushed but intentionally unmerged and unreleased.
 >
 > **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
@@ -51,8 +51,8 @@ components and records through the sink. One distribution — kernel, runtime, w
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
-merged and released; Phase 31 is complete on the unreleased epic stack**: 1,600 non-live tests,
-mypy strict over 422 files, one public distribution at 0.29.1. Epic 0008 is the v0.30.0
+merged and released; Phases 31–32 are complete on the unreleased epic stack**: 1,625 non-live tests,
+mypy strict over 429 files, one public distribution at 0.29.1. Epic 0008 is the v0.30.0
 production-boundary release train.
 
 ## Completed Phases
@@ -117,7 +117,7 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 32 — one agent surface | `phase-32-one-agent-surface` | in progress | Group 5 — synchronize docs and run the phase gate; Groups 1–4 green |
+| 33 — authority at the act | `phase-33-authority-at-the-act` | starting | Derive Group 0 RED from the approved D99–D104 boundary; no interim release |
 
 ## Unreleased Epic Checkpoints
 

@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 epic: production-boundary
 tags: [agent-port, model-port, thread, items, streaming, heartbeat, authentication]
 deps: [phase-31-a-host-knows-what-it-can-trust]

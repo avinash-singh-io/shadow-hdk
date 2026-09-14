@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 epic: production-boundary
 ---
 # Phase 32 — One agent surface — Tasks
@@ -34,5 +34,5 @@ epic: production-boundary
 
 ## Group 5 — Evidence and epic checkpoint
 - [x] Update architecture/package/migration docs with one agent and stream surface
-- [/] Run build, ruff check, format check, mypy strict, full pytest, parity/schema/client drift and benchmark
-- [ ] Append phase evidence/history, mark Phase 32 complete and continue Phase 33 without releasing
+- [x] Run build, ruff check, format check, mypy strict, full pytest, parity/schema/client drift and benchmark
+- [x] Append phase evidence/history, mark Phase 32 complete and continue Phase 33 without releasing

@@ -1,6 +1,6 @@
 ---
 type: History
-status: in-progress
+status: complete
 epic: production-boundary
 ---
 
@@ -99,5 +99,21 @@ Topics: model-agent, agent-surface, item-inputs, stream-session, heartbeat, auth
 Affects-phases: phase-32-one-agent-surface
 Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md; docs/migrations/0.30.md; docs/packages/adapters-agent.md; docs/packages/runtime.md; docs/packages/serve.md; docs/packages/wire.md; clients/typescript/README.md; README.md
 Detail: Completion sync documents the already-approved additive Phase 32 contracts: ModelAgent below the common Thread surface, bounded Item.inputs, runtime-owned reconnect state, ephemeral heartbeat/client silence recovery and permission-checked bearer sources. The phase index was regenerated; the decision index rewrite was rejected because the generator would erase the repository's canonical D1–D106 map, recorded as BUG-050.
+
+---
+
+### [DISCOVERY] 2026-09-15 — Passing gate retains two cleanup warnings
+Topics: acp, mqtt, testing
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md
+Detail: The full suite is green, but an ACP refusal test can leave a subprocess transport to finalize after loop closure (BUG-051), and the AMQTT broker fixture uses APIs marked for removal (TD-012). Both are isolated from the Phase 32 contract and recorded for bounded follow-up rather than folded into the epic.
+
+---
+
+### [NOTE] 2026-09-15 — Phase 32 complete as an unreleased epic checkpoint
+Topics: model-agent, agent-surface, item-inputs, stream-session, heartbeat, authentication, testing
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/status.md; specs/phases/README.md
+Detail: Build and static gates pass; 1,625 tests pass with 12 expected skips and 12 live deselections; focused lifecycle, item, reconnect, bearer and benchmark checks add 30 passes; document/schema/parity checks add 61 passes; TypeScript check/build and deterministic silence recovery pass; OKF validates 185 specs. The checkpoint is pushed without a tag, protected-branch merge, release or Intent Studio edit, and Phase 33 starts from it.
 
 ---
