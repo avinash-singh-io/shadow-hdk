@@ -33,6 +33,12 @@ from typing import Annotated, Any, Literal, Protocol, runtime_checkable
 from pydantic import Field, JsonValue
 
 from shadow_hdk.kernel.activity import Activity
+from shadow_hdk.kernel.authority import (
+    AuthoritySnapshot,
+    EffectAuthorization,
+    EffectEntry,
+    StagedEffect,
+)
 from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
@@ -213,6 +219,34 @@ class ClockPort(Protocol):
     def now(self) -> str: ...
 
     def new_id(self) -> str: ...
+
+
+# ---------------------------------------------------------------- act-time authority and journal
+
+
+@runtime_checkable
+class AuthorityPort(Protocol):
+    """Host-owned current authority, read once for staging and again at the component boundary."""
+
+    async def current(self, *, run_id: str, step: str) -> AuthoritySnapshot: ...
+
+
+@runtime_checkable
+class AuthorizerPort(Protocol):
+    """Issue or refuse one bound authorization; approval remains separate consent evidence."""
+
+    async def authorize(
+        self, effect: StagedEffect, current: AuthoritySnapshot
+    ) -> EffectAuthorization | Refuse: ...
+
+
+@runtime_checkable
+class EffectJournalPort(Protocol):
+    """Append-only attempt histories with compare-and-append concurrency semantics."""
+
+    async def read(self, attempt_id: str) -> tuple[EffectEntry, ...]: ...
+
+    async def append(self, entry: EffectEntry, *, expected_length: int) -> None: ...
 
 
 # ---------------------------------------------------------------- agents

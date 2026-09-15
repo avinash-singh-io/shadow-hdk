@@ -29,3 +29,11 @@ Affects-specs: specs/architecture/testing.md
 Detail: `tests/benchmarks/effect-transaction-v1.json` locks legal/illegal histories and crash recovery outcomes behind a SHA-256 immutability test. The runtime evaluator covers every authority/stage binding, stale act-time reads, grant replay, concurrent duplicate delivery, parent/child isolation and idempotent reconciliation; it fails at collection only because the new kernel/runtime contracts do not exist. A one-nibble hash mutation failed the freeze test and was reverted before commit.
 
 ---
+
+### [FEATURE] 2026-09-15 — Authority and effect transaction records are public data
+Topics: authority, revisions, effect-authorization, effect-journal, schemas, contracts
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md
+Detail: Secret-free AuthoritySnapshot, exact StagedEffect, bound EffectAuthorization and append-only EffectEntry contracts now live in the kernel with canonical SHA-256 digests. Host-owned authority, authorizer and journal protocols plus importable product contract suites are published; 24 JSON Schemas and generated TypeScript contracts build cleanly. Five focused contract/freeze checks and strict mypy/Ruff are green while the frozen evaluator remains RED only on the intentionally absent runtime transaction.
+
+---

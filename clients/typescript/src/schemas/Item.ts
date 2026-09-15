@@ -36,7 +36,7 @@ export type OutputTokens = (number | null)
 
 /**
  * One thing the agent did, with what it thought first and what it cost.
- * 
+ *
  * `children` are the steps of every run spawned while this step was executing, in order, each
  * with children of its own. `observation` is the whole observation — a projection is not the
  * place to summarise; the offloading rule (Group 4) is where size is handled, before it gets here.
@@ -69,7 +69,7 @@ reason: Reason
 }
 /**
  * The step paused; whoever implements governance decides what asking means.
- * 
+ *
  * `component` and `inputs` say what the question is about (BUG-026) — an agent surfacing a
  * child's question passes on what that child was about to do, so the person sees it.
  */
@@ -102,7 +102,7 @@ kind?: Kind5
 /**
  * The receipt of a world-effect (`08` §249: `ActReceipt`). *The only place anything happens
  * outside the log* — so every one of them is attributed and re-checkable.
- * 
+ *
  * `foreign_id` is what the world called it; `idempotency_key` is what we called it, so a retry
  * can be told from a second act; `exit` is how it ended in the world's own vocabulary; `grounds`
  * is what it was performed under — the argv, the lease remaining, the warrant — so an auditor can

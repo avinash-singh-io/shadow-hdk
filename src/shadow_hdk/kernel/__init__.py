@@ -5,6 +5,15 @@ this package; this package depends on nothing but pydantic, and only for the pub
 """
 
 from shadow_hdk.kernel.activity import Activity
+from shadow_hdk.kernel.authority import (
+    AuthoritySnapshot,
+    EffectAuthorization,
+    EffectEntry,
+    EffectEntryKind,
+    StagedEffect,
+    authority_digest,
+    stage_effect,
+)
 from shadow_hdk.kernel.capabilities import (
     CapabilityEvidence,
     CapabilityMismatch,
@@ -85,9 +94,12 @@ from shadow_hdk.kernel.ports import (
     AgentSession,
     Allow,
     Ask,
+    AuthorityPort,
+    AuthorizerPort,
     ClockPort,
     ComponentPort,
     Context,
+    EffectJournalPort,
     GovernancePort,
     Judgement,
     ModelChunk,
@@ -131,6 +143,16 @@ from shadow_hdk.kernel.threads import (
 from shadow_hdk.kernel.workspace import Root, Workspace
 
 __all__ = [
+    "AuthoritySnapshot",
+    "EffectAuthorization",
+    "EffectEntry",
+    "EffectEntryKind",
+    "StagedEffect",
+    "authority_digest",
+    "stage_effect",
+    "AuthorityPort",
+    "AuthorizerPort",
+    "EffectJournalPort",
     "CapabilityEvidence",
     "CapabilityMismatch",
     "Compatibility",

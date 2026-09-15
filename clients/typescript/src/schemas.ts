@@ -4,10 +4,13 @@
 /* eslint-disable */
 
 export type * as ActivitySchema from "./schemas/Activity.js";
+export type * as AuthoritySnapshotSchema from "./schemas/AuthoritySnapshot.js";
 export type * as CompatibilitySchema from "./schemas/Compatibility.js";
 export type * as ComponentSchema from "./schemas/Component.js";
 export type * as CompositionSchema from "./schemas/Composition.js";
 export type * as ContextSchema from "./schemas/Context.js";
+export type * as EffectAuthorizationSchema from "./schemas/EffectAuthorization.js";
+export type * as EffectEntrySchema from "./schemas/EffectEntry.js";
 export type * as EffectProfileSchema from "./schemas/EffectProfile.js";
 export type * as EnvironmentCapabilitiesSchema from "./schemas/EnvironmentCapabilities.js";
 export type * as EventSchema from "./schemas/Event.js";
@@ -23,4 +26,5 @@ export type * as ProposalSchema from "./schemas/Proposal.js";
 export type * as ProviderSchema from "./schemas/Provider.js";
 export type * as ProviderCapabilitiesSchema from "./schemas/ProviderCapabilities.js";
 export type * as RegistrationSchema from "./schemas/Registration.js";
+export type * as StagedEffectSchema from "./schemas/StagedEffect.js";
 export const PROTOCOL_VERSION = "2";

@@ -1,0 +1,46 @@
+{
+  "description": "The host-controlled revisions that are relevant at one act.",
+  "properties": {
+    "mode_revision": {
+      "title": "Mode Revision",
+      "type": "string"
+    },
+    "policy_revision": {
+      "title": "Policy Revision",
+      "type": "string"
+    },
+    "principal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Principal"
+    },
+    "provider_revision": {
+      "title": "Provider Revision",
+      "type": "string"
+    },
+    "registry_revision": {
+      "title": "Registry Revision",
+      "type": "string"
+    },
+    "workspace_revision": {
+      "title": "Workspace Revision",
+      "type": "string"
+    }
+  },
+  "required": [
+    "principal",
+    "workspace_revision",
+    "policy_revision",
+    "registry_revision",
+    "provider_revision",
+    "mode_revision"
+  ],
+  "title": "AuthoritySnapshot",
+  "type": "object"
+}

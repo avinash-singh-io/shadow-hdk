@@ -72,7 +72,7 @@ export type VersionProbe = string[]
 
 /**
  * One provider, as read from its file.
- * 
+ *
  * Every field that encodes a quirk is here rather than in a code path, and the file that carries
  * it also carries the measurement that found it.
  */
@@ -121,17 +121,17 @@ source?: Source
 }
 /**
  * How to read one CLI's line-delimited JSON event stream (D40).
- * 
+ *
  * Claude Code and Codex both answer on stdout as newline-delimited JSON. They disagree about every
  * *name* — which key holds the event type, which type carries assistant text, where the text sits,
  * what ends a turn — and about nothing else. The shape is shared; only the names differ. So the
  * names are data.
- * 
+ *
  * **This is not a query language and must not become one.** Ten fields, each a literal event name
  * or a dotted path where `[]` means *each element of this list*. No expressions, no conditionals,
  * no arithmetic. A CLI whose stream does not fit gets code — the same cut the reference makes with
  * its `streamFormat` enum, except these are fields where those are hand-written parsers.
- * 
+ *
  * Every default is the conservative one. A dialect that named no event reads nothing rather than
  * matching something by accident: a stream nobody described is a stream nobody can read, and
  * saying so is better than inventing a reading of it.

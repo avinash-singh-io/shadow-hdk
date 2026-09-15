@@ -13,12 +13,12 @@ epic: production-boundary
 - [x] Version and commit the evaluator before implementation; record mutation evidence
 
 ## Group 1 — Authority and effect records are data
-- [/] Implement/export authority snapshot, staged effect, authorization, journal entry and outcome contracts
-- [ ] Define host authority/authorizer/journal ports with canonical JSON and no credentials/callbacks
-- [ ] Publish JSON Schemas and product contract suites; verify round trips and illegal-state refusal
+- [x] Implement/export authority snapshot, staged effect, authorization, journal entry and outcome contracts
+- [x] Define host authority/authorizer/journal ports with canonical JSON and no credentials/callbacks
+- [x] Publish JSON Schemas and product contract suites; verify round trips and illegal-state refusal
 
 ## Group 2 — The journal survives its process
-- [ ] Implement in-memory and shipped durable append-only journals with atomic legal-next-state checks
+- [/] Implement in-memory and shipped durable append-only journals with atomic legal-next-state checks
 - [ ] Fold histories to current status; never overwrite a fact or consume a grant twice
 - [ ] Verify contract suites, concurrent writers, restart and terminal-outcome uniqueness
 

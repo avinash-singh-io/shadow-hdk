@@ -1,0 +1,63 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "description": "One immutable fact in an effect attempt's append-only history.",
+  "properties": {
+    "at": {
+      "title": "At",
+      "type": "string"
+    },
+    "attempt_id": {
+      "title": "Attempt Id",
+      "type": "string"
+    },
+    "authorization_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authorization Id"
+    },
+    "detail": {
+      "$ref": "#/$defs/JsonValue",
+      "default": null
+    },
+    "kind": {
+      "enum": [
+        "staged",
+        "authorized",
+        "executing",
+        "receipt",
+        "refused",
+        "failed",
+        "unknown",
+        "reconciled"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "sequence": {
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "stage_digest": {
+      "title": "Stage Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "attempt_id",
+    "sequence",
+    "kind",
+    "stage_digest",
+    "at"
+  ],
+  "title": "EffectEntry",
+  "type": "object"
+}

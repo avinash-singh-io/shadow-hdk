@@ -273,7 +273,7 @@ reason: Reason
 }
 /**
  * The step paused; whoever implements governance decides what asking means.
- * 
+ *
  * `component` and `inputs` say what the question is about (BUG-026) — an agent surfacing a
  * child's question passes on what that child was about to do, so the person sees it.
  */
@@ -306,7 +306,7 @@ kind?: Kind14
 /**
  * The receipt of a world-effect (`08` §249: `ActReceipt`). *The only place anything happens
  * outside the log* — so every one of them is attributed and re-checkable.
- * 
+ *
  * `foreign_id` is what the world called it; `idempotency_key` is what we called it, so a retry
  * can be told from a second act; `exit` is how it ended in the world's own vocabulary; `grounds`
  * is what it was performed under — the argv, the lease remaining, the warrant — so an auditor can
@@ -340,11 +340,11 @@ provenance: Provenance
 /**
  * Who registered it, what adapter it came through, who signed it, when — and whether we could
  * have stopped it.
- * 
+ *
  * ``at`` is whatever the registering side's clock said, as text — the kernel has no clock.
  * ``licence`` is recorded here because an open-source component is whatever it is, behind an
  * adapter, with its licence in provenance (09 §4).
- * 
+ *
  * ``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The
  * exception has to be explicit: an adapter that forgets to say produces a claim that is true of
  * everything the runtime does.
@@ -382,7 +382,7 @@ step: Step4
 }
 /**
  * The agent asked the person something — not for consent, for an answer (D61).
- * 
+ *
  * Every product that ships an agent has this item (Codex `requestUserInput`, Claude Code's
  * `AskUserQuestion`, OpenCode's `question`); ours wrote the question into its prose. On the
  * record it is its own kind, answered with text through the host's handle.
@@ -406,7 +406,7 @@ seq: Seq8
 }
 /**
  * A child parked instead of ending, and its parent is keeping it (D16).
- * 
+ *
  * Without this a host would have to infer holding from the *absence* of `Ended` — which a child
  * that died silently also looks like. `steps_spent` is what the child cost on the way in; it is
  * not a reservation, because a parked run settles what it did not use back to its parent.
@@ -422,12 +422,12 @@ steps_spent: StepsSpent
 }
 /**
  * What a step cost, said out loud (D20).
- * 
+ *
  * Phase 1 asked that tokens reach the observer. They did not: an adapter *reports* usage inside a
  * `Completed` observation's output dict, by convention, and anyone wanting to know what a run cost
  * had to know that convention and parse somebody else's payload. Reporting and recording are
  * different jobs, and this is the record.
- * 
+ *
  * Emitted only when there is something to say — a step that cost nothing emits none, because a
  * kind that appears when there is nothing to report is a kind readers learn to skip.
  */
@@ -450,11 +450,11 @@ output_tokens?: OutputTokens
 }
 /**
  * What the model thought, on the record beside what it did (D45).
- * 
+ *
  * The stream recorded what an agent did — invoked, observed, refused, asked, spent — and threw
  * away what it thought. A model's reasoning is the one thing on a run a person most wants to
  * read, and it was the one thing not there.
- * 
+ *
  * Same rule `UsageReported` set: emitted only when there is something to say. A model that
  * reports no reasoning emits none. `text` is the model's own words, unedited — the record is not
  * the place to summarise.

@@ -13,8 +13,11 @@ from shadow_hdk.runtime.testing import (
     make_registration,
 )
 from shadow_hdk.testing.contracts import (
+    AuthorityPortContract,
+    AuthorizerPortContract,
     ClockPortContract,
     ComponentPortContract,
+    EffectJournalContract,
     GovernancePortContract,
     ModelPortContract,
     ObserverPortContract,
@@ -27,10 +30,13 @@ from shadow_hdk.testing.contracts import (
 from shadow_hdk.testing.providers import ScriptedAgent
 
 __all__ = [
+    "AuthorityPortContract",
+    "AuthorizerPortContract",
     "ClockPortContract",
     "ComponentPortContract",
     "FixedClock",
     "GovernancePortContract",
+    "EffectJournalContract",
     "InMemoryComponents",
     "Judge",
     "ListObserver",

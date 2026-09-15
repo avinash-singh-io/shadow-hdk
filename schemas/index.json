@@ -1,10 +1,13 @@
 {
   "contracts": [
     "Activity",
+    "AuthoritySnapshot",
     "Compatibility",
     "Component",
     "Composition",
     "Context",
+    "EffectAuthorization",
+    "EffectEntry",
     "EffectProfile",
     "EnvironmentCapabilities",
     "Event",
@@ -19,7 +22,8 @@
     "Proposal",
     "Provider",
     "ProviderCapabilities",
-    "Registration"
+    "Registration",
+    "StagedEffect"
   ],
   "protocol_version": "2"
 }

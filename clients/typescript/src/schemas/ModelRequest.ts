@@ -22,7 +22,7 @@ tools?: Tools
 }
 /**
  * One turn in a transcript.
- * 
+ *
  * `tool_calls` is what an **assistant** message asked for, and it is not optional decoration: a
  * tool result carries a `tool_call_id`, and every provider rejects a result whose call is in no
  * preceding message. Without it the model is also never shown which tool it called with what

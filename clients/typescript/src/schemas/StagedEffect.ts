@@ -2,13 +2,31 @@
 // protocol_version 2. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
+export type AuthorityDigest = string
+export type Component = string
 export type Contained = boolean
 export type Costs = boolean
 export type Reaches = boolean
 export type Everything = boolean
 export type Names = string[]
 export type Reversible = boolean
+export type IdempotencyKey = string
+export type JsonValue = unknown
+export type RunId = string
+export type Step = string
 
+/**
+ * The exact irreversible component invocation for which authority is requested.
+ */
+export interface StagedEffect {
+authority_digest: AuthorityDigest
+component: Component
+effects: EffectProfile
+idempotency_key: IdempotencyKey
+inputs: JsonValue
+run_id: RunId
+step: Step
+}
 /**
  * Six fields. Names open, effects closed.
  */

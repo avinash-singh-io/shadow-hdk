@@ -47,7 +47,7 @@ writes?: ScopeSet1
 }
 /**
  * A set of scopes that can also honestly say *everything*.
- * 
+ *
  * A component that will not declare what it reads or writes is registered as touching everything
  * (09 §2: a missing declaration means assume the worst, never assume nothing), and "everything"
  * over an open set of names cannot be spelled as a list.
@@ -58,7 +58,7 @@ names?: Names
 }
 /**
  * A set of scopes that can also honestly say *everything*.
- * 
+ *
  * A component that will not declare what it reads or writes is registered as touching everything
  * (09 §2: a missing declaration means assume the worst, never assume nothing), and "everything"
  * over an open set of names cannot be spelled as a list.
@@ -85,11 +85,11 @@ export interface OutputSchema {
 /**
  * Who registered it, what adapter it came through, who signed it, when — and whether we could
  * have stopped it.
- * 
+ *
  * ``at`` is whatever the registering side's clock said, as text — the kernel has no clock.
  * ``licence`` is recorded here because an open-source component is whatever it is, behind an
  * adapter, with its licence in provenance (09 §4).
- * 
+ *
  * ``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The
  * exception has to be explicit: an adapter that forgets to say produces a claim that is true of
  * everything the runtime does.
