@@ -26,8 +26,8 @@ from shadow_hdk.runtime.items import Item
 from shadow_hdk.wire.protocol import PROTOCOL_VERSION
 
 HERE = Path(__file__).resolve()
-DEFAULT = HERE.parents[5] / "schemas"
-"""The repository's `schemas/` directory, five levels up from this file inside the package tree."""
+DEFAULT = HERE.parents[3] / "schemas"
+"""The repository's `schemas/` directory, three levels up from this file inside `src/`."""
 
 
 def published() -> dict[str, dict[str, Any]]:

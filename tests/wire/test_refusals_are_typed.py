@@ -31,6 +31,7 @@ def test_the_vocabulary_is_published() -> None:
     assert {
         "thread_held",
         "turn_running",
+        "capability_mismatch",
         "not_found",
         "invalid",
         "version_mismatch",

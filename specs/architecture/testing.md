@@ -109,3 +109,46 @@ job only runs when asked.
 
 **`test_bare_harness.py`** — an MCP-shaped stub component, an agent component, a sub-agent, allow-all
 governance, the stdout sink; the marker comes off, and the CI job fails if it is ever re-added.
+
+## Cases — Phase 31
+
+- `kernel/test_capabilities.py` locks the closed capability vocabularies, evidence validation,
+  conservative unknown, total mismatch ordering and JSON round trips.
+- provider tests prove absent facts remain unknown, malformed nested records fail by path, shipped
+  Claude Code/Codex/OpenCode matrices are explicit, and discovery carries the same record.
+- environment tests use fake matrices for every axis and the machine's live confinement proof;
+  workspace writes and denied network are not allowed to imply confined reads or denied secrets.
+- construction tests require refusal before agent open and identical accepted selections through
+  `a_thread`, `Harness`, `ServeHost`, JSON-RPC protocol 3 and the generated TypeScript client.
+- `wire/test_schemas.py` pins the schema publisher to this repository, preventing a default build
+  from silently writing generated contracts outside the checkout (BUG-045).
+
+## Cases — Phase 32
+
+- `runtime/test_one_agent_surface.py` drives the same Thread lifecycle through a CLI-style
+  `AgentPort` and a `ModelAgent`: tools, parking/settlement, holding, usage, activity, resume and
+  interruption. A blocked model call must be cancelled at the provider call, and unknown usage
+  stays unmetered.
+- `runtime/test_item_inputs.py` proves exact canonical-JSON retention through 64 KiB and the typed
+  omission marker above it; wire/schema/client tests prove the field crosses without a second fold.
+- `runtime/test_streams.py` locks monotone bounded replay, replay-then-live-once, single attachment,
+  typed stale cursors, injected-clock grace expiry, and heartbeats that allocate no id and enter no
+  replay record.
+- HTTP D94 integration proves the 15-second heartbeat, unique frame ids, reattachment with
+  `Last-Event-ID`, and terminal stale-cursor behavior. The deterministic TypeScript silence smoke
+  proves 45-second-default recovery without waiting on wall time.
+- serve authentication tests lock file → environment → local-flag precedence, duplicate-source
+  refusal, owner/regular-file/non-symlink/permission/size/UTF-8/one-line checks, argv secrecy and
+  redacted failures.
+
+## Cases — Phase 33
+
+- `benchmarks/effect-transaction-v1.json` is a SHA-256-frozen corpus for legal histories,
+  stale-authority refusal, duplicate delivery and crash/recovery outcomes; changing the evaluator
+  requires a versioned successor, never a quiet fixture edit.
+- authority, journal and transaction suites prove canonical secret-free records, legal
+  compare-and-append state transitions, grant single-use, stale re-reads, child isolation and
+  idempotent reconciliation. SQLite and Postgres reference journals run the same contract.
+- `runtime/test_effect_records_are_public.py`, wire/schema/client parity and OpenTelemetry tests
+  prove the generic `effect_recorded` lifecycle is public while receipt/refusal detail and grants
+  do not leak into traces. Protocol 3 refuses older peers rather than omitting it.

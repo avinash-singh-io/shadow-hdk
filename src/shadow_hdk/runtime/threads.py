@@ -41,6 +41,7 @@ from shadow_hdk.kernel import (
     ThreadRecord,
     TurnRecord,
 )
+from shadow_hdk.kernel.capabilities import ExecutionRequirements, ExecutionSelection
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import AgentPort, ThreadStore
@@ -152,6 +153,8 @@ class Thread:
         thread was opened without one, which takes no hold."""
         self._hold_seconds = hold_seconds
         self._renewing: asyncio.Task[None] | None = None
+        self.execution: ExecutionSelection | None = None
+        """The capability pair accepted by a composing host, when it supplied one."""
 
     # ------------------------------------------------------------------ opening and closing
 
@@ -180,6 +183,7 @@ class Thread:
         attributes: Mapping[str, JsonValue] | None = None,
         budget: Ceiling | None = None,
         idle_seconds: float | None = None,
+        requirements: ExecutionRequirements | None = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
 
@@ -211,6 +215,7 @@ class Thread:
             principal=principal,
             attributes=given,
             budget=budget,
+            requirements=requirements or ExecutionRequirements(),
             version=RECORD_VERSION,
         )
         thread = cls(record, _unopened(), store=store, holder=holder, hold_seconds=hold_seconds)

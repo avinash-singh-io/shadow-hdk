@@ -67,7 +67,8 @@ for (const name of index.contracts) {
     unknownAny: true,
     declareExternallyReferenced: true,
   });
-  await writeFile(join(target, `${name}.ts`), banner + ts.trimEnd() + "\n", "utf8");
+  const clean = ts.trimEnd().replace(/[ \t]+$/gm, "");
+  await writeFile(join(target, `${name}.ts`), banner + clean + "\n", "utf8");
   barrel.push(`export type * as ${name}Schema from "./schemas/${name}.js";`);
 }
 barrel.push(`export const PROTOCOL_VERSION = ${JSON.stringify(index.protocol_version)};`);

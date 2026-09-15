@@ -1,0 +1,29 @@
+{
+  "version": "effect-transaction-v1",
+  "legal_histories": [
+    ["staged", "authorized", "executing", "receipt"],
+    ["staged", "authorized", "executing", "failed"],
+    ["staged", "authorized", "executing", "unknown"],
+    ["staged", "authorized", "refused"],
+    ["staged", "refused"],
+    ["staged", "authorized", "executing", "unknown", "reconciled"]
+  ],
+  "illegal_histories": [
+    ["authorized"],
+    ["staged", "executing"],
+    ["staged", "authorized", "receipt"],
+    ["staged", "authorized", "executing", "receipt", "failed"],
+    ["staged", "refused", "authorized"],
+    ["staged", "authorized", "executing", "unknown", "executing"]
+  ],
+  "crash_recovery": {
+    "staged": "refused",
+    "authorized": "refused",
+    "executing_non_idempotent": "unknown",
+    "executing_idempotent_without_evidence": "unknown",
+    "executing_idempotent_with_receipt": "reconciled",
+    "receipt": "receipt",
+    "failed": "failed",
+    "refused": "refused"
+  }
+}

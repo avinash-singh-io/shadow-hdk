@@ -7,7 +7,8 @@ not installed, the way the sandbox names its own.
 """
 
 from shadow_hdk.adapters.postgres.checkpoints import postgres_checkpointer
+from shadow_hdk.adapters.postgres.effects import PostgresEffectJournal
 from shadow_hdk.adapters.postgres.store import PostgresStore
 from shadow_hdk.adapters.postgres.threads import PostgresThreads
 
-__all__ = ["PostgresStore", "PostgresThreads", "postgres_checkpointer"]
+__all__ = ["PostgresEffectJournal", "PostgresStore", "PostgresThreads", "postgres_checkpointer"]

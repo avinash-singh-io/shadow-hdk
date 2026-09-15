@@ -16,7 +16,17 @@ from dataclasses import fields
 from pathlib import Path
 from typing import Any, get_args
 
-from shadow_hdk.kernel import BehaviourArg, Delta, Dialect, EnvVar, Provider, ProviderKind
+from pydantic import TypeAdapter, ValidationError
+
+from shadow_hdk.kernel import (
+    BehaviourArg,
+    Delta,
+    Dialect,
+    EnvVar,
+    Provider,
+    ProviderCapabilities,
+    ProviderKind,
+)
 
 HERE = Path(__file__).resolve().parent / "library"
 
@@ -31,6 +41,8 @@ TUPLE_FIELDS = {
 }
 KNOWN = {f.name for f in fields(Provider)}
 KINDS = set(get_args(ProviderKind))
+CAPABILITY_FIELDS = {f.name for f in fields(ProviderCapabilities)}
+CAPABILITIES = TypeAdapter(ProviderCapabilities)
 
 
 class MalformedProvider(ValueError):
@@ -66,6 +78,22 @@ def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
     for name in TUPLE_FIELDS:
         if name in made:
             made[name] = tuple(made[name])
+    if "capabilities" in made:
+        spoken = made["capabilities"]
+        if not isinstance(spoken, dict):
+            raise MalformedProvider(f"{where}: capabilities must be a table")
+        if unknown_here := sorted(set(spoken) - CAPABILITY_FIELDS):
+            names = ", ".join(f"capabilities.{name}" for name in unknown_here)
+            raise MalformedProvider(f"{where}: unknown field(s) {names}")
+        try:
+            made["capabilities"] = CAPABILITIES.validate_python(spoken)
+        except ValidationError as wrong:
+            first = wrong.errors()[0]
+            loc = ".".join(str(part) for part in first["loc"])
+            if not loc and "evidence" in str(first["msg"]):
+                loc = "evidence"
+            path = f"capabilities.{loc}" if loc else "capabilities"
+            raise MalformedProvider(f"{where}: {path}: {first['msg']}") from wrong
     if "dialect" in made:
         spoken = made["dialect"]
         if not isinstance(spoken, dict):

@@ -1,0 +1,99 @@
+{
+  "$defs": {
+    "CapabilityEvidence": {
+      "description": "Why one capability value may be believed, without carrying a secret or probe output.",
+      "properties": {
+        "at": {
+          "default": "",
+          "title": "At",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "measured",
+            "derived",
+            "declared",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis"
+      ],
+      "title": "CapabilityEvidence",
+      "type": "object"
+    }
+  },
+  "description": "The effective environment boundary for one mode, established by proof or an honest no.",
+  "properties": {
+    "evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CapabilityEvidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "network": {
+      "default": "unknown",
+      "enum": [
+        "denied",
+        "available",
+        "unknown"
+      ],
+      "title": "Network",
+      "type": "string"
+    },
+    "proven": {
+      "default": false,
+      "title": "Proven",
+      "type": "boolean"
+    },
+    "reads": {
+      "default": "unknown",
+      "enum": [
+        "none",
+        "workspace",
+        "machine",
+        "unknown"
+      ],
+      "title": "Reads",
+      "type": "string"
+    },
+    "secrets": {
+      "default": "unknown",
+      "enum": [
+        "denied",
+        "ambient",
+        "unknown"
+      ],
+      "title": "Secrets",
+      "type": "string"
+    },
+    "writes": {
+      "default": "unknown",
+      "enum": [
+        "none",
+        "workspace",
+        "machine",
+        "unknown"
+      ],
+      "title": "Writes",
+      "type": "string"
+    }
+  },
+  "title": "EnvironmentCapabilities",
+  "type": "object"
+}

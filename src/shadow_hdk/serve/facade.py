@@ -20,7 +20,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.kernel import Activity, Event, TurnRecord
+from shadow_hdk.kernel import (
+    Activity,
+    Event,
+    ExecutionRequirements,
+    ProviderCapabilities,
+    TurnRecord,
+)
 from shadow_hdk.runtime.items import Fold, Item
 from shadow_hdk.serve.config import Budget, Settings, as_store_url, load_settings
 from shadow_hdk.serve.host import ServeHost
@@ -85,10 +91,13 @@ class Harness:
         budget: Budget | None = None,
         registry_name: str = "tools",
         agent: Any = None,
+        model: Any = None,
         governance: Any = None,
         sink: Any = None,
         observer: Any = None,
         settings: Settings | None = None,
+        provider_capabilities: ProviderCapabilities | None = None,
+        requirements: ExecutionRequirements | None = None,
     ) -> None:
         self.settings = settings or Settings(
             root=Path(root).resolve(),
@@ -101,7 +110,15 @@ class Harness:
             batteries_dir=Path(batteries_dir) if batteries_dir else None,
             budget=budget or Budget(),
         )
-        self.host = ServeHost(self.settings, agent=agent, governance=governance, sink=sink)
+        self.host = ServeHost(
+            self.settings,
+            agent=agent,
+            model=model,
+            governance=governance,
+            sink=sink,
+            provider_capabilities=provider_capabilities,
+            requirements=requirements,
+        )
         self._parts = _Parts(observer)
         self._thread: Any = None
         self._open = False

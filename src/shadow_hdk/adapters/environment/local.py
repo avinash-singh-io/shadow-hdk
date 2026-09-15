@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from shadow_hdk.kernel.capabilities import EnvironmentRequirements
 from shadow_hdk.kernel.observations import Observation
 from shadow_hdk.kernel.workspace import Workspace
 from shadow_hdk.runtime.environment import (
@@ -153,6 +154,7 @@ def _prove(box: LocalSandbox, root: Path | Workspace, mode: Mode) -> Isolation:
         reads_confined=False,
         network_denied=network_denied,
         proven=writes_confined and network_denied and inside_ok,
+        secrets_denied=False,
     )
 
 
@@ -170,9 +172,16 @@ class LocalEnvironment(Environment):
         output_limit: int = 64_000,
         at: str = "",
         workspace: Workspace | None = None,
+        requirements: EnvironmentRequirements | None = None,
     ) -> None:
         super().__init__(
-            root, mode=mode, isolation=isolation, source="local", at=at, workspace=workspace
+            root,
+            mode=mode,
+            isolation=isolation,
+            source="local",
+            at=at,
+            workspace=workspace,
+            requirements=requirements,
         )
         self._box = box
         self._timeout_s = timeout_s
@@ -188,6 +197,7 @@ class LocalEnvironment(Environment):
         output_limit: int = 64_000,
         at: str = "",
         workspace: Workspace | None = None,
+        requirements: EnvironmentRequirements | None = None,
     ) -> LocalEnvironment:
         """Construct, proving first. Refuses a confined mode nothing here can enforce. `workspace`
         names one or many roots (D76); `root` alone is the one-root workspace."""
@@ -217,6 +227,7 @@ class LocalEnvironment(Environment):
             output_limit=output_limit,
             at=at,
             workspace=workspace,
+            requirements=requirements,
         )
 
     def _prove_now(self, workspace: Workspace, mode: Mode) -> Isolation:

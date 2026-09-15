@@ -25,7 +25,7 @@ from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any
 
-from shadow_hdk.kernel import Provider, ProviderStatus
+from shadow_hdk.kernel import Provider, ProviderCapabilities, ProviderStatus
 from shadow_hdk.providers.environment import environment_for
 from shadow_hdk.providers.probes import ask_auth, ask_version
 from shadow_hdk.providers.resolution import candidates, search_dirs
@@ -53,6 +53,10 @@ class Available:
     @property
     def install_hint(self) -> str:
         return self.provider.install_hint
+
+    @property
+    def capabilities(self) -> ProviderCapabilities:
+        return self.provider.capabilities
 
     @property
     def usable(self) -> bool:

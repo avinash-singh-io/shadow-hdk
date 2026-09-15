@@ -1,7 +1,3 @@
----
-type: Index
----
-
 # Decisions
 
 **Every decision this runtime has taken, and where it is written down.**
@@ -112,6 +108,18 @@ rather than remembered.
 | D82 | identity on the thread, scope on the rows — `thread/start {principal, attributes}` on the record and every judgement; `scope` on rules and modes (`in_scope`), registries answering in scope; a card's rule is the answerer's | [`phases/phase-29-one-app-server/history.md`](/phases/phase-29-one-app-server/history.md) |
 | D81 | one thread, one holder — a lease on the ThreadStore, renewed while open, lapsing when the holder dies; `turn/start {when}`: enqueue · reject · interrupt | [`phases/phase-29-one-app-server/history.md`](/phases/phase-29-one-app-server/history.md) |
 | D80 | a parked turn survives the host — the open question on the record, the served thread on the host's checkpointer, `parked` on resume, `settle` runs the act from its checkpoint and tells the agent | [`phases/phase-29-one-app-server/history.md`](/phases/phase-29-one-app-server/history.md) |
+| D95 | one Shadow umbrella, with HDK construction and ready-to-run Harness surfaces over the same public contracts | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D96 | capability, requirement and evidence are different types; unknown never satisfies an explicit requirement | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D97 | provider truth, environment truth and execution authority stay separate | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D98 | model and CLI providers meet behind one durable AgentPort and Thread surface | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D99 | approval is consent evidence; a separate single-use host authorization permits an irreversible act | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D100 | principal, workspace, policy, registry, provider configuration and mode form explicit revisioned authority | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D101 | a controlled irreversible effect is `stage -> authorize -> execute -> reconcile` | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D102 | an effect authorization binds the exact stage, authority, identity, expiry, key, run and step and is consumed once | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D103 | uncertainty is a first-class outcome; an executing non-idempotent effect is never blindly retried | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D104 | the append-only run/effect journal is authoritative; mutable records and UI are folds | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D105 | the HDK event vocabulary remains generic and excludes adopter-owned concepts | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D106 | open standards meet Shadow at adapters rather than dictating the kernel model | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
 
 ## Also here
 

@@ -24,7 +24,13 @@ from typing import Any
 import pytest
 
 from shadow_hdk.adapters.environment import LocalEnvironment, local_sandbox
-from shadow_hdk.kernel import Completed, Refused, ScopeSet
+from shadow_hdk.kernel import (
+    Completed,
+    EnvironmentRequirements,
+    IncompatibleCapabilities,
+    Refused,
+    ScopeSet,
+)
 from shadow_hdk.runtime.environment import CannotEnforce
 
 HAS_SANDBOX = local_sandbox() is not None
@@ -69,6 +75,29 @@ async def test_workspace_write_is_proven_before_it_is_declared(tmp_path: Path) -
     assert by_id["run_shell"].writes == ScopeSet.of("workspace")
     assert by_id["run_shell"].reaches is False
     assert by_id["run_shell"].contained is True
+
+
+@needs_sandbox
+async def test_local_truth_refuses_repository_only_reads_and_denied_secrets(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(IncompatibleCapabilities) as refused:
+        await LocalEnvironment.open(
+            a_root(tmp_path),
+            mode="workspace-write",
+            requirements=EnvironmentRequirements(
+                reads_within="workspace", secrets="denied", proven=True
+            ),
+        )
+
+    available = refused.value.available_environment
+    assert available is not None
+    assert available.reads == "machine"
+    assert available.writes == "workspace"
+    assert available.network == "denied"
+    assert available.secrets == "ambient"
+    assert available.proven is True
+    assert [gap.axis for gap in refused.value.compatibility.mismatches] == ["reads", "secrets"]
 
 
 @needs_sandbox

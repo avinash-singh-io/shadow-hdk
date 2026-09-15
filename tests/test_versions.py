@@ -18,7 +18,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.29.1"
+EXPECTED = "0.30.0"
 """0.27.0 — one distribution (D78): `shadow-hdk`, with the specialised SDKs as extras
 (`[langchain]`, `[mqtt]`, `[otel]`, `[sandbox]`, `[search]`, `[all]`), in place of eighteen
 that moved together anyway. A consumer's install lines change, and the eighteen names never

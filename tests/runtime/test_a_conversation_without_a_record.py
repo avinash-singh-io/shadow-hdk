@@ -33,9 +33,16 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.ports import AgentSession, Allow, Ask, Context, Judgement, ToolSource
-from shadow_hdk.runtime import Approvals, Approve, Ports
+from shadow_hdk.runtime import Approvals, Approve, InMemoryEffectJournal, Ports
 from shadow_hdk.runtime.conversation import Conversation, Turned
-from shadow_hdk.runtime.testing import FixedClock, InMemoryComponents, ListSink, make_registration
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    InMemoryComponents,
+    ListSink,
+    make_registration,
+)
 from shadow_hdk.runtime.threads import Thread
 
 pytestmark = pytest.mark.anyio
@@ -113,6 +120,9 @@ def _ports(governance: Any, writes: Writes | None = None) -> Ports:
         governance=governance,
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
 
 

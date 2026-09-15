@@ -103,6 +103,7 @@ async def prove_box(box: Box, *, mode: Mode) -> Isolation:
         reads_confined=True,
         network_denied=network_denied,
         proven=writes_confined and network_denied and inside_ok,
+        secrets_denied=None,
     )
 
 

@@ -12,11 +12,11 @@ type: Config
 | language | python |
 | framework | langgraph |
 | test_command | uv run pytest |
-| build_command | uv sync --all-packages |
+| build_command | uv sync --all-packages --all-extras |
 | publish_target | pypi |
 | git_forge | github |
 | release_command | gh release create |
-| release_flow | tag-only |
+| release_flow | tag-and-publish |
 | end_state | merge-after-yes |
 | branch_flow | staging, main |
 | protected_branches | staging, main |
@@ -33,8 +33,8 @@ type: Config
 approval sentinel (Rule 6). `main` is touched only at a release: a promotion from staging, tagged.
 Both are protected by momentum's hook floor whatever this file says.
 
-### Release flow: `tag-only` until a licence is chosen
+### Release flow: `tag-and-publish`
 
-The repository is private and unlicensed. A permissive licence grants rights for that version
-irrevocably, so publishing to PyPI waits for the owner's decision; `release_flow` becomes
-`tag-and-publish` the day it is made.
+The project is MIT-licensed and v0.30.0 is authorized for publication. A GitHub release for the
+matching `vX.Y.Z` tag triggers the publish workflow, which builds, checks, publishes to PyPI and
+smoke-tests a fresh installation.

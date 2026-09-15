@@ -28,6 +28,7 @@ from shadow_hdk.runtime.environment import Mode
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
 from shadow_hdk.serve import ServeHost, load_settings
 from shadow_hdk.serve.config import Settings
+from shadow_hdk.wire.protocol import PROTOCOL_VERSION
 
 pytestmark = pytest.mark.anyio
 
@@ -211,7 +212,12 @@ def test_serve_over_stdio_answers_initialize_and_names_a_missing_provider(tmp_pa
         '[environment]\nroot = "."\nmode = "read-only"\n', encoding="utf-8"
     )
     frames = [
-        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocol_version": "1"}},
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocol_version": PROTOCOL_VERSION},
+        },
         {
             "jsonrpc": "2.0",
             "id": 2,
@@ -236,7 +242,7 @@ def test_serve_over_stdio_answers_initialize_and_names_a_missing_provider(tmp_pa
     )
     lines = [json.loads(line) for line in finished.stdout.splitlines() if line.strip()]
     by_id = {line.get("id"): line for line in lines if "id" in line}
-    assert by_id[1]["result"]["protocol_version"] == "1", finished.stderr[-500:]
+    assert by_id[1]["result"]["protocol_version"] == PROTOCOL_VERSION, finished.stderr[-500:]
     assert "error" in by_id[2] and "no-such-provider" in json.dumps(by_id[2]["error"])
 
 

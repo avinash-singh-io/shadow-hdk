@@ -208,3 +208,54 @@ flag = "--model"
 [[dialect.behaviour_args]]
 field = "effort"
 flag = "--effort"
+
+[capabilities]
+tool_path = "controlled"
+session = "resumable"
+interrupt = "native"
+streaming = "live"
+reasoning = "yes"
+usage_tokens = "yes"
+usage_cost = "yes"
+
+[[capabilities.evidence]]
+axis = "tool_path"
+kind = "measured"
+source = "built-ins disabled; strict MCP config; injected tools pre-permitted through Shadow"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "session"
+kind = "measured"
+source = "stream-json session_id resumed with --resume"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "interrupt"
+kind = "measured"
+source = "stream-json interrupt control request"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "streaming"
+kind = "measured"
+source = "thinking_delta and text_delta before final result"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "reasoning"
+kind = "measured"
+source = "summarized thinking blocks and deltas"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "usage_tokens"
+kind = "measured"
+source = "result usage input_tokens and output_tokens"
+at = "2026-09-11"
+
+[[capabilities.evidence]]
+axis = "usage_cost"
+kind = "measured"
+source = "result total_cost_usd"
+at = "2026-09-11"

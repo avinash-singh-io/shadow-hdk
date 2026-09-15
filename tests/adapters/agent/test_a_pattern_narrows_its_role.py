@@ -40,8 +40,14 @@ from shadow_hdk.kernel.ports import (
     Refuse,
     ToolCall,
 )
-from shadow_hdk.runtime import Ports, RunOptions, run
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, run
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+)
 
 WORKSPACE = ScopeSet.of("workspace")
 READS_ONLY = EffectProfile(reads=WORKSPACE)
@@ -98,6 +104,9 @@ async def drive(
         governance=governance or AllowAll(),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     async for _ in run(
         Composition((Invoke("a1", agent.registration_id, (Binding(name="brief", value="go"),)),)),

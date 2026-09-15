@@ -23,11 +23,30 @@ from shadow_hdk.runtime.approvals import (
 from shadow_hdk.runtime.bindings import Ports, Resumed, RunContext, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.conversation import Conversation, Turned
+from shadow_hdk.runtime.effects import (
+    EffectState,
+    EffectTransaction,
+    InMemoryEffectJournal,
+    JournalConflict,
+    TransactionCrash,
+    fold_effect,
+    recover_effect,
+)
 from shadow_hdk.runtime.loop import resume, run
+from shadow_hdk.runtime.streams import (
+    AlreadyAttached,
+    CursorExpired,
+    StreamAttachment,
+    StreamExpired,
+    StreamFrame,
+    StreamSession,
+)
 from shadow_hdk.runtime.trust import Trust
 
 __all__ = [
     "Cancellation",
+    "AlreadyAttached",
+    "CursorExpired",
     "Pending",
     "Ports",
     "ApprovalAnswer",
@@ -36,14 +55,25 @@ __all__ = [
     "ApproveAndAddRule",
     "Conversation",
     "Deny",
+    "EffectState",
+    "EffectTransaction",
+    "InMemoryEffectJournal",
+    "JournalConflict",
     "Parked",
     "Request",
     "Turned",
     "Resumed",
     "RunContext",
     "RunOptions",
+    "StreamAttachment",
+    "StreamExpired",
+    "StreamFrame",
+    "StreamSession",
+    "TransactionCrash",
     "Trust",
     "current_run",
+    "fold_effect",
+    "recover_effect",
     "resume",
     "run",
 ]

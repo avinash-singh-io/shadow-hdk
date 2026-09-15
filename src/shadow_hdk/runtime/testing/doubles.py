@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.authority import AuthoritySnapshot, EffectAuthorization, StagedEffect
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -30,6 +31,7 @@ from shadow_hdk.kernel.ports import (
     ModelRequest,
     ModelResponse,
     ObserverPort,
+    Refuse,
     SinkPort,
 )
 
@@ -49,6 +51,41 @@ class FixedClock(ClockPort):
 
     def advance(self, seconds: float) -> None:
         self._now += timedelta(seconds=seconds)
+
+
+class FixedAuthority:
+    """A stable host authority for tests that are about another runtime property."""
+
+    def __init__(self, snapshot: AuthoritySnapshot | None = None) -> None:
+        self.snapshot = snapshot or AuthoritySnapshot(
+            "test-principal",
+            "workspace:test",
+            "policy:test",
+            "registry:test",
+            "provider:test",
+            "mode:test",
+        )
+
+    async def current(self, *, run_id: str, step: str) -> AuthoritySnapshot:
+        return self.snapshot
+
+
+class AllowAuthorizer:
+    """A deterministic test host that grants the exact stage it was handed."""
+
+    async def authorize(
+        self, effect: StagedEffect, current: AuthoritySnapshot
+    ) -> EffectAuthorization | Refuse:
+        return EffectAuthorization(
+            authorization_id=f"authorization:{effect.idempotency_key}",
+            stage_digest=effect.digest,
+            run_id=effect.run_id,
+            step=effect.step,
+            principal=current.principal,
+            authority_digest=current.digest,
+            expires_at="9999-12-31T23:59:59+00:00",
+            idempotency_key=effect.idempotency_key,
+        )
 
 
 def make_registration(

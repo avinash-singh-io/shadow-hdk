@@ -12,6 +12,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, JsonValue
 
+from shadow_hdk.kernel.authority import EffectEntryKind
 from shadow_hdk.kernel.components import Posture, RegistrationId
 from shadow_hdk.kernel.composition import Composition, Handle, StepId
 from shadow_hdk.kernel.leases import Lease
@@ -53,6 +54,29 @@ class Invoked:
     component: RegistrationId
     inputs: JsonValue
     kind: Literal["invoked"] = "invoked"
+
+
+@dataclass(frozen=True)
+class EffectRecorded:
+    """One public fact from the append-only transaction history (D101-D104).
+
+    This is deliberately a generic status event rather than one event class per transition. A
+    client can render the exact history—including an explicit ``unknown``—without reimplementing
+    transaction inference or receiving credentials, callbacks or hidden authorizer state.
+    """
+
+    run_id: RunId
+    seq: int
+    at: str
+    step: StepId
+    attempt_id: str
+    status: EffectEntryKind
+    stage_digest: str
+    authorization_id: str | None = None
+    detail: JsonValue = None
+    recorded_at: str = ""
+    replayed: bool = False
+    kind: Literal["effect_recorded"] = "effect_recorded"
 
 
 @dataclass(frozen=True)
@@ -240,6 +264,7 @@ Event = Annotated[
     Started
     | Composed
     | Invoked
+    | EffectRecorded
     | Observed
     | Proposed
     | Refused

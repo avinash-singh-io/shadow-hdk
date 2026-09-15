@@ -3,6 +3,7 @@
 from shadow_hdk.adapters.agent.catalogue import describe_for, thin
 from shadow_hdk.adapters.agent.component import AgentComponent
 from shadow_hdk.adapters.agent.loader import load_pattern, pattern_from, shipped
+from shadow_hdk.adapters.agent.model import ModelAgent
 from shadow_hdk.adapters.agent.pattern import (
     COMPACT,
     COMPOSE,
@@ -45,6 +46,7 @@ __all__ = [
     "PROPOSE",
     "SINGLE_ROLE",
     "AgentComponent",
+    "ModelAgent",
     "Pattern",
     "DirectorySkills",
     "MintedSkills",

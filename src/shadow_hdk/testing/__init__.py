@@ -4,6 +4,8 @@ CLI and no network. `shadow_hdk.runtime.testing` keeps the runtime's own doubles
 is the front door for a product."""
 
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     Judge,
@@ -13,8 +15,11 @@ from shadow_hdk.runtime.testing import (
     make_registration,
 )
 from shadow_hdk.testing.contracts import (
+    AuthorityPortContract,
+    AuthorizerPortContract,
     ClockPortContract,
     ComponentPortContract,
+    EffectJournalContract,
     GovernancePortContract,
     ModelPortContract,
     ObserverPortContract,
@@ -27,10 +32,15 @@ from shadow_hdk.testing.contracts import (
 from shadow_hdk.testing.providers import ScriptedAgent
 
 __all__ = [
+    "AllowAuthorizer",
+    "AuthorityPortContract",
+    "AuthorizerPortContract",
     "ClockPortContract",
     "ComponentPortContract",
     "FixedClock",
+    "FixedAuthority",
     "GovernancePortContract",
+    "EffectJournalContract",
     "InMemoryComponents",
     "Judge",
     "ListObserver",

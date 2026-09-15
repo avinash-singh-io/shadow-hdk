@@ -25,6 +25,7 @@ from shadow_hdk.kernel import (
     Completed,
     Composition,
     EffectProfile,
+    EffectRecorded,
     Ended,
     Event,
     Floor,
@@ -49,7 +50,7 @@ from shadow_hdk.runtime.testing import (
 from tests.adapters.otel.conftest import RaisingTracer, RecordingTracer, Stamp
 
 LOOK = make_registration("look", effects=EffectProfile(reads=ScopeSet.of("workspace")))
-SEND = make_registration("send_mail", effects=EffectProfile(reaches=True, reversible=False))
+SEND = make_registration("send_mail", effects=EffectProfile(reaches=True, reversible=True))
 WAIT = make_registration("wait")
 PARENT = make_registration("parent")
 BRIEF = make_registration("brief")
@@ -276,6 +277,42 @@ async def test_a_secret_in_an_input_or_an_output_is_on_no_span() -> None:
     assert "lathes" not in tracer.everything_recorded()
 
 
+async def test_an_effect_record_keeps_transaction_state_but_not_terminal_detail() -> None:
+    tracer = RecordingTracer()
+    observer = OpenTelemetryObserver(tracer=tracer)
+    at = Stamp().at
+    await observer.on(Started(run_id="r", seq=0, at=at, lease=LEASE))
+    await observer.on(
+        EffectRecorded(
+            run_id="r",
+            seq=1,
+            at=at,
+            step="s1",
+            attempt_id="r/s1",
+            status="receipt",
+            stage_digest="d" * 64,
+            authorization_id="grant-secret",
+            detail={"receipt": "private"},
+        )
+    )
+    recorded = _one(
+        [
+            event
+            for event in _one(tracer.named("shadow_hdk.run")).events
+            if event.name == "effect_recorded"
+        ]
+    )
+    assert recorded.attributes == {
+        "shadow_hdk.step": "s1",
+        "shadow_hdk.attempt_id": "r/s1",
+        "shadow_hdk.status": "receipt",
+        "shadow_hdk.stage_digest": "d" * 64,
+        "shadow_hdk.replayed": False,
+    }
+    assert "private" not in tracer.everything_recorded()
+    assert "grant-secret" not in tracer.everything_recorded()
+
+
 # ---------------------------------------------------------------- the environment
 
 
@@ -385,7 +422,7 @@ def test_every_event_kind_is_accounted_for() -> None:
         if isinstance(cls, type) and dataclasses.is_dataclass(cls) and hasattr(cls, "kind")
     }
     assert kinds == OpenTelemetryObserver.HANDLED
-    assert len(kinds) == 15  # input_requested (D61), mode_changed (D64), workspace_changed (D76)
+    assert len(kinds) == 16  # transaction facts join the public stream in Phase 33 (D101-D104)
 
 
 async def test_a_run_that_fails_mid_step_ends_the_step_span() -> None:

@@ -1,0 +1,56 @@
+{
+  "description": "A host grant for one stage under one authority snapshot; data, never executable power.",
+  "properties": {
+    "authority_digest": {
+      "title": "Authority Digest",
+      "type": "string"
+    },
+    "authorization_id": {
+      "title": "Authorization Id",
+      "type": "string"
+    },
+    "expires_at": {
+      "title": "Expires At",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "principal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Principal"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "stage_digest": {
+      "title": "Stage Digest",
+      "type": "string"
+    },
+    "step": {
+      "title": "Step",
+      "type": "string"
+    }
+  },
+  "required": [
+    "authorization_id",
+    "stage_digest",
+    "run_id",
+    "step",
+    "principal",
+    "authority_digest",
+    "expires_at",
+    "idempotency_key"
+  ],
+  "title": "EffectAuthorization",
+  "type": "object"
+}

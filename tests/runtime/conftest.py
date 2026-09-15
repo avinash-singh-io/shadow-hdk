@@ -17,11 +17,14 @@ from shadow_hdk.kernel import (
     Registration,
 )
 from shadow_hdk.runtime.bindings import Ports
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.registry import Registry
 from shadow_hdk.runtime.session import Session
 from shadow_hdk.runtime.step import StepExecutor
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     Judge,
@@ -55,14 +58,18 @@ def ports_over(
     sink: ListSink | None = None,
 ) -> tuple[Ports, InMemoryComponents]:
     components = InMemoryComponents([(reg, _handler(b)) for reg, b in entries])
+    clock = clock or FixedClock()
     return (
         Ports(
             model=model or ScriptedModel(),
             components=(components,),
             governance=judge or Judge.allow_all(),
             sink=sink or ListSink(),
-            clock=clock or FixedClock(),
+            clock=clock,
             observer=observer,
+            authority=FixedAuthority(),
+            authorizer=AllowAuthorizer(),
+            effect_journal=InMemoryEffectJournal(),
         ),
         components,
     )

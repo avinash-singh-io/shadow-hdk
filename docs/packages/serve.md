@@ -6,6 +6,15 @@ The shipped composition, behind the wire. `shadow-hdk serve harness.toml --http`
 offer, and whichever provider is signed in here — behind the wire's thread methods, so a host in
 any language opens a thread, turns it, answers what it asks, switches modes and reads the store.
 
+`ServeHost(requirements=ExecutionRequirements(...))` sets the process default, and
+`thread/start {requirements: ...}` may narrow it per thread. Provider facts and the environment's
+proven boundary are selected before the agent opens; a mismatch is typed and complete. Protocol 2
+adds `providers/list`, `capabilities/check`, and the accepted `capabilities` on start/resume.
+
+`ServeHost(model=...)` and `Harness(model=...)` adapt a `ModelPort` into the same agent/thread
+lifecycle used by a handed `AgentPort`; supplying both is refused. This keeps model APIs and
+resident CLIs behind one product surface.
+
 ```toml
 # harness.toml — what serve needs now; the full facade is Phase 27
 [environment]
@@ -29,3 +38,8 @@ batteries = ["ddgs"]          # seeds the store's `wanted` rows once; the rows r
 uv run shadow-hdk serve harness.toml --http --port 8765
 uv run shadow-hdk serve harness.toml --stdio
 ```
+
+HTTP uses a 15-second idle heartbeat and the runtime's reconnectable stream session. For a
+non-loopback listener, pass a private `--token-file` (owner-only permissions) or set
+`SHADOW_HDK_TOKEN`; `--token` remains a local-development fallback. Precedence is file,
+environment, then flag, and authentication errors never disclose the secret.

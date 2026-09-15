@@ -1,5 +1,5 @@
 // GENERATED from schemas/*.json by clients/typescript/generate.mjs — do not edit.
-// protocol_version 1. Regenerate with `npm run generate`; the invariant
+// protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type JsonValue = unknown
