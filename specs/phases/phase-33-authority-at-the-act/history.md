@@ -77,3 +77,11 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/wire.md; specs/
 Detail: `EffectRecorded` and `Item.effect` make generic transaction state public across Python, wire schemas and generated TypeScript; OpenTelemetry carries only status/digest metadata. The protocol advances to v3 so old peers refuse rather than omit the lifecycle. The complete v0.30.0 candidate gate passed: build, Ruff, strict mypy over 441 files, 1,688 non-live tests (14 skipped, 12 live deselected), TypeScript generation/check/build, Twine and OKF. The candidate is pushed but intentionally not merged, tagged or published pending owner approval.
 
 ---
+
+### [DISCOVERY] 2026-09-15 — Release smoke now reads the artifact's wire version
+Topics: release, protocol-3, package-smoke, BUG-053
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: .github/workflows/publish.yml; specs/backlog/backlog.md
+Detail: The publish workflow still initialized a fresh v0.30 artifact with protocol 1, which would make the post-publication smoke fail despite a valid release. It now imports `PROTOCOL_VERSION` from the installed artifact and uses that value, preserving the intentional independence of package and wire versions.
+
+---
