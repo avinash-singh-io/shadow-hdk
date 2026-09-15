@@ -37,9 +37,9 @@ type: Guide
 | 28 | The workspace | Complete | `phase-28-the-workspace` |
 | 29 | One app server behind every surface | Complete | `phase-29-one-app-server` |
 | 30 | A product owns what it owns | Complete | `phase-30-a-product-owns-what-it-owns` |
-| **31** | **A host knows what it can trust** | **Complete, unreleased epic checkpoint** | `phase-31-a-host-knows-what-it-can-trust` |
-| **32** | **One agent surface** | **Complete, unreleased epic checkpoint** | `phase-32-one-agent-surface` |
-| **33** | **Authority at the act** | **In Progress** | `phase-33-authority-at-the-act` |
+| **31** | **A host knows what it can trust** | **Complete, v0.30.0 release** | `phase-31-a-host-knows-what-it-can-trust` |
+| **32** | **One agent surface** | **Complete, v0.30.0 release** | `phase-32-one-agent-surface` |
+| **33** | **Authority at the act** | **Complete, v0.30.0 release** | `phase-33-authority-at-the-act` |
 
 ## Phase Structure
 

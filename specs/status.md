@@ -4,9 +4,9 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — Epic 0008 candidate complete; protected release approval pending
-> **Current Phase**: No active implementation phase. **Phase 33 — authority at the act** completed
-> on the stacked epic branch; v0.30.0 is a verified candidate awaiting protected merge/release approval.
+> **Last Updated**: 2026-09-15 — v0.30.0 release landing authorized
+> **Current Phase**: No active implementation phase. Epic 0008 is being promoted through staging
+> and main as the verified v0.30.0 release.
 > Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
 > requirements before anything is built on their selection. Phase 33 (authority at the act) remains
 > derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
@@ -14,7 +14,10 @@ type: Status
 > 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, is built as
 > **0.30.0** but not yet published. Phases 31–33 are pushed on the intentionally unmerged epic stack.
 >
-> **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
+> **Latest Release**: **v0.30.0**, release authorized 2026-09-15 — Epic 0008: evidence-backed
+> capability selection, one durable model/CLI agent surface, and current-authority append-only
+> irreversible effects. The GitHub release triggers PyPI publication and fresh-install smoke. Before
+> it **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
 > on `Spent`, `shadow_hdk.testing`, `Questions`, `Routed`, typed refusals, `RunStore`,
 > `ThreadRecord.version`, `idle_seconds`, a stream that reattaches. Contract change (additions;
@@ -98,6 +101,9 @@ approval.
 | — | one distribution with extras (D78); the React example's finds | Complete, merged | **v0.27.0**, **v0.27.1**, **v0.27.2** |
 | 29 | One app server behind every surface | Complete, merged | **v0.28.0** |
 | 30 | A product owns what it owns | Complete, merged | **v0.29.0** |
+| 31 | A host knows what it can trust | Complete, merged | **v0.30.0** |
+| 32 | One agent surface | Complete, merged | **v0.30.0** |
+| 33 | Authority at the act | Complete, merged | **v0.30.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -118,15 +124,15 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 33 — authority at the act | `phase-33-authority-at-the-act` | complete; release approval pending | 1,688 non-live passes; v0.30.0 artifacts, schemas, TypeScript and OKF green |
+| _(none)_ | | | All Epic 0008 release tracking committed before protected landing |
 
-## Unreleased Epic Checkpoints
+## Epic Release Checkpoints
 
 | Phase | Branch | Evidence | Release |
 |-------|--------|----------|---------|
-| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass candidate gate | awaits protected v0.30.0 release |
-| 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass candidate gate | awaits protected v0.30.0 release |
-| 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | awaits protected v0.30.0 release |
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 release landing |
+| 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 release landing |
+| 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 release landing |
 
 ## Upcoming Phases
 
@@ -154,7 +160,7 @@ approval.
 
 ## Next Actions
 
-1. Obtain approval to merge the stacked Epic 0008 candidate and publish/tag v0.30.0
+1. Verify the published v0.30.0 workflow and PyPI smoke after the GitHub release completes
 2. Hand released v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
 4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
 
