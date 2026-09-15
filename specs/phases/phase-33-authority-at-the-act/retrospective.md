@@ -38,6 +38,8 @@ refuses older peers.
 
 ## Verification Evidence
 
+All commands below completed successfully in this release session.
+
 ### `uv sync --all-packages --all-extras && uv build && uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest -q -m 'not live'`
 
 Exit code: 0
