@@ -32,6 +32,13 @@ type: Architecture
 | `mqtt` | component (devices) | 16 | MQTT topics as the three roles over `paho-mqtt` on 3.1.1: a subscribed topic is a sensor, a command topic an actuator (QoS 1; the receipt says `published`, or carries the device's own ack by key), an event topic a witness; the envelope is the payload (D32); a failed act breaks the link so nothing in flight is re-sent |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
 
+`ServeHost`/`Harness` are the ready-made production assembly: their store backend supplies a durable
+effect journal, and their reference authority/authorizer bind an irreversible controlled act to the
+current principal, scope and revision. A custom host may supply those ports. An adapter is called
+`controlled` only where that common transaction boundary is honored; a generic remote irreversible
+registration is deliberately downgraded to `observed`. OpenTelemetry records an `effect_recorded`
+transition with status and digest, never an effect receipt, refusal detail, inputs or grant.
+
 ## The agent adapter — how one product gets ReAct and another gets an orchestrator
 
 ```python

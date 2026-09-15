@@ -40,8 +40,11 @@ from shadow_hdk.kernel import (
     Observation,
 )
 from shadow_hdk.runtime import Approvals, Ports, RunOptions, current_run, run
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     ListSink,
@@ -92,6 +95,9 @@ async def offered_and_asked(
         governance=ModeGovernance({policy.name: policy}, default=policy.name),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     plan = Composition((Invoke("watching", "watching"),))
     async for _ in run(plan, ports, options=RunOptions(lease=a_lease(), approvals=approvals)):

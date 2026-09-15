@@ -13,7 +13,14 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.observations import Acted
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall
 from shadow_hdk.runtime import Ports
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+)
 
 ROLE = "You are working on one task, using the tools you are given."
 
@@ -53,6 +60,9 @@ async def _drive_an_act() -> ScriptedModel:
         governance=AllowAll(),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     composition = Composition(
         (Invoke("a1", agent.registration_id, (Binding(name="brief", value="tell ops"),)),)

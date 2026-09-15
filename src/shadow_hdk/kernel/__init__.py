@@ -58,6 +58,7 @@ from shadow_hdk.kernel.effects import (
 from shadow_hdk.kernel.events import (
     ApprovalRequested,
     Composed,
+    EffectRecorded,
     Ended,
     Event,
     Held,
@@ -147,6 +148,7 @@ __all__ = [
     "EffectAuthorization",
     "EffectEntry",
     "EffectEntryKind",
+    "EffectRecorded",
     "StagedEffect",
     "authority_digest",
     "stage_effect",

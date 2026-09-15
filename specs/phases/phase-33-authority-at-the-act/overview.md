@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 epic: production-boundary
 tags: [authority, authorization, effects, journal, recovery, receipts, idempotency]
 deps: [phase-31-a-host-knows-what-it-can-trust]

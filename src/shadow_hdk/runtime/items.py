@@ -33,6 +33,7 @@ from pydantic import JsonValue
 from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import (
     ApprovalRequested,
+    EffectRecorded,
     Event,
     InputRequested,
     Invoked,
@@ -81,6 +82,8 @@ class Item:
     inputs: JsonValue = None
     """Canonical inputs, or a typed JSON omission marker when the projection is too large."""
     reasoning: str = ""
+    effect: EffectRecorded | None = None
+    """The latest public transaction fact for this step, when it crossed an effect boundary."""
     outcome: Outcome = "running"
     observation: Observation | None = None
     reason: str | None = None
@@ -102,6 +105,7 @@ class _Open:
     component: str | None = None
     inputs: JsonValue = None
     reasoning: list[str] = field(default_factory=list)
+    effect: EffectRecorded | None = None
     outcome: Outcome = "running"
     observation: Observation | None = None
     reason: str | None = None
@@ -117,6 +121,7 @@ class _Open:
             component=self.component,
             inputs=self.inputs,
             reasoning="".join(self.reasoning),
+            effect=self.effect,
             outcome=self.outcome,
             observation=self.observation,
             reason=self.reason,
@@ -184,6 +189,7 @@ class Fold:
             component=waited.component,
             inputs=waited.inputs,
             reasoning=[waited.reasoning] if waited.reasoning else [],
+            effect=waited.effect,
             usage=waited.usage,
             at=waited.at,
             children=list(waited.children),
@@ -202,6 +208,8 @@ class Fold:
                 opened.component = event.component
                 opened.inputs = _project_inputs(event.inputs)
                 opened.at = event.at
+            case EffectRecorded():
+                self._step(event.run_id, event.step).effect = event
             case Observed():
                 opened = self._step(event.run_id, event.step)
                 opened.observation = event.observation

@@ -27,8 +27,11 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.ports import Allow, Ask, Context, Judgement
 from shadow_hdk.runtime import Approvals, Ports
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
 from shadow_hdk.runtime.threads import InMemoryThreads, Thread
 from shadow_hdk.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     ListSink,
@@ -96,6 +99,9 @@ async def test_a_products_own_questions_port_answers_a_run(tmp_path: Path) -> No
             governance=AsksAboutWrites(),
             sink=ListSink(),
             clock=FixedClock(),
+            authority=FixedAuthority(),
+            authorizer=AllowAuthorizer(),
+            effect_journal=InMemoryEffectJournal(),
         ),
         store=InMemoryThreads(),
         root=tmp_path,

@@ -33,7 +33,7 @@ from shadow_hdk.kernel.components import Posture, Registration
 from shadow_hdk.kernel.composition import Await, Invoke
 from shadow_hdk.kernel.contracts import adapter_for
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.events import ApprovalRequested, Event, Invoked, Observed
+from shadow_hdk.kernel.events import ApprovalRequested, EffectRecorded, Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.events import UsageReported as SpentEvent
 from shadow_hdk.kernel.observations import (
@@ -211,11 +211,27 @@ class StepExecutor:
                     value: JsonValue = adapter_for(Observation).dump_python(result, mode="json")
                     return value
 
+                async def record_effect(entry: Any, replayed: bool) -> None:
+                    await self._emit(
+                        lambda **k: EffectRecorded(
+                            step=step.id,
+                            attempt_id=entry.attempt_id,
+                            status=entry.kind,
+                            stage_digest=entry.stage_digest,
+                            authorization_id=entry.authorization_id,
+                            detail=entry.detail,
+                            recorded_at=entry.at,
+                            replayed=replayed,
+                            **k,
+                        )
+                    )
+
                 state = await EffectTransaction(
                     authority=authority,
                     authorizer=authorizer,
                     journal=journal,
                     clock=self._ports.clock,
+                    recorded=record_effect,
                 ).execute(effect, invoke=invoke_effect, expected_authority=expected)
                 observation = self._effect_observation(state)
                 if isinstance(observation, Refused):

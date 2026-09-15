@@ -149,6 +149,7 @@ classDiagram
 | `registry.py` | `Registry` — union of component ports, `resolve`, `visible`; with a `Trust`, a driver that cannot prove itself is refused at `refresh` — absent, reason in `refused` (D27) |
 | `trust.py` | `Trust(keys, revoked, must_sign)`, `sign`, `verify`, `signing_bytes` — HMAC-SHA256 over the registration's canonical form minus the signature (D27) |
 | `acting.py` | `exhausted(lease)`, `grounds(context, argv=, warrant=)` — what a driver reads at the moment of the act and what its `Acted` receipt carries (R9); the warrant is carried, not judged (ADR-1) |
+| `effects.py` | `EffectTransaction`, `InMemoryEffectJournal` and recovery folding — the controlled irreversible boundary: stage, authorize, re-read authority, record execution, then receipt/failure/refusal/unknown (D99–D104) |
 | `inputs.py` | `resolve_inputs(bindings, handles) -> JsonValue`; `DanglingRef` |
 | `step.py` | `StepExecutor.invoke` — the seven moves; a component answering `Asked` parks the run and is resumed with the answer and what it kept (D57) |
 | `compile.py` | `compile_composition`; the structural-hash cache (D11) |
@@ -229,6 +230,17 @@ async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
 
 `self._port(...)` wraps a **port** call: an exception there raises `PortFailure`, which `loop.py`
 turns into `Ended(reason="failed")` (D7).
+
+**Controlled irreversible work (D99–D104).** After ordinary governance and approval, a component
+whose declared effect is irreversible and controlled crosses one transaction boundary:
+`stage → authorize → re-read authority → executing → invoke → receipt/failed/refused/unknown`.
+`StagedEffect` canonically binds run, step, component, inputs and authority digest; the host's
+authorization is single-use and bound to that exact stage. The journal is append-only and checks
+legal next states atomically. A stale authority, expired/replayed/mismatched grant, or absent
+authority/authorizer/journal refuses before the component is invoked. Restart reuse is only for a
+terminal record of the exact stage. An execution interrupted without terminal evidence is explicit
+`unknown`; a non-idempotent act is never blindly retried. This gives at-most-one runtime invocation
+for a recorded stage, not a universal exactly-once guarantee for an external system.
 
 ## Compiling a composition
 

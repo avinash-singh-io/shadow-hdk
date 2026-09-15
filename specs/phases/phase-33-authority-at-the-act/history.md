@@ -69,3 +69,11 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/adapters.md
 Detail: BUG-052 exposed a mismatch between the in-memory and SQL journals: SQL correctly made authorization IDs unique, while the runtime repeated the same ID on executing and terminal entries. The transaction now records it only on `authorized`, and the fold carries it into later state; a real SQLite act and process-style reopen is the regression proof.
 
 ---
+
+### [FEATURE] 2026-09-15 — Public transaction record and v0.30.0 candidate complete
+Topics: effect-recorded, protocol-3, telemetry, release-candidate, migration
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/adapters.md; specs/architecture/testing.md; docs/migrations/0.30.md
+Detail: `EffectRecorded` and `Item.effect` make generic transaction state public across Python, wire schemas and generated TypeScript; OpenTelemetry carries only status/digest metadata. The protocol advances to v3 so old peers refuse rather than omit the lifecycle. The complete v0.30.0 candidate gate passed: build, Ruff, strict mypy over 441 files, 1,688 non-live tests (14 skipped, 12 live deselected), TypeScript generation/check/build, Twine and OKF. The candidate is pushed but intentionally not merged, tagged or published pending owner approval.
+
+---

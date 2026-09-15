@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-PROTOCOL_VERSION = "2"
+PROTOCOL_VERSION = "3"
 """Bumped when a message's meaning changes. Not the package version: a package may release many
 times without the wire's vocabulary moving, and a client generated from published schemas cares
 about this number rather than ours."""

@@ -44,7 +44,14 @@ from shadow_hdk.kernel.ports import (
     ToolCall,
 )
 from shadow_hdk.runtime import Ports, RunOptions, resume, run
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -85,6 +92,9 @@ def _ports(script: list[ModelResponse], *, agents: tuple[AgentComponent, ...]) -
         governance=AsksAboutWrites(),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
 
 

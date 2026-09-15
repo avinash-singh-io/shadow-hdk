@@ -51,6 +51,7 @@ class OpenTelemetryObserver(ObserverPort):
             "started",
             "composed",
             "invoked",
+            "effect_recorded",
             "observed",
             "proposed",
             "refused",
@@ -100,6 +101,20 @@ class OpenTelemetryObserver(ObserverPort):
                     event.step,
                     {"shadow_hdk.step": event.step, "shadow_hdk.component": event.component},
                     run_span,
+                    at,
+                )
+            case "effect_recorded":
+                # A trace says that the transaction advanced, never what the effect returned:
+                # receipts and refusal details belong to the durable public record (D28).
+                self._innermost(event.run_id, at, step=event.step).add_event(
+                    "effect_recorded",
+                    {
+                        "shadow_hdk.step": event.step,
+                        "shadow_hdk.attempt_id": event.attempt_id,
+                        "shadow_hdk.status": event.status,
+                        "shadow_hdk.stage_digest": event.stage_digest,
+                        "shadow_hdk.replayed": event.replayed,
+                    },
                     at,
                 )
             case "observed":

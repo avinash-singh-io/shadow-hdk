@@ -2,7 +2,7 @@
 type: Epic
 id: "0008"
 slug: production-boundary
-status: in-progress
+status: complete-awaiting-release-approval
 owner: Avinash
 started: "2026-09-14T18:44:36.704Z"
 phases: [phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface, phase-33-authority-at-the-act]
@@ -53,18 +53,18 @@ Phases 32 and 33 are independent after Phase 31. The epic releases once, after b
 - [x] A host submits typed execution requirements and receives either a compatible provider/environment selection or a typed mismatch naming every unmet or unknown requirement
 - [x] Claude Code, Codex, OpenCode and API-model fixtures expose measured capability records; an omitted fact has the conservative value and cannot satisfy a strict requirement
 - [x] `LocalEnvironment` reports write confinement and network denial without claiming read confinement; asking it for repository-only reads or secret denial refuses construction
-- [ ] Model-backed and CLI-backed agents both run through `Thread` with the same turn, parking, holding, spend, cancellation, resume and activity contracts
-- [ ] A folded `Item` carries the invoked inputs through the Python and TypeScript surfaces, subject to the existing payload/offloading policy
-- [ ] The reusable stream session proves frame ids, bounded replay, heartbeat, silence detection and reattachment in-process and through `serve`
-- [ ] An approval followed by a narrowed policy, workspace, registry, provider configuration or credential revision is refused before execution while the approval remains on the record
-- [ ] A child run receives the same or narrower effective authority and cannot reuse its parent's effect authorization
-- [ ] A crash before external execution leaves no act; a crash after possible execution but before acknowledgement leaves `unknown`; recovery reconciles it without blind retry
-- [ ] Duplicate delivery of one staged effect produces at most one authorized execution for an idempotent adapter and an explicit refusal/unknown for a non-idempotent one
-- [ ] A provider session resumes after a process restart as the same logical run and does not repeat an effect already carrying a receipt
-- [ ] `controlled` on an irreversible effect means the runtime can show the act-time authorization and receipt/unknown record; otherwise its posture is `observed` or the act is refused
-- [ ] The public Python contracts, JSON Schemas, wire methods and TypeScript types round-trip and pass their contract suites
-- [ ] The full non-live gate is green: ruff check, format check, mypy strict, pytest, document invariants and the benchmark
-- [ ] The release notes state the capability matrix and known provider/environment limitations; one `v0.30.0` release is published only after Phases 31–33 are complete
+- [x] Model-backed and CLI-backed agents both run through `Thread` with the same turn, parking, holding, spend, cancellation, resume and activity contracts
+- [x] A folded `Item` carries the invoked inputs through the Python and TypeScript surfaces, subject to the existing payload/offloading policy
+- [x] The reusable stream session proves frame ids, bounded replay, heartbeat, silence detection and reattachment in-process and through `serve`
+- [x] An approval followed by a narrowed policy, workspace, registry, provider configuration or credential revision is refused before execution while the approval remains on the record
+- [x] A child run receives the same or narrower effective authority and cannot reuse its parent's effect authorization
+- [x] A crash before external execution leaves no act; a crash after possible execution but before acknowledgement leaves `unknown`; recovery reconciles it without blind retry
+- [x] Duplicate delivery of one staged effect produces at most one authorized execution for an idempotent adapter and an explicit refusal/unknown for a non-idempotent one
+- [x] A provider session resumes after a process restart as the same logical run and does not repeat an effect already carrying a receipt
+- [x] `controlled` on an irreversible effect means the runtime can show the act-time authorization and receipt/unknown record; otherwise its posture is `observed` or the act is refused
+- [x] The public Python contracts, JSON Schemas, wire methods and TypeScript types round-trip and pass their contract suites
+- [x] The full non-live gate is green: ruff check, format check, mypy strict, pytest, document invariants and the benchmark
+- [x] The release notes state the capability matrix and known provider/environment limitations; one `v0.30.0` release is ready for protected-branch approval and publication
 
 ## Non-goals
 

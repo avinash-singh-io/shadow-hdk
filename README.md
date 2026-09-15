@@ -10,7 +10,9 @@ application is for. What it knows is how to take a plan, judge every step of it 
 before that step runs, act through components, and report what happened as a stream of events —
 so that a system built on it can be reasoned about by someone who was not there when it ran.
 
-**One distribution, `shadow-hdk` `0.29.1`, MIT, on PyPI.** 1,566 tests; `mypy --strict` over 418 files;
+**One distribution, `shadow-hdk` `0.30.0` release candidate, MIT, not yet released to PyPI.** The
+candidate is held at the protected merge/release gate; its final verified test count is recorded in
+the release evidence.
 0.594 ms of runtime overhead per step.
 
 ---
@@ -509,7 +511,7 @@ harness = Harness(
 )
 ```
 
-The evidence and measurement date live beside each value in the provider file. Over protocol 2,
+The evidence and measurement date live beside each value in the provider file. Over protocol 3,
 `providers/list` returns those facts and `capabilities/check` tests a candidate without opening its
 agent or a thread; `thread/start` returns the accepted selection or a typed `capability_mismatch`.
 See [migrating from 0.29.1 to 0.30](docs/migrations/0.30.md) for the additive Python contract and

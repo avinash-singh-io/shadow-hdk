@@ -175,8 +175,8 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 29 | One app server behind every surface | **DONE** · v0.28.0 | 28 | the record chooses its store (SQLite or Postgres — Store, ThreadStore, checkpointer from one url); a parked run survives; one thread one holder and a named concurrency strategy; identity on the thread, scope on the rows; batteries live; the budget on the record; ask and deny rules that hold in every mode, path patterns; health, admin, the per-run token decided |
 | 30 | A product owns what it owns | **DONE** · v0.29.0 | 29 | the governed turn without the record (`Conversation`); a park on purpose; the agent streams; tokens and running time on the record; the contract suites shipped and a `Questions` port; routed governance and typed refusals; a parked run behind a port of ours and the record versioned; sessions that idle out and a stream that survives a drop |
 | 31 | A host knows what it can trust | **DONE on epic branch; unreleased** · Epic 0008 | 30 | typed provider/environment capabilities and evidence; typed execution requirements; conservative compatibility and refusal, in-process and over the wire |
-| 32 | One agent surface | **PLANNED** · Epic 0008 | 31 | `ModelAgent`; model/CLI `Thread` parity; `Item.inputs`; reusable stream session, heartbeat and safer bearer input |
-| 33 | Authority at the act | **PLANNED** · Epic 0008 | 31 | revisioned authority; `stage -> authorize -> execute -> reconcile`; single-use grants; durable journal, receipts, unknown outcomes and recovery |
+| 32 | One agent surface | **DONE on v0.30.0 candidate; awaiting protected release approval** · Epic 0008 | 31 | `ModelAgent`; model/CLI `Thread` parity; `Item.inputs`; reusable stream session, heartbeat and safer bearer input |
+| 33 | Authority at the act | **DONE on v0.30.0 candidate; awaiting protected release approval** · Epic 0008 | 31 | revisioned authority; `stage -> authorize -> execute -> reconcile`; single-use grants; durable journal, receipts, unknown outcomes and recovery |
 | 34 | Shadow Harness, built to unfold | planned | 32, 33 | `HarnessSpec`; primitive -> component -> pattern -> blueprint -> preset -> runnable reference harness; every layer replaceable |
 | 35 | Context engineering | planned | 32 | compaction that triggers itself; Code Mode over the socket; memory consumed |
 | 36 | Dynamic planning | planned | 34, 35 | an agent proposes the same workflow/harness artifacts a user composes; the host admits them under capability, authority, depth, fan-out and budget limits |
@@ -229,7 +229,7 @@ the timeline are phases, not retrospective pseudo-epics.
 |---|---|---|
 | 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
-| **0008 production boundary** | **31, 32, 33** | **in progress; Phase 31 complete; one v0.30.0 release** |
+| **0008 production boundary** | **31, 32, 33** | **candidate complete; awaiting protected v0.30.0 release approval** |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable

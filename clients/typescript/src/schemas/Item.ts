@@ -1,35 +1,46 @@
 // GENERATED from schemas/*.json by clients/typescript/generate.mjs — do not edit.
-// protocol_version 2. Regenerate with `npm run generate`; the invariant
+// protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type At = (string | null)
 export type Children = Item[]
 export type Component = (string | null)
+export type At1 = string
+export type AttemptId = string
+export type AuthorizationId = (string | null)
+export type Kind = "effect_recorded"
+export type RecordedAt = string
+export type Replayed = boolean
+export type RunId = string
+export type Seq = number
+export type StageDigest = string
+export type Status = ("staged" | "authorized" | "executing" | "receipt" | "refused" | "failed" | "unknown" | "reconciled")
+export type Step = string
 export type Observation = ((Completed | Refused | ApprovalRequest | InputRequest | Failed | Pending | Acted) | null)
-export type Kind = "completed"
-export type Kind1 = "refused"
+export type Kind1 = "completed"
+export type Kind2 = "refused"
 export type Reason = string
 export type Component1 = (string | null)
 export type Handle = string
-export type Kind2 = "approval_request"
+export type Kind3 = "approval_request"
 export type Question = string
 export type Handle1 = string
-export type Kind3 = "input_request"
+export type Kind4 = "input_request"
 export type Question1 = string
 export type Error = string
-export type Kind4 = "failed"
+export type Kind5 = "failed"
 export type Handle2 = string
-export type Kind5 = "pending"
+export type Kind6 = "pending"
 export type Exit = string
 export type ForeignId = string
 export type IdempotencyKey = string
-export type Kind6 = "acted"
+export type Kind7 = "acted"
 export type Outcome = ("running" | "completed" | "refused" | "approval_requested" | "input_requested" | "failed" | "pending" | "acted")
 export type Parent = ([unknown, unknown] | null)
 export type Reason1 = (string | null)
 export type Reasoning = string
-export type RunId = string
-export type Step = string
+export type RunId1 = string
+export type Step1 = string
 export type CostCents = (number | null)
 export type InputTokens = (number | null)
 export type OutputTokens = (number | null)
@@ -45,6 +56,7 @@ export interface Item {
 at?: At
 children?: Children
 component?: Component
+effect?: (EffectRecorded | null)
 inputs?: {
 [k: string]: unknown
 }
@@ -53,18 +65,41 @@ outcome?: Outcome
 parent?: Parent
 reason?: Reason1
 reasoning?: Reasoning
-run_id: RunId
-step: Step
+run_id: RunId1
+step: Step1
 usage?: (Usage | null)
 }
-export interface Completed {
+/**
+ * One public fact from the append-only transaction history (D101-D104).
+ *
+ * This is deliberately a generic status event rather than one event class per transition. A
+ * client can render the exact history—including an explicit ``unknown``—without reimplementing
+ * transaction inference or receiving credentials, callbacks or hidden authorizer state.
+ */
+export interface EffectRecorded {
+at: At1
+attempt_id: AttemptId
+authorization_id?: AuthorizationId
+detail?: {
+[k: string]: unknown
+}
 kind?: Kind
+recorded_at?: RecordedAt
+replayed?: Replayed
+run_id: RunId
+seq: Seq
+stage_digest: StageDigest
+status: Status
+step: Step
+}
+export interface Completed {
+kind?: Kind1
 output?: {
 [k: string]: unknown
 }
 }
 export interface Refused {
-kind?: Kind1
+kind?: Kind2
 reason: Reason
 }
 /**
@@ -77,7 +112,7 @@ export interface ApprovalRequest {
 component?: Component1
 handle: Handle
 inputs?: unknown
-kind?: Kind2
+kind?: Kind3
 question: Question
 }
 /**
@@ -85,19 +120,19 @@ question: Question
  */
 export interface InputRequest {
 handle: Handle1
-kind?: Kind3
+kind?: Kind4
 question: Question1
 }
 export interface Failed {
 error: Error
-kind?: Kind4
+kind?: Kind5
 }
 /**
  * The answer arrives later, under this handle.
  */
 export interface Pending {
 handle: Handle2
-kind?: Kind5
+kind?: Kind6
 }
 /**
  * The receipt of a world-effect (`08` §249: `ActReceipt`). *The only place anything happens
@@ -115,7 +150,7 @@ grounds?: {
 [k: string]: unknown
 }
 idempotency_key: IdempotencyKey
-kind?: Kind6
+kind?: Kind7
 }
 /**
  * What the call cost. A model adapter that cannot say reports ``None`` for the field it does

@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete-awaiting-release-approval
 epic: production-boundary
 ---
 # Phase 33 — Authority at the act — Tasks
@@ -34,7 +34,7 @@ epic: production-boundary
 - [x] Verify crash injection, duplicate delivery, child attacks and provider-session restart without repeated receipts
 
 ## Group 5 — Public record and the v0.30 candidate
-- [/] Carry transaction/refusal/receipt/unknown through events, telemetry, wire, schemas and TypeScript
-- [ ] Sync architecture, package, migration and release-candidate docs with limitations
-- [ ] Run frozen evaluator, store contracts, crash matrix and full combined Epic 0008 gate
-- [ ] Build v0.30.0 artifacts, mark Phase 33/epic complete and stop at protected merge/release approval
+- [x] Carry transaction/refusal/receipt/unknown through events, telemetry, wire, schemas and TypeScript
+- [x] Sync architecture, package, migration and release-candidate docs with limitations
+- [x] Run frozen evaluator, store contracts, crash matrix and full combined Epic 0008 gate
+- [x] Build v0.30.0 artifacts, mark Phase 33/epic complete and stop at protected merge/release approval

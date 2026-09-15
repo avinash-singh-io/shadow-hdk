@@ -25,6 +25,7 @@ INDUSTRY_KINDS = {
     "started",
     "composed",
     "invoked",
+    "effect_recorded",
     "observed",
     "proposed",
     "refused",

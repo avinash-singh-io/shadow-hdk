@@ -27,7 +27,10 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.ports import GovernancePort
 from shadow_hdk.runtime import Ports, RunContext, RunOptions, current_run, run
+from shadow_hdk.runtime.effects import InMemoryEffectJournal
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     ListSink,
@@ -96,6 +99,9 @@ async def with_a_run[T](
         governance=governance or AllowAll(),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     events = [
         e

@@ -98,6 +98,92 @@
       "title": "Completed",
       "type": "object"
     },
+    "EffectRecorded": {
+      "description": "One public fact from the append-only transaction history (D101-D104).\n\nThis is deliberately a generic status event rather than one event class per transition. A\nclient can render the exact history\u2014including an explicit ``unknown``\u2014without reimplementing\ntransaction inference or receiving credentials, callbacks or hidden authorizer state.",
+      "properties": {
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "attempt_id": {
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "authorization_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authorization Id"
+        },
+        "detail": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "kind": {
+          "const": "effect_recorded",
+          "default": "effect_recorded",
+          "title": "Kind",
+          "type": "string"
+        },
+        "recorded_at": {
+          "default": "",
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "replayed": {
+          "default": false,
+          "title": "Replayed",
+          "type": "boolean"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "stage_digest": {
+          "title": "Stage Digest",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "staged",
+            "authorized",
+            "executing",
+            "receipt",
+            "refused",
+            "failed",
+            "unknown",
+            "reconciled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "step",
+        "attempt_id",
+        "status",
+        "stage_digest"
+      ],
+      "title": "EffectRecorded",
+      "type": "object"
+    },
     "Failed": {
       "properties": {
         "error": {
@@ -176,6 +262,17 @@
           ],
           "default": null,
           "title": "Component"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EffectRecorded"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "inputs": {
           "$ref": "#/$defs/JsonValue",

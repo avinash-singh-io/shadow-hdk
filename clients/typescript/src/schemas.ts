@@ -1,5 +1,5 @@
 // GENERATED from schemas/*.json by clients/typescript/generate.mjs — do not edit.
-// protocol_version 2. Regenerate with `npm run generate`; the invariant
+// protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 
@@ -27,4 +27,4 @@ export type * as ProviderSchema from "./schemas/Provider.js";
 export type * as ProviderCapabilitiesSchema from "./schemas/ProviderCapabilities.js";
 export type * as RegistrationSchema from "./schemas/Registration.js";
 export type * as StagedEffectSchema from "./schemas/StagedEffect.js";
-export const PROTOCOL_VERSION = "2";
+export const PROTOCOL_VERSION = "3";

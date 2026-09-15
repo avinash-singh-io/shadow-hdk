@@ -149,12 +149,14 @@ class EffectTransaction:
         journal: EffectJournalPort,
         clock: EffectClock,
         checkpoint: Callable[[str], None] | None = None,
+        recorded: Callable[[EffectEntry, bool], Awaitable[None]] | None = None,
     ) -> None:
         self.authority = authority
         self.authorizer = authorizer
         self.journal = journal
         self.clock = clock
         self.checkpoint = checkpoint
+        self.recorded = recorded
         self._locks: dict[str, asyncio.Lock] = {}
 
     async def execute(
@@ -172,6 +174,7 @@ class EffectTransaction:
                     return EffectState(
                         "refused", reason="idempotency_key_reused_for_different_effect"
                     )
+                await self._record(existing[-1], replayed=True)
                 return fold_effect(existing)
 
             expected = expected_authority or await self.authority.current(
@@ -232,18 +235,17 @@ class EffectTransaction:
         authorization_id: str | None = None,
         detail: JsonValue = None,
     ) -> None:
-        await self.journal.append(
-            EffectEntry(
-                attempt_id=effect.idempotency_key,
-                sequence=sequence,
-                kind=kind,
-                stage_digest=effect.digest,
-                at=self.clock.now(),
-                authorization_id=authorization_id,
-                detail=detail,
-            ),
-            expected_length=sequence,
+        entry = EffectEntry(
+            attempt_id=effect.idempotency_key,
+            sequence=sequence,
+            kind=kind,
+            stage_digest=effect.digest,
+            at=self.clock.now(),
+            authorization_id=authorization_id,
+            detail=detail,
         )
+        await self.journal.append(entry, expected_length=sequence)
+        await self._record(entry)
 
     async def _refuse(self, effect: StagedEffect, sequence: int, reason: str) -> EffectState:
         await self._append(effect, "refused", sequence=sequence, detail={"reason": reason})
@@ -252,6 +254,10 @@ class EffectTransaction:
     def _checkpoint(self, point: str) -> None:
         if self.checkpoint is not None:
             self.checkpoint(point)
+
+    async def _record(self, entry: EffectEntry, *, replayed: bool = False) -> None:
+        if self.recorded is not None:
+            await self.recorded(entry, replayed)
 
 
 async def recover_effect(

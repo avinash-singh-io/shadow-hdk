@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator, Sequence
+from dataclasses import replace
 from typing import Any
 
 from pydantic import JsonValue
@@ -121,7 +122,11 @@ class RemoteComponents(ComponentPort):
 
     async def registrations(self) -> Sequence[Registration]:
         listed = await self._peer.call(REGISTRATIONS, {})
-        return [load(json.dumps(entry), Registration) for entry in listed]
+        registrations = [load(json.dumps(entry), Registration) for entry in listed]
+        # The remote host performs the invocation after this runtime asks it to. Until authority,
+        # authorization and journal ports cross that boundary, an irreversible remote operation
+        # is evidence we observed, not an act this runtime controlled (D99-D104).
+        return [_observed_if_remote_effect(registration) for registration in registrations]
 
     async def invoke(self, registration: RegistrationId, inputs: JsonValue) -> Observation:
         # **No guard here, deliberately.** The obvious thing is to catch a `RemoteError` and
@@ -155,6 +160,18 @@ class RemoteSink(SinkPort):
 
     async def propose(self, proposal: Proposal) -> None:
         await self._peer.call(PROPOSE, {"proposal": _as_json(proposal, Proposal)})
+
+
+def _observed_if_remote_effect(registration: Registration) -> Registration:
+    if registration.component.effects.reversible:
+        return registration
+    return replace(
+        registration,
+        component=replace(
+            registration.component,
+            provenance=replace(registration.component.provenance, posture="observed"),
+        ),
+    )
 
 
 __all__ = ["RemoteComponents", "RemoteGovernance", "RemoteModel", "RemoteSink"]

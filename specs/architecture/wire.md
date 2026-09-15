@@ -99,7 +99,7 @@ else — the studio is that page. A resident provider is told the catalogue chan
 anyway (BUG-032), is reopened on its own session after a mode change or a root added — its list
 fresh, its memory kept (`AgentPort.open(resume=)`).
 
-**Protocol 2 is the capability boundary (Phase 31).** `thread/start` and the persisted version-3
+**Protocol 3 is the public-record boundary (Phase 33); protocol 2 was the capability boundary.** `thread/start` and the persisted version-3
 thread record carry `ExecutionRequirements`; `thread/resume` rechecks them rather than trusting an
 old selection. Success returns the complete accepted `ExecutionSelection`. Failure is the typed
 `capability_mismatch` error with every provider-then-environment gap, required and available values,
@@ -113,6 +113,13 @@ receives the same turns, items, activity, usage, questions and capability select
 also carries the component's JSON `inputs`, copied through the fold and wire up to a 64 KiB
 canonical encoding; above the bound, an explicit omission marker carries the encoded byte count.
 The complete `Invoked` event remains authoritative.
+
+`EffectRecorded` is likewise a tagged public event and `Item.effect` retains its latest state. For
+controlled irreversible work the stream exposes `staged → authorized → executing → receipt` (or
+`failed`, `refused`, `unknown`) with the stage digest and safe transaction metadata. Schema and the
+generated TypeScript client require protocol 3 so a v2 client cannot silently omit this lifecycle.
+The generic remote component boundary does not carry host authority, grants, or a journal; remote
+irreversible registrations are therefore `observed` unless a host supplies that controlled boundary.
 
 ## Rules already fixed
 

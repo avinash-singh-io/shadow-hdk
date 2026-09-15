@@ -119,7 +119,7 @@ governance, the stdout sink; the marker comes off, and the CI job fails if it is
 - environment tests use fake matrices for every axis and the machine's live confinement proof;
   workspace writes and denied network are not allowed to imply confined reads or denied secrets.
 - construction tests require refusal before agent open and identical accepted selections through
-  `a_thread`, `Harness`, `ServeHost`, JSON-RPC protocol 2 and the generated TypeScript client.
+  `a_thread`, `Harness`, `ServeHost`, JSON-RPC protocol 3 and the generated TypeScript client.
 - `wire/test_schemas.py` pins the schema publisher to this repository, preventing a default build
   from silently writing generated contracts outside the checkout (BUG-045).
 
@@ -140,3 +140,15 @@ governance, the stdout sink; the marker comes off, and the CI job fails if it is
 - serve authentication tests lock file → environment → local-flag precedence, duplicate-source
   refusal, owner/regular-file/non-symlink/permission/size/UTF-8/one-line checks, argv secrecy and
   redacted failures.
+
+## Cases — Phase 33
+
+- `benchmarks/effect-transaction-v1.json` is a SHA-256-frozen corpus for legal histories,
+  stale-authority refusal, duplicate delivery and crash/recovery outcomes; changing the evaluator
+  requires a versioned successor, never a quiet fixture edit.
+- authority, journal and transaction suites prove canonical secret-free records, legal
+  compare-and-append state transitions, grant single-use, stale re-reads, child isolation and
+  idempotent reconciliation. SQLite and Postgres reference journals run the same contract.
+- `runtime/test_effect_records_are_public.py`, wire/schema/client parity and OpenTelemetry tests
+  prove the generic `effect_recorded` lifecycle is public while receipt/refusal detail and grants
+  do not leak into traces. Protocol 3 refuses older peers rather than omitting it.

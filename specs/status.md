@@ -4,14 +4,15 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — Phase 32 complete; Epic 0008 continues
-> **Current Phase**: **Phase 33 — authority at the act** is next on the stacked epic branch.
+> **Last Updated**: 2026-09-15 — Epic 0008 candidate complete; protected release approval pending
+> **Current Phase**: No active implementation phase. **Phase 33 — authority at the act** completed
+> on the stacked epic branch; v0.30.0 is a verified candidate awaiting protected merge/release approval.
 > Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
 > requirements before anything is built on their selection. Phase 33 (authority at the act) remains
 > derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
 >
-> 1,625 non-live tests; mypy strict over 429 files; one distribution, `shadow-hdk`, still at
-> **0.29.1**, MIT, on PyPI. Phases 31–32 are pushed but intentionally unmerged and unreleased.
+> 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, is built as
+> **0.30.0** but not yet published. Phases 31–33 are pushed on the intentionally unmerged epic stack.
 >
 > **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
@@ -51,9 +52,9 @@ components and records through the sink. One distribution — kernel, runtime, w
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
 that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
-merged and released; Phases 31–32 are complete on the unreleased epic stack**: 1,625 non-live tests,
-mypy strict over 429 files, one public distribution at 0.29.1. Epic 0008 is the v0.30.0
-production-boundary release train.
+merged and released; Phases 31–33 are complete on the unreleased epic stack**: 1,688 non-live tests,
+mypy strict over 441 files, one v0.30.0 candidate. Epic 0008 now waits only for protected release
+approval.
 
 ## Completed Phases
 
@@ -117,13 +118,15 @@ production-boundary release train.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 33 — authority at the act | `phase-33-authority-at-the-act` | starting | Derive Group 0 RED from the approved D99–D104 boundary; no interim release |
+| 33 — authority at the act | `phase-33-authority-at-the-act` | complete; release approval pending | 1,688 non-live passes; v0.30.0 artifacts, schemas, TypeScript and OKF green |
 
 ## Unreleased Epic Checkpoints
 
 | Phase | Branch | Evidence | Release |
 |-------|--------|----------|---------|
-| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | 1,600 full-suite passes; 422 typed files; docs/schema/benchmark green | waits for Phase 33 and v0.30.0 |
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass candidate gate | awaits protected v0.30.0 release |
+| 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass candidate gate | awaits protected v0.30.0 release |
+| 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | awaits protected v0.30.0 release |
 
 ## Upcoming Phases
 
@@ -151,9 +154,8 @@ production-boundary release train.
 
 ## Next Actions
 
-1. Start Phase 32 from its derived strict-TDD plan; lock the one-agent lifecycle evaluator before implementation
-2. Complete Phases 32–33 with fresh evidence at each boundary; one merge and one v0.30.0 release at epic completion
-3. Hand v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
+1. Obtain approval to merge the stacked Epic 0008 candidate and publish/tag v0.30.0
+2. Hand released v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
 4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
