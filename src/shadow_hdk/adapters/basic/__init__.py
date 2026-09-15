@@ -2,6 +2,7 @@
 
 from shadow_hdk.adapters.basic.callables import CallableComponents, callable_component
 from shadow_hdk.adapters.basic.clock import SystemClock
+from shadow_hdk.adapters.basic.effects import SqliteEffectJournal
 from shadow_hdk.adapters.basic.governance import AllowAll, Controlled
 from shadow_hdk.adapters.basic.mailbox import Mailbox
 from shadow_hdk.adapters.basic.observers import CallbackObserver, StdoutObserver
@@ -20,6 +21,7 @@ __all__ = [
     "Mailbox",
     "StdoutObserver",
     "SqliteStore",
+    "SqliteEffectJournal",
     "SqliteThreads",
     "StdoutSink",
     "SystemClock",

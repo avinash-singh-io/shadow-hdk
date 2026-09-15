@@ -18,12 +18,12 @@ epic: production-boundary
 - [x] Publish JSON Schemas and product contract suites; verify round trips and illegal-state refusal
 
 ## Group 2 — The journal survives its process
-- [/] Implement in-memory and shipped durable append-only journals with atomic legal-next-state checks
-- [ ] Fold histories to current status; never overwrite a fact or consume a grant twice
-- [ ] Verify contract suites, concurrent writers, restart and terminal-outcome uniqueness
+- [x] Implement in-memory and shipped durable append-only journals with atomic legal-next-state checks
+- [x] Fold histories to current status; never overwrite a fact or consume a grant twice
+- [x] Verify contract suites, concurrent writers, restart and terminal-outcome uniqueness
 
 ## Group 3 — Every controlled irreversible invocation crosses one boundary
-- [ ] Stage after governance/approval, authorize separately, re-read authority, append executing, invoke once, reconcile
+- [/] Stage after governance/approval, authorize separately, re-read authority, append executing, invoke once, reconcile
 - [ ] Refuse stale authority, expired/mismatched/replayed grants and controlled paths without transaction support
 - [ ] Verify exact transition order and no component invocation on every refusal branch
 

@@ -37,3 +37,11 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/wire.md; specs/
 Detail: Secret-free AuthoritySnapshot, exact StagedEffect, bound EffectAuthorization and append-only EffectEntry contracts now live in the kernel with canonical SHA-256 digests. Host-owned authority, authorizer and journal protocols plus importable product contract suites are published; 24 JSON Schemas and generated TypeScript contracts build cleanly. Five focused contract/freeze checks and strict mypy/Ruff are green while the frozen evaluator remains RED only on the intentionally absent runtime transaction.
 
 ---
+
+### [FEATURE] 2026-09-15 — Effect histories survive and serialize concurrent writers
+Topics: effect-journal, sqlite, postgres, recovery, idempotency, contracts
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/testing.md
+Detail: One fold validates the frozen legal transition graph and derives state without rewriting facts. In-memory, SQLite and Postgres journals expose compare-and-append; SQLite uses an immediate transaction, Postgres an attempt-scoped advisory transaction lock, and both enforce globally unique authorization consumption. Eight SQLite/memory contract, restart and concurrency checks pass; eleven Postgres checks are collected and environment-skipped. Inverting the memory CAS predicate produced four focused failures and was reverted.
+
+---

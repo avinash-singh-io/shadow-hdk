@@ -9,7 +9,8 @@ from typing import Any
 
 import pytest
 
-from shadow_hdk.testing.contracts import StoreContract, ThreadStoreContract
+from shadow_hdk.kernel import EffectEntry
+from shadow_hdk.testing.contracts import EffectJournalContract, StoreContract, ThreadStoreContract
 from tests.adapters.postgres.conftest import wiped
 
 pytestmark = [
@@ -32,6 +33,7 @@ def _fresh(kind: str) -> Any:
 
     with psycopg.connect(URL, autocommit=True) as connection:
         for table in (
+            "shadow_hdk_effect_journal",
             "shadow_hdk_rows",
             "shadow_hdk_versions",
             "shadow_hdk_threads",
@@ -39,6 +41,20 @@ def _fresh(kind: str) -> Any:
         ):
             connection.execute(f"drop table if exists {table}")
     return PostgresStore(URL) if kind == "store" else PostgresThreads(URL)
+
+
+def _effect_entries() -> tuple[EffectEntry, EffectEntry]:
+    return (
+        EffectEntry("attempt-1", 0, "staged", "digest-1", "2026-09-15T12:00:00+00:00"),
+        EffectEntry(
+            "attempt-1",
+            1,
+            "authorized",
+            "digest-1",
+            "2026-09-15T12:00:01+00:00",
+            authorization_id="grant-1",
+        ),
+    )
 
 
 class TestPostgresStoreIsAStore(StoreContract):
@@ -49,6 +65,17 @@ class TestPostgresStoreIsAStore(StoreContract):
 class TestPostgresThreadsIsAThreadStore(ThreadStoreContract):
     def store(self) -> Any:
         return _fresh("threads")
+
+
+class TestPostgresEffectJournalIsAnEffectJournal(EffectJournalContract):
+    def journal(self) -> Any:
+        from shadow_hdk.adapters.postgres import PostgresEffectJournal
+
+        _fresh("store")
+        return PostgresEffectJournal(URL)
+
+    def entries(self) -> tuple[EffectEntry, EffectEntry]:
+        return _effect_entries()
 
 
 async def test_a_second_store_over_the_same_url_sees_the_rows_and_the_version() -> None:
