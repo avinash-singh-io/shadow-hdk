@@ -108,6 +108,10 @@ Affects-phases: none
 Affects-specs: specs/backlog/backlog.md
 Detail: The full suite is green, but an ACP refusal test can leave a subprocess transport to finalize after loop closure (BUG-051), and the AMQTT broker fixture uses APIs marked for removal (TD-012). Both are isolated from the Phase 32 contract and recorded for bounded follow-up rather than folded into the epic.
 
+The Phase 33 pre-flight also found ENH-019 still marked planned after its Phase 31 implementation;
+the verified capability boundary is present, so the stale backlog row is closed without changing
+scope. The learnings tool's TD-012 stale-closure suggestion was rejected after inspection.
+
 ---
 
 ### [NOTE] 2026-09-15 — Phase 32 complete as an unreleased epic checkpoint
