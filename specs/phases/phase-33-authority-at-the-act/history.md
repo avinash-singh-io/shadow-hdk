@@ -21,3 +21,11 @@ Affects-specs: specs/status.md; specs/phases/README.md
 Detail: The stacked branch starts at Phase 32 commit `2ab153a` after the full green gate. Pre-flight found no P0 bug; TD-010 and TD-011 are the planned P1 work. Group 0 freezes the deterministic transaction evaluator before implementation, and the phase remains unreleased until the single Epic 0008 gate.
 
 ---
+
+### [EVALUATOR] 2026-09-15 — Effect transaction v1 is frozen and RED
+Topics: authority, effect-authorization, effect-journal, reconciliation, idempotency, tdd
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/testing.md
+Detail: `tests/benchmarks/effect-transaction-v1.json` locks legal/illegal histories and crash recovery outcomes behind a SHA-256 immutability test. The runtime evaluator covers every authority/stage binding, stale act-time reads, grant replay, concurrent duplicate delivery, parent/child isolation and idempotent reconciliation; it fails at collection only because the new kernel/runtime contracts do not exist. A one-nibble hash mutation failed the freeze test and was reverted before commit.
+
+---

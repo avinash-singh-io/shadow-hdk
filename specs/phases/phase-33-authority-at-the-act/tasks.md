@@ -8,12 +8,12 @@ epic: production-boundary
 > Verify before claiming done (Rule 12).
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 ## Group 0 — Lock the transaction evaluator *(blocks)*
-- [/] RED: freeze canonical digest, legal-state, stale-authority, single-use and crash/recovery outcomes
-- [ ] Include duplicate/concurrent delivery, parent/child replay and idempotent/non-idempotent matrices
-- [ ] Version and commit the evaluator before implementation; record mutation evidence
+- [x] RED: freeze canonical digest, legal-state, stale-authority, single-use and crash/recovery outcomes
+- [x] Include duplicate/concurrent delivery, parent/child replay and idempotent/non-idempotent matrices
+- [x] Version and commit the evaluator before implementation; record mutation evidence
 
 ## Group 1 — Authority and effect records are data
-- [ ] Implement/export authority snapshot, staged effect, authorization, journal entry and outcome contracts
+- [/] Implement/export authority snapshot, staged effect, authorization, journal entry and outcome contracts
 - [ ] Define host authority/authorizer/journal ports with canonical JSON and no credentials/callbacks
 - [ ] Publish JSON Schemas and product contract suites; verify round trips and illegal-state refusal
 
