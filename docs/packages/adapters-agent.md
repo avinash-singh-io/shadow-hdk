@@ -16,3 +16,9 @@ orchestrator_workers = Pattern(
 `single` offers the model no `compose`, so it **cannot** change its shape: it sees its tools and
 answers. That is a fully deterministic one-agent product on the same runtime a dynamic product uses.
 Adding a pattern — today's or one invented in five years — is a file.
+
+`ModelAgent(model=..., pattern=...)` exposes that loop as an `AgentPort`. A product can therefore
+hand a model API or a resident CLI to the same `Thread`, `Harness` and `ServeHost` lifecycle rather
+than maintaining two product integrations. It sees only the `ToolSource` supplied at open, reports
+unknown usage honestly, maps parked work to the durable child run, and cancels an active model call
+when the thread is interrupted.

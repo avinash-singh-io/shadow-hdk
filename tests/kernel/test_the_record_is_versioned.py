@@ -44,9 +44,9 @@ async def test_a_new_thread_writes_this_kits_version_and_an_old_one_is_written_b
         lease=_lease(),
     )
     try:
-        assert thread.record.version == RECORD_VERSION == 2
+        assert thread.record.version == RECORD_VERSION == 3
         kept = await store.get(thread.id)
-        assert kept is not None and kept.version == 2
+        assert kept is not None and kept.version == 3
     finally:
         await thread.close()
 
@@ -59,8 +59,8 @@ async def test_a_new_thread_writes_this_kits_version_and_an_old_one_is_written_b
         "old", agent=cast(Any, ScriptedAgent([])), ports=_ports(Seen()), store=store, lease=_lease()
     )
     try:
-        assert resumed.record.version == 2
+        assert resumed.record.version == 3
         rewritten = await store.get("old")
-        assert rewritten is not None and rewritten.version == 2, "written back in this shape"
+        assert rewritten is not None and rewritten.version == 3, "written back in this shape"
     finally:
         await resumed.close()

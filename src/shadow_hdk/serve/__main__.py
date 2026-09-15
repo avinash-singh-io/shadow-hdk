@@ -1,4 +1,4 @@
-"""`shadow-hdk serve [harness.toml] --stdio|--http [--port N] [--token T] [--page FILE]
+"""`shadow-hdk serve [harness.toml] --stdio|--http [--port N] [--token-file FILE] [--page FILE]
 [--root DIR] [--mode M] [--store FILE|URL] [--provider P]`.
 
 The runtime with the shipped composition behind it, for a host in any language. `--stdio` is
@@ -18,16 +18,18 @@ from pathlib import Path
 
 import anyio
 
+from shadow_hdk.serve.authentication import resolve_bearer
 from shadow_hdk.serve.config import Settings, as_store_url, load_settings
 from shadow_hdk.serve.host import ServeHost
 
 USAGE = (
-    "usage: shadow-hdk serve [harness.toml] --stdio | --http [--port N] [--token T] "
+    "usage: shadow-hdk serve [harness.toml] --stdio | --http [--port N] "
+    "[--token-file FILE | env SHADOW_HDK_TOKEN | --token T (local development only)] "
     "[--page FILE] [--root DIR] [--mode M] [--store FILE|URL] [--provider P]"
 )
 
 
-VALUED = ("port", "token", "page", "root", "mode", "store", "provider")
+VALUED = ("port", "token", "token-file", "page", "root", "mode", "store", "provider")
 """Flags that take a value — as `--name=value` or `--name value`, the way every CLI takes them."""
 
 
@@ -91,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
             serve_http_forever,
             host,
             int(_flag(rest, "port", "8765")),
-            _flag(rest, "token") or None,
+            resolve_bearer(rest),
             Path(page) if page else None,
         )
         return 0

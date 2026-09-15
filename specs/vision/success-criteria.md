@@ -35,3 +35,11 @@ type: Vision
 | The product's R3 replay differ runs on it | lane P reports both engines diffed on the same inputs | the board |
 | Streaming | tokens reach the observer as they arrive (Phase 1) | `tests/adapters/langchain` |
 | A seventh port can be added without breaking an adapter | the growth rule proven once | the ADR that adds it, and green contract suites |
+| A host selects honestly | typed requirements match only measured/proven provider and environment capabilities; unknown never satisfies strict | Phase 31 capability and wire contract suites |
+| One durable agent surface | CLI-backed and model-backed agents have the same `Thread` lifecycle and host controls | Phase 32 provider, thread and wire contract suites |
+| Authority holds at the act | approval followed by narrowing is refused before execution; a child cannot widen or reuse a grant | Phase 33 authority adversarial suite |
+| Effects survive uncertainty | crash-before, crash-after-before-ack, duplicate delivery and unknown reconciliation never cause a blind non-idempotent retry | Phase 33 effect journal and recovery suite |
+| Ready-made and composable are one system | Shadow Harness imports only public Shadow HDK contracts and can be materialized through its primitive/component/pattern/blueprint/preset layers | Phase 34 invariants and examples |
+| Dynamic plans do not grant authority | a planner-proposed workflow is admitted only within host capability, authority, budget, depth and fan-out bounds | Phase 36 adversarial suite |
+| Scheduling is durable and separate from authority | duplicate or missed trigger delivery creates the documented logical runs without granting an effect | Phase 37 scheduler contracts |
+| Evolution cannot self-install | every candidate is evaluated against a frozen corpus and needs a versioned human-approved rollout with rollback | Phase 40 evaluator and rollout contracts |

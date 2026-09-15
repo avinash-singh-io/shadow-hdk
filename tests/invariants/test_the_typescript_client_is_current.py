@@ -71,6 +71,30 @@ def test_the_client_type_checks() -> None:
     assert finished.returncode == 0, (finished.stdout + finished.stderr)[-1200:]
 
 
+def test_a_silent_stream_reattaches_with_its_cursor() -> None:
+    if why := _node_ready():
+        pytest.skip(why)
+    built = subprocess.run(
+        ["npm", "run", "--silent", "build"],
+        cwd=CLIENT,
+        capture_output=True,
+        text=True,
+        timeout=180,
+        check=False,
+    )
+    assert built.returncode == 0, (built.stdout + built.stderr)[-1200:]
+    finished = subprocess.run(
+        ["node", str(CLIENT / "dist" / "silence-smoke.js")],
+        cwd=CLIENT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert finished.returncode == 0, (finished.stdout + finished.stderr)[-1200:]
+    assert '"reattachCursor":"1"' in finished.stdout
+
+
 def test_the_generator_reads_the_published_index() -> None:
     """The set of contracts the client carries is the set the wire publishes — no hand list."""
     import json

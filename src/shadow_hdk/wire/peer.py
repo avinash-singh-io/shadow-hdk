@@ -40,6 +40,27 @@ def error_data(failed: BaseException) -> dict[str, Any]:
             "thread_id": getattr(failed, "thread_id", ""),
             "turn_id": getattr(failed, "turn_id", ""),
         }
+    if name == "IncompatibleCapabilities":
+        compatibility = getattr(failed, "compatibility", None)
+        mismatches = getattr(compatibility, "mismatches", ())
+        return {
+            "kind": "capability_mismatch",
+            "mismatches": [
+                {
+                    "subject": gap.subject,
+                    "axis": gap.axis,
+                    "required": gap.required,
+                    "available": gap.available,
+                    "evidence": {
+                        "axis": gap.evidence.axis,
+                        "kind": gap.evidence.kind,
+                        "source": gap.evidence.source,
+                        "at": gap.evidence.at,
+                    },
+                }
+                for gap in mismatches
+            ],
+        }
     if name == "VersionMismatch":
         return {"kind": "version_mismatch"}
     if isinstance(failed, KeyError | FileNotFoundError):

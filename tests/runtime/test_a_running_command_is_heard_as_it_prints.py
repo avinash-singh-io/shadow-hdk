@@ -58,8 +58,8 @@ async def test_the_local_environment_turns_output_into_activity(tmp_path: Path) 
         Lease,
     )
     from shadow_hdk.kernel.ports import Allow, Context, Judgement
-    from shadow_hdk.runtime import Ports, RunOptions, run
-    from shadow_hdk.runtime.testing import FixedClock, ListSink
+    from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, run
+    from shadow_hdk.runtime.testing import AllowAuthorizer, FixedAuthority, FixedClock, ListSink
 
     class Watching:
         def __init__(self) -> None:
@@ -86,6 +86,9 @@ async def test_the_local_environment_turns_output_into_activity(tmp_path: Path) 
         sink=ListSink(),
         clock=FixedClock(),
         observer=watching,
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     plan = Composition(
         (Invoke("s1", "run_python", (Binding("source", value=SCRIPT),)),),

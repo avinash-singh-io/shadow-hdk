@@ -10,6 +10,7 @@ behind `shadow-hdk serve` for a host in any language and behind `a_thread` for a
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import sys
@@ -18,12 +19,14 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from shadow_hdk.adapters.agent import (
+    ModelAgent,
     SkillComponents,
     SkillRegistry,
     shipped_skills,
+    single,
     store_skills,
 )
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
@@ -39,16 +42,43 @@ from shadow_hdk.adapters.modes import (
     store_rules,
 )
 from shadow_hdk.adapters.recording import SocketOffer
-from shadow_hdk.kernel import Ceiling, Lease, ThreadStore, Workspace
-from shadow_hdk.kernel.ports import AgentPort
-from shadow_hdk.providers import environment_for, open_with, ready, search_dirs
-from shadow_hdk.runtime import Approvals, Ports
+from shadow_hdk.kernel import (
+    Ceiling,
+    EnvironmentRequirements,
+    ExecutionRequirements,
+    ExecutionSelection,
+    Lease,
+    ProviderCapabilities,
+    ThreadStore,
+    Workspace,
+    select_execution,
+)
+from shadow_hdk.kernel.contracts import adapter_for, dump
+from shadow_hdk.kernel.ports import (
+    AgentPort,
+    AuthorityPort,
+    AuthorizerPort,
+    ComponentPort,
+    EffectJournalPort,
+    ModelPort,
+)
+from shadow_hdk.providers import (
+    Available,
+    detect,
+    environment_for,
+    open_with,
+    ready,
+    search_dirs,
+    shipped,
+)
+from shadow_hdk.runtime import Approvals, InMemoryEffectJournal, Ports
 from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
+from shadow_hdk.serve.authority import HostAuthority, HostAuthorizer
 from shadow_hdk.serve.batteries import (
     BatteryRegistry,
     OpenedBattery,
@@ -137,6 +167,14 @@ async def workshop(
     batteries: Sequence[Any] = (),
     skills: SkillRegistry | None = None,
     workspace: Workspace | None = None,
+    environment: LocalEnvironment | None = None,
+    requirements: EnvironmentRequirements | None = None,
+    authority: AuthorityPort | None = None,
+    authorizer: AuthorizerPort | None = None,
+    effect_journal: EffectJournalPort | None = None,
+    principal: str | None = None,
+    attributes: dict[str, Any] | None = None,
+    provider_revision: str = "",
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
 
@@ -150,13 +188,14 @@ async def workshop(
     the environment refuses to exist rather than quietly widen, and that reaches the person,
     because it is the right thing for them to see.
     """
-    environment = await LocalEnvironment.open(
+    environment = environment or await LocalEnvironment.open(
         root,
         mode=mode,
         timeout_s=60.0,
         output_limit=32_000,
         at="2026-09-11T00:00:00+00:00",
         workspace=workspace,
+        requirements=requirements,
     )
     chosen_from = SkillComponents(
         skills if skills is not None else skills_for(store),
@@ -171,15 +210,31 @@ async def workshop(
     if store is not None:
         # Which components are on is the store's to say (D66): off at the next refresh.
         offered = tuple(Switched(port, store_switches(store)) for port in offered)
+    chosen_modes = modes or MODES
+    chosen_rules = rules if rules is not None else ActRules()
+    clock = SystemClock()
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
         components=offered,
         # Every shipped mode is judged from; the environment's mode is the one selected by default,
         # and `Thread.set_mode` flips between them live (D64). The person's act rules are read
         # after a mode says *ask* (D65).
-        governance=governance_for(modes or MODES, default=mode, rules=rules),
+        governance=governance_for(chosen_modes, default=mode, rules=chosen_rules),
         sink=StdoutSink(),
-        clock=SystemClock(),
+        clock=clock,
+        authority=authority
+        or HostAuthority(
+            workspace=workspace or Workspace.of(root),
+            modes=chosen_modes,
+            rules=chosen_rules,
+            components=cast(tuple[ComponentPort, ...], offered),
+            provider_revision=provider_revision,
+            principal=principal,
+            attributes=attributes,
+            mode=mode,
+        ),
+        authorizer=authorizer or HostAuthorizer(clock),
+        effect_journal=effect_journal or InMemoryEffectJournal(),
     )
 
 
@@ -194,7 +249,8 @@ class ServeHost:
     """The wire's `ThreadHost`, composed from the shipped adapters.
 
     One per process: one record — the store the registries read, the thread store, and the
-    checkpointer a parked run sleeps in, all three from `settings.store`'s url (D79; memory when
+    checkpointer a parked run sleeps in and effect journal, all four from `settings.store`'s url
+    (D79, D101; memory when
     it names nothing) — one `Approvals` handle, one rule registry, one mode registry. A provider
     is resolved at `open` — `settings.want` or the first CLI signed in here — unless one was
     handed in (`agent=`), which is what a test does.
@@ -205,18 +261,26 @@ class ServeHost:
         settings: Settings,
         *,
         agent: AgentPort | None = None,
+        model: ModelPort | None = None,
         governance: Any = None,
         sink: Any = None,
         store: Any = None,
         threads: ThreadStore | None = None,
         checkpointer: Any = None,
         run_store: Any = None,
+        effect_journal: EffectJournalPort | None = None,
+        authority: AuthorityPort | None = None,
+        authorizer: AuthorizerPort | None = None,
+        provider_capabilities: ProviderCapabilities | None = None,
+        requirements: ExecutionRequirements | None = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
         opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
         `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
-        would have made, and a host that hands all three never reads the url. `run_store` (D93)
+        would have made, and a host that hands all four never reads the url. `run_store` (D93)
         is a product's own `RunStore` — the checkpointer is then the library's saver over it."""
+        if agent is not None and model is not None:
+            raise ValueError("hand either agent= or model=, not both")
         self.settings = settings
         self._governance = governance
         self._sink = sink
@@ -227,6 +291,7 @@ class ServeHost:
             threads=threads,
             checkpointer=checkpointer,
             run_store=run_store,
+            effect_journal=effect_journal,
         )
         self.store: Any = self.stores.store
         self.threads: ThreadStore = self.stores.threads
@@ -243,8 +308,15 @@ class ServeHost:
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
         self._batteries_seeded = False
-        self._agent = agent
-        self.provider = ""
+        self._agent = agent or (
+            ModelAgent(model=model, pattern=single) if model is not None else None
+        )
+        self._handed_capabilities = provider_capabilities or ProviderCapabilities()
+        self.requirements = requirements or ExecutionRequirements()
+        self._authority = authority
+        self._authorizer = authorizer
+        self._selections: dict[str, ExecutionSelection] = {}
+        self.provider = "handed model" if model is not None else ""
 
     async def wanted(self) -> tuple[str, ...]:
         """Which batteries are wanted **now** (D83): the store's `wanted` rows (`{id, on}`),
@@ -340,18 +412,99 @@ class ServeHost:
         self.batteries_opened = ()
         await self.stores.aclose()
 
-    async def _provider(self, want: str | None, root: Path) -> tuple[AgentPort, str]:
+    async def _provider_candidate(
+        self, want: str | None
+    ) -> tuple[AgentPort | None, Available | None, ProviderCapabilities, str]:
+        """Resolve and probe, but do not open the provider's execution process yet."""
         if self._agent is not None:
-            return self._agent, self.provider or "handed in"
+            return (
+                self._agent,
+                None,
+                self._handed_capabilities,
+                self.provider or "handed in",
+            )
         available = await ready(want or self.settings.want)
-        assert available.binary is not None, "a ready provider has a binary"
-        opened = await open_with(
+        called = f"{available.provider.called} {available.version or ''}".strip()
+        return None, available, available.capabilities, called
+
+    async def _open_candidate(
+        self,
+        handed: AgentPort | None,
+        available: Available | None,
+        root: Path,
+    ) -> AgentPort:
+        if handed is not None:
+            return handed
+        assert available is not None and available.binary is not None
+        opened: AgentPort = await open_with(
             available.provider,
             binary=available.binary,
             env=environment_for(available.provider, base={}, search=search_dirs()),
             workspace=root,
         )
-        return opened, f"{available.provider.called} {available.version or ''}".strip()
+        return opened
+
+    def _requirements(self, given: Any = None) -> ExecutionRequirements:
+        if given is None:
+            return self.requirements
+        if isinstance(given, ExecutionRequirements):
+            return given
+        return cast(
+            ExecutionRequirements,
+            adapter_for(ExecutionRequirements).validate_python(given),
+        )
+
+    def capabilities_for(self, thread_id: str) -> ExecutionSelection:
+        try:
+            return self._selections[thread_id]
+        except KeyError:
+            raise KeyError(f"no capability selection for thread {thread_id!r}") from None
+
+    async def check_capabilities(
+        self,
+        *,
+        mode: str = "",
+        want: str | None = None,
+        requirements: Any = None,
+        root: str = "",
+    ) -> ExecutionSelection:
+        """Probe and prove a pair without opening the provider agent or a thread."""
+        execution = self._requirements(requirements)
+        _handed, _available, provider, _called = await self._provider_candidate(want)
+        policy_mode = mode or self.settings.mode
+        environment_mode = await self._environment_for(policy_mode)
+        workspace = Workspace.of(Path(root or self.settings.root))
+        for each in workspace.roots:
+            Path(each.path).mkdir(parents=True, exist_ok=True)
+        environment = await LocalEnvironment.open(
+            Path(workspace.primary.path),
+            mode=environment_mode,
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            return select_execution(provider, environment.capabilities, execution)
+        finally:
+            await environment.close()
+
+    async def provider_listing(self) -> list[dict[str, Any]]:
+        """The shipped provider records with this machine's detection and capability evidence."""
+        providers = list(shipped().values())
+        available = await detect(providers)
+        return [
+            {
+                "id": item.provider.id,
+                "name": item.provider.called,
+                "kind": item.provider.kind,
+                "status": item.status,
+                "binary": str(item.binary) if item.binary is not None else None,
+                "version": item.version,
+                "message": item.message,
+                "install_hint": item.install_hint,
+                "capabilities": json.loads(dump(item.capabilities, ProviderCapabilities)),
+            }
+            for item in available
+        ]
 
     async def open(
         self,
@@ -366,6 +519,7 @@ class ServeHost:
         principal: str = "",
         attributes: Any = None,
         budget: Any = None,
+        requirements: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -377,7 +531,23 @@ class ServeHost:
         where = Path(workspace.primary.path).resolve()
         policy_mode = mode or self.settings.mode
         environment_mode = await self._environment_for(policy_mode)
-        agent, called = await self._provider(want, where)
+        execution = self._requirements(requirements)
+        handed, available, provider_capabilities, called = await self._provider_candidate(want)
+        environment = await LocalEnvironment.open(
+            where,
+            mode=environment_mode,
+            timeout_s=60.0,
+            output_limit=32_000,
+            at="2026-09-11T00:00:00+00:00",
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(provider_capabilities, environment.capabilities, execution)
+            agent = await self._open_candidate(handed, available, where)
+        except BaseException:
+            await environment.close()
+            raise
         ports = await workshop(
             where,
             mode=environment_mode,
@@ -387,6 +557,13 @@ class ServeHost:
             batteries=await self._battery_ports(),
             skills=self.skills,
             workspace=workspace,
+            environment=environment,
+            authority=self._authority,
+            authorizer=self._authorizer,
+            effect_journal=self.stores.effects,
+            principal=principal or None,
+            attributes=attributes if isinstance(attributes, dict) else None,
+            provider_revision=called,
         )
         thread = await Thread.open(
             agent=agent,
@@ -408,7 +585,10 @@ class ServeHost:
             attributes=attributes if isinstance(attributes, dict) else None,
             budget=self._budget_of(budget),
             idle_seconds=self.settings.idle_seconds,
+            requirements=execution,
         )
+        self._selections[thread.id] = selection
+        thread.execution = selection
         self.provider = called
         return thread
 
@@ -461,7 +641,23 @@ class ServeHost:
         environment_mode = mode_named(record.environment) or await self._environment_for(
             record.mode or self.settings.mode
         )
-        agent, _called = await self._provider(None, where)
+        execution = record.requirements
+        handed, available, provider_capabilities, _called = await self._provider_candidate(None)
+        environment = await LocalEnvironment.open(
+            where,
+            mode=environment_mode,
+            timeout_s=60.0,
+            output_limit=32_000,
+            at="2026-09-11T00:00:00+00:00",
+            workspace=workspace,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(provider_capabilities, environment.capabilities, execution)
+            agent = await self._open_candidate(handed, available, where)
+        except BaseException:
+            await environment.close()
+            raise
         ports = await workshop(
             where,
             mode=environment_mode,
@@ -471,8 +667,15 @@ class ServeHost:
             batteries=await self._battery_ports(),
             skills=self.skills,
             workspace=workspace,
+            environment=environment,
+            authority=self._authority,
+            authorizer=self._authorizer,
+            effect_journal=self.stores.effects,
+            principal=record.principal or None,
+            attributes=record.attributes,
+            provider_revision=record.provider,
         )
-        return await Thread.resume(
+        thread = await Thread.resume(
             thread_id,
             agent=agent,
             ports=self._handed(ports, observer),
@@ -486,6 +689,9 @@ class ServeHost:
             holder=self.holder,
             idle_seconds=self.settings.idle_seconds,
         )
+        self._selections[thread.id] = selection
+        thread.execution = selection
+        return thread
 
     def _handed(self, ports: Ports, observer: Any) -> Ports:
         """The shipped ports, with whatever this host was handed in their place."""
@@ -514,8 +720,11 @@ async def a_thread(
     rules: Any = None,
     store: Any = None,
     agent: AgentPort | None = None,
+    model: ModelPort | None = None,
     batteries: Sequence[str] = (),
     batteries_dir: Path | None = None,
+    provider_capabilities: ProviderCapabilities | None = None,
+    requirements: ExecutionRequirements | None = None,
 ) -> AsyncIterator[Thread]:
     """A thread on the provider signed in here, its tools this run's, inside the workshop — the
     Python-side door onto the same composition `serve` puts behind the wire.
@@ -526,26 +735,48 @@ async def a_thread(
     beside it (D63). `batteries` names what to switch on (D70) — opened for the thread's life,
     read from the shipped files, `batteries_dir` and the store; `agent` hands a provider in.
     """
+    if agent is not None and model is not None:
+        raise ValueError("hand either agent= or model=, not both")
     root.mkdir(parents=True, exist_ok=True)
-    if agent is not None:
-        opened, called = agent, "handed in"
+    execution = requirements or ExecutionRequirements()
+    available: Available | None = None
+    if agent is not None or model is not None:
+        opened = agent or ModelAgent(model=cast(ModelPort, model), pattern=single)
+        called = "handed in" if agent is not None else "handed model"
+        capabilities = provider_capabilities or ProviderCapabilities()
     else:
         available = await ready(want)
         assert available.binary is not None, "a ready provider has a binary"
-        opened = await open_with(
-            available.provider,
-            binary=available.binary,
-            env=environment_for(available.provider, base={}, search=search_dirs()),
-            workspace=root,
-        )
         called = f"{available.provider.called} {available.version or ''}".strip()
+        capabilities = available.capabilities
+        opened = None
     modes = modes_for(store, files=root / ".harness" / "modes")  # live: rows and files (D66)
-    started, problems = await open_batteries(
-        batteries_for(store, files=batteries_dir or root / ".harness" / "batteries"), batteries
-    )
-    for battery_id, problem in problems.items():
-        print(f"battery {battery_id!r}: {problem}", file=sys.stderr)
+    started: tuple[OpenedBattery, ...] = ()
     try:
+        environment = await LocalEnvironment.open(
+            root,
+            mode=mode,
+            requirements=execution.environment,
+        )
+        try:
+            selection = select_execution(capabilities, environment.capabilities, execution)
+            if opened is None:
+                assert available is not None and available.binary is not None
+                opened = await open_with(
+                    available.provider,
+                    binary=available.binary,
+                    env=environment_for(available.provider, base={}, search=search_dirs()),
+                    workspace=root,
+                )
+        except BaseException:
+            await environment.close()
+            raise
+        started, problems = await open_batteries(
+            batteries_for(store, files=batteries_dir or root / ".harness" / "batteries"),
+            batteries,
+        )
+        for battery_id, problem in problems.items():
+            print(f"battery {battery_id!r}: {problem}", file=sys.stderr)
         thread = await Thread.open(
             agent=opened,
             ports=replace(
@@ -556,6 +787,7 @@ async def a_thread(
                     store=store,
                     modes=modes,
                     batteries=tuple(b.port for b in started if b.port is not None),
+                    environment=environment,
                 ),
                 observer=observer,
             ),
@@ -568,7 +800,9 @@ async def a_thread(
             modes=modes,
             mode=mode,
             provider=called,
+            requirements=execution,
         )
+        thread.execution = selection
         try:
             yield thread
         finally:

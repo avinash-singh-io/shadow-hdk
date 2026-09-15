@@ -22,9 +22,12 @@ from shadow_hdk.kernel.events import RunId
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
 from shadow_hdk.kernel.ports import (
+    AuthorityPort,
+    AuthorizerPort,
     ClockPort,
     ComponentPort,
     Context,
+    EffectJournalPort,
     GovernancePort,
     Judgement,
     ModelPort,
@@ -75,6 +78,11 @@ class Ports:
     clock: ClockPort
     observer: ObserverPort | None = None
     trust: Trust | None = None
+    authority: AuthorityPort | None = None
+    authorizer: AuthorizerPort | None = None
+    effect_journal: EffectJournalPort | None = None
+    """The three host-owned D99-D104 seams. All are required only for a controlled irreversible
+    effect; ordinary, reversible and explicitly observed components remain source-compatible."""
 
 
 @dataclass(frozen=True)

@@ -55,6 +55,7 @@ async def test_an_absent_provider_is_reported_with_the_command_that_would_fix_it
     assert found[0].status == "absent"
     assert found[0].binary is None
     assert found[0].install_hint == "brew install nothing"
+    assert found[0].capabilities is ABSENT.capabilities
 
 
 async def test_detection_installs_nothing(tmp_path: Path) -> None:

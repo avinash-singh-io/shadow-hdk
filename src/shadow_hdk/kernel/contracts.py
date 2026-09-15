@@ -11,6 +11,19 @@ from typing import Any, overload
 
 from pydantic import JsonValue, TypeAdapter
 
+from shadow_hdk.kernel.authority import (
+    AuthoritySnapshot,
+    EffectAuthorization,
+    EffectEntry,
+    StagedEffect,
+)
+from shadow_hdk.kernel.capabilities import (
+    Compatibility,
+    EnvironmentCapabilities,
+    ExecutionRequirements,
+    ExecutionSelection,
+    ProviderCapabilities,
+)
 from shadow_hdk.kernel.components import Component, Registration
 from shadow_hdk.kernel.composition import Composition
 from shadow_hdk.kernel.effects import EffectProfile
@@ -26,6 +39,15 @@ from shadow_hdk.kernel.ports import (
 from shadow_hdk.kernel.providers import Provider
 
 CONTRACTS: dict[str, Any] = {
+    "AuthoritySnapshot": AuthoritySnapshot,
+    "StagedEffect": StagedEffect,
+    "EffectAuthorization": EffectAuthorization,
+    "EffectEntry": EffectEntry,
+    "ProviderCapabilities": ProviderCapabilities,
+    "EnvironmentCapabilities": EnvironmentCapabilities,
+    "ExecutionRequirements": ExecutionRequirements,
+    "ExecutionSelection": ExecutionSelection,
+    "Compatibility": Compatibility,
     "EffectProfile": EffectProfile,
     "Component": Component,
     "Registration": Registration,

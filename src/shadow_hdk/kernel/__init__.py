@@ -5,6 +5,29 @@ this package; this package depends on nothing but pydantic, and only for the pub
 """
 
 from shadow_hdk.kernel.activity import Activity
+from shadow_hdk.kernel.authority import (
+    AuthoritySnapshot,
+    EffectAuthorization,
+    EffectEntry,
+    EffectEntryKind,
+    StagedEffect,
+    authority_digest,
+    stage_effect,
+)
+from shadow_hdk.kernel.capabilities import (
+    CapabilityEvidence,
+    CapabilityMismatch,
+    Compatibility,
+    EnvironmentCapabilities,
+    EnvironmentRequirements,
+    ExecutionRequirements,
+    ExecutionSelection,
+    IncompatibleCapabilities,
+    ProviderCapabilities,
+    ProviderRequirements,
+    check_compatibility,
+    select_execution,
+)
 from shadow_hdk.kernel.components import (
     Component,
     Interface,
@@ -35,6 +58,7 @@ from shadow_hdk.kernel.effects import (
 from shadow_hdk.kernel.events import (
     ApprovalRequested,
     Composed,
+    EffectRecorded,
     Ended,
     Event,
     Held,
@@ -71,9 +95,12 @@ from shadow_hdk.kernel.ports import (
     AgentSession,
     Allow,
     Ask,
+    AuthorityPort,
+    AuthorizerPort,
     ClockPort,
     ComponentPort,
     Context,
+    EffectJournalPort,
     GovernancePort,
     Judgement,
     ModelChunk,
@@ -117,6 +144,29 @@ from shadow_hdk.kernel.threads import (
 from shadow_hdk.kernel.workspace import Root, Workspace
 
 __all__ = [
+    "AuthoritySnapshot",
+    "EffectAuthorization",
+    "EffectEntry",
+    "EffectEntryKind",
+    "EffectRecorded",
+    "StagedEffect",
+    "authority_digest",
+    "stage_effect",
+    "AuthorityPort",
+    "AuthorizerPort",
+    "EffectJournalPort",
+    "CapabilityEvidence",
+    "CapabilityMismatch",
+    "Compatibility",
+    "EnvironmentCapabilities",
+    "EnvironmentRequirements",
+    "ExecutionRequirements",
+    "ExecutionSelection",
+    "IncompatibleCapabilities",
+    "ProviderCapabilities",
+    "ProviderRequirements",
+    "check_compatibility",
+    "select_execution",
     "Root",
     "Workspace",
     "Root",

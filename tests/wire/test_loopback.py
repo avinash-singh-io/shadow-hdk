@@ -110,6 +110,11 @@ async def test_a_version_mismatch_is_refused_rather_than_degraded() -> None:
         assert "0.0.1-from-the-future" in str(refused.value)
 
 
+def test_effect_transaction_records_require_protocol_three() -> None:
+    """`effect_recorded` is a new public event kind, not a v2-compatible omission."""
+    assert PROTOCOL_VERSION == "3"
+
+
 # ---------------------------------------------------------------- the run crosses
 
 

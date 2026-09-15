@@ -24,8 +24,10 @@ transports it serves; an unknown one is refused by whoever was asked to open it,
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
+
+from shadow_hdk.kernel.capabilities import ProviderCapabilities
 
 ProviderKind = Literal["model", "agent"]
 """The two seams (D39). *model* sells inference and the caller owns the loop; *agent* sells agency
@@ -288,6 +290,9 @@ class Provider:
     install_hint: str = ""
     """What a person would run to get this provider, said when it is absent. Said — never run
     (D41): installing software on somebody's machine is not this library's business."""
+
+    capabilities: ProviderCapabilities = field(default_factory=ProviderCapabilities)
+    """Evidence-backed execution facts. Omitted axes remain unknown, never permission."""
 
     @property
     def called(self) -> str:

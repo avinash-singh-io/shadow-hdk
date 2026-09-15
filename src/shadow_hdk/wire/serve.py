@@ -24,8 +24,6 @@ from __future__ import annotations
 import asyncio
 import json
 import secrets
-import time
-from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -34,6 +32,14 @@ from typing import Any
 
 import anyio
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+
+from shadow_hdk.runtime.streams import (
+    AlreadyAttached,
+    CursorExpired,
+    StreamAttachment,
+    StreamExpired,
+    StreamSession,
+)
 
 SESSION_HEADER = "x-shadow-hdk-session"
 
@@ -65,6 +71,9 @@ GRACE_SECONDS = 60.0
 """How long a session outlives its stream (D94): a page on a train reconnects within it and
 misses nothing; past it the session's threads are closed and the id is gone."""
 
+HEARTBEAT_SECONDS = 15.0
+"""Idle time before an attached SSE link gets an ephemeral comment frame."""
+
 
 @dataclass
 class Session:
@@ -75,31 +84,11 @@ class Session:
     id: str
     to_host: MemoryObjectSendStream[str]
     from_host: MemoryObjectSendStream[str]
+    stream: StreamSession[str]
     runtime: Any = None
     events: MemoryObjectReceiveStream[str] | None = field(default=None)
     opened_at: str = ""
-    outbox: deque[tuple[int, str]] = field(default_factory=lambda: deque(maxlen=KEPT_FRAMES))
-    next_id: int = 1
-    live: asyncio.Queue[tuple[int, str]] | None = None
-    """The attached stream's queue; `None` while no stream is attached."""
-    detached_at: float | None = None
-    grace: asyncio.Task[None] | None = None
     ended: bool = False
-
-    def keep(self, frame: str) -> tuple[int, str]:
-        numbered = (self.next_id, frame)
-        self.next_id += 1
-        self.outbox.append(numbered)
-        if self.live is not None:
-            self.live.put_nowait(numbered)
-        return numbered
-
-    def missed_since(self, last_seen: int | None) -> list[tuple[int, str]]:
-        """What the outbox holds after the last frame a reconnecting stream saw — everything
-        kept, for a stream that saw nothing."""
-        if last_seen is None:
-            return list(self.outbox)
-        return [(fid, frame) for fid, frame in self.outbox if fid > last_seen]
 
 
 class Sessions:
@@ -113,7 +102,7 @@ class Sessions:
             {
                 "id": session.id,
                 "opened_at": session.opened_at,
-                "attached": session.live is not None,
+                "attached": session.stream.attached,
                 "threads": sorted(session.runtime.threads.threads)
                 if session.runtime is not None
                 else [],
@@ -131,7 +120,7 @@ class Sessions:
             methods = session.runtime.threads if session.runtime is not None else None
             if methods is None or methods is by or thread_id not in methods.threads:
                 continue
-            if session.live is not None:
+            if session.stream.attached:
                 raise ThreadHeld(thread_id, f"session {session.id}")
             await methods.close_one(thread_id)
 
@@ -152,6 +141,7 @@ def build_app(
     threads: Any = None,
     page: Path | None = None,
     grace_seconds: float = GRACE_SECONDS,
+    heartbeat_seconds: float | None = HEARTBEAT_SECONDS,
 ) -> Any:
     """A Starlette app serving one runtime per connected host.
 
@@ -192,8 +182,7 @@ def build_app(
             return
         session.ended = True
         sessions.pop(session.id, None)
-        if session.grace is not None:
-            session.grace.cancel()
+        session.stream.expire()
         with anyio.CancelScope(shield=True):
             await session.runtime.threads.close_all()
         task = running.pop(session.id, None)
@@ -206,44 +195,28 @@ def build_app(
         async with anyio.create_task_group() as group:
             group.start_soon(session.runtime.peer.serve_forever, group)
             async for frame in to_host_receive:
-                session.keep(frame)
-
-    async def grace_then_end(session: Session) -> None:
-        await asyncio.sleep(grace_seconds)
-        if session.live is None:
-            await end_session(session)
+                session.stream.keep(frame)
 
     def stream_of(session: Session, last_seen: int | None) -> AsyncIterator[bytes]:
+        attached: StreamAttachment[str] = session.stream.attach(after=last_seen)
+
         async def frames() -> AsyncIterator[bytes]:
             # The stream opens with a comment frame, as SSE has it: a Node front (a dev proxy,
             # a product's backend) holds the response's headers — the session id among them —
             # until the first body byte, and the first frame was a reply to a call the client
             # cannot make without the id. A client ignores a line that is not `data:`.
             yield b": session open\n\n"
-            live: asyncio.Queue[tuple[int, str]] = asyncio.Queue()
-            session.live = live
-            if session.grace is not None:
-                session.grace.cancel()
-                session.grace = None
-            session.detached_at = None
             # **Replay, then live** (D94): what the outbox holds after the last frame this
             # stream saw, then everything from now on — each frame once, in order, by its id.
-            replayed = 0
             try:
-                for fid, frame in session.missed_since(last_seen):
-                    replayed = fid
-                    yield _sse(fid, frame)
                 while True:
-                    fid, frame = await live.get()
-                    if fid <= replayed:
-                        continue  # arrived while the replay was on its way; already sent
-                    yield _sse(fid, frame)
+                    frame = await attached.receive()
+                    if frame.heartbeat:
+                        yield b": heartbeat\n\n"
+                    elif frame.id is not None and frame.value is not None:
+                        yield _sse(frame.id, frame.value)
             finally:
-                if session.live is live:
-                    session.live = None
-                    session.detached_at = time.monotonic()
-                    if not session.ended:
-                        session.grace = asyncio.create_task(grace_then_end(session))
+                attached.detach()
 
         return frames()
 
@@ -258,24 +231,45 @@ def build_app(
             session = sessions.get(wanted)
             if session is None or session.ended:
                 return JSONResponse({"error": "no such session"}, status_code=404)
-            if session.live is not None:
-                return JSONResponse({"error": "the session has a stream attached"}, status_code=409)
             last = request.headers.get("last-event-id")
             last_seen = int(last) if last and last.isdigit() else None
+            try:
+                stream = stream_of(session, last_seen)
+            except AlreadyAttached:
+                return JSONResponse({"error": "the session has a stream attached"}, status_code=409)
+            except CursorExpired as stale:
+                return JSONResponse(
+                    {
+                        "error": "the replay cursor expired",
+                        "after": stale.after,
+                        "oldest": stale.oldest,
+                        "latest": stale.latest,
+                    },
+                    status_code=410,
+                )
+            except StreamExpired:
+                return JSONResponse({"error": "no such session"}, status_code=404)
             return StreamingResponse(
-                stream_of(session, last_seen),
+                stream,
                 media_type="text/event-stream",
                 headers={SESSION_HEADER: session.id, "cache-control": "no-store"},
             )
         session_id = secrets.token_urlsafe(16)
         to_host_send, to_host_receive = anyio.create_memory_object_stream[str](float("inf"))
         from_host_send, from_host_receive = anyio.create_memory_object_stream[str](float("inf"))
+        session_stream = StreamSession[str](
+            capacity=KEPT_FRAMES,
+            grace_seconds=grace_seconds,
+            heartbeat_seconds=heartbeat_seconds,
+        )
         session = Session(
             id=session_id,
             to_host=to_host_send,
             from_host=from_host_send,
+            stream=session_stream,
             opened_at=_stamp(clock),
         )
+        session_stream.on_expire = lambda: end_session(session)
         # The runtime reads what the host POSTs and writes into the outbox.
         channel = QueueChannel(outbound=to_host_send, inbound=from_host_receive)
         session.runtime = RuntimeSide(
@@ -368,6 +362,7 @@ async def served_over_http(
     threads: Any = None,
     page: Path | None = None,
     grace_seconds: float = GRACE_SECONDS,
+    heartbeat_seconds: float | None = HEARTBEAT_SECONDS,
 ) -> AsyncIterator[str]:
     """Listen on an ephemeral localhost port, and yield the address to connect to.
 
@@ -387,7 +382,12 @@ async def served_over_http(
             "not built, so serving beyond localhost would issue a session to anyone who asked"
         )
     app = build_app(
-        clock=clock, token=token, threads=threads, page=page, grace_seconds=grace_seconds
+        clock=clock,
+        token=token,
+        threads=threads,
+        page=page,
+        grace_seconds=grace_seconds,
+        heartbeat_seconds=heartbeat_seconds,
     )
     config = uvicorn.Config(app, host=host, port=0, log_level="warning")
     server = uvicorn.Server(config)

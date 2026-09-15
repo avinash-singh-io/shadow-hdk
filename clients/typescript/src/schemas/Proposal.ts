@@ -1,5 +1,5 @@
 // GENERATED from schemas/*.json by clients/typescript/generate.mjs — do not edit.
-// protocol_version 1. Regenerate with `npm run generate`; the invariant
+// protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type Grounds = string[]
@@ -25,11 +25,11 @@ provenance: Provenance
 /**
  * Who registered it, what adapter it came through, who signed it, when — and whether we could
  * have stopped it.
- * 
+ *
  * ``at`` is whatever the registering side's clock said, as text — the kernel has no clock.
  * ``licence`` is recorded here because an open-source component is whatever it is, behind an
  * adapter, with its licence in provenance (09 §4).
- * 
+ *
  * ``posture`` defaults to ``controlled`` because everything the runtime invokes, it gated. The
  * exception has to be explicit: an adapter that forgets to say produces a claim that is true of
  * everything the runtime does.

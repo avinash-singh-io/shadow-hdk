@@ -90,4 +90,5 @@ jobs:
           done
           fresh/bin/python -c "import shadow_hdk.serve, shadow_hdk.kernel, shadow_hdk.wire; print('imported', '$VERSION')"
           printf '[environment]\nroot = "."\nmode = "read-only"\n' > harness.toml
-          printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol_version":"1"}}\n' | fresh/bin/shadow-hdk serve harness.toml --stdio | grep -q '"protocol_version": "1"'
+          protocol=$(fresh/bin/python -c 'from shadow_hdk.wire import PROTOCOL_VERSION; print(PROTOCOL_VERSION)')
+          printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol_version":"%s"}}\n' "$protocol" | fresh/bin/shadow-hdk serve harness.toml --stdio | grep -q "\"protocol_version\": \"$protocol\""

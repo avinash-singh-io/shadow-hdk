@@ -11,16 +11,23 @@ import pytest
 from shadow_hdk.kernel import (
     Allow,
     Ask,
+    AuthoritySnapshot,
     Binding,
     Ceiling,
+    Compatibility,
     Completed,
     Component,
     Composed,
     Composition,
     Condition,
     Context,
+    EffectAuthorization,
+    EffectEntry,
     EffectProfile,
     Ended,
+    EnvironmentCapabilities,
+    ExecutionRequirements,
+    ExecutionSelection,
     FanOut,
     Floor,
     Interface,
@@ -34,10 +41,12 @@ from shadow_hdk.kernel import (
     Proposal,
     Proposed,
     Provenance,
+    ProviderCapabilities,
     Refused,
     Registration,
     ScopeSet,
     Sequence,
+    StagedEffect,
     Started,
     ToolCall,
     Until,
@@ -69,6 +78,12 @@ COMPOSITION = Composition(
     )
 )
 LEASE = Lease(Ceiling(max_steps=10, max_wall_seconds=600, max_cost_cents=100), Floor(2))
+AUTHORITY = AuthoritySnapshot(
+    "person:1", "workspace:1", "policy:1", "registry:1", "provider:1", "mode:1"
+)
+STAGED = StagedEffect(
+    "run-1", "i1", "reg-1", {"text": "hi"}, COMPONENT.effects, AUTHORITY.digest, "run-1/i1"
+)
 
 PROVIDER = Provider(
     id="claude-code",
@@ -82,9 +97,36 @@ PROVIDER = Provider(
 """A provider crosses the wire because a host in another language reads the library too."""
 
 EXAMPLES = {
+    "ProviderCapabilities": (ProviderCapabilities(), ProviderCapabilities),
+    "EnvironmentCapabilities": (EnvironmentCapabilities(), EnvironmentCapabilities),
+    "ExecutionRequirements": (ExecutionRequirements(), ExecutionRequirements),
+    "ExecutionSelection": (
+        ExecutionSelection(ProviderCapabilities(), EnvironmentCapabilities(), Compatibility()),
+        ExecutionSelection,
+    ),
+    "Compatibility": (Compatibility(), Compatibility),
     "EffectProfile": (
         EffectProfile(reads=ScopeSet(everything=True), reversible=False),
         EffectProfile,
+    ),
+    "AuthoritySnapshot": (AUTHORITY, AuthoritySnapshot),
+    "StagedEffect": (STAGED, StagedEffect),
+    "EffectAuthorization": (
+        EffectAuthorization(
+            "grant-1",
+            STAGED.digest,
+            "run-1",
+            "i1",
+            "person:1",
+            AUTHORITY.digest,
+            "2026-09-16T00:00:00Z",
+            "run-1/i1",
+        ),
+        EffectAuthorization,
+    ),
+    "EffectEntry": (
+        EffectEntry("run-1/i1", 1, "staged", STAGED.digest, "2026-09-15T00:00:00Z"),
+        EffectEntry,
     ),
     "Component": (COMPONENT, Component),
     "Provider": (PROVIDER, Provider),

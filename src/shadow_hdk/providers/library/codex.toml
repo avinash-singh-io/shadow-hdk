@@ -102,3 +102,54 @@ allow_override = 'mcp_servers.{name}.default_tools_approval_mode="approve"'
 mcp_strict_args = []
 disallow_arg = ""
 disallow = []
+
+[capabilities]
+tool_path = "uncontrolled"
+session = "resumable"
+interrupt = "terminate"
+streaming = "live"
+reasoning = "unknown"
+usage_tokens = "yes"
+usage_cost = "no"
+
+[[capabilities.evidence]]
+axis = "tool_path"
+kind = "measured"
+source = "native reads and user-configured MCP servers cannot be disabled"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "session"
+kind = "measured"
+source = "thread_id resumed with exec resume"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "interrupt"
+kind = "derived"
+source = "non-resident turn process can be terminated; no native interrupt is exposed"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "streaming"
+kind = "measured"
+source = "JSONL items arrive before turn.completed"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "reasoning"
+kind = "measured"
+source = "reasoning tokens observed but no reasoning item after three configured turns"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "usage_tokens"
+kind = "measured"
+source = "turn.completed usage input_tokens and output_tokens"
+at = "2026-09-12"
+
+[[capabilities.evidence]]
+axis = "usage_cost"
+kind = "measured"
+source = "subscription JSONL stream carries no price"
+at = "2026-09-12"

@@ -21,7 +21,14 @@ import pytest
 from shadow_hdk.kernel import Ceiling, Completed, EffectProfile, Floor, Lease, ScopeSet, Turn
 from shadow_hdk.kernel.ports import AgentSession, Allow, Ask, Context, Judgement, ToolSource
 from shadow_hdk.runtime import Approvals, Ports
-from shadow_hdk.runtime.testing import FixedClock, InMemoryComponents, ListSink, make_registration
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    InMemoryComponents,
+    ListSink,
+    make_registration,
+)
 from shadow_hdk.runtime.threads import Thread
 from shadow_hdk.serve.stores import Stores, stores_for
 from shadow_hdk.wire.sides import loopback
@@ -99,6 +106,9 @@ class Host:
             sink=ListSink(),
             clock=FixedClock(),
             observer=observer,
+            authority=FixedAuthority(),
+            authorizer=AllowAuthorizer(),
+            effect_journal=self.stores.effects,
         )
 
     async def checkpointer(self) -> Any:

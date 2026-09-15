@@ -17,6 +17,21 @@ The recommended shape for most products is the last door **behind the product's 
 users, permissions and the product's tables stay there; threads, turns, the record and parked
 runs are here; the product's tables hold only the join — a user's row carries a thread id.
 
+At every door, requirements belong to the host and capabilities belong to the implementation.
+Pass `ExecutionRequirements` at construction (or in `thread/start` over protocol 3); Shadow opens
+the provider only after its record and the effective environment prove a compatible pair. Omitted
+requirements preserve the 0.29.1 behavior, while omitted capability facts remain `unknown` and
+cannot satisfy an explicit production requirement.
+
+For a controlled irreversible component, give the ready-made `ServeHost`/`Harness` a durable
+store URL (or provide `authority=`, `authorizer=` and `effect_journal=` yourself). Shadow stages
+the exact call, obtains an authority-bound single-use grant, re-reads authority at the act, and
+records execution plus its terminal outcome. This prevents a second runtime invocation for the
+same recorded stage; it does **not** promise an external side effect happened exactly once. That
+requires the component's own idempotency and reconciliation evidence. A remote irreversible
+component whose authority/journal boundary is not hosted by Shadow is reported as `observed`, not
+`controlled`.
+
 ## The ownership map
 
 | the product owns | the kit owns | the join |

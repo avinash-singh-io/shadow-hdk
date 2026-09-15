@@ -30,6 +30,12 @@ from typing import Any
 
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.authority import (
+    AuthoritySnapshot,
+    EffectAuthorization,
+    EffectEntry,
+    StagedEffect,
+)
 from shadow_hdk.kernel.components import Provenance, RegistrationId
 from shadow_hdk.kernel.contracts import CONTRACTS, round_trip
 from shadow_hdk.kernel.effects import ASSUME_WORST, NOTHING, EffectProfile, ScopeSet
@@ -39,9 +45,12 @@ from shadow_hdk.kernel.observations import Completed, Observation, Proposal
 from shadow_hdk.kernel.ports import (
     Allow,
     Ask,
+    AuthorityPort,
+    AuthorizerPort,
     ClockPort,
     ComponentPort,
     Context,
+    EffectJournalPort,
     GovernancePort,
     ModelPort,
     ModelRequest,
@@ -280,6 +289,73 @@ class ClockPortContract:
         assert len(set(ids)) == 50
 
 
+class AuthorityPortContract:
+    """Override `authority` and the run/step whose current snapshot can be read."""
+
+    def authority(self) -> AuthorityPort:
+        raise NotImplementedError
+
+    async def test_current_authority_is_stable_data_that_round_trips(self) -> None:
+        port = self.authority()
+        first = await port.current(run_id="run-1", step="s1")
+        second = await port.current(run_id="run-1", step="s1")
+        assert isinstance(first, AuthoritySnapshot)
+        assert first == second
+        assert round_trip(first, CONTRACTS["AuthoritySnapshot"]) == first
+        assert not any(callable(value) for value in first.__dict__.values())
+
+
+class AuthorizerPortContract:
+    """Override `authorizer`, `effect` and `authority_snapshot`."""
+
+    def authorizer(self) -> AuthorizerPort:
+        raise NotImplementedError
+
+    def effect(self) -> StagedEffect:
+        raise NotImplementedError
+
+    def authority_snapshot(self) -> AuthoritySnapshot:
+        raise NotImplementedError
+
+    async def test_authorization_is_a_bound_data_grant_or_a_typed_refusal(self) -> None:
+        result = await self.authorizer().authorize(self.effect(), self.authority_snapshot())
+        assert isinstance(result, EffectAuthorization | Refuse)
+        if isinstance(result, EffectAuthorization):
+            assert round_trip(result, CONTRACTS["EffectAuthorization"]) == result
+            assert result.permits(self.effect(), self.authority_snapshot())
+
+
+class EffectJournalContract:
+    """Override `journal` and `entries` with one legal two-entry history."""
+
+    def journal(self) -> EffectJournalPort:
+        raise NotImplementedError
+
+    def entries(self) -> tuple[EffectEntry, EffectEntry]:
+        raise NotImplementedError
+
+    async def test_append_is_ordered_and_every_entry_round_trips(self) -> None:
+        journal = self.journal()
+        first, second = self.entries()
+        assert await journal.read(first.attempt_id) == ()
+        await journal.append(first, expected_length=0)
+        await journal.append(second, expected_length=1)
+        assert await journal.read(first.attempt_id) == (first, second)
+        for row in await journal.read(first.attempt_id):
+            assert round_trip(row, CONTRACTS["EffectEntry"]) == row
+
+    async def test_compare_and_append_refuses_a_stale_writer(self) -> None:
+        journal = self.journal()
+        first, second = self.entries()
+        await journal.append(first, expected_length=0)
+        try:
+            await journal.append(second, expected_length=0)
+        except Exception:  # noqa: BLE001 — products choose their conflict type
+            pass
+        else:
+            raise AssertionError("a stale expected length appended an incompatible fact")
+
+
 class ThreadStoreContract:
     """Override `store` with a fresh, empty store each call (D62)."""
 
@@ -496,8 +572,11 @@ __all__ = [
     "A_LEASE",
     "A_PROVENANCE",
     "ClockPortContract",
+    "AuthorityPortContract",
+    "AuthorizerPortContract",
     "ComponentPortContract",
     "GovernancePortContract",
+    "EffectJournalContract",
     "ModelPortContract",
     "ObserverPortContract",
     "QuestionsContract",

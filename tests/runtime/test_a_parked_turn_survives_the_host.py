@@ -37,8 +37,15 @@ from shadow_hdk.kernel import (
     Turn,
 )
 from shadow_hdk.kernel.ports import AgentSession, Allow, Ask, Context, Judgement, ToolSource
-from shadow_hdk.runtime import Approvals, Approve, Deny, Ports
-from shadow_hdk.runtime.testing import FixedClock, InMemoryComponents, ListSink, make_registration
+from shadow_hdk.runtime import Approvals, Approve, Deny, InMemoryEffectJournal, Ports
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    InMemoryComponents,
+    ListSink,
+    make_registration,
+)
 from shadow_hdk.runtime.threads import Thread
 from shadow_hdk.serve.stores import stores_for
 
@@ -104,6 +111,9 @@ def _ports(writes: Writes) -> Ports:
         governance=AsksAboutWrites(),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
 
 

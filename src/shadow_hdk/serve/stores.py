@@ -1,7 +1,8 @@
-"""The record chooses its store (D79): one url, three things.
+"""The record chooses its store (D79, D101): one url, four things.
 
 A record needs a `Store` (the registries' rows: modes, rules, skills, switches), a `ThreadStore`
-(the threads and their turns) and a checkpointer (where a run sleeps when it parks). Every
+(the threads and their turns), a checkpointer (where a run sleeps when it parks), and an effect
+journal (where an irreversible attempt survives its process). Every
 product that hosts a runtime configures these as one choice — LangGraph Server's checkpointer,
 ADK's session service, Mastra's storage — and so does this: `[store] url` names sqlite or
 Postgres and `stores_for` answers all three; nothing named is memory, which lives as long as the
@@ -23,12 +24,13 @@ SCHEMES = ("memory", "sqlite", "postgresql", "postgres")
 
 @dataclass
 class Stores:
-    """The three, from one url. The checkpointer is opened on first ask — its connection is an
+    """The four, from one url. The checkpointer is opened on first ask — its connection is an
     async one, and a host is built before any loop runs — and closed by `aclose`."""
 
     url: str
     store: Store
     threads: ThreadStore
+    effects: Any
     _open: Any = field(repr=False)
     _checkpointer: Any = field(default=None, repr=False)
     _closer: Any = field(default=None, repr=False)
@@ -43,7 +45,7 @@ class Stores:
         if self._closer is not None:
             await self._closer.close()
         self._checkpointer, self._closer = None, None
-        for each in (self.store, self.threads):
+        for each in (self.store, self.threads, self.effects):
             close = getattr(each, "aclose", None)
             if close is not None:
                 await close()
@@ -51,11 +53,12 @@ class Stores:
 
 @dataclass(frozen=True)
 class _Backend:
-    """How one scheme makes each of the three — called only for the ones not handed in, so a
+    """How one scheme makes each of the four — called only for the ones not handed in, so a
     host with its own tables never has a file made for the part it brought."""
 
     store: Any
     threads: Any
+    effects: Any
     checkpointer: Any
 
 
@@ -66,8 +69,9 @@ def stores_for(
     threads: Any = None,
     checkpointer: Any = None,
     run_store: Any = None,
+    effect_journal: Any = None,
 ) -> Stores:
-    """The three the url names, or the ones handed in — each handed-in part replaces the one the
+    """The four the url names, or the ones handed in — each handed-in part replaces the one the
     url would have made; `run_store` (D93) is a product's own `RunStore`, and the checkpointer is
     the library's saver over it. A scheme nobody implements is refused with the ones that are."""
     chosen = url or MEMORY
@@ -98,11 +102,13 @@ def stores_for(
         chosen,
         store if store is not None else backend.store(),
         threads if threads is not None else backend.threads(),
+        effect_journal if effect_journal is not None else backend.effects(),
         opened,
     )
 
 
 def _memory() -> _Backend:
+    from shadow_hdk.runtime.effects import InMemoryEffectJournal
     from shadow_hdk.runtime.store import InMemoryStore
     from shadow_hdk.runtime.threads import InMemoryThreads
 
@@ -111,13 +117,12 @@ def _memory() -> _Backend:
 
         return InMemorySaver(), None
 
-    return _Backend(InMemoryStore, InMemoryThreads, opened)
+    return _Backend(InMemoryStore, InMemoryThreads, InMemoryEffectJournal, opened)
 
 
 def _sqlite(url: str) -> _Backend:
-    """Three files beside each other: `live.sqlite`, `live.threads.sqlite`,
-    `live.checkpoints.sqlite` — the first two are what `[store] path` always made."""
-    from shadow_hdk.adapters.basic import SqliteStore, SqliteThreads
+    """Four files beside each other: record, threads, checkpoints and effect attempts."""
+    from shadow_hdk.adapters.basic import SqliteEffectJournal, SqliteStore, SqliteThreads
 
     path = Path(url[len("sqlite:///") :])
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -134,17 +139,28 @@ def _sqlite(url: str) -> _Backend:
     return _Backend(
         lambda: SqliteStore(path),
         lambda: SqliteThreads(path.with_suffix(".threads.sqlite")),
+        lambda: SqliteEffectJournal(path.with_suffix(".effects.sqlite")),
         opened,
     )
 
 
 def _postgres(url: str) -> _Backend:
-    from shadow_hdk.adapters.postgres import PostgresStore, PostgresThreads, postgres_checkpointer
+    from shadow_hdk.adapters.postgres import (
+        PostgresEffectJournal,
+        PostgresStore,
+        PostgresThreads,
+        postgres_checkpointer,
+    )
 
     async def opened() -> tuple[Any, Any]:
         return await postgres_checkpointer(url)
 
-    return _Backend(lambda: PostgresStore(url), lambda: PostgresThreads(url), opened)
+    return _Backend(
+        lambda: PostgresStore(url),
+        lambda: PostgresThreads(url),
+        lambda: PostgresEffectJournal(url),
+        opened,
+    )
 
 
 __all__ = ["MEMORY", "SCHEMES", "Stores", "stores_for"]

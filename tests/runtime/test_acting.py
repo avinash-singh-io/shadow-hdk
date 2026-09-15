@@ -34,9 +34,16 @@ from shadow_hdk.kernel import (
     Refused,
 )
 from shadow_hdk.kernel.components import Registration, RegistrationId
-from shadow_hdk.runtime import Ports, RunOptions, current_run, resume, run
+from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, current_run, resume, run
 from shadow_hdk.runtime.acting import exhausted, grounds
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel, make_registration
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+    make_registration,
+)
 
 SEND = make_registration("send", effects=EffectProfile(reaches=True, reversible=False))
 CEILING = Ceiling(max_steps=10, max_wall_seconds=600, max_cost_cents=100)
@@ -96,6 +103,9 @@ def _ports(driver: Driver, clock: FixedClock) -> Ports:
         governance=AllowAll(),
         sink=ListSink(),
         clock=clock,
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
 
 

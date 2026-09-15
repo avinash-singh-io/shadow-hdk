@@ -14,7 +14,7 @@ type: Architecture
 | adapter | port | phase | notes |
 |---|---|---|---|
 | `basic` — allow-all, **`Controlled`** (only controlled satisfies consent-before-effect, D30), stdout sink, **file sink** (JSON lines, on disk before it returns), callback observer, system clock, **callable** | governance · sink · observer · clock · component | 0 | `callable` turns a Python function into a component; it is how a product registers its own tools |
-| `agent` | component | 0 | the model loop as a component (D1); patterns decide its meta-tools (D3) |
+| `agent` | component · agent | 0 · 32 | the model loop as a component (D1), and `ModelAgent` as the same loop below `AgentPort`; patterns decide its meta-tools (D3) |
 | `langchain` | model | 1 | one adapter over LangChain's integrations; `stream` for tokens |
 | `mcp` | component | 1 | an MCP server's tools become components; annotations fill half a profile |
 | `modes` | governance | 1 · 25 · 28 | a mode is a ceiling profile plus an ask line — data; since D64 a `ModeSpec` is policy + behaviour + presentation, and since D76 it names the environment mode it needs; four ship — `read-only`, `ask`, `workspace-write`, `full` — and the rest are files or store rows |
@@ -31,6 +31,13 @@ type: Architecture
 | `postgres` | store · thread store · checkpointer | 29 | the record on Postgres (D79): `PostgresStore` and `PostgresThreads` hold the same contracts the sqlite ones do, over `psycopg`'s async pool; the checkpointer is LangGraph's own `AsyncPostgresSaver`; `[store] url = "postgresql://…"` fills all three — `[postgres]` extra |
 | `mqtt` | component (devices) | 16 | MQTT topics as the three roles over `paho-mqtt` on 3.1.1: a subscribed topic is a sensor, a command topic an actuator (QoS 1; the receipt says `published`, or carries the device's own ack by key), an event topic a witness; the envelope is the payload (D32); a failed act breaks the link so nothing in flight is re-sent |
 | device protocols — MQTT, OPC-UA, ROS 2 | component | epic 0007 | sensors read `{world}`; actuators write it irreversibly |
+
+`ServeHost`/`Harness` are the ready-made production assembly: their store backend supplies a durable
+effect journal, and their reference authority/authorizer bind an irreversible controlled act to the
+current principal, scope and revision. A custom host may supply those ports. An adapter is called
+`controlled` only where that common transaction boundary is honored; a generic remote irreversible
+registration is deliberately downgraded to `observed`. OpenTelemetry records an `effect_recorded`
+transition with status and digest, never an effect receipt, refusal detail, inputs or grant.
 
 ## The agent adapter — how one product gets ReAct and another gets an orchestrator
 
@@ -96,6 +103,14 @@ class AgentComponent(ComponentPort):
 *"you have not tried N things yet"* — and accepts the second answer. A model trained to be agreeable
 gives up early; the floor is the honest counter, and one nudge is the whole of it.
 
+**One product surface (Phase 32).** `ModelAgent(model, pattern)` implements `AgentPort` by running
+this same loop against only the `ToolSource` handed to `open`. A `ModelPort` can therefore enter
+`Thread`, `a_thread`, `Harness` or `ServeHost` through `model=` while a CLI enters through
+`agent=`; construction refuses both together. The choice is below the durable boundary, so turn,
+parking, holding, capability selection, usage, activity, interruption and resume retain one shape.
+Interruption cancels an active model call, a parked child maps back to its durable run, and absent
+provider usage remains unknown/unmetered rather than zero.
+
 **Skills are a registry, offered as a component** (Phase 24, D54–D56). `SkillRegistry` is a union
 of sources — `DirectorySkills` (shipped, or a team's directory of TOML), the host's own kept ones,
 and `minted`, the run's own — later shadowing earlier by name, on the record. A skill says what it
@@ -127,6 +142,27 @@ noted fallback, not adopted: two libraries for one job is a smell.
 
 **Usage is honest.** A provider that reports no token count yields `Usage(None, None, None)` —
 *unknown*, never zero. The meter treats unknown as unknown.
+
+**Selection is evidence-backed (Phase 31, D96–D98).** Every provider record carries a typed
+`ProviderCapabilities`: tool path (`controlled` through `uncontrolled`), session continuity,
+interruptibility, streaming, reasoning and token/cost reporting. Each fact may carry measured,
+derived, declared or unknown evidence; omission means `unknown`, never permission. `detect()` keeps
+that record on `Available`, so discovery and construction compare the same facts. A host states
+`ProviderRequirements`; the total compatibility check reports every mismatch in stable axis order
+and construction refuses before the provider is opened.
+
+The shipped records are deliberately unequal rather than normalized into a fictional common
+denominator:
+
+| provider | tool path | session | interrupt | stream | reasoning | tokens | cost |
+|---|---|---|---|---|---|---|---|
+| Claude Code | controlled | resumable | native | live | yes | yes | yes |
+| Codex CLI | uncontrolled | resumable | terminate | live | unknown | yes | no |
+| OpenCode | controlled | process | none | final | unknown | unknown | unknown |
+
+Those are facts measured or derived at the dates in the provider files, not promises about future
+versions. A third-party or handed provider starts entirely unknown unless its adapter supplies an
+explicit record.
 
 ## The modes adapter — governance as data
 
@@ -308,6 +344,15 @@ it refuses a re-open honestly — a second root or another mode there is another
 Every command runs on the runtime's leash inside the box — a timeout, a capped output, the
 operator's environment withheld, the process tree killed with the step (D35). Widening — *may I
 read elsewhere?* — is an `Ask`, not a tool.
+
+`capabilities_of(isolation, mode)` projects the effective environment into
+`EnvironmentCapabilities`: maximum read/write reach, network posture, secret posture and whether
+the boundary was proven. Requirements are upper bounds (`reads_within`, `writes_within`) plus
+optional denied-network, denied-secrets and proof requirements. On the measured macOS local
+workspace mode, writes are workspace-confined and network is denied, while reads remain
+machine-wide and process secrets remain ambient; the report says exactly that. `LocalEnvironment`
+and `SandboxEnvironment` reject an incompatible `EnvironmentRequirements` with the same typed
+`IncompatibleCapabilities` result used at every other construction door.
 
 ## Contract suites — what every adapter must pass, and what a product runs against its own
 

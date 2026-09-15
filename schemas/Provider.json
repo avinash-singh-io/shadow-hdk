@@ -19,6 +19,41 @@
       "title": "BehaviourArg",
       "type": "object"
     },
+    "CapabilityEvidence": {
+      "description": "Why one capability value may be believed, without carrying a secret or probe output.",
+      "properties": {
+        "at": {
+          "default": "",
+          "title": "At",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "measured",
+            "derived",
+            "declared",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis"
+      ],
+      "title": "CapabilityEvidence",
+      "type": "object"
+    },
     "Delta": {
       "description": "One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,\nwhat activity kind it becomes, and where its text sits in the event.",
       "properties": {
@@ -250,6 +285,96 @@
       ],
       "title": "EnvVar",
       "type": "object"
+    },
+    "ProviderCapabilities": {
+      "description": "What a provider can honestly offer to a host. Every omitted axis is unknown.",
+      "properties": {
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CapabilityEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "interrupt": {
+          "default": "unknown",
+          "enum": [
+            "native",
+            "terminate",
+            "none",
+            "unknown"
+          ],
+          "title": "Interrupt",
+          "type": "string"
+        },
+        "reasoning": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "session": {
+          "default": "unknown",
+          "enum": [
+            "resumable",
+            "process",
+            "none",
+            "unknown"
+          ],
+          "title": "Session",
+          "type": "string"
+        },
+        "streaming": {
+          "default": "unknown",
+          "enum": [
+            "live",
+            "final",
+            "none",
+            "unknown"
+          ],
+          "title": "Streaming",
+          "type": "string"
+        },
+        "tool_path": {
+          "default": "unknown",
+          "enum": [
+            "controlled",
+            "observed",
+            "uncontrolled",
+            "unavailable",
+            "unknown"
+          ],
+          "title": "Tool Path",
+          "type": "string"
+        },
+        "usage_cost": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Usage Cost",
+          "type": "string"
+        },
+        "usage_tokens": {
+          "default": "unknown",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "title": "Usage Tokens",
+          "type": "string"
+        }
+      },
+      "title": "ProviderCapabilities",
+      "type": "object"
     }
   },
   "description": "One provider, as read from its file.\n\nEvery field that encodes a quirk is here rather than in a code path, and the file that carries\nit also carries the measurement that found it.",
@@ -293,6 +418,9 @@
       ],
       "default": null,
       "title": "Bin Env Key"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/ProviderCapabilities"
     },
     "dialect": {
       "anyOf": [

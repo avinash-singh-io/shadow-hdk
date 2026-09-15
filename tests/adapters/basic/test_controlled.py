@@ -31,8 +31,10 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import Allow, Context, GovernancePort, Judgement, Refuse
-from shadow_hdk.runtime import Ports, RunOptions, current_run, run
+from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, current_run, run
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     ListSink,
@@ -96,6 +98,9 @@ async def _run(governance: GovernancePort, *steps: Invoke) -> list[Event]:
         governance=governance,
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     return [
         e
@@ -168,6 +173,9 @@ async def test_the_catalogue_omits_what_controlled_would_always_refuse() -> None
         governance=Controlled(AllowAll()),
         sink=ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     async for _ in run(
         Composition((Invoke("s1", CATALOGUE.id),)),

@@ -4,22 +4,20 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-14 (v0.29.1 — BUG-044: the agent's own question parks too)
-> **Current Phase**: **none — Phase 30 (a product owns what it owns) is complete and released as v0.29.0**: the governed turn without the record (D87), a park on purpose (D88), the agent streams (D89), tokens and running time on the record (D90), the contracts shipped and a `Questions` port (D91), routed governance and typed refusals (D92), a parked run behind a port of ours and the record versioned (D93), sessions that idle out and a stream that survives a drop (D94); the guide for a product is `docs/consuming.md`. Before it: **Phase 29 (one app server behind every surface) is complete and released as v0.28.0**: the record chooses its store (D79), a parked turn survives the host (D80), one thread one holder (D81), identity on the thread and scope on the rows (D82), batteries live (D83), the budget on the record (D84), the rules the field has (D85), operations and the per-run token closed (D86); BUG-041, BUG-042 and ENH-013 closed on the way. Before it: **Phase 28 (the workspace) is complete; v0.26.0 proved the
-> packages as published artefacts (the providers wheel built for the first time, BUG-035; every
-> wheel built and looked into; a clean-venv install serving); v0.26.1 readied the publish
-> workflow for eighteen names, which never ran; v0.27.0 makes them one — `shadow-hdk` with
-> extras (D78) — and is the first release published to PyPI.** Phase 28, released as v0.25.0:
-> Opened from the owner's review and a demo run from outside the tree (`../harness-demo/`).
-> The registries visible (D73); a child run judged in its parent's context (BUG-030, D74); the
-> `ask` mode and every CLI built-in off (BUG-031, D75); the workspace as one or many roots,
-> chosen per thread and added live, the environment and the provider following the mode
-> (BUG-032, D76), minted skills kept. Next: Phase 31 (context engineering) and Phase 32
-> (collaboration), the owner's call.
+> **Last Updated**: 2026-09-15 — v0.30.0 release landing authorized
+> **Current Phase**: No active implementation phase. Epic 0008 is being promoted through staging
+> and main as the verified v0.30.0 release.
+> Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
+> requirements before anything is built on their selection. Phase 33 (authority at the act) remains
+> derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
 >
-> 1,566 tests; mypy strict over 418 files; one distribution, `shadow-hdk`, at **0.29.1**, MIT, on PyPI.
+> 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, is built as
+> **0.30.0** but not yet published. Phases 31–33 are pushed on the intentionally unmerged epic stack.
 >
-> **Latest Release**: **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
+> **Latest Release**: **v0.30.0**, release authorized 2026-09-15 — Epic 0008: evidence-backed
+> capability selection, one durable model/CLI agent surface, and current-authority append-only
+> irreversible effects. The GitHub release triggers PyPI publication and fresh-install smoke. Before
+> it **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
 > (D87–D94): `Conversation`, `Parked` and `turn(on_question="park")`, the agent streams, tokens
 > on `Spent`, `shadow_hdk.testing`, `Questions`, `Routed`, typed refusals, `RunStore`,
 > `ThreadRecord.version`, `idle_seconds`, a stream that reattaches. Contract change (additions;
@@ -56,8 +54,10 @@ effects, not names; the agent's plan is data compiled to a LangGraph graph; the 
 components and records through the sink. One distribution — kernel, runtime, wire, providers, serve, adapters — one import
 name, six ports. Any system that implements the six ports is its intended user, and this repository
 plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Twenty-eight phases are built,
-merged and released**: 1,439 tests, mypy strict over 377 files, one distribution at 0.27.2.
+that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
+merged and released; Phases 31–33 are complete on the unreleased epic stack**: 1,688 non-live tests,
+mypy strict over 441 files, one v0.30.0 candidate. Epic 0008 now waits only for protected release
+approval.
 
 ## Completed Phases
 
@@ -101,6 +101,9 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 | — | one distribution with extras (D78); the React example's finds | Complete, merged | **v0.27.0**, **v0.27.1**, **v0.27.2** |
 | 29 | One app server behind every surface | Complete, merged | **v0.28.0** |
 | 30 | A product owns what it owns | Complete, merged | **v0.29.0** |
+| 31 | A host knows what it can trust | Complete, merged | **v0.30.0** |
+| 32 | One agent surface | Complete, merged | **v0.30.0** |
+| 33 | Authority at the act | Complete, merged | **v0.30.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -121,23 +124,27 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| _(none)_ | | | All Epic 0008 release tracking committed before protected landing |
+
+## Epic Release Checkpoints
+
+| Phase | Branch | Evidence | Release |
+|-------|--------|----------|---------|
+| 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 release landing |
+| 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 release landing |
+| 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 release landing |
 
 ## Upcoming Phases
 
-> **Nothing is scheduled.** The roadmap's phases are done and the backlog holds no P0, P1 or
-> P2. What is left needs something this machine or this session does not have, and each row
-> names it rather than sitting as an undated intention.
+> Epic 0008 is scheduled under a strict test-first, per-feature release policy. Intent Studio may
+> continue product-owned work, but its new Shadow execution integration waits for the verified
+> v0.30.0 handoff after all three phases.
 
-| What | Waits on | Why it is not buildable here |
-|------|----------|------------------------------|
-| TD-007's other half — whether an irreversible step must produce an `Acted` whichever port it came through | **ADR-1** | A governance question, not a defect. The plumbing landed in Phase 19; the policy is the owner's to decide. |
-| Which effects must be signed, who holds a key, what a warrant is | **ADR-1** | Same decision. Phase 13 built the mechanism and left the policy `[~]`. |
-| Setting ownership on the six-rung ladder | **ADR-2** | Owner's. |
-| Phase 11's gVisor and Firecracker containment proofs | a Linux host | The backends are built and refuse to exist unless containment is proven; the live proofs **skip** here. |
-| ENH-003 — a protocol-adapter contract suite | a second protocol adapter | With one implementation, parametrising the MQTT tests is a rename rather than a contract. Needs an OPC-UA server or a ROS 2 distribution. |
-| ENH-002 — TLS on `MqttLink` | a TLS broker | The dev broker has no TLS listener, so it cannot be proven here. |
-| Unit cancellation in the derivation engine | a design decision | Recorded deferral, Phase 12. |
-| A twelfth event kind for an unreachable port | a design decision | Filed in Phase 19; `unreachable` is readable today. |
+| Phase | Depends on | Makes true |
+|------|------------|------------|
+| 32 — one agent surface | 31 | CLI and API-model agents use one durable product-facing lifecycle |
+| 33 — authority at the act | 31 | controlled irreversible effects are current-authority, journaled and recoverable |
+| 34 — Shadow Harness, built to unfold | 32, 33 | the ready-made harness and HDK are progressive layers of one system |
 
 ## Blockers
 
@@ -153,14 +160,15 @@ merged and released**: 1,439 tests, mypy strict over 377 files, one distribution
 
 ## Next Actions
 
-1. Phase 29 (context engineering) and 30 (collaboration), the owner's call
-2. Codex measured on `tools/list_changed`, `--resume` and its clean scope (`AGENTS.md`, `config.toml`) when a Codex turn is next spent
-3. Owner-gated, unchanged: ADR-1, ADR-2, a Linux host for the containment proofs, a lawyer's read on AGPL at arm's length
+1. Verify the published v0.30.0 workflow and PyPI smoke after the GitHub release completes
+2. Hand released v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
+4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
 
 - D1–D13 in `specs/architecture/decisions.md`, settled at founding from `09` and the founding conversation; recorded on Epic 0001
 - D14–D22 settled per phase: D15 cancellation (6), D16 held children (7), D17 files and D18 compaction (8), D19 state-as-JSON, D20 `Spent`, D21 the crossed context (9). **D22 — the port set is open**: six is a count, not a constraint, settled by the owner 2026-09-10, which closes O4
+- **D95–D106** are settled once in Epic 0008: one Shadow/two surfaces; typed capability-requirement evidence; provider/environment/authority separation; one agent surface; approval separate from authorization; revisioned act-time authority; crash-safe effect transactions, grants, uncertainty and journal; product ownership; standards at adapters
 - **Licensed MIT** 2026-09-10 (O3), declared in every package and verified in the built wheels
 - The name and the repository: `10-the-roadmap.md` §7d; the two-lane plan: §3b; the board: `intent-ecosystem/lanes/board.md`
 

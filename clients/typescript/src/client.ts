@@ -9,6 +9,10 @@
 import type { Event } from "./schemas/Event.js";
 import type { Item } from "./schemas/Item.js";
 import type { Activity } from "./schemas/Activity.js";
+import type { ExecutionRequirements } from "./schemas/ExecutionRequirements.js";
+import type { ExecutionSelection } from "./schemas/ExecutionSelection.js";
+import type { ProviderCapabilities } from "./schemas/ProviderCapabilities.js";
+import { PROTOCOL_VERSION } from "./schemas.js";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -24,6 +28,9 @@ export interface ClientOptions {
    *  retrying for about this long before giving up (default 60 s, the server's grace). `0` never
    *  reconnects. */
   reconnectSeconds?: number;
+  /** Treat an attached stream with no bytes for this long as dropped and reattach it. Defaults
+   *  to 45 s (three server heartbeat intervals); `0` disables silence detection. */
+  silenceSeconds?: number;
   /** Told when the stream drops and when it is back, and when the session is gone for good. */
   onStream?: (state: "reconnecting" | "connected" | "lost") => void;
 }
@@ -81,6 +88,20 @@ export interface Started {
   /** Who the thread is for, and the product's words about it (D82). */
   principal: string;
   attributes: { [key: string]: JsonValue };
+  /** The exact provider/environment facts accepted for this thread. */
+  capabilities: ExecutionSelection;
+}
+
+export interface ProviderRow {
+  id: string;
+  name: string;
+  kind: "model" | "agent";
+  status: "ready" | "absent" | "not-signed-in" | "too-old" | "unknown";
+  binary: string | null;
+  version: string | null;
+  message: string | null;
+  install_hint: string;
+  capabilities: ProviderCapabilities;
 }
 
 export interface Resumed extends Started {
@@ -140,6 +161,7 @@ type Pending = { resolve: (value: JsonValue) => void; reject: (reason: Error) =>
 export type ErrorKind =
   | "thread_held"
   | "turn_running"
+  | "capability_mismatch"
   | "not_found"
   | "invalid"
   | "version_mismatch"
@@ -177,6 +199,7 @@ export class HarnessClient {
   private abort = new AbortController();
   private lastEventId: number | null = null;
   private readonly reconnectSeconds: number;
+  private readonly silenceSeconds: number;
   private readonly onStream?: ClientOptions["onStream"];
 
   constructor(options: ClientOptions) {
@@ -189,6 +212,7 @@ export class HarnessClient {
     const underlying = options.fetch ?? fetch;
     this.doFetch = (input, init) => underlying(input, init);
     this.reconnectSeconds = options.reconnectSeconds ?? 60;
+    this.silenceSeconds = options.silenceSeconds ?? 45;
     this.onStream = options.onStream;
   }
 
@@ -200,7 +224,7 @@ export class HarnessClient {
       this.reader = this.readForever(resolve, reject);
     });
     await opened;
-    await this.call("initialize", { protocol_version: "1" });
+    await this.call("initialize", { protocol_version: PROTOCOL_VERSION });
   }
 
   close(): void {
@@ -258,7 +282,7 @@ export class HarnessClient {
         const headers = this.headers();
         if (this.lastEventId !== null) headers["last-event-id"] = String(this.lastEventId);
         const response = await this.doFetch(`${this.address}/rpc`, { headers, signal: this.abort.signal });
-        if (response.status === 404) return null;
+        if (response.status === 404 || response.status === 410) return null;
         if (response.ok && response.body) return response.body;
       } catch {
         // not reachable yet: wait and try again
@@ -275,7 +299,7 @@ export class HarnessClient {
     let buffer = "";
     try {
       for (;;) {
-        const { value, done } = await reader.read();
+        const { value, done } = await this.readBeforeSilence(reader);
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         let cut: number;
@@ -289,8 +313,37 @@ export class HarnessClient {
         }
       }
     } catch (error) {
-      if (!this.abort.signal.aborted) return; // the stream broke: the caller reattaches
+      if (!this.abort.signal.aborted) {
+        try {
+          await reader.cancel("the stream was silent or broken");
+        } catch {
+          // The transport already ended while it was being cancelled; reattach all the same.
+        }
+        return; // the stream broke or went silent: the caller reattaches
+      }
     }
+  }
+
+  private readBeforeSilence(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+  ): Promise<ReadableStreamReadResult<Uint8Array>> {
+    if (this.silenceSeconds <= 0) return reader.read();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error("the stream exceeded its silence deadline")),
+        this.silenceSeconds * 1000,
+      );
+      reader.read().then(
+        (result) => {
+          clearTimeout(timer);
+          resolve(result);
+        },
+        (error: unknown) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
   }
 
   private async onFrame(message: JsonValue): Promise<void> {
@@ -366,6 +419,7 @@ export class HarnessClient {
       attributes?: { [key: string]: JsonValue };
       /** This thread's own ceiling over the file's default (D84); what it spends is on its record. */
       budget?: { steps?: number; seconds?: number; cents?: number | null };
+      requirements?: ExecutionRequirements;
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
     resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
@@ -485,6 +539,15 @@ export class HarnessClient {
   readonly modes = { list: (thread_id?: string) => this.call<{ modes: Started["modes"] }>("modes/list", thread_id ? { thread_id } : {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
   readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
+  /** Providers this process can detect, with evidence-backed execution facts. */
+  readonly providers = {
+    list: () => this.call<{ providers: ProviderRow[] }>("providers/list", {}),
+  };
+  /** Prove a provider/environment pair without opening an agent or a thread. */
+  readonly capabilities = {
+    check: (params: { root?: string; mode?: string; provider?: string; requirements?: ExecutionRequirements }) =>
+      this.call<{ capabilities: ExecutionSelection }>("capabilities/check", params as unknown as { [key: string]: JsonValue }),
+  };
   /** Every rule, or — with a thread — the ones in that thread's scope (D82). */
   readonly rules = { list: (thread_id?: string) => this.call<{ rules: JsonValue[] }>("rules/list", thread_id ? { thread_id } : {}) };
   readonly run = { cancel: (thread_id: string) => this.call<{ cancelled: boolean }>("run/cancel", { thread_id }) };

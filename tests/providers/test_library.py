@@ -20,6 +20,7 @@ from shadow_hdk.providers.library import (
 from shadow_hdk.providers.library import (
     MalformedProvider,
     load_provider,
+    provider_from_data,
     shipped,
 )
 
@@ -58,6 +59,65 @@ def test_a_file_becomes_a_provider(tmp_path: Path) -> None:
     assert provider.strip_env == ("CLAUDECODE",)
     assert provider.set_env[0].name == "SHADOW_HDK_HARNESS"
     assert provider.injects_tools == "mcp"
+
+
+def test_absent_capabilities_are_unknown_not_permission(tmp_path: Path) -> None:
+    provider = load_provider(a_file(tmp_path, CLAUDE))
+
+    assert provider.capabilities.tool_path == "unknown"
+    assert provider.capabilities.session == "unknown"
+    assert provider.capabilities.evidence == ()
+
+
+def test_a_model_provider_uses_the_same_capability_record() -> None:
+    provider = provider_from_data(
+        {
+            "id": "api-model",
+            "kind": "model",
+            "bin": "model-endpoint",
+            "capabilities": {
+                "streaming": "live",
+                "usage_tokens": "yes",
+                "evidence": [
+                    {
+                        "axis": "streaming",
+                        "kind": "declared",
+                        "source": "adapter contract",
+                    }
+                ],
+            },
+        },
+        where="api-model",
+    )
+
+    assert provider.capabilities.streaming == "live"
+    assert provider.capabilities.usage_tokens == "yes"
+    assert provider.capabilities.tool_path == "unknown"
+    assert provider.capabilities.evidence[0].source == "adapter contract"
+
+
+@pytest.mark.parametrize(
+    ("capabilities", "problem"),
+    [
+        ({"tool_paths": "controlled"}, "capabilities.tool_paths"),
+        ({"tool_path": "magical"}, "capabilities.tool_path"),
+        (
+            {
+                "evidence": [
+                    {"axis": "tool_path", "kind": "measured", "source": "one"},
+                    {"axis": "tool_path", "kind": "derived", "source": "two"},
+                ]
+            },
+            "capabilities.evidence",
+        ),
+    ],
+)
+def test_malformed_capabilities_are_refused_by_path(capabilities: object, problem: str) -> None:
+    with pytest.raises(MalformedProvider, match=problem.replace(".", r"\.")):
+        provider_from_data(
+            {"id": "x", "kind": "agent", "bin": "x", "capabilities": capabilities},
+            where="x.toml",
+        )
 
 
 def test_a_missing_required_field_is_refused_naming_it(tmp_path: Path) -> None:
@@ -106,6 +166,46 @@ def test_every_shipped_provider_parses() -> None:
 
     assert found, "the shipped library is empty"
     assert all(p.id for p in found.values())
+
+
+def test_shipped_capabilities_say_only_what_the_measurements_support() -> None:
+    found = shipped()
+
+    assert found["claude-code"].capabilities.tool_path == "controlled"
+    assert found["claude-code"].capabilities.session == "resumable"
+    assert found["claude-code"].capabilities.interrupt == "native"
+    assert found["claude-code"].capabilities.streaming == "live"
+    assert found["claude-code"].capabilities.reasoning == "yes"
+    assert found["claude-code"].capabilities.usage_tokens == "yes"
+    assert found["claude-code"].capabilities.usage_cost == "yes"
+
+    assert found["codex"].capabilities.tool_path == "uncontrolled"
+    assert found["codex"].capabilities.session == "resumable"
+    assert found["codex"].capabilities.interrupt == "terminate"
+    assert found["codex"].capabilities.streaming == "live"
+    assert found["codex"].capabilities.reasoning == "unknown"
+    assert found["codex"].capabilities.usage_tokens == "yes"
+    assert found["codex"].capabilities.usage_cost == "no"
+
+    assert found["opencode"].capabilities.tool_path == "controlled"
+    assert found["opencode"].capabilities.session == "process"
+    assert found["opencode"].capabilities.interrupt == "none"
+    assert found["opencode"].capabilities.streaming == "final"
+    assert found["opencode"].capabilities.reasoning == "unknown"
+    assert found["opencode"].capabilities.usage_tokens == "unknown"
+    assert found["opencode"].capabilities.usage_cost == "unknown"
+
+    for provider in found.values():
+        asserted = {
+            "tool_path",
+            "session",
+            "interrupt",
+            "streaming",
+            "reasoning",
+            "usage_tokens",
+            "usage_cost",
+        }
+        assert {item.axis for item in provider.capabilities.evidence} == asserted
 
 
 def test_claude_code_ships_and_carries_its_measured_quirk() -> None:

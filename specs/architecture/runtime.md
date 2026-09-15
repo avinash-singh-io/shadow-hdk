@@ -149,6 +149,7 @@ classDiagram
 | `registry.py` | `Registry` — union of component ports, `resolve`, `visible`; with a `Trust`, a driver that cannot prove itself is refused at `refresh` — absent, reason in `refused` (D27) |
 | `trust.py` | `Trust(keys, revoked, must_sign)`, `sign`, `verify`, `signing_bytes` — HMAC-SHA256 over the registration's canonical form minus the signature (D27) |
 | `acting.py` | `exhausted(lease)`, `grounds(context, argv=, warrant=)` — what a driver reads at the moment of the act and what its `Acted` receipt carries (R9); the warrant is carried, not judged (ADR-1) |
+| `effects.py` | `EffectTransaction`, `InMemoryEffectJournal` and recovery folding — the controlled irreversible boundary: stage, authorize, re-read authority, record execution, then receipt/failure/refusal/unknown (D99–D104) |
 | `inputs.py` | `resolve_inputs(bindings, handles) -> JsonValue`; `DanglingRef` |
 | `step.py` | `StepExecutor.invoke` — the seven moves; a component answering `Asked` parks the run and is resumed with the answer and what it kept (D57) |
 | `compile.py` | `compile_composition`; the structural-hash cache (D11) |
@@ -161,15 +162,16 @@ classDiagram
 | `clock.py` | `SystemClock` — moved here from `adapters/basic` so the wire needs no adapter (TD-003) |
 | `devices.py` | the device contract: `Sensor` · `Actuator` · `Witness` · `Reading` · `Ack` · `Overheard` (D31), below every protocol adapter so none imports another |
 | `leash.py` | a program run under limits, and the process tree it starts killed with it (D35) |
-| `environment.py` | an environment has a mode and a workspace: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48); one or many roots, `inside()` by the root-name rule, `reopen` on a new workspace or mode — proven again, refused unchanged (D76, D77) |
+| `environment.py` | an environment has a mode and a workspace: `Isolation`, `Mode`, the one derivation `effects_of`, the `Environment` base (D48); one or many roots, `inside()` by the root-name rule, `reopen` on a new workspace or mode — proven again, refused unchanged (D76, D77); `capabilities_of` projects effective read/write/network/secret reach and proof, and open refuses requirements it cannot establish (D96–D98) |
 | `offer.py` | the run's registry offered to an agent that owns its own loop (D42, D62): one call routed as a child run under a carved ceiling, judged, recorded, the policy's question put to the host live; `InProcessOffer` for an agent in this process, the recording adapter's `SocketOffer` in front of it for a CLI; `changed()` tells a resident agent its catalogue changed (`tools/list_changed`, BUG-032) |
 | `checkpoints.py` | `saver_over(run_store)` — the runtime library's checkpointer over the kernel's `RunStore` port (D93), so a product keeps parked runs in its own tables with four methods; `InMemoryRunStore` |
 | `conversation.py` | `Conversation` — the governed turn as a primitive (D87): one provider session on the served registry, `turn(text, when=, on_question=)` as a run of one step streamed as events, `last` what it came to (`Turned`), `tools()`, `set_mode`, `add_root`, `steer`, `interrupt`; no record — a product that keeps its own takes this alone. A question a turn parks on purpose (`Parked`, D88) stays on `last.pending` for whoever keeps the record |
-| `threads.py` | `Thread` — a `Conversation` with a record: the container every product has (D62): a provider opened once and held across turns, resumed on its own session id when reopened (D76), the registry served for its lifetime under the host's name, each turn its own run; `set_mode` (policy, then the environment follows, then the provider — D64, D76), `add_root`, `tools()` — what the agent is offered now with the mode's judgement (D73); `workspace`, `environment_mode`; `WorkspaceChanged` and `ModeChanged` announced between turns; the questions a turn is waiting on kept on the record and a turn the host died in `parked` or `cancelled` at resume, `settle` resuming the parked act from the checkpointer (D80); one holder per thread — a hold taken, renewed and released on the store, `ThreadHeld` naming another's — and `turn(when=)`: enqueue · reject · interrupt (D81) |
+| `threads.py` | `Thread` — a `Conversation` with a record: the container every product has (D62): a provider opened once and held across turns, resumed on its own session id when reopened (D76), the registry served for its lifetime under the host's name, each turn its own run; `set_mode` (policy, then the environment follows, then the provider — D64, D76), `add_root`, `tools()` — what the agent is offered now with the mode's judgement (D73); `workspace`, `environment_mode`; version 3 persists `ExecutionRequirements`, `execution` retains the accepted selection, and resume rechecks instead of trusting a stale construction decision (D96–D98); `WorkspaceChanged` and `ModeChanged` announced between turns; the questions a turn is waiting on kept on the record and a turn the host died in `parked` or `cancelled` at resume, `settle` resuming the parked act from the checkpointer (D80); one holder per thread — a hold taken, renewed and released on the store, `ThreadHeld` naming another's — and `turn(when=)`: enqueue · reject · interrupt (D81) |
 | `store.py` | `InMemoryStore` — the `Store` port (D66) for a process: collections of JSON rows, a version per collection |
 | `switched.py` | `Switched` — a component port minus what a store's switches say is off (D66), read at every refresh; `store_switches` |
 | `person.py` | `ask_person` — the agent's own question to the person as a component (D65): no effects, `InputRequested` on the record, the text through the host's handle; nobody there is a failure that says so; a park (D88) is a refusal that says *not now* and keeps the question on the record for `settle` (BUG-044) |
 | `items.py` | the event stream folded into the items a host renders — one pure fold, in-process and over the wire (D46, D61); `run_items(nested=True)` yields every item as it closes with its `parent`, so a host renders live and not when the orchestrator finishes |
+| `streams.py` | `StreamSession` — transport-independent monotone frame ids, bounded replay, exactly one attachment, typed expired cursors and grace expiry under an injected clock; optional heartbeats are ephemeral link frames with no id or durable record (D94, Phase 32) |
 | `processes.py` | starting and ending what the harness owns — `start_held` is **the one place** a session leader is started (the leash, the coding CLIs, the ACP bridge, a battery's MCP server all call it; an invariant refuses the next copy), and every one is `hold`-ed and dies with the interpreter, by whichever door (D35, D53, BUG-019, BUG-033) |
 | `lines.py` | newline-delimited frames over a byte stream, one implementation (`LineBuffer`) — the wire's stdio channel and the recording adapter's pipes read by it, so a blank line or a carriage return means the same on every peer |
 | `replay.py` | a recorded model port, so a run can be re-driven without paying for it |
@@ -228,6 +230,17 @@ async def invoke(self, step: Invoke | Await, state: RunState) -> Observation:
 
 `self._port(...)` wraps a **port** call: an exception there raises `PortFailure`, which `loop.py`
 turns into `Ended(reason="failed")` (D7).
+
+**Controlled irreversible work (D99–D104).** After ordinary governance and approval, a component
+whose declared effect is irreversible and controlled crosses one transaction boundary:
+`stage → authorize → re-read authority → executing → invoke → receipt/failed/refused/unknown`.
+`StagedEffect` canonically binds run, step, component, inputs and authority digest; the host's
+authorization is single-use and bound to that exact stage. The journal is append-only and checks
+legal next states atomically. A stale authority, expired/replayed/mismatched grant, or absent
+authority/authorizer/journal refuses before the component is invoked. Restart reuse is only for a
+terminal record of the exact stage. An execution interrupted without terminal evidence is explicit
+`unknown`; a non-idempotent act is never blindly retried. This gives at-most-one runtime invocation
+for a recorded stage, not a universal exactly-once guarantee for an external system.
 
 ## Compiling a composition
 

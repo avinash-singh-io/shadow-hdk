@@ -21,6 +21,12 @@ entry carries matching `Topics:`.
 | processes, framing, one-implementation | specs/architecture/runtime.md | Modules |
 | providers, claude-code, codex, resume, clean-scope | packages/providers/src/shadow_hdk/providers/library/ | the provider files |
 | serve, facade, batteries, keeping | specs/architecture/adapters.md | Batteries; specs/architecture/overview.md — the front door |
+| shadow, hdk, harness, progressive-control, blueprint, preset | specs/vision/project-charter.md; specs/planning/roadmap.md | Solution; Vision; Guiding Principles |
+| capabilities, requirements, provider-evidence, compatibility | specs/architecture/adapters.md; specs/architecture/wire.md | Providers; The thread, crossed |
+| authority, revisions, effect-authorization, act-time | specs/architecture/runtime.md | The governed step; Acting |
+| effect-journal, reconciliation, unknown-outcome, receipts | specs/architecture/runtime.md; specs/architecture/wire.md | Acting; The record |
+| model-agent, agent-surface, item-inputs, stream-session, heartbeat, authentication, typescript | specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md | The agent adapter; Modules; The thread, crossed; Cases |
+| dynamic-planning, scheduling, generative-ui, collaboration, evolution | specs/planning/roadmap.md | Timeline; What comes next; Guiding Principles |
 | mypy, ci, landing | specs/architecture/testing.md | Layers |
 | spec-drift | specs/architecture/file-structure.md | (whole file) |
 | posture | specs/epics/0007-the-environment.md | Decisions |
