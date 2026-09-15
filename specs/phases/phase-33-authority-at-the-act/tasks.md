@@ -23,12 +23,12 @@ epic: production-boundary
 - [x] Verify contract suites, concurrent writers, restart and terminal-outcome uniqueness
 
 ## Group 3 — Every controlled irreversible invocation crosses one boundary
-- [/] Stage after governance/approval, authorize separately, re-read authority, append executing, invoke once, reconcile
-- [ ] Refuse stale authority, expired/mismatched/replayed grants and controlled paths without transaction support
-- [ ] Verify exact transition order and no component invocation on every refusal branch
+- [x] Stage after governance/approval, authorize separately, re-read authority, append executing, invoke once, reconcile
+- [x] Refuse stale authority, expired/mismatched/replayed grants and controlled paths without transaction support
+- [x] Verify exact transition order and no component invocation on every refusal branch
 
 ## Group 4 — Recovery, children and adapter truth
-- [ ] Recover staged/executing histories to safe abandonment, receipt or explicit unknown
+- [/] Recover staged/executing histories to safe abandonment, receipt or explicit unknown
 - [ ] Reconcile/reuse only proven idempotent results; never blindly retry an uncertain non-idempotent act
 - [ ] Narrow child authority, isolate grants and update shipped adapter posture/integration truth
 - [ ] Verify crash injection, duplicate delivery, child attacks and provider-session restart without repeated receipts

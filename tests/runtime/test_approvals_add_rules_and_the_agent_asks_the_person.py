@@ -38,6 +38,7 @@ from shadow_hdk.kernel.events import ApprovalRequested, InputRequested
 from shadow_hdk.runtime import (
     Approvals,
     ApproveAndAddRule,
+    InMemoryEffectJournal,
     Ports,
     RunOptions,
     current_run,
@@ -46,6 +47,8 @@ from shadow_hdk.runtime import (
 )
 from shadow_hdk.runtime.person import person_components
 from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     ListSink,
@@ -75,6 +78,9 @@ def ports(rules: ActRules | None, sink: ListSink | None = None) -> Ports:
         governance=ModeGovernance({"asking": ASKING}, default="asking", rules=rules),
         sink=sink or ListSink(),
         clock=FixedClock(),
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
 
 

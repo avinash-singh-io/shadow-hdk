@@ -6,6 +6,8 @@ it is what a host needs to test its own governance and sink without a provider a
 """
 
 from shadow_hdk.runtime.testing.doubles import (
+    AllowAuthorizer,
+    FixedAuthority,
     FixedClock,
     InMemoryComponents,
     Judge,
@@ -16,7 +18,9 @@ from shadow_hdk.runtime.testing.doubles import (
 )
 
 __all__ = [
+    "AllowAuthorizer",
     "FixedClock",
+    "FixedAuthority",
     "InMemoryComponents",
     "Judge",
     "ListObserver",

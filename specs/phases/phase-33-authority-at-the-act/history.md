@@ -45,3 +45,11 @@ Affects-specs: specs/architecture/adapters.md; specs/architecture/runtime.md; sp
 Detail: One fold validates the frozen legal transition graph and derives state without rewriting facts. In-memory, SQLite and Postgres journals expose compare-and-append; SQLite uses an immediate transaction, Postgres an attempt-scoped advisory transaction lock, and both enforce globally unique authorization consumption. Eight SQLite/memory contract, restart and concurrency checks pass; eleven Postgres checks are collected and environment-skipped. Inverting the memory CAS predicate produced four focused failures and was reverted.
 
 ---
+
+### [FEATURE] 2026-09-15 — Every controlled irreversible act crosses one current-authority boundary
+Topics: authority, effect-authorization, act-time, effect-journal, refusal, idempotency, tdd
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/testing.md
+Detail: After ordinary governance and any approval, StepExecutor stages the exact act, obtains a one-attempt grant, rereads current host authority, appends executing, invokes once and records its receipt or failure. Missing transaction ports fail closed; stale, expired, mismatched and cross-run grants never invoke; observed paths remain observation-only. The frozen evaluator has 29 green cases, the focused integration has four, and all 448 runtime tests pass with one environment skip. Removing the authority reread let a stale act execute, and disabling the missing-port guard changed its refusal to failure; both destructive mutations were reverted.
+
+---

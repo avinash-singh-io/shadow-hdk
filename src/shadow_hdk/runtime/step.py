@@ -23,13 +23,15 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from langgraph.types import interrupt
 from pydantic import JsonValue
 
+from shadow_hdk.kernel.authority import stage_effect
 from shadow_hdk.kernel.components import Posture, Registration
 from shadow_hdk.kernel.composition import Await, Invoke
+from shadow_hdk.kernel.contracts import adapter_for
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import ApprovalRequested, Event, Invoked, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
@@ -49,10 +51,13 @@ from shadow_hdk.kernel.ports import (
     ComponentPort,
     Context,
     Judgement,
-    Refuse,
     Usage,
 )
+from shadow_hdk.kernel.ports import (
+    Refuse as PortRefuse,
+)
 from shadow_hdk.runtime.bindings import Ports, executing
+from shadow_hdk.runtime.effects import EffectState, EffectTransaction
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import DanglingRef, LeaseExhausted, PortFailure, RuntimeStop
 from shadow_hdk.runtime.inputs import resolve_inputs
@@ -131,7 +136,7 @@ class StepExecutor:
             self.session.context_for(step.id, registration, inputs),
         )
         match judgement:
-            case Refuse(reason=why):
+            case PortRefuse(reason=why):
                 await self._emit(lambda **k: RefusedEvent(step=step.id, reason=why, **k))
                 return Refused(why)
             case Ask(question=question):
@@ -165,13 +170,62 @@ class StepExecutor:
         returned, and `resume()` restores the meter from what the checkpoint holds. Measured: a
         second leg that skipped the charge reported one step for two.
         """
+        posture = registration.component.provenance.posture
+        transactional = (
+            posture == "controlled"
+            and not registration.component.effects.reversible
+            # A conversation is the planner/provider boundary; its tool calls are the effects.
+            # Treating the turn itself as the world act would authorize the plan and then reuse
+            # that grant for whatever the model later chose, the inversion D102 forbids.
+            and "conversation" not in registration.component.labels
+        )
+        authority = self._ports.authority
+        authorizer = self._ports.authorizer
+        journal = self._ports.effect_journal
+        if transactional and (authority is None or authorizer is None or journal is None):
+            why = "controlled irreversible effect requires authority, authorizer and journal ports"
+            await self._emit(lambda **k: RefusedEvent(step=step.id, reason=why, **k))
+            return await self._observe(step, Refused(why), posture)
+
         self.session.meter.charge()
         await self._emit(
             lambda **k: Invoked(step=step.id, component=registration.id, inputs=inputs, **k)
         )
         try:
-            with executing(step.id):
-                observation = await port.invoke(registration.id, inputs)
+            if transactional:
+                assert authority is not None and authorizer is not None and journal is not None
+                expected = await authority.current(run_id=self.session.run_id, step=step.id)
+                effect = stage_effect(
+                    run_id=self.session.run_id,
+                    step=step.id,
+                    component=registration.id,
+                    inputs=inputs,
+                    effects=registration.component.effects,
+                    authority_digest=expected.digest,
+                    idempotency_key=f"{self.session.run_id}/{step.id}",
+                )
+
+                async def invoke_effect() -> JsonValue:
+                    with executing(step.id):
+                        result = await port.invoke(registration.id, inputs)
+                    value: JsonValue = adapter_for(Observation).dump_python(result, mode="json")
+                    return value
+
+                state = await EffectTransaction(
+                    authority=authority,
+                    authorizer=authorizer,
+                    journal=journal,
+                    clock=self._ports.clock,
+                ).execute(effect, invoke=invoke_effect, expected_authority=expected)
+                observation = self._effect_observation(state)
+                if isinstance(observation, Refused):
+                    refusal_reason = observation.reason
+                    await self._emit(
+                        lambda **k: RefusedEvent(step=step.id, reason=refusal_reason, **k)
+                    )
+            else:
+                with executing(step.id):
+                    observation = await port.invoke(registration.id, inputs)
         # No `except PortFailure` here, and a mutation proved it would be dead code: `RuntimeStop`
         # is a `BaseException` (TD-006), so `except Exception` cannot catch one. The fix had to be
         # there rather than here anyway — `visible()` and `propose()` run *inside* a component, and
@@ -210,7 +264,22 @@ class StepExecutor:
             # The grammar's other half. `Invoke` is *do it now*; `Await` is *this may take a while*,
             # so a component that says `Pending` there is taken at its word and the run parks.
             observation = Completed(await self._wait(step, observation))
-        return await self._observe(step, observation, registration.component.provenance.posture)
+        return await self._observe(step, observation, posture)
+
+    @staticmethod
+    def _effect_observation(state: EffectState) -> Observation:
+        if state.status in {"receipt", "reconciled"}:
+            try:
+                return cast(Observation, adapter_for(Observation).validate_python(state.receipt))
+            except Exception:  # noqa: BLE001 — a malformed receipt is effect data, not a crash
+                return Failed("effect journal receipt is not an Observation")
+        if state.status == "refused":
+            return Refused(state.reason or "effect authorization refused")
+        if state.status == "failed":
+            return Failed(state.reason or "effect failed")
+        if state.status == "unknown":
+            return Failed(state.reason or "effect outcome is unknown")
+        return Failed(f"effect attempt stopped in non-terminal state {state.status!r}")
 
     async def _resume_where_it_parked(
         self,
@@ -381,7 +450,7 @@ def _as_judgement(answer: Any) -> Judgement | None:
     is loaded here at the runtime's own edge. Anything else — a bare string, a `True` — is not an
     answer, and a step whose consent nobody actually gave does not run (D38).
     """
-    if isinstance(answer, Allow | Ask | Refuse):
+    if isinstance(answer, Allow | Ask | PortRefuse):
         return answer
     if isinstance(answer, dict) and isinstance(answer.get("kind"), str):
         from shadow_hdk.kernel.contracts import load

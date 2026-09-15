@@ -10,16 +10,10 @@ import asyncio
 import json
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
-from shadow_hdk.runtime.effects import (
-    EffectTransaction,
-    InMemoryEffectJournal,
-    JournalConflict,
-    TransactionCrash,
-    fold_effect,
-    recover_effect,
-)
+from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
     AuthoritySnapshot,
@@ -33,6 +27,14 @@ from shadow_hdk.kernel import (
     stage_effect,
 )
 from shadow_hdk.kernel.contracts import round_trip
+from shadow_hdk.runtime.effects import (
+    EffectTransaction,
+    InMemoryEffectJournal,
+    JournalConflict,
+    TransactionCrash,
+    fold_effect,
+    recover_effect,
+)
 
 CORPUS = json.loads(
     (Path(__file__).parents[1] / "benchmarks" / "effect-transaction-v1.json").read_text()
@@ -111,7 +113,7 @@ def test_authority_and_stage_digests_are_canonical_complete_and_secret_free() ->
         "provider_revision",
         "mode_revision",
     ):
-        changed = replace(snapshot, **{field: f"changed:{field}"})
+        changed = replace(snapshot, **cast(Any, {field: f"changed:{field}"}))
         assert authority_digest(changed) != authority_digest(snapshot), field
     assert "credential" not in json.dumps(snapshot.__dict__).lower()
 
@@ -126,7 +128,7 @@ def test_authority_and_stage_digests_are_canonical_complete_and_secret_free() ->
         ("authority_digest", "0" * 64),
         ("idempotency_key", "other/key"),
     ):
-        assert replace(effect, **{field: value}).digest != effect.digest, field
+        assert replace(effect, **cast(Any, {field: value})).digest != effect.digest, field
 
 
 @pytest.mark.parametrize("history", CORPUS["legal_histories"])
@@ -203,7 +205,7 @@ async def test_authority_is_read_again_before_invoke_and_stale_consent_cannot_ac
     )
     calls = 0
 
-    async def invoke() -> dict[str, str]:
+    async def invoke() -> JsonValue:
         nonlocal calls
         calls += 1
         return {"receipt": "sent"}
@@ -248,7 +250,7 @@ async def test_a_mismatched_expired_or_cross_run_grant_never_invokes(
 
     calls = 0
 
-    async def invoke() -> dict[str, str]:
+    async def invoke() -> JsonValue:
         nonlocal calls
         calls += 1
         return {"receipt": "impossible"}
@@ -273,7 +275,7 @@ async def test_duplicate_and_concurrent_delivery_invokes_once_and_reuses_the_rec
     )
     calls = 0
 
-    async def invoke() -> dict[str, str]:
+    async def invoke() -> JsonValue:
         nonlocal calls
         calls += 1
         await asyncio.sleep(0)
@@ -305,7 +307,7 @@ async def test_crash_recovery_never_blindly_retries_a_non_idempotent_effect(
     journal = InMemoryEffectJournal()
     calls = 0
 
-    async def invoke() -> dict[str, str]:
+    async def invoke() -> JsonValue:
         nonlocal calls
         calls += 1
         return {"receipt": "maybe"}
@@ -338,7 +340,7 @@ async def test_only_proven_idempotency_and_external_evidence_can_reconcile_unkno
         await journal.append(entry(kind, seq, effect), expected_length=seq)
     calls = 0
 
-    async def reconcile(key: str) -> dict[str, str] | None:
+    async def reconcile(key: str) -> JsonValue | None:
         nonlocal calls
         calls += 1
         assert key == effect.idempotency_key
