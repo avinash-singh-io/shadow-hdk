@@ -229,7 +229,7 @@ the timeline are phases, not retrospective pseudo-epics.
 |---|---|---|
 | 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
-| **0008 production boundary** | **31, 32, 33** | **candidate complete; awaiting protected v0.30.0 release approval** |
+| **0008 production boundary** | **31, 32, 33** | **complete; v0.30.0 released** |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable

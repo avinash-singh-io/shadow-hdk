@@ -2,7 +2,7 @@
 type: Epic
 id: "0008"
 slug: production-boundary
-status: complete-awaiting-release-approval
+status: complete-released
 owner: Avinash
 started: "2026-09-14T18:44:36.704Z"
 phases: [phase-31-a-host-knows-what-it-can-trust, phase-32-one-agent-surface, phase-33-authority-at-the-act]
