@@ -96,5 +96,9 @@ class SqliteEffectJournal(EffectJournalPort):
         async with self._lock:
             await asyncio.to_thread(self._append, entry, expected_length)
 
+    async def aclose(self) -> None:
+        async with self._lock:
+            await asyncio.to_thread(self._connection.close)
+
 
 __all__ = ["SqliteEffectJournal"]

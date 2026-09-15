@@ -28,13 +28,13 @@ epic: production-boundary
 - [x] Verify exact transition order and no component invocation on every refusal branch
 
 ## Group 4 — Recovery, children and adapter truth
-- [/] Recover staged/executing histories to safe abandonment, receipt or explicit unknown
-- [ ] Reconcile/reuse only proven idempotent results; never blindly retry an uncertain non-idempotent act
-- [ ] Narrow child authority, isolate grants and update shipped adapter posture/integration truth
-- [ ] Verify crash injection, duplicate delivery, child attacks and provider-session restart without repeated receipts
+- [x] Recover staged/executing histories to safe abandonment, receipt or explicit unknown
+- [x] Reconcile/reuse only proven idempotent results; never blindly retry an uncertain non-idempotent act
+- [x] Narrow child authority, isolate grants and update shipped adapter posture/integration truth
+- [x] Verify crash injection, duplicate delivery, child attacks and provider-session restart without repeated receipts
 
 ## Group 5 — Public record and the v0.30 candidate
-- [ ] Carry transaction/refusal/receipt/unknown through events, telemetry, wire, schemas and TypeScript
+- [/] Carry transaction/refusal/receipt/unknown through events, telemetry, wire, schemas and TypeScript
 - [ ] Sync architecture, package, migration and release-candidate docs with limitations
 - [ ] Run frozen evaluator, store contracts, crash matrix and full combined Epic 0008 gate
 - [ ] Build v0.30.0 artifacts, mark Phase 33/epic complete and stop at protected merge/release approval

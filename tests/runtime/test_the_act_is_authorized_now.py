@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
+from typing import Any, cast
 
 from shadow_hdk.kernel import (
     AuthoritySnapshot,
@@ -136,3 +136,21 @@ async def test_an_observed_irreversible_path_remains_observed_without_an_authori
     events, components, *_ = await execute(supported=False, observed=True)
     assert components.calls == [("publish", {"value": 3})]
     assert events[-2].posture == "observed"
+
+
+async def test_a_reused_attempt_key_cannot_return_a_receipt_for_changed_inputs() -> None:
+    ports, components = ports_over([(WRITE, {"receipt": "one"})])
+    first = Composition((Invoke("write-1", "publish", (Binding("value", value=1),)),))
+    changed = Composition((Invoke("write-1", "publish", (Binding("value", value=2),)),))
+    options = RunOptions(
+        lease=Lease(Ceiling(5, 60, 10), Floor(0)),
+        principal="alice",
+        run_id="same-run",
+    )
+    _ = [event async for event in run(first, ports, options=options)]
+    replay = [event async for event in run(changed, ports, options=options)]
+
+    assert components.calls == [("publish", {"value": 1})]
+    replayed = cast(Any, replay[-2]).observation
+    assert replayed.kind == "refused"
+    assert replayed.reason == "idempotency_key_reused_for_different_effect"

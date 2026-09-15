@@ -168,6 +168,10 @@ class EffectTransaction:
         async with lock:
             existing = await self.journal.read(effect.idempotency_key)
             if existing:
+                if existing[0].stage_digest != effect.digest:
+                    return EffectState(
+                        "refused", reason="idempotency_key_reused_for_different_effect"
+                    )
                 return fold_effect(existing)
 
             expected = expected_authority or await self.authority.current(
@@ -198,7 +202,6 @@ class EffectTransaction:
                 effect,
                 "executing",
                 sequence=2,
-                authorization_id=decision.authorization_id,
             )
             self._checkpoint("executing")
             try:
@@ -209,7 +212,6 @@ class EffectTransaction:
                     effect,
                     "failed",
                     sequence=3,
-                    authorization_id=decision.authorization_id,
                     detail={"reason": _described(error)},
                 )
                 return fold_effect(await self.journal.read(effect.idempotency_key))
@@ -217,7 +219,6 @@ class EffectTransaction:
                 effect,
                 "receipt",
                 sequence=3,
-                authorization_id=decision.authorization_id,
                 detail=receipt,
             )
             return fold_effect(await self.journal.read(effect.idempotency_key))
@@ -286,7 +287,6 @@ async def recover_effect(
                 "unknown",
                 effect.digest,
                 clock.now(),
-                authorization_id=state.authorization_id,
                 detail={"reason": "outcome_unknown_after_execution_started"},
             ),
             expected_length=len(history),
@@ -303,7 +303,6 @@ async def recover_effect(
                     "reconciled",
                     effect.digest,
                     clock.now(),
-                    authorization_id=state.authorization_id,
                     detail=receipt,
                 ),
                 expected_length=len(history),

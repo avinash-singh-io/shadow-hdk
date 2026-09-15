@@ -54,7 +54,14 @@ from shadow_hdk.kernel import (
     select_execution,
 )
 from shadow_hdk.kernel.contracts import adapter_for, dump
-from shadow_hdk.kernel.ports import AgentPort, ModelPort
+from shadow_hdk.kernel.ports import (
+    AgentPort,
+    AuthorityPort,
+    AuthorizerPort,
+    ComponentPort,
+    EffectJournalPort,
+    ModelPort,
+)
 from shadow_hdk.providers import (
     Available,
     detect,
@@ -64,13 +71,14 @@ from shadow_hdk.providers import (
     search_dirs,
     shipped,
 )
-from shadow_hdk.runtime import Approvals, Ports
+from shadow_hdk.runtime import Approvals, InMemoryEffectJournal, Ports
 from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
+from shadow_hdk.serve.authority import HostAuthority, HostAuthorizer
 from shadow_hdk.serve.batteries import (
     BatteryRegistry,
     OpenedBattery,
@@ -161,6 +169,12 @@ async def workshop(
     workspace: Workspace | None = None,
     environment: LocalEnvironment | None = None,
     requirements: EnvironmentRequirements | None = None,
+    authority: AuthorityPort | None = None,
+    authorizer: AuthorizerPort | None = None,
+    effect_journal: EffectJournalPort | None = None,
+    principal: str | None = None,
+    attributes: dict[str, Any] | None = None,
+    provider_revision: str = "",
 ) -> Ports:
     """Everything the agent can reach, and the policy that judges it.
 
@@ -196,15 +210,31 @@ async def workshop(
     if store is not None:
         # Which components are on is the store's to say (D66): off at the next refresh.
         offered = tuple(Switched(port, store_switches(store)) for port in offered)
+    chosen_modes = modes or MODES
+    chosen_rules = rules if rules is not None else ActRules()
+    clock = SystemClock()
     return Ports(
         model=None,  # the reasoning is the provider's; this runtime supplies no model
         components=offered,
         # Every shipped mode is judged from; the environment's mode is the one selected by default,
         # and `Thread.set_mode` flips between them live (D64). The person's act rules are read
         # after a mode says *ask* (D65).
-        governance=governance_for(modes or MODES, default=mode, rules=rules),
+        governance=governance_for(chosen_modes, default=mode, rules=chosen_rules),
         sink=StdoutSink(),
-        clock=SystemClock(),
+        clock=clock,
+        authority=authority
+        or HostAuthority(
+            workspace=workspace or Workspace.of(root),
+            modes=chosen_modes,
+            rules=chosen_rules,
+            components=cast(tuple[ComponentPort, ...], offered),
+            provider_revision=provider_revision,
+            principal=principal,
+            attributes=attributes,
+            mode=mode,
+        ),
+        authorizer=authorizer or HostAuthorizer(clock),
+        effect_journal=effect_journal or InMemoryEffectJournal(),
     )
 
 
@@ -219,7 +249,8 @@ class ServeHost:
     """The wire's `ThreadHost`, composed from the shipped adapters.
 
     One per process: one record — the store the registries read, the thread store, and the
-    checkpointer a parked run sleeps in, all three from `settings.store`'s url (D79; memory when
+    checkpointer a parked run sleeps in and effect journal, all four from `settings.store`'s url
+    (D79, D101; memory when
     it names nothing) — one `Approvals` handle, one rule registry, one mode registry. A provider
     is resolved at `open` — `settings.want` or the first CLI signed in here — unless one was
     handed in (`agent=`), which is what a test does.
@@ -237,13 +268,16 @@ class ServeHost:
         threads: ThreadStore | None = None,
         checkpointer: Any = None,
         run_store: Any = None,
+        effect_journal: EffectJournalPort | None = None,
+        authority: AuthorityPort | None = None,
+        authorizer: AuthorizerPort | None = None,
         provider_capabilities: ProviderCapabilities | None = None,
         requirements: ExecutionRequirements | None = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
         opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
         `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
-        would have made, and a host that hands all three never reads the url. `run_store` (D93)
+        would have made, and a host that hands all four never reads the url. `run_store` (D93)
         is a product's own `RunStore` — the checkpointer is then the library's saver over it."""
         if agent is not None and model is not None:
             raise ValueError("hand either agent= or model=, not both")
@@ -257,6 +291,7 @@ class ServeHost:
             threads=threads,
             checkpointer=checkpointer,
             run_store=run_store,
+            effect_journal=effect_journal,
         )
         self.store: Any = self.stores.store
         self.threads: ThreadStore = self.stores.threads
@@ -278,6 +313,8 @@ class ServeHost:
         )
         self._handed_capabilities = provider_capabilities or ProviderCapabilities()
         self.requirements = requirements or ExecutionRequirements()
+        self._authority = authority
+        self._authorizer = authorizer
         self._selections: dict[str, ExecutionSelection] = {}
         self.provider = "handed model" if model is not None else ""
 
@@ -521,6 +558,12 @@ class ServeHost:
             skills=self.skills,
             workspace=workspace,
             environment=environment,
+            authority=self._authority,
+            authorizer=self._authorizer,
+            effect_journal=self.stores.effects,
+            principal=principal or None,
+            attributes=attributes if isinstance(attributes, dict) else None,
+            provider_revision=called,
         )
         thread = await Thread.open(
             agent=agent,
@@ -625,6 +668,12 @@ class ServeHost:
             skills=self.skills,
             workspace=workspace,
             environment=environment,
+            authority=self._authority,
+            authorizer=self._authorizer,
+            effect_journal=self.stores.effects,
+            principal=record.principal or None,
+            attributes=record.attributes,
+            provider_revision=record.provider,
         )
         thread = await Thread.resume(
             thread_id,

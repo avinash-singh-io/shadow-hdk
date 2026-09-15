@@ -16,11 +16,12 @@ from typing import Any
 import anyio
 import pytest
 
-from shadow_hdk.adapters.basic import SqliteStore, SqliteThreads
+from shadow_hdk.adapters.basic import SqliteEffectJournal, SqliteStore, SqliteThreads
 from shadow_hdk.kernel import (
     Ceiling,
     Completed,
     Composition,
+    EffectEntry,
     Ended,
     Floor,
     Invoke,
@@ -149,33 +150,47 @@ async def test_nothing_configured_is_memory_for_the_process() -> None:
     stores = stores_for(None)
     assert isinstance(stores.store, InMemoryStore)
     assert isinstance(stores.threads, InMemoryThreads)
+    assert stores.effects.__class__.__name__ == "InMemoryEffectJournal"
     assert stores.url == "memory://"
     saver = await stores.checkpointer()
     assert saver is await stores.checkpointer(), "one checkpointer per stores, not per call"
     await stores.aclose()
 
 
-async def test_a_sqlite_url_fills_all_three_and_a_park_outlives_the_stores(
+async def test_a_sqlite_url_fills_all_four_and_a_park_outlives_the_stores(
     tmp_path: Path,
 ) -> None:
     url = f"sqlite:///{tmp_path}/live.sqlite"
     first = stores_for(url)
     assert isinstance(first.store, SqliteStore) and isinstance(first.threads, SqliteThreads)
+    assert isinstance(first.effects, SqliteEffectJournal)
+    await first.effects.append(
+        EffectEntry("run/step", 0, "staged", "stage-digest", "2026-09-15T12:00:00+00:00"),
+        expected_length=0,
+    )
     with anyio.fail_after(30):
-        await _park_then_resume_across(first, stores_for(url))
+        second = stores_for(url)
+        assert len(await second.effects.read("run/step")) == 1
+        await _park_then_resume_across(first, second)
     files = sorted(p.name for p in tmp_path.iterdir())
-    assert files == ["live.checkpoints.sqlite", "live.sqlite", "live.threads.sqlite"], files
+    assert files == [
+        "live.checkpoints.sqlite",
+        "live.effects.sqlite",
+        "live.sqlite",
+        "live.threads.sqlite",
+    ], files
 
 
 @pytest.mark.skipif(not POSTGRES, reason="SHADOW_HDK_TEST_POSTGRES_URL is not set")
-async def test_a_postgres_url_fills_all_three_and_a_park_outlives_the_stores() -> None:
-    from shadow_hdk.adapters.postgres import PostgresStore, PostgresThreads
+async def test_a_postgres_url_fills_all_four_and_a_park_outlives_the_stores() -> None:
+    from shadow_hdk.adapters.postgres import PostgresEffectJournal, PostgresStore, PostgresThreads
     from tests.adapters.postgres.conftest import wiped
 
     assert POSTGRES is not None
     await wiped(POSTGRES)
     first = stores_for(POSTGRES)
     assert isinstance(first.store, PostgresStore) and isinstance(first.threads, PostgresThreads)
+    assert isinstance(first.effects, PostgresEffectJournal)
     with anyio.fail_after(60):
         await _park_then_resume_across(first, stores_for(POSTGRES))
 
@@ -200,22 +215,31 @@ async def test_a_postgres_url_without_the_extra_says_what_to_install(
 # ---------------------------------------------------------------- the host
 
 
-async def test_a_host_hands_its_own_three_in_and_the_url_is_not_read(tmp_path: Path) -> None:
+async def test_a_host_hands_its_own_four_in_and_the_url_is_not_read(tmp_path: Path) -> None:
     from langgraph.checkpoint.memory import InMemorySaver
 
-    store, threads, saver = InMemoryStore(), InMemoryThreads(), InMemorySaver()
+    from shadow_hdk.runtime import InMemoryEffectJournal
+
+    store, threads, saver, effects = (
+        InMemoryStore(),
+        InMemoryThreads(),
+        InMemorySaver(),
+        InMemoryEffectJournal(),
+    )
     host = ServeHost(
         Settings(root=tmp_path, store="postgresql://nobody@nowhere/none"),
         store=store,
         threads=threads,
         checkpointer=saver,
+        effect_journal=effects,
     )
     assert host.store is store and host.threads is threads
+    assert host.stores.effects is effects
     assert await host.checkpointer() is saver
     await host.aclose()
 
 
-async def test_a_host_on_a_sqlite_url_opens_the_three_beside_the_file(tmp_path: Path) -> None:
+async def test_a_host_on_a_sqlite_url_opens_the_four_beside_the_file(tmp_path: Path) -> None:
     host = ServeHost(Settings(root=tmp_path, store=f"sqlite:///{tmp_path}/live.sqlite"))
     assert isinstance(host.store, SqliteStore) and isinstance(host.threads, SqliteThreads)
     saver = await host.checkpointer()

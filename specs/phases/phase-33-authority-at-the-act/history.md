@@ -53,3 +53,19 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/testing.md
 Detail: After ordinary governance and any approval, StepExecutor stages the exact act, obtains a one-attempt grant, rereads current host authority, appends executing, invokes once and records its receipt or failure. Missing transaction ports fail closed; stale, expired, mismatched and cross-run grants never invoke; observed paths remain observation-only. The frozen evaluator has 29 green cases, the focused integration has four, and all 448 runtime tests pass with one environment skip. Removing the authority reread let a stale act execute, and disabling the missing-port guard changed its refusal to failure; both destructive mutations were reverted.
 
 ---
+
+### [FEATURE] 2026-09-15 — Recovery reuses evidence and the ready-made host owns the boundary
+Topics: authority, effect-journal, reconciliation, unknown-outcome, idempotency, children, adapter-posture
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/adapters.md; specs/architecture/testing.md
+Detail: The store URL now chooses the effect journal beside records, threads and checkpoints; ServeHost and workshop bind a reference authority over live identity, workspace, policy, registry, provider and mode revisions plus a short-lived exact-stage authorizer. SQLite and Postgres survive process loss, terminal receipts are reused only for the same stage digest, unfinished histories fold to abandonment or unknown, and reconciliation requires explicit idempotency proof plus external evidence. Child runs retain the parent's policy boundary but receive distinct run/step-bound grants. The combined runtime, serve, adapter and child gate passed 829 tests with three environment skips and one deliberate deselection; two destructive mutations proved durable replay and store selection.
+
+---
+
+### [DISCOVERY] 2026-09-15 — Durable authorization identity belongs on one fact
+Topics: effect-journal, effect-authorization, sqlite, postgres, recovery
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/architecture/runtime.md; specs/architecture/adapters.md
+Detail: BUG-052 exposed a mismatch between the in-memory and SQL journals: SQL correctly made authorization IDs unique, while the runtime repeated the same ID on executing and terminal entries. The transaction now records it only on `authorized`, and the fold carries it into later state; a real SQLite act and process-style reopen is the regression proof.
+
+---

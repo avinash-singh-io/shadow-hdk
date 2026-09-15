@@ -32,8 +32,14 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.components import RegistrationId
 from shadow_hdk.kernel.ports import ComponentPort, GovernancePort
-from shadow_hdk.runtime import Ports, RunOptions, run
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, run
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+)
 
 WORLD = ScopeSet.of("world")
 NOON = "2026-01-01T12:00:00+00:00"
@@ -62,12 +68,16 @@ async def _run(
     also: tuple[ComponentPort, ...] = (),
     run_id: str = "r-1",
 ) -> list[Event]:
+    chosen_clock = clock if clock is not None else FixedClock(NOON)
     ports = Ports(
         model=ScriptedModel(),
         components=(devices, *also),
         governance=governance if governance is not None else AllowAll(),
         sink=ListSink(),
-        clock=clock if clock is not None else FixedClock(NOON),
+        clock=chosen_clock,
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     return [
         e

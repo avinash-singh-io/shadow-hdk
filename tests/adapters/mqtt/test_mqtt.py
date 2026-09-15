@@ -24,8 +24,14 @@ from shadow_hdk.kernel import (
     Observed,
 )
 from shadow_hdk.kernel.ports import ComponentPort
-from shadow_hdk.runtime import Ports, RunOptions, run
-from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
+from shadow_hdk.runtime import InMemoryEffectJournal, Ports, RunOptions, run
+from shadow_hdk.runtime.testing import (
+    AllowAuthorizer,
+    FixedAuthority,
+    FixedClock,
+    ListSink,
+    ScriptedModel,
+)
 from tests.adapters.mqtt.conftest import DeviceSide, LocalBroker, until
 
 NOON = "2026-01-01T12:00:00+00:00"
@@ -36,12 +42,16 @@ LEASE = Lease(Ceiling(10, 600, 100), Floor(0))
 async def _run(
     devices: ComponentPort, *steps: Invoke, clock: FixedClock | None = None, run_id: str = "r-1"
 ) -> list[Event]:
+    chosen_clock = clock if clock is not None else FixedClock(NOON)
     ports = Ports(
         model=ScriptedModel(),
         components=(devices,),
         governance=AllowAll(),
         sink=ListSink(),
-        clock=clock if clock is not None else FixedClock(NOON),
+        clock=chosen_clock,
+        authority=FixedAuthority(),
+        authorizer=AllowAuthorizer(),
+        effect_journal=InMemoryEffectJournal(),
     )
     return [
         e
