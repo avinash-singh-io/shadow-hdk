@@ -13,3 +13,11 @@ Affects-specs: specs/architecture/runtime.md; specs/architecture/wire.md; specs/
 Detail: The epic's Phase 33 row is decomposed into a frozen transaction evaluator, canonical authority/effect records and host ports, append-only reference journals, one governed act boundary, and crash-safe recovery. Approval remains consent evidence; provider/environment capabilities remain facts; only current host authority may issue the single-use act authorization.
 
 ---
+
+### [NOTE] 2026-09-15 — Phase 33 started from the verified Phase 32 checkpoint
+Topics: authority, revisions, effect-authorization, act-time, effect-journal, reconciliation, tdd
+Affects-phases: phase-33-authority-at-the-act
+Affects-specs: specs/status.md; specs/phases/README.md
+Detail: The stacked branch starts at Phase 32 commit `2ab153a` after the full green gate. Pre-flight found no P0 bug; TD-010 and TD-011 are the planned P1 work. Group 0 freezes the deterministic transaction evaluator before implementation, and the phase remains unreleased until the single Epic 0008 gate.
+
+---

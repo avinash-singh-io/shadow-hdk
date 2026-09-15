@@ -19,6 +19,13 @@ Depends on: phase-31-a-host-knows-what-it-can-trust. Those must be complete befo
 
 Run policy: release: per-feature · push: per-phase · tdd: strict
 
+## Reference specs
+
+- `specs/architecture/runtime.md` — governed-step ordering, acting, children and recovery
+- `specs/architecture/wire.md` — record, errors, schemas and crossed transaction status
+- `specs/architecture/adapters.md` — which effect paths can truthfully claim controlled posture
+- `specs/architecture/testing.md` — frozen evaluator, contract, crash and benchmark gates
+
 ---
 
 ## Group 0 — Lock the transaction evaluator *(sequential, blocks all)*
