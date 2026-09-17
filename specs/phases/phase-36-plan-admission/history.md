@@ -133,3 +133,19 @@ This is also the first live proof of the registry relay end to end on Codex, whi
 Claude Code half of the measurement is owed to the owner's sign-in.
 
 ---
+
+### [DECISION] 2026-09-18 — G4: the shipped modes' plan limits, and a document narrows only
+Topics: modes, limits, planning
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/adapters.md#modes
+Detail: `PLAN_OF` — read-only and ask (depth 3, fan-out 8, steps 64), workspace-write (4, 16, 128),
+full (4, 32, 256): generous on purpose, the lease the floor, but a ceiling so a runaway plan is
+refused before its first step. A mode document's `[plan]` inherits the named policy's value on any
+axis it leaves out (never unbounded by omission) and is refused by name if it widens the policy
+on any axis — the rule a rule file already lives under (D24). A host that wants more than the
+shipped ceiling composes a `ModeSpec` in code; data narrows, code decides. `Conversation.plan_limits`
+is the host's met with the mode's, read at every turn, so `set_mode` changes the next plan's
+limits live — measured in the test with a scripted CLI proposing a three-wide fan-out under a
+two-wide mode, then again under an eight-wide one.
+
+---

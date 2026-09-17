@@ -38,10 +38,11 @@ epic: the-harness-as-data
 - [x] Verify: `uv run pytest -q tests/runtime tests/serve tests/invariants` green · `uv run pytest -m live tests/test_a_cli_plans_through_the_socket.py` → 1 passed · mutation (a refusal reported as success) bites — 2026-09-18
 
 ## Group 4 — Limits on the mode
-- [ ] `ModeSpec.plan`; `[plan]` in mode documents; malformed refused by name
-- [ ] Shipped defaults on the four modes, with RED tests; recorded in history
-- [ ] `widens()` extended; `ModeRegistry.find` hands the run its effective limits; `modes/list` carries them
-- [ ] Verify: `uv run pytest -q tests/adapters/modes tests/serve`
+- [x] `ModeSpec.plan`; `[plan]` in mode documents (`plan_limits_from`): malformed refused by name; an axis left out is the named policy's, never unbounded; a table wider than the policy it names is refused (`widens policy 'ask' — …`)
+- [x] Shipped defaults `PLAN_OF`: read-only (3, 8, 64) = ask (3, 8, 64) < workspace-write (4, 16, 128) < full (4, 32, 256) — generous ceilings, the lease the floor; recorded in history
+- [x] `widens_plan()` beside `widens()` (an unset axis is wider than any bound); `Conversation.plan_limits` = host's `meet` the current mode's, read at every turn and on settle; `set_mode` changes it live; `Thread.open/resume(plan_limits=)`. `modes/list` carrying the limits is G7's wire work
+- [x] Mutations: the widening refusal removed → 1 fails; the turn ignoring the mode's limits → 2 fail; restored
+- [x] Verify: `uv run pytest -q tests/adapters/modes` → 103 passed · full non-live 1,755 passed · mypy 450 files clean — 2026-09-18
 
 ## Group 5 — After the planner; amend
 - [ ] `Pattern.absorb`; with `False` the planner's turn ends first and the child runs on as a held run

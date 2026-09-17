@@ -13,9 +13,11 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field, fields, replace
 from typing import Any, Protocol
 
+from shadow_hdk.adapters.modes.check import widens_plan
 from shadow_hdk.adapters.modes.mode import Mode as Policy
 from shadow_hdk.adapters.modes.mode import ModeGovernance
 from shadow_hdk.kernel import Behaviour, EffectProfile, ScopeSet
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.rules import in_scope
 
 EVERYTHING = ScopeSet(everything=True)
@@ -41,6 +43,9 @@ class ModeSpec:
     scope: str = ""
     """Who this mode is for (D82): empty for everyone, a principal's name, or `attribute:value`
     — a tenant's mode is not a mode for another tenant's thread."""
+    plan: PlanLimits | None = None
+    """How much plan this mode admits (D109): depth, fan-out, steps — met with the host's at every
+    turn, so a mode switch changes what the next plan may be, live. `None` defers to the host."""
 
     @classmethod
     def of(
@@ -54,6 +59,7 @@ class ModeSpec:
         source: str = "shipped",
         environment: str = "",
         scope: str = "",
+        plan: PlanLimits | None = None,
     ) -> ModeSpec:
         return cls(
             id=mode_id,
@@ -64,6 +70,7 @@ class ModeSpec:
             source=source,
             environment=environment,
             scope=scope,
+            plan=plan,
         )
 
 
@@ -146,6 +153,17 @@ def governance_for(
 
 SHIPPED_POLICY_IDS = ("read-only", "ask", "workspace-write", "full")
 ENVIRONMENT_MODES = ("read-only", "workspace-write", "full")
+PLAN_OF: dict[str, PlanLimits] = {
+    # How much plan each shipped policy admits (D109), narrowing from `full` to `read-only`.
+    # Generous on purpose — the lease is the floor underneath, and a host or a team narrows —
+    # but a ceiling: a runaway plan is refused before its first step, not at `lease_exhausted`.
+    "read-only": PlanLimits(depth=3, fan_out=8, steps=64),
+    "ask": PlanLimits(depth=3, fan_out=8, steps=64),
+    "workspace-write": PlanLimits(depth=4, fan_out=16, steps=128),
+    "full": PlanLimits(depth=4, fan_out=32, steps=256),
+}
+"""What a mode admits when its document says nothing — never unbounded by omission."""
+
 ENVIRONMENT_OF = {
     "read-only": "read-only",
     "ask": "workspace-write",
@@ -196,6 +214,24 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
         raise ValueError(
             f"mode {mode_id!r}: environment {environment!r} is not one of {list(ENVIRONMENT_MODES)}"
         )
+    # How much plan (D109): the document's own `[plan]` table, or the named policy's shipped
+    # default — never unbounded by omission.
+    plan = plan_limits_from(document.get("plan"), mode_id=mode_id)
+    shipped_plan = PLAN_OF.get(policy_name)
+    if plan is None:
+        plan = shipped_plan
+    elif shipped_plan is not None:
+        # An axis the table leaves out is the policy's, not unbounded; an axis it sets is its
+        # own — and a document may only **narrow** the policy it names (D109, as a rule file may
+        # only narrow what it was given, D24): wider is refused by name, never clamped.
+        plan = PlanLimits(
+            depth=plan.depth if plan.depth is not None else shipped_plan.depth,
+            fan_out=plan.fan_out if plan.fan_out is not None else shipped_plan.fan_out,
+            steps=plan.steps if plan.steps is not None else shipped_plan.steps,
+        )
+        if found := widens_plan(plan, shipped_plan):
+            lines = "; ".join(str(item) for item in found)
+            raise ValueError(f"mode {mode_id!r}: plan widens policy {policy_name!r} — {lines}")
     return ModeSpec.of(
         mode_id,
         policy=policy,
@@ -205,7 +241,34 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
         source=source,
         environment=environment,
         scope=str(document.get("scope", "") or ""),
+        plan=plan,
     )
+
+
+PLAN_FIELDS = ("depth", "fan_out", "steps")
+
+
+def plan_limits_from(raw: Any, *, mode_id: str) -> PlanLimits | None:
+    """A `[plan]` table as `PlanLimits`, or `None` when the document has none. A malformed table
+    is refused by name — a limit is a claim about what may run, and a claim nobody can check
+    should not be silently ignored."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError(f"mode {mode_id!r}: plan is a table")
+    if unknown := sorted(set(raw) - set(PLAN_FIELDS)):
+        raise ValueError(f"mode {mode_id!r}: unknown plan field(s) {', '.join(unknown)}")
+    made: dict[str, int | None] = {}
+    for name in PLAN_FIELDS:
+        value = raw.get(name)
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"mode {mode_id!r}: plan.{name} is an integer")
+        if value < 1:
+            raise ValueError(f"mode {mode_id!r}: plan.{name} is at least 1")
+        made[name] = value
+    return PlanLimits(**made)
 
 
 class StoreModes:
@@ -330,6 +393,7 @@ def shipped_modes() -> tuple[ModeSpec, ...]:
             policy=_looking(),
             description="Look, don't touch: nothing in the workspace is written or run.",
             environment="read-only",
+            plan=PLAN_OF["read-only"],
         ),
         ModeSpec.of(
             "ask",
@@ -337,18 +401,21 @@ def shipped_modes() -> tuple[ModeSpec, ...]:
             description="Ask before every write or command inside the workspace; approve once, "
             "or keep a rule.",
             environment="workspace-write",
+            plan=PLAN_OF["ask"],
         ),
         ModeSpec.of(
             "workspace-write",
             policy=_confined(),
             description="Write and run inside the workspace, confined by the OS sandbox.",
             environment="workspace-write",
+            plan=PLAN_OF["workspace-write"],
         ),
         ModeSpec.of(
             "full",
             policy=_open(),
             description="Reach the whole machine; a write outside the workspace is asked about.",
             environment="full",
+            plan=PLAN_OF["full"],
         ),
     )
 

@@ -59,6 +59,7 @@ from shadow_hdk.kernel.events import (
     WorkspaceChanged,
 )
 from shadow_hdk.kernel.events import Refused as RefusedEvent
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import (
     AgentPort,
     AgentSession,
@@ -258,9 +259,13 @@ class Conversation:
         turns_taken: int = 0,
         spent: Spent | None = None,
         idle_seconds: float | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> None:
         self.id = conversation_id
         self._idle_seconds = idle_seconds
+        #: The host's plan limits (D109), met with the mode's at every turn.
+        self._plan_limits = plan_limits
+        self._mode_plan: PlanLimits | None = None
         """After this long without a turn the provider's session is closed (D94) — the
         conversation stays open; the next turn reopens the provider on its session id. `None`
         keeps the provider for the conversation's whole life."""
@@ -345,6 +350,7 @@ class Conversation:
         turns_taken: int = 0,
         spent: Spent | None = None,
         idle_seconds: float | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
@@ -378,9 +384,11 @@ class Conversation:
             turns_taken=turns_taken,
             spent=spent,
             idle_seconds=idle_seconds,
+            plan_limits=plan_limits,
         )
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
+            conversation._mode_plan = getattr(spec, "plan", None)
         await conversation._start()
         conversation._idle_from_now()
         return conversation
@@ -488,6 +496,17 @@ class Conversation:
         return self._ports
 
     # ------------------------------------------------------------------ what it is
+
+    @property
+    def plan_limits(self) -> PlanLimits | None:
+        """How much plan a turn admits now (D109): the host's limits met with the current mode's —
+        read at every turn, so `set_mode` changes what the next plan may be, live."""
+        host, mode = self._plan_limits, self._mode_plan
+        if host is None:
+            return mode
+        if mode is None:
+            return host
+        return host.meet(mode)
 
     def remaining(self) -> Lease:
         """What may still be spent across the turns: the lease less what was spent (D84)."""
@@ -634,6 +653,7 @@ class Conversation:
                 cancellation=cancellation,
                 principal=self.principal or None,
                 context=self.context_for(turn_id),
+                plan_limits=self.plan_limits,
             )
             if began is not None:
                 await began(TurnRecord(id=turn_id, run_id=run_id, prompt=text, at=at))
@@ -824,6 +844,7 @@ class Conversation:
             checkpointer=self._checkpointer,
             principal=self.principal or None,
             context=self.context_for(question.turn),
+            plan_limits=self.plan_limits,
         )
         events: list[Event] = []
         steps_taken = 0
@@ -931,6 +952,7 @@ class Conversation:
         self.mode = mode_id
         if spec is not None:
             self._behaviour = behaviour
+            self._mode_plan = getattr(spec, "plan", None)
         # The provider is reopened on its own session (D76): the catalogue it holds is the old
         # mode's, and a resident CLI was measured to keep it after `list_changed` (BUG-032) — a
         # fresh process re-lists, and `--resume` keeps its memory of the conversation.

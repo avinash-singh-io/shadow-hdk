@@ -25,6 +25,7 @@ from dataclasses import dataclass
 
 from shadow_hdk.adapters.modes.rules import RuleSet
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.planning import PlanLimits
 
 FIELDS = ("reads", "writes", "reaches", "reversible", "contained", "costs")
 """The closed vocabulary, in the order a person reads them. A seventh field must appear here as
@@ -99,4 +100,21 @@ def _compare(name: str, asked: EffectProfile, allowed: EffectProfile) -> list[Wi
     return found
 
 
-__all__ = ["FIELDS", "Wider", "widens"]
+def widens_plan(theirs: PlanLimits | None, ours: PlanLimits | None) -> list[Wider]:
+    """Every axis on which a team's plan limits admit more than the house's (D109). Empty means
+    the mode may exist. `None` on theirs is unbounded — wider than any bound of ours."""
+    if ours is None:
+        return []
+    mine = theirs if theirs is not None else PlanLimits()
+    found: list[Wider] = []
+    for axis in ("depth", "fan_out", "steps"):
+        allowed = getattr(ours, axis)
+        asked = getattr(mine, axis)
+        if allowed is None:
+            continue
+        if asked is None or asked > allowed:
+            found.append(Wider("plan", axis, allowed, asked))
+    return found
+
+
+__all__ = ["FIELDS", "Wider", "widens", "widens_plan"]
