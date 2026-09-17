@@ -4,15 +4,15 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — v0.30.0 released
+> **Last Updated**: 2026-09-18 — Epic 0009 planned; v0.30.0 is the latest release
 > **Current Phase**: No active implementation phase. Epic 0008 is merged, tagged and published as
-> v0.30.0.
-> Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
-> requirements before anything is built on their selection. Phase 33 (authority at the act) remains
-> derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
+> v0.30.0. **Epic 0009 — the harness as data — is planned** (`specs/epics/0009-the-harness-as-data.md`,
+> D107–D121 settled once): Phases 36 → 34 → 37, released per phase; its pre-work is on the
+> epic's docs branch, opened from
+> `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
 >
-> 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, is built as
-> **0.30.0** but not yet published. Phases 31–33 are pushed on the intentionally unmerged epic stack.
+> 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, published as
+> **0.30.0** (protocol 3).
 >
 > **Latest Release**: **v0.30.0**, released 2026-09-15 — Epic 0008: evidence-backed
 > capability selection, one durable model/CLI agent surface, and current-authority append-only
@@ -136,15 +136,14 @@ approval.
 
 ## Upcoming Phases
 
-> Epic 0008 is scheduled under a strict test-first, per-feature release policy. Intent Studio may
-> continue product-owned work, but its new Shadow execution integration waits for the verified
-> v0.30.0 handoff after all three phases.
+> Epic 0009 runs under `release: per-phase`, `push: per-phase`, `tdd: strict`. Order is computed
+> from each phase's `deps`. Phases 35, 38, 39 and 40 stay on the roadmap after it.
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
-| 32 — one agent surface | 31 | CLI and API-model agents use one durable product-facing lifecycle |
-| 33 — authority at the act | 31 | controlled irreversible effects are current-authority, journaled and recoverable |
-| 34 — Shadow Harness, built to unfold | 32, 33 | the ready-made harness and HDK are progressive layers of one system |
+| 36 — plan admission | 33 | a proposed plan is admitted or refused as a whole — limits, existence, effects — before anything compiles; planning reaches a resident CLI; a plan may outlive its planner; a running composition can be amended on the record |
+| 34 — the harness as data | 36 | a harness is a typed, parameterised, versioned artifact that unfolds to a runnable one, is itself a component, and ships as a self-contained distribution or a language scaffold over one runtime |
+| 37 — the durable run request | 33, 34 | a run is requested idempotently, survives its process, is retried and cancelled by policy, and is created by cron, queue or webhook adapters that own timing and never authority |
 
 ## Blockers
 
@@ -160,9 +159,10 @@ approval.
 
 ## Next Actions
 
-1. Hand released v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
-2. Plan Phase 34 — Shadow Harness, built to unfold — before implementation
-4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
+1. Land the epic's docs branch (the pre-work): the research note, the roadmap re-derived (D117), TD-010/011 closed, the ecosystem board's row and Pins for v0.30.0
+2. ENH-020 as a quick-task → v0.30.1 (unmapped behaviour named, not dropped)
+3. Derive and start Phase 36 — plan admission: `momentum run derive phase-36-plan-admission --epic the-harness-as-data --deps "" --write`, then `/start-phase`
+4. Still conditional: a Linux host for the remaining containment proofs, an OpenAI login for the Codex relay proof, and a lawyer's read on AGPL at arm's length
 
 ## Key Decisions Made
 
