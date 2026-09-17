@@ -4,9 +4,10 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-18 — Epic 0009 planned; v0.30.0 is the latest release
-> **Current Phase**: No active implementation phase. Epic 0008 is merged, tagged and published as
-> v0.30.0. **Epic 0009 — the harness as data — is planned** (`specs/epics/0009-the-harness-as-data.md`,
+> **Last Updated**: 2026-09-18 — Phase 36 started (Epic 0009); v0.30.0 is the latest release
+> **Current Phase**: **Phase 36 — plan admission** (Epic 0009), started 2026-09-18 on
+> `phase-36-plan-admission`, stacked on the epic's docs branch. Epic 0008 is merged, tagged and
+> published as v0.30.0. **Epic 0009 — the harness as data — is planned** (`specs/epics/0009-the-harness-as-data.md`,
 > D107–D121 settled once): Phases 36 → 34 → 37, released per phase; its pre-work is on the
 > epic's docs branch, opened from
 > `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -124,7 +125,7 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | | | Epic 0008 released as v0.30.0 |
+| 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | in progress | G0 the frozen corpus — started 2026-09-18 |
 
 ## Epic Release Checkpoints
 

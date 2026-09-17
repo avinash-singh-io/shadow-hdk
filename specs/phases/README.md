@@ -40,6 +40,7 @@ type: Guide
 | **31** | **A host knows what it can trust** | **Complete, v0.30.0 release** | `phase-31-a-host-knows-what-it-can-trust` |
 | **32** | **One agent surface** | **Complete, v0.30.0 release** | `phase-32-one-agent-surface` |
 | **33** | **Authority at the act** | **Complete, v0.30.0 release** | `phase-33-authority-at-the-act` |
+| **36** | **Plan admission** | **In Progress — Epic 0009** | `phase-36-plan-admission` |
 
 ## Phase Structure
 

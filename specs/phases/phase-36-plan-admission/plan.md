@@ -19,6 +19,12 @@ epic: the-harness-as-data
 
 Depends on: phase-33-authority-at-the-act (complete, v0.30.0).
 
+**Reference specs** (read as stable during the phase; gaps logged as `[ARCH_CHANGE]`, synced at
+completion — Rule 10): `specs/architecture/runtime.md` (the governed step, children, the fold),
+`specs/architecture/adapters.md` (patterns and modes as data, the agent component),
+`specs/architecture/wire.md` (methods, events, error kinds), `specs/architecture/refusal.md`
+(typed refusals), `specs/architecture/testing.md` (the corpus and mutation discipline).
+
 Run policy: release: per-phase · push: per-phase · tdd: strict. Every group: RED first (the
 test fails for the stated reason), the code, a mutation check on each load-bearing assertion,
 the records (history, backlog, changelog, this phase's tasks), the four-zero gate.
