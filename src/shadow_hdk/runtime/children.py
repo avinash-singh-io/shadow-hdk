@@ -123,6 +123,10 @@ class Children:
     def __init__(self, context: RunContext) -> None:
         self._context = context
         self._held: dict[str, HeldChild] = {}
+        #: Plans admitted by a step to run after it closes (D112), in order.
+        self._deferred: list[
+            tuple[Composition, Ceiling, EffectProfile | None, str, PlanLimits]
+        ] = []
         self._released: set[str] = set()
         self._lost: dict[str, str] = {}
 
@@ -213,6 +217,7 @@ class Children:
         limits: PlanLimits | None = None,
         proposed_by: str = "compose",
         step: str | None = None,
+        admitted: PlanLimits | None = None,
     ) -> tuple[str, list[Event]]:
         """Start a child and let it run. If it parks rather than ending, this parent holds it.
 
@@ -231,8 +236,12 @@ class Children:
         # `limits` is what the caller — a pattern — allows; the run's own are met with it, so a
         # child is never admitted a wider plan than its parent would (D109). A refusal is an event
         # on the record and an exception to the caller; nothing below this line ran.
-        effective = await self.admit(
-            composition, limits=limits, proposed_by=proposed_by, context=context, step=step
+        effective = (
+            admitted
+            if admitted is not None
+            else await self.admit(
+                composition, limits=limits, proposed_by=proposed_by, context=context, step=step
+            )
         )
 
         # **The parent's own, by default** (D37). A fresh in-memory saver made a child that could
@@ -370,6 +379,34 @@ class Children:
         )
         return effective
 
+    async def defer(
+        self,
+        composition: Composition,
+        ceiling: Ceiling,
+        *,
+        within: EffectProfile | None = None,
+        within_name: str = "",
+        limits: PlanLimits | None = None,
+        proposed_by: str = "compose",
+    ) -> PlanLimits:
+        """Admit a plan now and run it **after** the step that proposed it closes (D112). The
+        admission is on the record at once; the run follows the planner's `Observed`, as this
+        run's child, its events forwarded — the planner is told it is admitted, not its results."""
+        effective = await self.admit(composition, limits=limits, proposed_by=proposed_by)
+        self._deferred.append((composition, ceiling, within, within_name, effective))
+        return effective
+
+    async def run_deferred(self) -> list[Event]:
+        """Spawn what the closing step deferred, in order; each already admitted."""
+        events: list[Event] = []
+        while self._deferred:
+            composition, ceiling, within, within_name, effective = self._deferred.pop(0)
+            _handle, seen = await self.spawn(
+                composition, ceiling, within=within, within_name=within_name, admitted=effective
+            )
+            events.extend(seen)
+        return events
+
     async def is_held(self, handle: str) -> bool:
         """Whether this parent is still holding a child — a query, so it can cross a wire (D51)."""
         return handle in self._held
@@ -385,6 +422,26 @@ class Children:
                 child.composition, message, self._context.ports, options=self._options_for(child)
             )
         ]
+        if any(isinstance(event, Ended) for event in events):
+            del self._held[handle]
+            self._released.add(handle)
+        return events
+
+    async def amend(self, handle: str, composition: Composition, answer: Any) -> list[Event]:
+        """Wake a held child on a **different** composition (D116). The runtime admits it as an
+        amendment before the child takes it — `plan_admitted` with `amendment` on the record, or
+        `plan_refused` and the child still held, untouched, on the plan it parked with."""
+        from shadow_hdk.runtime.loop import resume
+
+        child = self._held[handle]
+        events = [
+            event
+            async for event in resume(
+                composition, answer, self._context.ports, options=self._options_for(child)
+            )
+        ]
+        if any(e.kind == "plan_admitted" and getattr(e, "amendment", False) for e in events):
+            self._held[handle] = replace(child, composition=composition)
         if any(isinstance(event, Ended) for event in events):
             del self._held[handle]
             self._released.add(handle)

@@ -42,11 +42,13 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.capabilities import ExecutionRequirements, ExecutionSelection
+from shadow_hdk.kernel.composition import Composition
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import AgentPort, ThreadStore
 from shadow_hdk.kernel.workspace import Workspace
+from shadow_hdk.runtime.approvals import Amend
 from shadow_hdk.runtime.bindings import Ports
 from shadow_hdk.runtime.conversation import (
     TURN,
@@ -478,6 +480,13 @@ class Thread:
             self._record = _replace(self._record, pending=now)
             await self._store.save(self._record)
 
+    async def amend(self, handle: str, composition: Composition, answer: Any = None) -> list[Event]:
+        """Continue a parked plan on a different composition (D116) — the person's answer to the
+        question is `Amend`, carried to whoever holds the plan, which admits the amendment under
+        the same limits, registry and policy as the original. Refused, the plan is as it was and
+        the question stays open."""
+        return await self.settle(handle, Amend(composition=composition, answer=answer))
+
     async def settle(self, handle: str, answer: Any) -> list[Event]:
         """Answer a question a turn left open (D80, D88).
 
@@ -498,6 +507,18 @@ class Thread:
             told = f"Your call {call_line(question)} could not be settled: no run parked on it"
         else:
             events = await self.conversation.resume_parked(question, answer)
+            if isinstance(answer, Amend) and any(
+                e.kind == "plan_refused" and getattr(e, "amendment", False) for e in events
+            ):
+                # The amendment was refused (D116): the plan is as it was, still waiting, and
+                # the question stays on the record for the next answer.
+                self.conversation.tell(
+                    f"The person tried to amend your plan from {question.turn}; the amendment "
+                    "was refused and your plan is as it was, still waiting."
+                )
+                self._record = _replace(self._record, spent=self.conversation.spent())
+                await self._store.save(self._record)
+                return events
             observation = next(
                 (
                     e.observation

@@ -523,6 +523,28 @@ class _Turnwise:
         # put the child's events on a stream nobody reads when the agent is on the far side of a
         # wire, and was the one thing that kept the agent from running there at all.
         try:
+            if not self.pattern.absorb:
+                # **The plan runs after this turn** (D112): admitted now, on the record now; it
+                # runs as this run's child once this step closes, and the model is told it is
+                # admitted rather than handed its results.
+                await self.ctx.children.defer(
+                    composition,
+                    ceiling,
+                    within=self.pattern.ceiling,
+                    within_name=self.pattern.name,
+                    limits=self.pattern.plan,
+                )
+                for call in calls:
+                    if call.name == COMPOSE or call.name not in BY_NAME:
+                        self.messages.append(
+                            Message(
+                                "tool",
+                                "that plan is admitted and will run after this turn; its results "
+                                "go on the record, not to you — say what you planned and finish.",
+                                tool_call_id=call.id,
+                            )
+                        )
+                return None
             handle, events = await self.ctx.children.spawn(
                 composition,
                 ceiling,
@@ -631,6 +653,22 @@ class _Turnwise:
         self.proposed = int(kept.get("proposed", 0))
         self.turns = int(kept.get("turns", 0))
 
+    async def _wake(self, handle: str, answer: Any) -> list[Event]:
+        """The held child woken with the host's answer — or, if the person amended the plan
+        (D116), woken on the amended composition, admitted first."""
+        from shadow_hdk.kernel.ports import Allow
+        from shadow_hdk.runtime.approvals import Amend
+
+        if isinstance(answer, Amend):
+            amended = answer.composition
+            if not isinstance(amended, Composition):
+                import json
+
+                amended = load(json.dumps(amended), Composition)
+            given = answer.answer if answer.answer is not None else Allow()
+            return await self.ctx.children.amend(handle, amended, given)
+        return await self.ctx.children.send(handle, answer)
+
     async def _answer_the_child(self, kept: dict[str, Any], answer: Any) -> Observation | None:
         """The host's answer goes into the held child, and what comes back is absorbed the way a
         fresh spawn's events are — so a child that parks *again* parks this step again."""
@@ -639,7 +677,7 @@ class _Turnwise:
         handle = str(kept["handle"])
         composition = load(json.dumps(kept["composition"]), Composition)
         calls = tuple(load(json.dumps(c), ToolCall) for c in kept.get("calls", []))
-        events = await self.ctx.children.send(handle, answer)
+        events = await self._wake(handle, answer)
         return await self._absorb(handle, events, composition, calls)
 
     # ------------------------------------------------------------------ bookkeeping

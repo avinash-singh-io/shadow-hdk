@@ -22,6 +22,7 @@ from typing import Any
 from pydantic import JsonValue
 
 from shadow_hdk.kernel import (
+    ApprovalRequest,
     Completed,
     Component,
     Composition,
@@ -34,7 +35,8 @@ from shadow_hdk.kernel import (
     Registration,
 )
 from shadow_hdk.kernel.contracts import dump, json_schema, load
-from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.kernel.ports import Allow, ComponentPort
+from shadow_hdk.runtime.approvals import Amend
 from shadow_hdk.runtime.bindings import current_run
 from shadow_hdk.runtime.children import PlanNotAdmitted
 
@@ -92,13 +94,63 @@ class PlanComponents(ComponentPort):
         context = current_run()
         if context is None:
             return Failed("compose runs inside a run, and there is none")
+        # **Picking up where it parked** (D57): a step inside the plan asked, this step parked
+        # with the plan's handle kept, and the host has answered — the answer goes into the held
+        # plan, which continues where it stopped.
+        back = await context.resumed()
+        if back is not None and isinstance(back.kept, dict) and "handle" in back.kept:
+            handle = str(back.kept["handle"])
+            if isinstance(back.answer, Amend):
+                # The person changed the plan (D116): the held plan is woken on the amended
+                # composition, admitted first; refused, it stays held and this step parks again
+                # on the same question.
+                amended = back.answer.composition
+                if not isinstance(amended, Composition):
+                    amended = load(json.dumps(amended), Composition)
+                answer = Allow() if back.answer.answer is None else back.answer.answer
+                events = await context.children.amend(handle, amended, answer)
+                if any(e.kind == "plan_refused" for e in events):
+                    await context.keep({"handle": handle})
+                    component = back.kept.get("component")
+                    return ApprovalRequest(
+                        question=str(back.kept.get("question", "the plan is waiting")),
+                        handle=str(back.kept.get("step", "")),
+                        component=component if isinstance(component, str) else None,
+                        inputs=back.kept.get("inputs"),
+                    )
+                return await self._settle(context, handle, events)
+            events = await context.children.send(handle, back.answer)
+            return await self._settle(context, handle, events)
         ceiling = (await context.remaining_now()).ceiling
         try:
-            _handle, events = await context.children.spawn(
-                composition, ceiling, proposed_by=COMPOSE
-            )
+            handle, events = await context.children.spawn(composition, ceiling, proposed_by=COMPOSE)
         except PlanNotAdmitted as refused:
             return Refused(str(refused))
+        return await self._settle(context, handle, events)
+
+    async def _settle(self, context: Any, handle: str, events: list[Any]) -> Observation:
+        """What the plan's events mean for the caller — or, if a step inside asked, the question,
+        which becomes this step's own (D57): the run parks here with the plan's handle kept, and
+        the answer is sent into the held plan when this step is invoked again."""
+        question = next(
+            (e for e in events if e.kind == "approval_requested" and e.run_id == handle), None
+        )
+        if question is not None and await context.children.is_held(handle):
+            await context.keep(
+                {
+                    "handle": handle,
+                    "question": question.question,
+                    "step": question.step,
+                    "component": question.component,
+                    "inputs": question.inputs,
+                }
+            )
+            return ApprovalRequest(
+                question=question.question,
+                handle=question.step,
+                component=question.component,
+                inputs=question.inputs,
+            )
         observed: dict[str, JsonValue] = {}
         for event in events:
             if event.kind == "observed":

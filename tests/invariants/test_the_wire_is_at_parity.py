@@ -134,6 +134,8 @@ HANDLES_CROSSING: dict[str, str] = {
 """Host handle or thread operation → the `protocol.py` name that carries it."""
 
 HANDLES_NOT_CROSSING: dict[str, str] = {
+    "Thread.amend": "crosses as `thread/amend` in Phase 36 G7; until then the amendment is an "
+    "`Amend` answer to `approvals/answer`, which already crosses (D116)",
     "Thread.turning": "a property read by the wire's own `turn/interrupt` and `run/cancel` to say "
     "whether anything was running; the answer crosses inside those",
     "Thread.id": "the id crosses as `thread_id` in every result and notification",

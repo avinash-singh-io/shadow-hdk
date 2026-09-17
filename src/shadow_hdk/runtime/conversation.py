@@ -816,22 +816,39 @@ class Conversation:
         if self._approvals is not None:
             self._approvals.answer(question.handle, Parked())
 
-    async def resume_parked(self, question: PendingQuestion, answer: Any) -> list[Event]:
+    async def resume_parked(
+        self,
+        question: PendingQuestion,
+        answer: Any,
+        *,
+        composition: Composition | None = None,
+    ) -> list[Event]:
         """The child run that parked on the question, woken from the checkpointer with the
-        answer — the same composition the offer built for the call, so the step is the same."""
-        inputs = question.inputs if isinstance(question.inputs, dict) else {}
-        composition = Composition(
-            (
-                Invoke(
-                    id=question.step,
-                    component=question.component or "",
-                    inputs=tuple(Binding(name=k, value=v) for k, v in inputs.items()),
-                ),
+        answer — on the composition it parked with (D116), read from the checkpoint; or, for an
+        **amendment**, on the one handed in, which the runtime admits before continuing."""
+        from shadow_hdk.runtime.loop import parked_composition
+
+        if composition is None:
+            composition = await parked_composition(self._checkpointer, question.run_id)
+        if composition is None:
+            # Nothing carried — the shape the offer built for the call, as before.
+            inputs = question.inputs if isinstance(question.inputs, dict) else {}
+            composition = Composition(
+                (
+                    Invoke(
+                        id=question.step,
+                        component=question.component or "",
+                        inputs=tuple(Binding(name=k, value=v) for k, v in inputs.items()),
+                    ),
+                )
             )
-        )
         left = self._meter.remaining().ceiling
+        # **What the thread has left, not a guess at the call** (BUG-024's rule, the other way
+        # round): the run being woken may hold a plan of many steps below the one step this
+        # composition names, and a carve sized for one call starved that plan at its first step.
+        # Admission bounds the plan; the meter settles what is not spent back to the thread.
         reserved = Ceiling(
-            max_steps=min(2, max(left.max_steps, 1)),
+            max_steps=max(left.max_steps, 1),
             max_wall_seconds=left.max_wall_seconds,
             max_cost_cents=left.max_cost_cents,
         )

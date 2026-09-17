@@ -51,6 +51,18 @@ class ApproveAndAddRule:
 
 
 @dataclass(frozen=True)
+class Amend:
+    """The person answers a parked plan by changing it (D116): the composition the plan should
+    continue on, and the answer to the question it parked on (`Allow` by default). Whoever holds
+    the parked plan admits the amendment — the same limits, registry and policy as the original —
+    and the plan continues on it; refused, the plan is as it was and the question stays open."""
+
+    composition: Any
+    answer: Any = None
+    kind: str = "amend"
+
+
+@dataclass(frozen=True)
 class Parked:
     """Not now: keep the question (D88). The call is not run and not refused for good — the run
     that asked stays asleep in the checkpointer, the provider is told the call is kept and asked
@@ -129,6 +141,7 @@ __all__ = [
     "Approve",
     "ApproveAndAddRule",
     "Deny",
+    "Amend",
     "Parked",
     "Request",
 ]

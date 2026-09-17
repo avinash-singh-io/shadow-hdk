@@ -76,10 +76,13 @@ class StepExecutor:
         context: Any = None,
         resuming: dict[str, str] | None = None,
         kept: dict[str, Any] | None = None,
+        plan: JsonValue = None,
     ) -> None:
         self.session = session
         self.registry = registry
         self._emitter = emitter
+        #: The composition being executed, as JSON, written into every node's state (D116).
+        self.plan = plan
         self._ports = ports
         self._context = context
         self._resuming = dict(resuming or {})
@@ -280,7 +283,13 @@ class StepExecutor:
             # The grammar's other half. `Invoke` is *do it now*; `Await` is *this may take a while*,
             # so a component that says `Pending` there is taken at its word and the run parks.
             observation = Completed(await self._wait(step, observation))
-        return await self._observe(step, observation, posture)
+        observed = await self._observe(step, observation, posture)
+        # **A plan deferred by this step runs after it** (D112): the planner's step has closed
+        # on the record; the plan it admitted runs on as this run's child, its events forwarded,
+        # nothing folded back into the planner's transcript.
+        if self._context is not None:
+            await self._context.children.run_deferred()
+        return observed
 
     @staticmethod
     def _effect_observation(state: EffectState) -> Observation:

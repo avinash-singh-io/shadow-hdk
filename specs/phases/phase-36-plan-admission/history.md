@@ -149,3 +149,26 @@ limits live — measured in the test with a scripted CLI proposing a three-wide 
 two-wide mode, then again under an eight-wide one.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-18 — G5: the checkpoint carries the plan; amend is a resume; a plan may run after its planner
+Topics: planning, amend, resume, checkpoint, state, defer
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md#state, architecture/runtime.md#resume, architecture/adapters.md#patterns
+Detail: `RunState.plan` — the composition as JSON, seeded in the initial state and written by every
+node — so a parked run's shape survives where its state does. Two things follow. A settle now
+resumes on the composition it parked with (`runtime.parked_composition`) instead of a rebuilt
+one-step plan, which would have dropped every step after the parked one in a nested plan. And
+`resume` handed a *different* composition admits it as an amendment (D116) before taking it:
+`Composed` and `plan_admitted(amendment=True)`, or `plan_refused` with the run untouched. The
+person's amendment travels as an answer — `Amend(composition, answer)` beside `Approve`, `Deny`,
+`ApproveAndAddRule`, `Parked` — so whoever holds the plan performs it: `compose` and the loop's
+component both wake the held child through `Children.amend`; refused, `compose` re-parks on the
+same question. `Pattern.absorb=False` defers an admitted plan to run after its planner's step
+closes (D112), as the same run's child. Also found and fixed: `compose` returned `Completed` when
+a step inside its plan parked — it now parks the call on that question (D57) as the loop's
+component does; and a settle reserved a one-call ceiling that starved a nested plan at its first
+step — it reserves what the thread has left, the meter settling the rest back. Phase 33's
+boundary showed up in the tests as designed: an irreversible write with no authority ports is
+refused, fail-closed.
+
+---

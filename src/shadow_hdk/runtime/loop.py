@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -22,8 +23,11 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
 from shadow_hdk.kernel.composition import Composition
+from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.events import Composed, Ended, EndReason, Event, Started
+from shadow_hdk.kernel.planning import composition_digest
 from shadow_hdk.runtime.bindings import _CURRENT, MISSING, Ports, RunContext, RunOptions
+from shadow_hdk.runtime.children import PlanNotAdmitted
 from shadow_hdk.runtime.compile import compile_composition
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import RuntimeStop
@@ -83,7 +87,16 @@ async def _drive(
                 await parent.announce_child(session.run_id, session.meter.lease)
             await emitter.emit(lambda **k: Composed(composition=composition, **k))
 
-        executor = StepExecutor(session, emitter, ports, registry, context, resuming, kept)
+        executor = StepExecutor(
+            session,
+            emitter,
+            ports,
+            registry,
+            context,
+            resuming,
+            kept,
+            plan=json.loads(dump(composition, Composition)),
+        )
         config = {
             "configurable": {"thread_id": session.run_id},
             "recursion_limit": session.meter.lease.ceiling.max_steps * RECURSION_HEADROOM,
@@ -137,6 +150,7 @@ async def _carried(
     run_id: str,
     carried_children: dict[str, Any],
     parked: list[tuple[str, dict[str, Any]]],
+    carried_plan: list[Composition] | None = None,
 ) -> dict[str, float]:
     """What earlier legs of this run already spent, read from the checkpoint (D33).
 
@@ -164,6 +178,9 @@ async def _carried(
         holding = value.get("holding")
         if isinstance(holding, dict):
             carried_children.update(holding)
+    if carried_plan is not None and isinstance(values.get("plan"), dict):
+        with contextlib.suppress(Exception):  # an unreadable plan is no plan carried
+            carried_plan.append(load(json.dumps(values["plan"]), Composition))
     spent = values.get("spent")
     carried = {**no_spend(), **spent} if isinstance(spent, dict) else no_spend()
     # The state's mark was written when the last node returned; a step that parked emitted its
@@ -257,11 +274,31 @@ async def _stream(
         # numbering pick up where the parked leg left them, and so does what the run was holding
         # when it parked (D37) — a parent that came back to an empty hand made a second child.
         carried_children: dict[str, Any] = {}
-        carried = await _carried(options, run_id, carried_children, parked)
+        carried_plan: list[Composition] = []
+        carried = await _carried(options, run_id, carried_children, parked, carried_plan)
         session.meter.restore(carried)
         emitter.restore(int(carried["seq"]))
         if carried_children:
             context.children.restore(carried_children, checkpointer)
+        # **An amended plan is admitted like the original** (D116). `resume` takes the plan
+        # back in; when the plan it is handed is not the one the run parked with, it is a
+        # proposal — measured against the same limits, the same registry, the same policy —
+        # before the run continues on it. Refused, the parked run is untouched.
+        if carried_plan and composition_digest(carried_plan[0]) != composition_digest(composition):
+            parked_step = next(
+                (str(v["step"]) for _i, v in parked if isinstance(v.get("step"), str)), ""
+            )
+            try:
+                await context.children.admit(composition, amendment=True, step=parked_step)
+            except PlanNotAdmitted:
+                emitter.close()
+                async for event in emitter.stream():
+                    if parent is not None:
+                        await parent.forward(event)
+                    yield event
+                await emitter.drained()
+                return
+            await emitter.emit(lambda **k: Composed(composition=composition, **k))
         # Each parked step resumes **where it parked** (D38): it does not judge again, and an
         # `Await` does not call its component a second time.
         resuming = {
@@ -324,7 +361,9 @@ def run(composition: Composition, ports: Ports, *, options: RunOptions) -> Async
     A component's failure is never raised — it is a `Failed` observation. A *port's* failure ends
     the run with `Ended(reason="failed")` rather than a traceback (D7).
     """
-    return _stream(composition, ports, options, initial_state())
+    return _stream(
+        composition, ports, options, initial_state(json.loads(dump(composition, Composition)))
+    )
 
 
 @dataclass(frozen=True)
@@ -356,4 +395,15 @@ def resume(
     return _stream(composition, ports, options, _Answer(answer))
 
 
-__all__ = ["resume", "run"]
+async def parked_composition(checkpointer: Any, run_id: str) -> Composition | None:
+    """The composition a parked run holds in its checkpoint (D116) — what a settle resumes with,
+    so the plan continues on the shape it parked with. `None` when nothing is there."""
+    carried_plan: list[Composition] = []
+    from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
+
+    options = RunOptions(lease=Lease(Ceiling(1, 1, None), Floor(0)), checkpointer=checkpointer)
+    await _carried(options, run_id, {}, [], carried_plan)
+    return carried_plan[0] if carried_plan else None
+
+
+__all__ = ["parked_composition", "resume", "run"]

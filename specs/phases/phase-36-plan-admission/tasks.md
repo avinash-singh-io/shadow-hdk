@@ -45,10 +45,12 @@ epic: the-harness-as-data
 - [x] Verify: `uv run pytest -q tests/adapters/modes` → 103 passed · full non-live 1,755 passed · mypy 450 files clean — 2026-09-18
 
 ## Group 5 — After the planner; amend
-- [ ] `Pattern.absorb`; with `False` the planner's turn ends first and the child runs on as a held run
-- [ ] `Thread.amend(handle, composition)`: admitted like the original; the held child takes it at its next boundary; `Composed` + the plan event; refusal leaves the plan untouched
-- [ ] The boundary actually measured and recorded; any limitation filed as a backlog row
-- [ ] Verify: `uv run pytest -q tests/runtime`
+- [x] `Pattern.absorb`: with `False` the loop admits the plan and **defers** it (`Children.defer`); the step closes on the record, then `run_deferred` spawns it as the same run's child — the planner is told it is admitted, never its results
+- [x] Amend is a resume: the checkpoint's new `plan` channel carries the composition (seeded in the initial state, written by every node); `resume` compares digests and admits a different plan as an amendment — `Composed` + `plan_admitted(amendment)`, or `plan_refused` with the parked run untouched. `runtime.parked_composition()` lets a settle resume on the shape it parked with (it used to rebuild a one-step plan)
+- [x] `Amend(composition, answer)` is an answer kind: `Thread.amend` = `settle` with it; whoever holds the plan (`compose`, the loop's component) wakes the held child on the amended composition via `Children.amend`; refused, `compose` parks again on the same question and the record keeps it
+- [x] `compose` parks honestly when a step inside its plan asks (D57): the question becomes the call's own, the handle kept, the answer sent into the held plan on resume — a settle reserves the thread's remaining budget, since the run below may hold many steps
+- [x] Measured: the amended composition takes effect from the parked step (`w`, then the new `after`); a refused amendment re-parks with the question open; the mutations (no amendment admission → 4 fail; deferred never runs → 1 fails) bite
+- [x] Verify: full non-live 1,761 passed (BUG-054's two deselected) · mypy 451 files clean · ruff clean — 2026-09-18
 
 ## Group 6 — ENH-020
 - [ ] JSONL/ACP openers report `unmapped`; `Conversation` reads it at open and reopen; `Thread.open/resume/set_mode` surface it
