@@ -76,6 +76,7 @@ from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
+from shadow_hdk.runtime.planning import plan_components
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
 from shadow_hdk.serve.authority import HostAuthority, HostAuthorizer
@@ -206,7 +207,15 @@ async def workshop(
     # so every mode offers it.
     # Batteries (D70) are ports like any other, judged by the same modes: their profiles say what
     # they reach, so a confined mode hides them by itself.
-    offered: tuple[Any, ...] = (environment, chosen_from, person_components(), *batteries)
+    # A plan proposed as a component (D110): no effects, so every mode offers it; a resident
+    # CLI reaches it through the socket and is admitted like the loop.
+    offered: tuple[Any, ...] = (
+        environment,
+        chosen_from,
+        person_components(),
+        plan_components(),
+        *batteries,
+    )
     if store is not None:
         # Which components are on is the store's to say (D66): off at the next refresh.
         offered = tuple(Switched(port, store_switches(store)) for port in offered)

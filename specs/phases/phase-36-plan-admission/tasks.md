@@ -31,11 +31,11 @@ epic: the-harness-as-data
 - [x] Verify: `uv run pytest -q -m 'not live'` → 1,731 passed, 3 deselected (G5's), 2 pre-existing README failures (BUG-054) · `uv run mypy` → 446 files clean · ruff clean — 2026-09-18
 
 ## Group 3 — Planning is a component
-- [ ] `runtime/planning.py::PlanComponents` (`compose`, empty profile) on the `PersonComponents` precedent
-- [ ] `AgentComponent.compose` routes through the component path; `Thread.tools()` lists `compose`
-- [ ] `serve`/`workshop` offers it; a mode's `tools_offered` may withhold it
-- [ ] Live: one turn on Claude Code — the CLI plans through the socket; admitted inside the limits, refused with the list outside (≤ 2 turns; spend recorded in history)
-- [ ] Verify: `uv run pytest -q tests/runtime tests/serve` · `uv run pytest -m live -k plan -rs`
+- [x] `runtime/planning.py::PlanComponents` (`compose`, `plan` label, empty profile, the `Composition` schema as input) on the `PersonComponents` precedent; held to `ComponentPortContract`
+- [x] One path: the loop's `compose` meta-tool and the component both enter `children.spawn`; the loop treats the plan-labelled registration as its meta-tool and never shows it as a second tool — `single` stays unable to plan (tested); the offer gives a plan proposal the parent's remaining steps rather than a tool call's two
+- [x] `serve`/`workshop` offers it beside `ask_person`; `Thread.tools()` lists it; a mode's `tools_offered` may withhold it
+- [x] Live: **Codex CLI 0.154.0** — Claude Code was signed out on this machine (`loggedIn: false`, the owner's to fix); the first ready CLI proposed `fan_out(read_a, read_b)` through the socket, two admissions on the record, both `read_file` steps ran through our registry, the reply named both contents; 2 turns, 4 steps, 17.4 s, 57,471/324 tokens, unpriced. The Claude Code half of the measurement is owed
+- [x] Verify: `uv run pytest -q tests/runtime tests/serve tests/invariants` green · `uv run pytest -m live tests/test_a_cli_plans_through_the_socket.py` → 1 passed · mutation (a refusal reported as success) bites — 2026-09-18
 
 ## Group 4 — Limits on the mode
 - [ ] `ModeSpec.plan`; `[plan]` in mode documents; malformed refused by name

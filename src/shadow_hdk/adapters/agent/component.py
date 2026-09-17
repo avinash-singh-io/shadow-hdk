@@ -289,6 +289,12 @@ class _Turnwise:
             registration
             for registration in await self.ctx.visible()
             if registration.id != self.agent.registration_id
+            # **The runtime's own `compose` is this loop's meta-tool, not a second tool** (D110).
+            # A registration carrying the `plan` label is planning offered to a resident CLI
+            # through the socket; for this loop the same path is the `compose` meta-tool, which
+            # the *pattern* grants or withholds — `single` must stay unable to plan, so the
+            # component is never shown beside it.
+            and "plan" not in registration.component.labels
         ]
         colliding = [r for r in visible if r.component.interface.name in BY_NAME]
         if colliding:

@@ -113,3 +113,23 @@ The plan crosses the wire with its limits and its proposing step, and a refusal 
 the governed step's story gains admission; the wire's kinds and `ERROR_KINDS`.
 
 ---
+
+### [NOTE] 2026-09-18 — G3: compose is a component; a CLI planned through the socket, measured on Codex
+Topics: planning, component, offer, live, codex
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md#planning, providers/library/codex.toml
+Detail: `runtime/planning.py` on the `PersonComponents` precedent, offered in the served composition
+beside `ask_person`, held to the component contract. Two findings on the way: BUG-001's guard
+refused the registered `compose` as a tool shadowed by the meta-tool — for the loop the plan-labelled
+registration *is* the meta-tool (D110), so it is never shown as a second tool and `single` stays
+unable to plan; and the offer carved a two-step ceiling for every call, which starved a plan of its
+second step — a `plan`-labelled proposal now gets the parent's remaining steps (admission bounds
+it). Live on **Codex CLI 0.154.0** (Claude Code signed out here): the CLI proposed
+`fan_out(read_a, read_b)` through the socket; two `plan_admitted` on the record (the one-call plan
+for the `compose` call, then the proposed plan); both `read_file` steps ran through the registry;
+the reply named both contents. 2 turns, 4 steps, 17.4 s, 57,471 in / 324 out tokens, unpriced.
+This is also the first live proof of the registry relay end to end on Codex, which
+`codex.toml`'s comment still calls unproven — the comment is updated with the docs in G7. The
+Claude Code half of the measurement is owed to the owner's sign-in.
+
+---
