@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 epic: the-harness-as-data
 tags: [planning, admission, limits, modes, component, amend, wire, unmapped-behaviour]
 deps: [phase-33-authority-at-the-act]
@@ -111,6 +111,24 @@ that plan is refused before its first step, with the reason on the record.
 8. A refused plan reaches its author as an observation in the same shape as a refused step; the runtime never alters the proposal.
 9. A `Behaviour` field the provider maps no flag for is named on `Thread.open`, `resume` and `set_mode` and on the wire; nothing is silently dropped (ENH-020 closed).
 10. Every new event, result and error kind crosses the wire and the generated TypeScript client identically; the bare-harness test stays green; schemas show no drift; the four-zero gate and OKF are green; v0.31.0 is released with the migration note and the example's chapter written from the live run.
+
+## Acceptance at completion — 2026-09-18
+
+Each criterion above, and what it came to. The criteria are left as written; two came out
+differently from the text and say so here rather than being edited to match what was built.
+
+| # | verdict | evidence |
+|---|---|---|
+| 1 | met | `tests/benchmarks/plan-admission-v1.json` (9 cases, digest pinned) + `tests/runtime/test_plan_admission.py`; a mutation removing the check makes *never spawned* fail |
+| 2 | met | the existence axis; the refusal keeps the wording a CLI and a model already read |
+| 3 | **amended** | Admission **names** a step's ask or refusal (`plan_admitted.asks` / `.refusals`); it does not pre-empt it. Raising the plan's question at admission broke D57's park where no `Questions` handle exists and asked twice where one does; refusing a plan for a step the step itself can refuse broke BUG-012's promise that the planner sees every result. Each step is still asked, parked or refused live at its own invocation, and the irreversible act inside still obtains its Phase 33 grant. D121's single question becomes a host presentation. Recorded as Epic 0009's amendment, **pending the owner's confirmation** |
+| 4 | met | hypothesis properties for `meet`; `spawn_options`; `widens_plan` refuses a mode that widens |
+| 5 | **met on Codex, owed on Claude Code** | Codex CLI 0.154.0 proposed `fan_out(read_a, read_b)` through the socket; two admissions on the record, both steps through our registry; 2 turns, 4 steps, 17.4 s. Claude Code is signed out on this machine (`loggedIn: false`) — the owner's to fix; the identical-events half is proven for one CLI, not yet two |
+| 6 | met | `Pattern.absorb=False` → `Children.defer` → `run_deferred` after the step closes |
+| 7 | met | `tests/runtime/test_a_plan_is_amended_on_the_record.py` (5) and the wire's refused-then-admitted pair |
+| 8 | met | `Refused(str(refused))` to the offer, the tool result to the model, `PlanNotAdmitted` to a caller |
+| 9 | met | ENH-020 closed; session, thread and wire tests |
+| 10 | met, less the example's chapter | four-zero gate, OKF, schemas without drift, `npm run generate/check/build`; the demo's re-pin to 0.31.0 **consumes the kit from PyPI**, so its chapter follows the publish, as 0.29.1's did (ENH-021) |
 
 ## Run policy (inherited)
 

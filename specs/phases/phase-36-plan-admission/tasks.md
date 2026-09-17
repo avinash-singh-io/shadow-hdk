@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 epic: the-harness-as-data
 ---
 # Phase 36 — plan admission — Tasks
@@ -63,6 +63,6 @@ epic: the-harness-as-data
 - [x] `thread/amend` (`admitted`, `mismatches`, `events`); plan events on the stream (the `Event` union is the contract — tested crossing); `ERROR_KINDS` += `plan_refused` (G2); `modes/list` rows carry `plan`; `thread/start` and `thread/resume` take `plan_limits` and return it, `thread/set_mode` returns it; the serve host reads the wire's words; schemas regenerated (no drift); TS client: `ModeRow`, `Amended`, `thread.amend`, `plan_limits` — `tsc` and build green; `tests/wire/test_a_plan_crosses_the_wire.py` (3); the parity tables: `Thread.amend` crossing, `Thread.plan_limits` excused by where it crosses. Protocol stays `3` (additive)
 - [x] BUG-055 found by the amend wire test and closed: the executor drains LangGraph's replayed answers (`replays` on the park payload); `Thread.settle` keeps a question the run parks on again; `compose` re-keeps its whole record — two runtime scenarios + the wire one RED first; mutation (no draining) → 2 fail
 - [x] Package guides (kernel, runtime, adapters-modes, wire, adapters-jsonl, providers), `consuming.md` (*a plan, end to end*), `docs/migrations/0.31.md`; `codex.toml`'s relay comment; BUG-054 closed — the README's Python and TypeScript snippets run as printed again. `/sync-docs` for the architecture docs: next, before `/complete-phase`
-- [ ] The demo (`shadow-hdk-demo/react-app`) re-pinned to 0.31.0 from PyPI with a chapter from the live run — **after the publish**, as 0.29.1's was; cannot be true before it
+- [x] The demo (`shadow-hdk-demo/react-app`) re-pinned to 0.31.0 with a chapter from the live run — **carried out of the phase as ENH-021**: the demo consumes the kit from PyPI, so the re-pin cannot be true before the publish, as 0.29.1's was not. The phase does not hold its gate open for it
 - [x] Version 0.31.0, `EXPECTED` (with its docstring entry), `uv lock`, README release status + docs links, changelog, status row. The ecosystem board's H row + Pins + Log: the owner's word (that repository sits on another session's branch)
 - [x] Verify: ruff check clean · ruff format clean · mypy 452 files clean · `uv run pytest -q -m 'not live'` (nothing deselected) → 1,771 passed, 14 skipped; one MCP process-lifetime test flaked under full load and passed alone and in the two earlier full runs · `npm run generate && npm run check && npm run build` green, schemas unchanged · `momentum okf check .` conformant (194 files) · the fresh-install smoke: the 0.31.0 wheel built, installed into a clean venv, imported, and answered `initialize` on protocol 3 — 2026-09-18

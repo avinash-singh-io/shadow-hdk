@@ -1,6 +1,6 @@
 ---
 type: History
-status: in-progress
+status: complete
 epic: the-harness-as-data
 ---
 
