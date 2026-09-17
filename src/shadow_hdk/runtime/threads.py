@@ -418,6 +418,14 @@ class Thread:
         return self.conversation.environment_mode
 
     @property
+    def unmapped_behaviour(self) -> tuple[str, ...]:
+        """The behaviour fields the current mode set that this provider could not take (ENH-020)
+        — `system` or `model` on a CLI whose record maps no flag for them. Named at open, at
+        resume and after every `set_mode`, so a host hides the control instead of showing one
+        that does nothing."""
+        return self.conversation.unmapped_behaviour
+
+    @property
     def pending(self) -> tuple[PendingQuestion, ...]:
         """The questions open on this thread (D80, D88) — the ones a host that died or a turn
         that parked left, until they are settled, and the ones the running turn is waiting on."""

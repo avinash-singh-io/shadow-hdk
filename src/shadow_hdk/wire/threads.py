@@ -361,6 +361,7 @@ class ThreadMethods:
         return {
             "events": await self._announced(thread, changed),
             "environment": thread.environment_mode,
+            "unmapped_behaviour": list(thread.unmapped_behaviour),
         }
 
     async def _add_root(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -771,11 +772,13 @@ def _request_json(pending: Any) -> dict[str, Any]:
 
 def _workspace_json(thread: Thread) -> dict[str, Any]:
     """`root` (the primary) for a one-root reader; `roots` the whole workspace; `environment`
-    the sandbox's own mode beside the policy's (D76)."""
+    the sandbox's own mode beside the policy's (D76); `unmapped_behaviour` the fields the mode
+    set that the provider could not take (ENH-020) — a host hides those controls."""
     return {
         "root": thread.record.root,
         "roots": thread.workspace.as_json(),
         "environment": thread.environment_mode,
+        "unmapped_behaviour": list(thread.unmapped_behaviour),
     }
 
 

@@ -172,3 +172,18 @@ boundary showed up in the tests as designed: an irreversible write with no autho
 refused, fail-closed.
 
 ---
+
+### [NOTE] 2026-09-18 — G6: unmapped behaviour is named, not dropped (ENH-020)
+Topics: providers, behaviour, session, wire
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/adapters.md#jsonl, architecture/wire.md
+Detail: `unmapped_behaviour` was already written and never called; it moved to `kernel.providers`
+because the ACP opener needs it too and an adapter may not import another (the stands-alone
+invariant). `AgentSession.unmapped` joins the port with a default of none (D14); the JSONL opener
+computes it from the record's `behaviour_args`, ACP from a record that maps none. The conversation
+reads it off the session at every open the way it reads `session_id`, so a `set_mode` that reopens
+the provider re-reads it; `Changed.unmapped`, `Thread.unmapped_behaviour`, and `unmapped_behaviour`
+on the `thread/start`, `thread/resume` and `thread/set_mode` results. Nothing shipped changes —
+the shipped modes set no behaviour field — a product mode on Codex learns what it was losing.
+
+---

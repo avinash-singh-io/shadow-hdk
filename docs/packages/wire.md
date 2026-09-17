@@ -15,3 +15,7 @@ exceeds the 64 KiB projection bound. HTTP/SSE now consumes `runtime.StreamSessio
 one attachment, typed cursor/grace expiry, and an ephemeral 15-second heartbeat. The TypeScript
 client defaults to a 45-second silence deadline and reattaches with its last event id; heartbeats
 are link frames and never become durable events.
+
+Phase 36 adds `unmapped_behaviour` to the results of `thread/start`, `thread/resume` and
+`thread/set_mode`: the behaviour fields the thread's mode set that the provider could not take. A
+host in any language hides those controls for that provider.

@@ -82,6 +82,11 @@ export interface Started {
   roots: RootEntry[];
   /** The environment's own mode — what the sandbox enforces — beside `mode`, the policy's. */
   environment: string;
+  /**
+   * The behaviour fields the mode set that the provider could not take (ENH-020) — `system` or
+   * `model` on a CLI whose record maps no flag for them. Named so a host hides the control.
+   */
+  unmapped_behaviour: string[];
   provider: string;
   mode: string;
   modes: { id: string; name: string; description: string; source: string; scope: string }[];
@@ -428,10 +433,11 @@ export class HarnessClient {
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
     rollback: (thread_id: string, to_turn: number) => this.call<{ thread: JsonValue }>("thread/rollback", { thread_id, to_turn }),
     archive: (thread_id: string) => this.call<{ archived: string }>("thread/archive", { thread_id }),
-    setMode: (thread_id: string, mode: string) => this.call<{ events: Event[]; environment: string }>("thread/set_mode", { thread_id, mode }),
+    setMode: (thread_id: string, mode: string) =>
+      this.call<{ events: Event[]; environment: string; unmapped_behaviour: string[] }>("thread/set_mode", { thread_id, mode }),
     /** A directory added while the thread runs (D76): the sandbox re-proven over the new set. */
     addRoot: (thread_id: string, name: string, path: string) =>
-      this.call<{ events: Event[]; root: string; roots: RootEntry[]; environment: string }>("thread/add_root", { thread_id, name, path }),
+      this.call<{ events: Event[]; root: string; roots: RootEntry[]; environment: string; unmapped_behaviour: string[] }>("thread/add_root", { thread_id, name, path }),
     setOption: (thread_id: string, key: string, value: JsonValue) => this.call<{ ok: boolean }>("thread/set_option", { thread_id, key, value }),
     remaining: (thread_id: string) => this.call<{ lease: JsonValue }>("thread/remaining", { thread_id }),
   };

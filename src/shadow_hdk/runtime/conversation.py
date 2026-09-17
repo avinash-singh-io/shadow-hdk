@@ -148,10 +148,12 @@ class Turned:
 
 @dataclass(frozen=True)
 class Changed:
-    """What `set_mode` changed: the mode id and the environment mode now enforced."""
+    """What `set_mode` changed: the mode id, the environment mode now enforced, and the
+    behaviour fields the new mode set that the provider could not take (ENH-020)."""
 
     mode: str
     environment: str
+    unmapped: tuple[str, ...] = ()
 
 
 def _unwrapped(port: Any) -> Any:
@@ -277,6 +279,10 @@ class Conversation:
         self.workspace = workspace
         self.session_id = session_id
         """The provider's own session id, when it has one — what a reopen hands back (D76)."""
+        self.unmapped_behaviour: tuple[str, ...] = ()
+        """The behaviour fields the current mode set that the provider could not take (ENH-020),
+        read off the session at every open — named so a host can hide the control, never
+        silently dropped. Empty until the provider is open."""
         self.turns_taken = turns_taken
         self.last: Turned | None = None
         """What the last turn came to; `None` before the first."""
@@ -451,12 +457,17 @@ class Conversation:
         extra: dict[str, Any] = {}
         if self.session_id:
             extra["resume"] = self.session_id
-        return await self._agent.open(
+        session = await self._agent.open(
             tools=tuple(self._sources),
             workspace=str(self.workspace.primary.path),
             behaviour=self._behaviour,
             **extra,
         )
+        # What the opener could not take is read the way `session_id` is (ENH-020): off the
+        # session, by name, so a double or an adapter that predates the field reports nothing.
+        unmapped = getattr(session, "unmapped", ())
+        self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
+        return session
 
     def _remember_session(self) -> bool:
         """The provider's own session id, off the session (D76). `True` when it changed."""
@@ -976,7 +987,9 @@ class Conversation:
         await self._reopen_provider()
         # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
         await self.registry.changed()
-        return Changed(mode=mode_id, environment=self.environment_mode)
+        return Changed(
+            mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
+        )
 
     async def set_option(self, key: str, value: JsonValue) -> None:
         """A per-conversation governance option, read at the next step's `Context` (ACP's

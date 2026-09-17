@@ -312,6 +312,15 @@ class AgentSession(Protocol):
 
     async def close(self) -> None: ...
 
+    @property
+    def unmapped(self) -> tuple[str, ...]:
+        """The behaviour fields the opener was handed and this provider could not take — named,
+        never dropped (D64, ENH-020) — so a host learns its mode asked for a system prompt or a
+        model this CLI has no flag for, and can hide the control. The default: none, which is
+        true of a session whose opener maps every field or was handed none.
+        """
+        return ()
+
     async def stream(self, prompt: str) -> AsyncIterator[TurnChunk]:
         """Tokens as they arrive — with a default, so growing this port breaks no adapter (D14).
 

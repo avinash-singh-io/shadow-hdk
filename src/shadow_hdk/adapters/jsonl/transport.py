@@ -23,6 +23,7 @@ from typing import Any
 
 from shadow_hdk.adapters.jsonl.session import JsonlSession
 from shadow_hdk.kernel import AgentPort, AgentSession, Behaviour, Dialect, Provider, ToolSource
+from shadow_hdk.kernel.providers import unmapped_behaviour
 
 
 class UngovernableProvider(ValueError):
@@ -95,23 +96,6 @@ def _behaviour_flags(dialect: Dialect, behaviour: Behaviour | None) -> list[str]
     return flags
 
 
-def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[str]:
-    """Behaviour fields this provider has no flag for, that the behaviour set. Named, not dropped
-    (D64) — a host learns its mode asked for something this CLI cannot do."""
-    if behaviour is None:
-        return []
-    dialect = provider.dialect or Dialect()
-    mapped = {a.field for a in dialect.behaviour_args} | {"tools_offered"}
-    unmapped: list[str] = []
-    for name in ("system", "append_system", "model", "effort", "temperature"):
-        if name in mapped:
-            continue
-        value = getattr(behaviour, name, None)
-        if value not in (None, "", ()):
-            unmapped.append(name)
-    return unmapped
-
-
 def argv_for(
     provider: Provider,
     tools: tuple[ToolSource, ...],
@@ -177,6 +161,7 @@ class JsonlProvider(AgentPort):
             workspace=Path(workspace) if workspace else self._extra.get("workspace"),
             tools=tools,
             resume=resume,
+            unmapped=tuple(unmapped_behaviour(self._provider, behaviour)),
         )
 
 

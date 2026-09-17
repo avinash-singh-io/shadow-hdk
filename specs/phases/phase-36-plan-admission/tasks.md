@@ -53,10 +53,11 @@ epic: the-harness-as-data
 - [x] Verify: full non-live 1,761 passed (BUG-054's two deselected) · mypy 451 files clean · ruff clean — 2026-09-18
 
 ## Group 6 — ENH-020
-- [ ] JSONL/ACP openers report `unmapped`; `Conversation` reads it at open and reopen; `Thread.open/resume/set_mode` surface it
-- [ ] Wire results carry `unmapped_behaviour`; TypeScript generated
-- [ ] ENH-020 closed in the backlog; `adapters-jsonl.md`, `providers.md` updated
-- [ ] Verify: `uv run pytest -q tests/adapters/jsonl tests/runtime tests/wire`
+- [x] JSONL/ACP openers report `unmapped` on the session (`AgentSession.unmapped`, default none; `unmapped_behaviour` moved to `kernel.providers` — an adapter may not import another); `Conversation.unmapped_behaviour` read off the session at every open, so `set_mode`'s reopen re-reads it; `Changed.unmapped`; `Thread.unmapped_behaviour` names it at open, resume and after `set_mode`
+- [x] `thread/start`, `thread/resume`, `thread/set_mode` results carry `unmapped_behaviour`; `Started`/`setMode`/`addRoot` typed in the TypeScript client (`tsc --noEmit` green); the parity table excuses the property by naming where it crosses
+- [x] ENH-020 closed in the backlog; `adapters-jsonl.md`, `providers.md`, `wire.md` updated
+- [x] RED first: five tests failed on `'JsonlSession' object has no attribute 'unmapped'` / `'Thread' object has no attribute 'unmapped_behaviour'`; mutation (the JSONL opener stops reporting) → 1 fails; restored
+- [x] Verify: `uv run pytest -q tests/adapters/jsonl tests/adapters/acp tests/wire tests/invariants tests/runtime tests/serve` → 899 passed, BUG-054's two the only failures; full non-live 1,766 passed (BUG-054's two deselected) · mypy 451 files clean · ruff clean — 2026-09-18
 
 ## Group 7 — Parity, docs, release
 - [ ] `thread/amend`; plan events on the stream; `ERROR_KINDS` += `plan_refused`; `modes/list` limits; `thread/start` takes plan limits; schemas regenerated; TS client generated; `tests/wire` parity

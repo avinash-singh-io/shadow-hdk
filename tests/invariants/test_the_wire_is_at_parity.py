@@ -144,6 +144,8 @@ HANDLES_NOT_CROSSING: dict[str, str] = {
     "and `thread/add_root`, and in every `files/list` entry",
     "Thread.environment_mode": "crosses as `environment` in the results of `thread/start`, "
     "`thread/resume`, `thread/set_mode` and `thread/add_root`",
+    "Thread.unmapped_behaviour": "crosses as `unmapped_behaviour` in the results of "
+    "`thread/start`, `thread/resume`, `thread/set_mode` and `thread/add_root` (ENH-020)",
     "Thread.ports": "the host's composition, runtime-side by definition (D67): what a wire host "
     "reaches of it is `tools/list`, `modes/list`, `rules/list` and the store",
     "Thread.registry": "the offer served to the provider on the runtime's side; a wire host "

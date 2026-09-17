@@ -102,8 +102,10 @@ class AcpAgent(ComponentPort, AgentSession):
         cwd: Path | None = None,
         at: str = "",
         source: str = "acp",
+        unmapped: tuple[str, ...] = (),
     ) -> None:
         self._command = command
+        self._unmapped = unmapped
         self._args = list(args)
         self._cwd = cwd
         self._timeout_s = timeout_s
@@ -181,6 +183,13 @@ class AcpAgent(ComponentPort, AgentSession):
 
     async def __aexit__(self, *exc: object) -> None:
         await self.stop()
+
+    @property
+    def unmapped(self) -> tuple[str, ...]:
+        """The behaviour fields the opener was handed and ACP's launch does not carry (ENH-020):
+        a system prompt and a model belong in `session/new`, which is not mapped yet, so any
+        set field is named here rather than silently lost."""
+        return self._unmapped
 
     @property
     def process_is_running(self) -> bool:
