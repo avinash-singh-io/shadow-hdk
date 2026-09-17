@@ -96,6 +96,21 @@ questions, each with its `turn`), `Thread.settle(handle, answer) -> events`, and
 and the kept ones together (`approvals/pending` does; a kept one carries `turn`), and shows a
 kept one as such — the React example's card says *kept — answer when ready*.
 
+## A plan, end to end
+
+A plan is a `Composition` the agent, a resident CLI or the host proposes (D107): the model loop's
+`compose` meta-tool and the `compose` component `serve` offers are one path into
+`Children.spawn`, which admits the plan whole — its shape against the limits in force, every
+component's existence, every leaf's effects dry-judged — before its first step runs (D108). The
+limits narrow host → mode → parent (D109): pass `plan_limits` on `thread/start` (or
+`Thread.open`), give a mode a `[plan]` table, read `plan_limits` on the result. A refused plan is
+an observation the planner reads and re-proposes on (D111) — `plan_refused` names every
+mismatch; the runtime never trims a proposal. An admitted plan names its `asks` up front, and
+each step still asks live, or parks (`on_question: "park"`): the question becomes the `compose`
+call's own on the record, and `approvals/answer` sends the answer into the held plan. To change
+the plan while it waits, `thread/amend {handle, composition, answer}` (in process
+`Thread.amend`): admitted like the original, or refused with the plan untouched (D116).
+
 ## What is measured, and where
 
 `thread/remaining` is the budget less what the record says was spent — steps, the turns'

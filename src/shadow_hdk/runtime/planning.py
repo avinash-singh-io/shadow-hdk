@@ -110,7 +110,7 @@ class PlanComponents(ComponentPort):
                 answer = Allow() if back.answer.answer is None else back.answer.answer
                 events = await context.children.amend(handle, amended, answer)
                 if any(e.kind == "plan_refused" for e in events):
-                    await context.keep({"handle": handle})
+                    await context.keep(dict(back.kept))  # the same question, whole, for next time
                     component = back.kept.get("component")
                     return ApprovalRequest(
                         question=str(back.kept.get("question", "the plan is waiting")),

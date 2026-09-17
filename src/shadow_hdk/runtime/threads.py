@@ -43,7 +43,7 @@ from shadow_hdk.kernel import (
 )
 from shadow_hdk.kernel.capabilities import ExecutionRequirements, ExecutionSelection
 from shadow_hdk.kernel.composition import Composition
-from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.events import ApprovalRequested, Event
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import AgentPort, ThreadStore
@@ -418,6 +418,12 @@ class Thread:
         return self.conversation.environment_mode
 
     @property
+    def plan_limits(self) -> PlanLimits | None:
+        """How much plan the next turn admits (D109): the host's limits met with the current
+        mode's, live — `None` when neither bounds it."""
+        return self.conversation.plan_limits
+
+    @property
     def unmapped_behaviour(self) -> tuple[str, ...]:
         """The behaviour fields the current mode set that this provider could not take (ENH-020)
         — `system` or `model` on a CLI whose record maps no flag for them. Named at open, at
@@ -525,6 +531,40 @@ class Thread:
                     "was refused and your plan is as it was, still waiting."
                 )
                 self._record = _replace(self._record, spent=self.conversation.spent())
+                await self._store.save(self._record)
+                return events
+            asked_again = next(
+                (
+                    e
+                    for e in reversed(events)
+                    if isinstance(e, ApprovalRequested)
+                    and e.run_id == question.run_id
+                    and e.step == question.step
+                ),
+                None,
+            )
+            if asked_again is not None:
+                # The run parked again on the same step (D57): a plan that asks twice. The
+                # answer was applied; the next question takes the first one's place on the
+                # record under the same handle — it is the same call, still the person's to
+                # answer — and the agent is told its call is still waiting.
+                renewed = replace(
+                    question,
+                    question=asked_again.question,
+                    component=asked_again.component,
+                    inputs=asked_again.inputs,
+                )
+                self.conversation.tell(
+                    f"The person answered a question in your call {call_line(question)} from "
+                    f"{question.turn}; it is still waiting on: {asked_again.question}"
+                )
+                self._record = _replace(
+                    self._record,
+                    pending=tuple(
+                        renewed if q.handle == handle else q for q in self._record.pending
+                    ),
+                    spent=self.conversation.spent(),
+                )
                 await self._store.save(self._record)
                 return events
             observation = next(

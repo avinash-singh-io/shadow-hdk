@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.30.0"
-"""0.27.0 — one distribution (D78): `shadow-hdk`, with the specialised SDKs as extras
+EXPECTED = "0.31.0"
+"""0.31.0 — plan admission (Epic 0009, Phase 36): a plan is admitted whole under limits that
+narrow host → mode → parent; `plan_admitted`/`plan_refused` events; `compose` a component;
+`thread/amend`, `plan_limits` and `unmapped_behaviour` on the wire, protocol 3 unchanged
+(additive). A contract addition in the published shape — a minor (D9).
+
+0.27.0 — one distribution (D78): `shadow-hdk`, with the specialised SDKs as extras
 (`[langchain]`, `[mqtt]`, `[otel]`, `[sandbox]`, `[search]`, `[all]`), in place of eighteen
 that moved together anyway. A consumer's install lines change, and the eighteen names never
 ship — a contract change in the published shape.

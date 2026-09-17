@@ -187,3 +187,38 @@ on the `thread/start`, `thread/resume` and `thread/set_mode` results. Nothing sh
 the shipped modes set no behaviour field — a product mode on Codex learns what it was losing.
 
 ---
+
+### [DISCOVERY] 2026-09-18 — BUG-055: a second park in one leg replayed the first answer
+Topics: runtime, resume, langgraph, amend, questions
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md#resume
+Detail: The wire test for `thread/amend` (refused, then admitted, on one thread) failed with the
+first amendment's mismatch on the second call and the turn `failed` on *"interrupt() returned on
+the parking path"*. LangGraph 1.2 replays a task's earlier resume values by index on every
+re-run of the node, so a component that parks twice in one step gets answer one at the first
+`interrupt()` and the new answer at the second — which was the *parking* call. G5's tests never
+parked twice on one thread. Fixed in the executor (the park payload carries `replays`; the
+component path drains that many before the newest), in `Thread.settle` (a question the run parks
+on again is kept under the same handle; the agent is told its call is still waiting) and in
+`compose` (the whole kept record on a refused amendment). P1, closed in this group.
+
+---
+
+### [NOTE] 2026-09-18 — G7: the plan crosses the wire; 0.31.0 at the gate
+Topics: wire, typescript, docs, release, readme
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/wire.md, architecture/runtime.md#resume
+Detail: `thread/amend` (D116) with `admitted`, `mismatches` and the events; `plan_limits` in and
+out of `thread/start` and `thread/resume`, out of `thread/set_mode`; `plan` on every `modes/list`
+row; the serve host reads `plan_limits` in the wire's words and refuses a non-integer axis by
+name. The events already crossed (the `Event` union is the contract). Protocol stays `3`: every
+addition is a method or a field, and the version is for a meaning change. `ModeRow`, `Amended`,
+`thread.amend` and `plan_limits` typed in the TypeScript client; `tsc` and the build green.
+`docs/migrations/0.31.md`; the kernel, runtime, modes and wire guides; `consuming.md` gains *a
+plan, end to end*; `codex.toml` says the relay is proven. BUG-054 closed with the README's
+runnable snippets. 0.31.0, `EXPECTED`, `uv lock`. The demo's re-pin to 0.31.0 from PyPI and its
+chapter from the live run follow the publish, as 0.29.1's did — they cannot be true before it.
+[ARCH_CHANGE] entries pending for `/sync-docs`: the wire's methods and kinds; the governed
+step's admission; `RunState.plan` and the amend-as-resume; a second park in one leg.
+
+---

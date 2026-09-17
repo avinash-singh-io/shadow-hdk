@@ -117,6 +117,7 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.remaining": "THREAD_REMAINING",
     "Thread.tools": "TOOLS_LIST",
     "Thread.add_root": "THREAD_ADD_ROOT",
+    "Thread.amend": "THREAD_AMEND",  # a parked plan continued on a different composition (D116)
     "Thread.pending": "THREAD_RESUME",  # the questions the last host left, in the answer (D80)
     "Thread.settle": "APPROVALS_ANSWER",  # one handle answers a live question or a left one
     # Approvals
@@ -134,8 +135,8 @@ HANDLES_CROSSING: dict[str, str] = {
 """Host handle or thread operation → the `protocol.py` name that carries it."""
 
 HANDLES_NOT_CROSSING: dict[str, str] = {
-    "Thread.amend": "crosses as `thread/amend` in Phase 36 G7; until then the amendment is an "
-    "`Amend` answer to `approvals/answer`, which already crosses (D116)",
+    "Thread.plan_limits": "crosses as `plan_limits` in the results of `thread/start`, "
+    "`thread/resume` and `thread/set_mode` — the host's met with the mode's, live (D109)",
     "Thread.turning": "a property read by the wire's own `turn/interrupt` and `run/cancel` to say "
     "whether anything was running; the answer crosses inside those",
     "Thread.id": "the id crosses as `thread_id` in every result and notification",

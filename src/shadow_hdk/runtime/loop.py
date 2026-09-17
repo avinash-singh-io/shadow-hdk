@@ -74,6 +74,7 @@ async def _drive(
     checkpointer: Any,
     resuming: dict[str, str],
     kept: dict[str, Any] | None = None,
+    replays: dict[str, int] | None = None,
 ) -> None:
     token = _CURRENT.set(context)
     try:
@@ -96,6 +97,7 @@ async def _drive(
             resuming,
             kept,
             plan=json.loads(dump(composition, Composition)),
+            replays=replays,
         )
         config = {
             "configurable": {"thread_id": session.run_id},
@@ -318,10 +320,18 @@ async def _stream(
             for _identity, value in parked
             if value.get("by") == "component" and isinstance(value.get("step"), str)
         }
+        # How many answers each parked step's task already holds: a step that parked a second
+        # time in one leg said so, and the executor drains that many replays before the new one.
+        replays = {
+            str(value["step"]): int(value.get("replays", 0) or 0)
+            for _identity, value in parked
+            if isinstance(value.get("step"), str)
+        }
         payload = Command(resume=_answers(parked, payload.answer))
     else:
         resuming = {}
         kept = {}
+        replays = {}
     driving = asyncio.create_task(
         _drive(
             composition,
@@ -335,6 +345,7 @@ async def _stream(
             checkpointer,
             resuming,
             kept,
+            replays,
         )
     )
     try:

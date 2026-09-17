@@ -180,3 +180,61 @@ async def test_a_refused_amendment_leaves_the_plan_parked_and_the_question_open(
         assert wiped == []
     finally:
         await thread.close()
+
+
+async def test_a_plan_that_asks_twice_parks_twice_and_runs_both_after_two_answers(
+    tmp_path: Path,
+) -> None:
+    """A step that parks a second time in the same leg (D57): LangGraph replays a task's earlier
+    answers by index on every resume, so the executor drains the replayed ones and hands the
+    component only the newest — the first answer is never applied twice, and the second park
+    parks rather than returning."""
+    wiped.clear()
+    agent = ScriptedAgent(
+        [([("compose", a_plan(invoke("w1", "wipe"), invoke("w2", "wipe")))], "one")]
+    )
+    thread = await _thread(tmp_path, agent)
+    try:
+        [e async for e in thread.turn("plan it", on_question="park")]
+        [first] = thread.pending
+        assert first.component == "compose"
+        again = await thread.settle(first.handle, Allow())
+        assert [e.kind for e in again][-1] == "approval_requested", "parked on the second write"
+        assert wiped == [{}], "the first write ran once"
+        [second] = thread.pending
+        assert second.handle == first.handle, "the same run, the same step: one handle (D57)"
+        assert "a write" in second.question
+        done = await thread.settle(second.handle, Allow())
+        assert thread.pending == ()
+        assert wiped == [{}, {}], "the second write ran once, after its own answer"
+        assert any(e.kind == "observed" and e.step == "tools__compose__1" for e in done)
+    finally:
+        await thread.close()
+
+
+async def test_a_refused_amendment_then_an_admitted_one_on_the_same_thread(tmp_path: Path) -> None:
+    wiped.clear()
+    agent = ScriptedAgent(
+        [([("compose", a_plan(invoke("a", "look"), invoke("w", "wipe")))], "one")]
+    )
+    thread = await _thread(tmp_path, agent, limits=PlanLimits(fan_out=1))
+    try:
+        [e async for e in thread.turn("plan it", on_question="park")]
+        [question] = thread.pending
+        too_wide = Composition((FanOut("f", (Invoke("w", "wipe"), Invoke("x", "look"))),))
+        refused = await thread.amend(question.handle, too_wide, Allow())
+        assert [e.kind for e in refused][-1] == "approval_requested"
+        [still] = thread.pending
+        fine = Composition((Invoke("a", "look"), Invoke("w", "wipe"), Invoke("after", "look")))
+        events = await thread.amend(still.handle, fine, Allow())
+        mismatches = [
+            (m.axis, m.found) for e in events if isinstance(e, PlanRefused) for m in e.mismatches
+        ]
+        assert mismatches == [], "the refused shape is not replayed onto the next amendment"
+        assert next(e for e in events if isinstance(e, PlanAdmitted)).amendment is True
+        assert thread.pending == ()
+        below = [e.step for e in events if e.kind == "invoked" and e.step != "tools__compose__1"]
+        assert below == ["w", "after"]
+        assert wiped == [{}]
+    finally:
+        await thread.close()

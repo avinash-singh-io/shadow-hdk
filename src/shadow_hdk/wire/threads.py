@@ -21,17 +21,19 @@ from typing import Any, Protocol, cast
 
 from shadow_hdk.kernel import (
     Compatibility,
+    Composition,
     EffectProfile,
     EnvironmentCapabilities,
     Event,
     ExecutionSelection,
     Lease,
+    PlanLimits,
     ProviderCapabilities,
     Spent,
     ThreadRecord,
 )
 from shadow_hdk.kernel.activity import Activity
-from shadow_hdk.kernel.contracts import dump
+from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.runtime.items import Fold, as_json
 from shadow_hdk.runtime.threads import OnQuestion, Thread, When
 from shadow_hdk.wire.protocol import (
@@ -60,6 +62,7 @@ from shadow_hdk.wire.protocol import (
     STORE_PUT,
     STORE_VERSION,
     THREAD_ADD_ROOT,
+    THREAD_AMEND,
     THREAD_ARCHIVE,
     THREAD_CLOSE,
     THREAD_FORK,
@@ -100,9 +103,10 @@ class ThreadHost(Protocol):
         attributes: Any = None,
         budget: Any = None,
         requirements: Any = None,
+        plan_limits: Any = None,
     ) -> Thread: ...
 
-    async def resume(self, thread_id: str, *, observer: Any) -> Thread: ...
+    async def resume(self, thread_id: str, *, observer: Any, plan_limits: Any = None) -> Thread: ...
 
     async def list(self) -> Any: ...
 
@@ -182,6 +186,7 @@ class ThreadMethods:
             (THREAD_SET_OPTION, self._set_option),
             (THREAD_REMAINING, self._remaining),
             (THREAD_ADD_ROOT, self._add_root),
+            (THREAD_AMEND, self._amend),
             (TURN_START, self._turn),
             (TURN_STEER, self._steer),
             (TURN_INTERRUPT, self._interrupt),
@@ -251,6 +256,11 @@ class ThreadMethods:
                 if params.get("requirements") is not None
                 else {}
             ),
+            **(
+                {"plan_limits": params["plan_limits"]}
+                if params.get("plan_limits") is not None
+                else {}
+            ),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread.ports.observer  # the wire's own observer, re-tagged
@@ -262,6 +272,7 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
+            "plan_limits": _plan_limits_json(thread.plan_limits),
             "modes": await self._modes(host, thread),
             **_identity_json(thread),
         }
@@ -276,7 +287,15 @@ class ThreadMethods:
         if take_over is not None:
             # A page reloaded (D94): the thread its old session still holds, closed there first.
             await take_over(thread_id, self)
-        thread = await host.resume(thread_id, observer=ActivityToWire(self._peer, thread_id))
+        thread = await host.resume(
+            thread_id,
+            observer=ActivityToWire(self._peer, thread_id),
+            **(
+                {"plan_limits": params["plan_limits"]}
+                if params.get("plan_limits") is not None
+                else {}
+            ),
+        )
         self.threads[thread.id] = thread
         # A question the last host left open (D80) is offered again: pushed the way a live one
         # is, so a page that only listens shows the card, and in the result for the one that
@@ -291,6 +310,7 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
+            "plan_limits": _plan_limits_json(thread.plan_limits),
             "modes": await self._modes(host, thread),
             "turns": [_turn_json(t) for t in thread.record.turns],
             "pending": [_pending_json(q) for q in thread.pending],
@@ -362,6 +382,30 @@ class ThreadMethods:
             "events": await self._announced(thread, changed),
             "environment": thread.environment_mode,
             "unmapped_behaviour": list(thread.unmapped_behaviour),
+            "plan_limits": _plan_limits_json(thread.plan_limits),
+        }
+
+    async def _amend(self, params: dict[str, Any]) -> dict[str, Any]:
+        """A parked plan continued on a different composition (D116). `composition` is the
+        kernel's `Composition` as JSON; `answer` the person's answer to the question the plan
+        parked on — `{"kind": "approve"}` and the rest, as `approvals/answer` reads them. The
+        amendment is admitted under the thread's limits before the run takes it: `admitted`
+        with the events down the stream, or refused with every `mismatch`, the plan as it was
+        and the question still open."""
+        thread = self._thread(params)
+        composition = load(json.dumps(params.get("composition")), Composition)
+        events = await thread.amend(
+            str(params.get("handle", "")), composition, params.get("answer")
+        )
+        lines = await self._announced(thread, events)
+        refusal = next(
+            (line for line in lines if line["kind"] == "plan_refused" and line.get("amendment")),
+            None,
+        )
+        return {
+            "admitted": refusal is None,
+            "mismatches": list(refusal["mismatches"]) if refusal is not None else [],
+            "events": lines,
         }
 
     async def _add_root(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -714,9 +758,18 @@ class ThreadMethods:
                 "description": m.description,
                 "source": m.source,
                 "scope": m.scope,
+                "plan": _plan_limits_json(getattr(m, "plan", None)),
             }
             for m in modes
         ]
+
+
+def _plan_limits_json(limits: PlanLimits | None) -> dict[str, Any] | None:
+    """Plan limits as the wire says them (D109): the three axes, `null` where unbounded; `null`
+    as a whole when nothing bounds the plan."""
+    if limits is None:
+        return None
+    return {"depth": limits.depth, "fan_out": limits.fan_out, "steps": limits.steps}
 
 
 def _scope_of(thread: Thread) -> dict[str, Any]:

@@ -77,6 +77,7 @@ class StepExecutor:
         resuming: dict[str, str] | None = None,
         kept: dict[str, Any] | None = None,
         plan: JsonValue = None,
+        replays: dict[str, int] | None = None,
     ) -> None:
         self.session = session
         self.registry = registry
@@ -90,6 +91,13 @@ class StepExecutor:
         step resumes once, and anything after that is an ordinary step."""
         self._kept = dict(kept or {})
         """What a step that asked for itself kept before parking (D57), by step id."""
+        self._replays = {k: int(v) for k, v in (replays or {}).items()}
+        """How many answers each resuming step's task already holds — LangGraph replays a task's
+        earlier resume values by index on every re-run, so a step that parked a second time in
+        one leg finds its first answer at the first `interrupt()` and the new one after it."""
+        self._drained: dict[str, int] = {}
+        """What `interrupt()` handed back this leg, by step: the count a second park carries as
+        `replays`, so the next leg drains exactly that many before reading the newest answer."""
 
     def holding(self) -> dict[str, Any]:
         """What this run is holding, for the state to carry (D37). Empty when it holds nothing,
@@ -330,8 +338,13 @@ class StepExecutor:
             )
         if parked_on == "component":
             # Not judged again — the policy said yes before the component asked. The component
-            # finds the answer and what it kept (D57).
+            # finds the answer and what it kept (D57). A step that parked more than once in one
+            # leg has its earlier answers replayed first (LangGraph resumes by index): they were
+            # applied when they were given, so they are drained here and only the newest is the
+            # component's — a plan that asks twice is not answered twice with its first answer.
             answer = await self._ask(step, "resumed")
+            for _replayed in range(self._replays.get(step.id, 0)):
+                answer = await self._ask(step, "resumed")
             if self._context is not None:
                 self._context.resuming(step.id, answer, self._kept.get(step.id))
             return await self._carry_out(step, port, registration, inputs)
@@ -377,6 +390,7 @@ class StepExecutor:
             "step": step.id,
             "question": question,
             "resume_seq": self._emitter.seq + 1,
+            "replays": self._drained.get(step.id, 0),
         }
         if by == "component":
             # Who asked, what they kept — and what this run is holding (D37): a child spawned and
@@ -387,7 +401,7 @@ class StepExecutor:
             payload["holding"] = self.holding()
         component, inputs = about
         try:
-            return interrupt(payload)
+            answered = interrupt(payload)
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
             await self._emit(
                 lambda **k: ApprovalRequested(
@@ -400,6 +414,8 @@ class StepExecutor:
                 )
             )
             raise
+        self._drained[step.id] = self._drained.get(step.id, 0) + 1
+        return answered
 
     async def _wait(self, step: Await, pending: Pending | None) -> JsonValue:
         """Park on a handle the component named, and come back with whatever answered it.
@@ -417,9 +433,11 @@ class StepExecutor:
             # handle is only wanted for the payload it would have parked with (D38).
             "handle": pending.handle if pending is not None else "",
             "resume_seq": self._emitter.seq + 1,  # this path emits one `Observed` before it parks
+            "replays": self._drained.get(step.id, 0),
         }
         try:
             answer: JsonValue = interrupt(payload)
+            self._drained[step.id] = self._drained.get(step.id, 0) + 1
             return answer
         except BaseException:  # noqa: BLE001 — anything out of interrupt() means "parking now"
             # On the parking path only: the record says the step is waiting, and says it once.

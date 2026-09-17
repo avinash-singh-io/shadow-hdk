@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-18 — Phase 36 started (Epic 0009); v0.30.0 is the latest release
+> **Last Updated**: 2026-09-18 — Phase 36 G0–G7 complete, **v0.31.0 candidate at the merge/release gate**; v0.30.0 is the latest release
 > **Current Phase**: **Phase 36 — plan admission** (Epic 0009), started 2026-09-18 on
 > `phase-36-plan-admission`, stacked on the epic's docs branch. Epic 0008 is merged, tagged and
 > published as v0.30.0. **Epic 0009 — the harness as data — is planned** (`specs/epics/0009-the-harness-as-data.md`,
@@ -125,7 +125,7 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | in progress | G0 the frozen corpus — started 2026-09-18 |
+| 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | at the merge/release gate | G0–G7 done 2026-09-18: 1,771 non-live passed, mypy 452 files, ruff clean; 0.31.0 candidate; `/sync-docs` then `/complete-phase` |
 
 ## Epic Release Checkpoints
 
@@ -160,10 +160,10 @@ approval.
 
 ## Next Actions
 
-1. Land the epic's docs branch (the pre-work): the research note, the roadmap re-derived (D117), TD-010/011 closed, the ecosystem board's row and Pins for v0.30.0
-2. ENH-020 as a quick-task → v0.30.1 (unmapped behaviour named, not dropped)
-3. Derive and start Phase 36 — plan admission: `momentum run derive phase-36-plan-admission --epic the-harness-as-data --deps "" --write`, then `/start-phase`
-4. Still conditional: a Linux host for the remaining containment proofs, an OpenAI login for the Codex relay proof, and a lawyer's read on AGPL at arm's length
+1. The owner's word at the gate: land the epic's docs branch (docs/epic-0009-the-harness-as-data), then `phase-36-plan-admission` → `main`, tag `v0.31.0`, publish, the fresh-install smoke; then the demo's re-pin and chapter from the live run
+2. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name asks and refusals; ENH-020 folded into Phase 36 — done in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
+3. Next lane: derive and start Phase 34 — the harness as data (deps 36): `momentum run derive phase-34-the-harness-as-data --epic the-harness-as-data --deps phase-36-plan-admission --write`, then `/start-phase`
+4. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made
 

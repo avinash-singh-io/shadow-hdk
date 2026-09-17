@@ -63,6 +63,9 @@ THREAD_SET_OPTION = "thread/set_option"
 THREAD_REMAINING = "thread/remaining"
 THREAD_ADD_ROOT = "thread/add_root"
 """A directory added to the thread's workspace while it runs (D76; Claude Code's `/add-dir`)."""
+THREAD_AMEND = "thread/amend"
+"""A parked plan continued on a different composition (D116): admitted under the thread's limits
+before the run takes it, or refused with every mismatch and the plan untouched."""
 TURN_START = "turn/start"
 TURN_STEER = "turn/steer"
 TURN_INTERRUPT = "turn/interrupt"
@@ -165,6 +168,7 @@ __all__ = [
     "STORE_PUT",
     "STORE_VERSION",
     "THREAD_ADD_ROOT",
+    "THREAD_AMEND",
     "THREAD_ARCHIVE",
     "THREAD_CLOSE",
     "THREAD_FORK",

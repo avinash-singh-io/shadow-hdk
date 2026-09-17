@@ -19,3 +19,9 @@ property test says so over arbitrary profiles.
 
 The full rules-as-rows engine, with mode *files* checked in CI, is Phase 10. This is what a product
 needs before that exists.
+
+**Plan limits (Phase 36, D109).** `ModeSpec.plan` — depth, fan-out, steps — is what a mode admits;
+a document's `[plan]` table inherits the named policy's value on any axis it leaves out and is
+refused by name if it widens the policy on any axis (`widens_plan`). `PLAN_OF` holds the shipped
+ceilings. `Conversation.plan_limits` meets the host's with the mode's at every turn, so
+`set_mode` changes what the next plan may be without a reopen.

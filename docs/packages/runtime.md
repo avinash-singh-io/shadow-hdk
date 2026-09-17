@@ -25,3 +25,14 @@ of truth.
 
 Design: `intent-ecosystem/vision/09-the-agentic-system.md`; low-level design:
 `specs/architecture/runtime.md`.
+
+**Plan admission (Phase 36).** `Children.spawn` admits every plan before `run()` — structure and
+existence in the kernel, each leaf's declared effects dry-judged in the child's own context — and
+raises `PlanNotAdmitted` after `plan_refused` is on the record; nothing is spawned. `RunOptions`
+and `Session` carry `plan_limits`; a child's are the meet of its parent's and the pattern's.
+`runtime.planning.plan_components()` is the `compose` component (D110). `Children.defer` and
+`Pattern.absorb=False` run an admitted plan after its planner's step (D112). The checkpoint carries
+the composition (`RunState.plan`), so `resume` handed a different one admits it as an amendment
+(D116) and `runtime.parked_composition()` lets a settle resume on the shape it parked with.
+`Thread.amend(handle, composition, answer)` is `settle` with `Amend`; `Thread.plan_limits` is the
+host's met with the mode's, live.
