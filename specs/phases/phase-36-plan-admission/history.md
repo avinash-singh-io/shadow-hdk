@@ -29,3 +29,29 @@ only a product mode that sets `system`/`model` on Codex or OpenCode learns what 
 Proposed to the owner as Epic 0009's first amendment; recorded here pending their word.
 
 ---
+
+### [EVALUATOR] 2026-09-18 — G0: the admission corpus v1 frozen, RED at collection
+Topics: planning, admission, corpus, limits
+Affects-phases: phase-36-plan-admission
+Affects-specs: none
+Detail: `tests/benchmarks/plan-admission-v1.json` (nine cases over depth, fan-out, steps, an
+unregistered component, several reasons at once in the stable order, exactly-at-the-limits,
+an `Await` as a leaf; three `meet` rows) with its sha-256 pinned in the kernel test; hypothesis
+properties for `meet`; eleven runtime scenarios on the kit's own loop. Collection fails on
+`shadow_hdk.kernel.PlanLimits` — the RED. Not edited again in this phase; a v2 is a new file.
+
+---
+
+### [DECISION] 2026-09-18 — PlanLimits carries only what admission can measure statically
+Topics: planning, limits, leases
+Affects-phases: phase-36-plan-admission
+Affects-specs: epics/0009-the-harness-as-data.md#decisions
+Detail: `PlanLimits(depth, fan_out, steps)`, each `int | None` with `None` unbounded. Seconds and
+cents are not properties of a composition — no static reading of a plan can bound them — and the
+lease already governs both at run time; the plan's *steps* is the one budget share admission can
+state. The research note's "shares of seconds/cents" is narrowed accordingly; D109's shape
+(order-bearing, `meet`) is unchanged. Measures: depth = nesting with a top-level leaf at 1;
+fan_out = the widest `FanOut`; steps = leaf steps with an `Until` body counted `max_iterations`
+times; an `Await` is a leaf.
+
+---

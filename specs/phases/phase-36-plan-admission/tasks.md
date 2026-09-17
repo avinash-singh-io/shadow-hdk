@@ -9,10 +9,10 @@ epic: the-harness-as-data
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 
 ## Group 0 — The evaluator, frozen *(blocks)*
-- [ ] `test_plan_admission.py` under `tests/kernel/`: the frozen corpus (over-depth, over-fan-out, over-steps, over-budget, unregistered component, several reasons at once in stable order, a one-step plan, nested FanOut in Until)
-- [ ] `PlanLimits.meet` property tests (idempotent, commutative, never widens, unbounded is identity)
-- [ ] `test_plan_admission.py` under `tests/runtime/`: refused never spawned; Ask parks the plan as one question and Approve runs it with the Phase 33 grant at the act; child limits are the meet; refusal reaches the planner as an observation; run-after ends the planner's turn first; amend admitted / refused
-- [ ] Verify RED: collection fails on the absent modules; then each test fails for its stated reason — `uv run pytest -q tests/kernel/test_plan_admission.py tests/runtime/test_plan_admission.py`
+- [x] `plan-admission-v1.json` under `tests/benchmarks/` (9 cases, 3 meet rows) and `test_plan_admission.py` under `tests/kernel/`: the frozen corpus, its digest pinned by `test_the_corpus_is_frozen`
+- [x] `PlanLimits.meet` property tests (idempotent, commutative, never widens, unbounded is identity)
+- [x] `test_plan_admission.py` under `tests/runtime/`: refused never spawned; admitted then spawned; unregistered refused by name; a refused effect refuses the plan; Ask parks the plan as one question and Approve runs it (the write inside asked again at its step); child limits are the meet of the host's and the pattern's; refusal reaches the planner with every reason; run-after closes the planner's step first; amend is a resume — admitted, or refused with the parked run untouched
+- [x] Verify RED: collection fails on the absent names (`ImportError: cannot import name 'PlanLimits'`) — 2026-09-18; each scenario fails for its stated reason as its group lands
 
 ## Group 1 — Kernel
 - [ ] `kernel/planning.py`: `PlanLimits` + `meet` + `narrower_than`; `PlanMismatch`; `Admitted`; `PlanRefused`; `admit()`; `composition_digest()`
