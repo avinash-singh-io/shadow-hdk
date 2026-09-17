@@ -18,3 +18,4 @@ build/
 .momentum/merge-approved
 .momentum/run-stop
 work/
+.DS_Store
