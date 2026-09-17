@@ -422,7 +422,7 @@ def test_every_event_kind_is_accounted_for() -> None:
         if isinstance(cls, type) and dataclasses.is_dataclass(cls) and hasattr(cls, "kind")
     }
     assert kinds == OpenTelemetryObserver.HANDLED
-    assert len(kinds) == 16  # transaction facts join the public stream in Phase 33 (D101-D104)
+    assert len(kinds) == 18  # Phase 33 added effect_recorded; Phase 36 plan_admitted, plan_refused
 
 
 async def test_a_run_that_fails_mid_step_ends_the_step_span() -> None:

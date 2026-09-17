@@ -22,12 +22,13 @@ epic: the-harness-as-data
 - [x] Verify: `uv run pytest -q tests/kernel tests/wire/test_schemas.py tests/invariants` → 242 passed · `uv run mypy src/shadow_hdk/kernel` → clean · ruff clean — 2026-09-18
 
 ## Group 2 — Runtime: admission in spawn
-- [ ] `children.spawn`: `admit()` → dry-judge each step → Refuse / Ask (one question) / Allow → `run()`; no `Spawned` on refusal
-- [ ] `RunOptions.plan_limits`; effective limits on the context; a child receives the meet
-- [ ] `AgentComponent.carry_out`: a refused plan becomes the tool result the model reads (D111)
-- [ ] `Fold`: `plan_admitted` / `plan_refused` items
-- [ ] Mutation check: remove the pre-compile check → the *never spawned* assertion fails
-- [ ] Verify: `uv run pytest -q tests/runtime tests/adapters/agent`
+- [x] `children.spawn` → `Children.admit()`: `admit()` for structure and existence, then each leaf's declared effects dry-judged in the child's own context (BUG-030) — **named** on `PlanAdmitted.asks` / `.refusals`, never pre-empted (D108/D121 amended, see history); `PlanNotAdmitted` raised after `plan_refused` is on the record; no `Spawned` on refusal
+- [x] `RunOptions.plan_limits`; `Session.plan_limits`; `spawn_options` meets the parent's with the caller's; `Pattern.plan` met at admission
+- [x] `AgentComponent.carry_out`: a refused plan is the tool result the model reads (D111); the `spawn` helper verb composes only what is offered and reports a refused delegation; the offer returns a refused one-call plan as the error the CLI always read
+- [x] `Item.plan` on the fold — attached to the open or current step, never opening one; the OTel observer accounts for both kinds with safe metadata
+- [x] Wire: `context.children.spawn` carries `limits`, `proposed_by`, `step`; `plan_refused` in `ERROR_KINDS`, named by the runtime side and re-raised as `PlanNotAdmitted` on the host side; the parity table names the four new `RunContext` seams
+- [x] Mutation check: admission removed from `spawn` → 6 scenarios fail; restored
+- [x] Verify: `uv run pytest -q -m 'not live'` → 1,731 passed, 3 deselected (G5's), 2 pre-existing README failures (BUG-054) · `uv run mypy` → 446 files clean · ruff clean — 2026-09-18
 
 ## Group 3 — Planning is a component
 - [ ] `runtime/planning.py::PlanComponents` (`compose`, empty profile) on the `PersonComponents` precedent

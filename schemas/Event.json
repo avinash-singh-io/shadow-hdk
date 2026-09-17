@@ -939,6 +939,14 @@
           "title": "Amendment",
           "type": "boolean"
         },
+        "asks": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Asks",
+          "type": "array"
+        },
         "at": {
           "title": "At",
           "type": "string"
@@ -966,6 +974,14 @@
           "title": "Plan Digest",
           "type": "string"
         },
+        "refusals": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Refusals",
+          "type": "array"
+        },
         "run_id": {
           "title": "Run Id",
           "type": "string"
@@ -973,6 +989,11 @@
         "seq": {
           "title": "Seq",
           "type": "integer"
+        },
+        "step": {
+          "default": "",
+          "title": "Step",
+          "type": "string"
         }
       },
       "required": [
@@ -1035,8 +1056,7 @@
             "depth",
             "fan_out",
             "steps",
-            "component",
-            "effect"
+            "component"
           ],
           "title": "Axis",
           "type": "string"
@@ -1100,6 +1120,11 @@
         "seq": {
           "title": "Seq",
           "type": "integer"
+        },
+        "step": {
+          "default": "",
+          "title": "Step",
+          "type": "string"
         }
       },
       "required": [

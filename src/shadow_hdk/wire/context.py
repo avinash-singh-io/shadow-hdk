@@ -32,8 +32,9 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
+from shadow_hdk.kernel.planning import PlanLimits, PlanMismatch, PlanRefused
 from shadow_hdk.runtime import Parked, Ports, Resumed, RunContext, RunOptions
-from shadow_hdk.wire.peer import Peer
+from shadow_hdk.wire.peer import Peer, RemoteError
 from shadow_hdk.wire.protocol import (
     CONTEXT_ACTIVITY,
     CONTEXT_FLOOR_MET,
@@ -208,7 +209,7 @@ class WireRunContext(RunContext):
 
     @property
     def children(self) -> Any:
-        return WireChildren(self._peer)
+        return WireChildren(self._peer, step=self._step)
 
 
 class WireChildren:
@@ -219,8 +220,9 @@ class WireChildren:
     child's events, which the runtime also put on the parent's stream — one record, one author.
     """
 
-    def __init__(self, peer: Peer) -> None:
+    def __init__(self, peer: Peer, *, step: str = "") -> None:
         self._peer = peer
+        self._step = step
 
     async def spawn(
         self,
@@ -230,17 +232,51 @@ class WireChildren:
         checkpointer: Any = None,
         within: EffectProfile | None = None,
         within_name: str = "",
+        limits: PlanLimits | None = None,
+        proposed_by: str = "compose",
     ) -> tuple[str, list[Event]]:
-        answered = await self._peer.call(
-            CONTEXT_SPAWN,
-            {
-                "composition": json.loads(dump(composition, Composition)),
-                "ceiling": json.loads(dump(ceiling, Ceiling)),
-                # The pattern's ceiling, as data: applied on the runtime's side as a second gate.
-                "within": json.loads(dump(within, EffectProfile)) if within is not None else None,
-                "within_name": within_name,
-            },
-        )
+        try:
+            answered = await self._peer.call(
+                CONTEXT_SPAWN,
+                {
+                    "composition": json.loads(dump(composition, Composition)),
+                    "ceiling": json.loads(dump(ceiling, Ceiling)),
+                    # The pattern's ceiling, as data: a second gate on the runtime's side.
+                    "within": json.loads(dump(within, EffectProfile))
+                    if within is not None
+                    else None,
+                    "within_name": within_name,
+                    # The pattern's plan limits, as data: met with the run's own at admission
+                    # on the runtime's side (D109), where the registry and the record are.
+                    "limits": json.loads(dump(limits, PlanLimits)) if limits is not None else None,
+                    "proposed_by": proposed_by,
+                    # The step the plan was proposed in, as `request_approval` carries its own:
+                    # the runtime's task answering this call is not inside the step.
+                    "step": self._step,
+                },
+            )
+        except RemoteError as refused:
+            # A plan refused at admission crosses as a typed error (D92) and is the same
+            # exception here as in-process, so an agent on this side is told the same way (D111).
+            data = refused.data if isinstance(refused.data, dict) else {}
+            if data.get("kind") == "plan_refused":
+                from shadow_hdk.runtime.children import PlanNotAdmitted
+
+                raise PlanNotAdmitted(
+                    PlanRefused(
+                        tuple(
+                            PlanMismatch(
+                                axis=m["axis"],
+                                step=m["step"],
+                                required=m["required"],
+                                found=m["found"],
+                            )
+                            for m in data.get("mismatches", [])
+                        )
+                    ),
+                    amendment=bool(data.get("amendment", False)),
+                ) from refused
+            raise
         return str(answered["handle"]), _events(answered["events"])
 
     async def send(self, handle: str, message: JsonValue) -> list[Event]:

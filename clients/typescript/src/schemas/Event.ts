@@ -121,6 +121,7 @@ export type Kind22 = "spawned"
 export type RunId9 = string
 export type Seq9 = number
 export type Amendment = boolean
+export type Asks = string[]
 export type At11 = string
 export type AuthorityDigest = string
 export type Kind23 = "plan_admitted"
@@ -128,19 +129,22 @@ export type Depth = (number | null)
 export type FanOut1 = (number | null)
 export type Steps3 = (number | null)
 export type PlanDigest = string
+export type Refusals = string[]
 export type RunId10 = string
 export type Seq10 = number
+export type Step7 = string
 export type Amendment1 = boolean
 export type At12 = string
 export type Kind24 = "plan_refused"
-export type Axis = ("depth" | "fan_out" | "steps" | "component" | "effect")
+export type Axis = ("depth" | "fan_out" | "steps" | "component")
 export type Found = string
 export type Required = string
-export type Step7 = string
+export type Step8 = string
 export type Mismatches = PlanMismatch[]
 export type PlanDigest1 = string
 export type RunId11 = string
 export type Seq11 = number
+export type Step9 = string
 export type At13 = string
 export type ChildRunId1 = string
 export type Handle5 = string
@@ -152,7 +156,7 @@ export type At14 = string
 export type Kind26 = "usage"
 export type RunId13 = string
 export type Seq13 = number
-export type Step8 = string
+export type Step10 = string
 export type CostCents = (number | null)
 export type InputTokens = (number | null)
 export type OutputTokens = (number | null)
@@ -160,7 +164,7 @@ export type At15 = string
 export type Kind27 = "reasoning"
 export type RunId14 = string
 export type Seq14 = number
-export type Step9 = string
+export type Step11 = string
 export type Text = string
 export type At16 = string
 export type Kind28 = "mode_changed"
@@ -465,13 +469,16 @@ seq: Seq9
  */
 export interface PlanAdmitted {
 amendment?: Amendment
+asks?: Asks
 at: At11
 authority_digest?: AuthorityDigest
 kind?: Kind23
 limits?: PlanLimits
 plan_digest: PlanDigest
+refusals?: Refusals
 run_id: RunId10
 seq: Seq10
+step?: Step7
 }
 /**
  * How much plan a host, a mode or a parent admits. `None` is unbounded.
@@ -496,6 +503,7 @@ mismatches?: Mismatches
 plan_digest: PlanDigest1
 run_id: RunId11
 seq: Seq11
+step?: Step9
 }
 /**
  * One way a plan does not fit, as data a host or a planner can act on.
@@ -504,7 +512,7 @@ export interface PlanMismatch {
 axis: Axis
 found: Found
 required: Required
-step: Step7
+step: Step8
 }
 /**
  * A child parked instead of ending, and its parent is keeping it (D16).
@@ -538,7 +546,7 @@ at: At14
 kind?: Kind26
 run_id: RunId13
 seq: Seq13
-step: Step8
+step: Step10
 usage: Usage
 }
 /**
@@ -566,7 +574,7 @@ at: At15
 kind?: Kind27
 run_id: RunId14
 seq: Seq14
-step: Step9
+step: Step11
 text: Text
 }
 /**

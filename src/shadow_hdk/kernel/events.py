@@ -160,8 +160,16 @@ class PlanAdmitted:
     seq: int
     at: str
     plan_digest: str
+    step: StepId = ""
     authority_digest: str = ""
     limits: PlanLimits = PlanLimits()
+    asks: tuple[StepId, ...] = ()
+    """The steps the policy will ask about when they run — named now, so a host can present the
+    plan's questions as one card and keep rules for them, while each step still asks at its own
+    invocation through the proven path (live, parked, or parked on purpose)."""
+    refusals: tuple[StepId, ...] = ()
+    """The steps the policy will refuse when they run — named now; the step's own refusal, at its
+    invocation, is the refusal the planner is told, as it always was (BUG-012)."""
     amendment: bool = False
     kind: Literal["plan_admitted"] = "plan_admitted"
 
@@ -175,6 +183,7 @@ class PlanRefused:
     seq: int
     at: str
     plan_digest: str
+    step: StepId = ""
     mismatches: tuple[PlanMismatch, ...] = ()
     amendment: bool = False
     kind: Literal["plan_refused"] = "plan_refused"

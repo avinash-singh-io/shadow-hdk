@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from hypothesis import given
@@ -19,7 +19,7 @@ from hypothesis import strategies as st
 from shadow_hdk.kernel import Admitted as AdmittedPlan
 from shadow_hdk.kernel import Composition, PlanLimits, PlanMismatch, PlanRefused, admit
 from shadow_hdk.kernel.contracts import CONTRACTS, load, round_trip
-from shadow_hdk.kernel.planning import composition_digest, measure
+from shadow_hdk.kernel.planning import PlanAxis, composition_digest, measure
 from shadow_hdk.runtime.testing import make_registration
 
 CORPUS = json.loads(
@@ -34,7 +34,10 @@ def limits_of(raw: dict[str, int]) -> PlanLimits:
 
 def mismatch_of(raw: dict[str, str]) -> PlanMismatch:
     return PlanMismatch(
-        axis=raw["axis"], step=raw["step"], required=raw["required"], found=raw["found"]
+        axis=cast(PlanAxis, raw["axis"]),
+        step=raw["step"],
+        required=raw["required"],
+        found=raw["found"],
     )
 
 

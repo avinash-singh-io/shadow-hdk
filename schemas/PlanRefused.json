@@ -8,8 +8,7 @@
             "depth",
             "fan_out",
             "steps",
-            "component",
-            "effect"
+            "component"
           ],
           "title": "Axis",
           "type": "string"

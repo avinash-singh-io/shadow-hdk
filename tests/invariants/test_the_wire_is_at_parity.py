@@ -59,6 +59,13 @@ NOT_CROSSING: dict[str, str] = {
     "forward_activity": "runtime-internal: the drive forwards a child's activity to the root",
     "principal": "a property of the run's options (D82): the crossed context carries it on every "
     "`Context` it builds, as `run_id` is carried",
+    "registered": "runtime-internal: admission (D108) checks a plan's components against the "
+    "registry where the record is; a crossed `compose` is admitted runtime-side",
+    "judge": "runtime-internal: admission dry-judges a plan's declared effects through the run's "
+    "own governance, where it lives; a crossed plan is judged runtime-side",
+    "plan_limits": "a property of the run's options (D109): a crossed spawn is admitted "
+    "runtime-side under the limits the runtime holds",
+    "emit": "runtime-internal: admission puts its events on the record where the record is",
 }
 """Method → why it does not cross. Every entry is a claim; an entry for a method that has since
 been made to cross is refused by the third test below."""

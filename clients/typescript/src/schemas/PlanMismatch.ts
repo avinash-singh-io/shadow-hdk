@@ -2,7 +2,7 @@
 // protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
-export type Axis = ("depth" | "fan_out" | "steps" | "component" | "effect")
+export type Axis = ("depth" | "fan_out" | "steps" | "component")
 export type Found = string
 export type Required = string
 export type Step = string

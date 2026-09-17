@@ -25,10 +25,22 @@ from typing import TYPE_CHECKING, Any
 from pydantic import JsonValue
 
 from shadow_hdk.kernel.composition import Composition
+from shadow_hdk.kernel.contracts import dump
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.events import Ended, Event
+from shadow_hdk.kernel.events import Ended, Event, PlanAdmitted
+from shadow_hdk.kernel.events import PlanRefused as PlanRefusedEvent
 from shadow_hdk.kernel.leases import Ceiling
-from shadow_hdk.kernel.ports import Context, GovernancePort, Judgement, Refuse
+from shadow_hdk.kernel.planning import (
+    UNBOUNDED,
+    Admitted,
+    PlanLimits,
+    PlanMismatch,
+    PlanRefused,
+    admit,
+    composition_digest,
+    leaves_of,
+)
+from shadow_hdk.kernel.ports import Allow, Ask, Context, GovernancePort, Judgement, Refuse
 from shadow_hdk.runtime.cancel import Cancellation
 
 if TYPE_CHECKING:
@@ -36,6 +48,31 @@ if TYPE_CHECKING:
 
 RELEASED = "released"
 """What a child is sent when it is let go. Never read — see `Children.release`."""
+
+
+class PlanNotAdmitted(Exception):
+    """A plan refused before it compiled (D108). Whoever proposed it is told every mismatch and
+    decides what to do — re-propose, split, ask, or stop; the runtime never trims a proposal
+    (D111). An ordinary exception on purpose: it is an outcome for the caller, not a stop."""
+
+    def __init__(self, refusal: PlanRefused, *, amendment: bool = False) -> None:
+        self.refusal = refusal
+        self.amendment = amendment
+        super().__init__(readable_refusal(refusal))
+
+
+def readable_refusal(refusal: PlanRefused) -> str:
+    """Every mismatch in one line a model or a person can act on."""
+    parts = []
+    for m in refusal.mismatches:
+        where = f" at {m.step}" if m.step else ""
+        if m.axis == "component":
+            # The words a model has always read for this (`no component registered as …`), so
+            # a one-call plan naming an unknown tool is told what it was told before.
+            parts.append(f"{m.axis}{where}: no component registered as {m.found!r}")
+        else:
+            parts.append(f"{m.axis}{where}: required {m.required}, found {m.found}")
+    return "that plan was refused — " + "; ".join(parts)
 
 
 @dataclass(frozen=True)
@@ -119,7 +156,6 @@ class Children:
         merge to the same answer whichever arrives first: *held* and *let go* are both statements,
         and only *never mentioned* is silence.
         """
-        from shadow_hdk.kernel.contracts import dump
 
         written: dict[str, JsonValue] = {handle: None for handle in self._released}
         for handle, child in self._held.items():
@@ -174,6 +210,9 @@ class Children:
         within: EffectProfile | None = None,
         within_name: str = "",
         context: Mapping[str, JsonValue] | None = None,
+        limits: PlanLimits | None = None,
+        proposed_by: str = "compose",
+        step: str | None = None,
     ) -> tuple[str, list[Event]]:
         """Start a child and let it run. If it parks rather than ending, this parent holds it.
 
@@ -188,6 +227,14 @@ class Children:
         """
         from shadow_hdk.runtime.loop import run
 
+        # **Admission first** (D108): the whole plan measured and judged before anything compiles.
+        # `limits` is what the caller — a pattern — allows; the run's own are met with it, so a
+        # child is never admitted a wider plan than its parent would (D109). A refusal is an event
+        # on the record and an exception to the caller; nothing below this line ran.
+        effective = await self.admit(
+            composition, limits=limits, proposed_by=proposed_by, context=context, step=step
+        )
+
         # **The parent's own, by default** (D37). A fresh in-memory saver made a child that could
         # not outlive this process — and, worse, could not be reached after its own parent parked,
         # so the parent came back holding nothing and started again.
@@ -201,6 +248,7 @@ class Children:
             run_id=handle,
             checkpointer=saver,
             cancellation=cancellation,
+            plan_limits=effective,
             # The parent's attributes unless the caller hands the child its own (BUG-030).
             **({"context": dict(context)} if context is not None else {}),
         )
@@ -220,6 +268,107 @@ class Children:
             )
             await self._context.announce_held(handle, _steps_in(events))
         return handle, events
+
+    async def admit(
+        self,
+        composition: Composition,
+        *,
+        limits: PlanLimits | None = None,
+        proposed_by: str = "compose",
+        amendment: bool = False,
+        context: Mapping[str, JsonValue] | None = None,
+        step: str | None = None,
+    ) -> PlanLimits:
+        """The judgement no step can make (D108): structure and existence in the kernel, then
+        each leaf's *declared* effects through this run's own policy — **named**, not pre-empted:
+        `PlanAdmitted.refusals` and `.asks` say which steps will be refused or asked about when
+        they run, and each step is still judged at its own invocation through the path that
+        already refuses, parks or asks live (BUG-012, D57, D58, D88). A plan of one step is
+        therefore told exactly what it always was; a host that wants one card for a whole plan
+        has the list to present and rules to keep (D108/D121 as amended). Returns
+        the effective limits the admitted plan runs under; raises `PlanNotAdmitted` otherwise,
+        after the refusal is on the record with every mismatch (D111)."""
+        mine = self._context.plan_limits or UNBOUNDED
+        effective = mine if limits is None else mine.meet(limits)
+        # The step the plan was proposed in: this task's, or the one a crossed caller names —
+        # the runtime's task answering a wire call is not inside the step (as `request_approval`).
+        step = step if step is not None else (self._context.step or "")
+        digest = composition_digest(composition)
+        registered = await self._context.registered()
+        by_id = {registration.id: registration for registration in registered}
+
+        outcome = admit(composition, registered, effective)
+        mismatches: list[PlanMismatch] = list(
+            outcome.mismatches if isinstance(outcome, PlanRefused) else ()
+        )
+        asked: list[tuple[str, str]] = []
+        will_refuse: list[str] = []
+        if not mismatches:
+            # Every leaf's declared profile, judged where the step would be judged — the same
+            # policy, the same context, marked as admission so a policy that wants to can tell.
+            # Judged in the context the child will run under (BUG-030): the parent's by default,
+            # or the one the caller hands the child — never a third one of admission's own.
+            for leaf in leaves_of(composition):
+                registration = by_id[leaf.component]
+                base = self._context.context(leaf.id, registration)
+                attributes: dict[str, JsonValue] = (
+                    {
+                        **dict(context),
+                        "posture": base.attributes.get("posture"),
+                        "component": leaf.component,
+                    }
+                    if context is not None
+                    else dict(base.attributes)
+                )
+                attributes["admission"] = True
+                judged = await self._context.judge(
+                    registration.component.effects,
+                    Context(
+                        run_id=base.run_id,
+                        step=base.step,
+                        principal=base.principal,
+                        attributes=attributes,
+                    ),
+                )
+                match judged:
+                    case Refuse():
+                        will_refuse.append(leaf.id)
+                    case Ask(question=question):
+                        asked.append((leaf.id, question))
+                    case Allow():
+                        pass
+        if mismatches:
+            refusal = PlanRefused(tuple(mismatches))
+            await self._context.emit(
+                lambda **k: PlanRefusedEvent(
+                    plan_digest=digest,
+                    step=step,
+                    mismatches=refusal.mismatches,
+                    amendment=amendment,
+                    **k,
+                )
+            )
+            raise PlanNotAdmitted(refusal, amendment=amendment)
+        authority = ""
+        if (port := self._context.ports.authority) is not None:
+            from shadow_hdk.kernel.authority import authority_digest
+
+            authority = authority_digest(await port.current(run_id=self._context.run_id, step=step))
+        admitted = Admitted(plan_digest=digest, authority_digest=authority, limits=effective)
+        will_ask = tuple(leaf for leaf, _ in asked)
+        await self._context.emit(
+            lambda **k: PlanAdmitted(
+                plan_digest=admitted.plan_digest,
+                step=step,
+                authority_digest=admitted.authority_digest,
+                limits=admitted.limits,
+                asks=will_ask,
+                refusals=tuple(will_refuse),
+                amendment=amendment,
+                **k,
+            )
+        )
+        return effective
 
     async def is_held(self, handle: str) -> bool:
         """Whether this parent is still holding a child — a query, so it can cross a wire (D51)."""
@@ -306,4 +455,4 @@ def _steps_in(events: list[Event]) -> int:
     return sum(1 for event in events if event.kind == "invoked")
 
 
-__all__ = ["Children", "HeldChild"]
+__all__ = ["Children", "HeldChild", "PlanNotAdmitted", "readable_refusal"]

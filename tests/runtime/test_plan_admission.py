@@ -8,7 +8,6 @@ patterns do, so what they prove holds for every planner behind the same registry
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 import pytest
@@ -45,7 +44,7 @@ from shadow_hdk.kernel.events import (
 )
 from shadow_hdk.kernel.ports import ModelResponse, ToolCall
 from shadow_hdk.runtime import Ports, RunOptions, resume, run
-from shadow_hdk.runtime.approvals import Approvals, Approve
+from shadow_hdk.runtime.approvals import Approvals
 from shadow_hdk.runtime.checkpoints import InMemoryRunStore, saver_over
 from shadow_hdk.runtime.testing import FixedClock, ListSink, ScriptedModel
 
@@ -218,43 +217,41 @@ async def test_an_unregistered_component_refuses_the_plan_by_name() -> None:
 # ---------------------------------------------------------------- effects, dry-judged
 
 
-async def test_a_step_the_policy_refuses_refuses_the_plan_at_admission() -> None:
-    """Each step's *declared* profile through the run's own governance — no invocation."""
-    events, _ = await _drive(
+async def test_a_step_the_policy_refuses_is_named_on_the_admission_and_refused_at_its_step() -> (
+    None
+):
+    """D108 as amended: a step's own refusal is a judgement the step *can* make, so admission
+    names it (`refusals`) and the plan runs — the harmless step completes, the refused one is
+    refused at its invocation and the planner is told per step, as BUG-012 promised."""
+    events, model = await _drive(
         a_plan(invoke("a", "look", topic="1"), invoke("b", "wipe", what="all")),
         governance=NoWrites(),
     )
-    refused = next(e for e in events if isinstance(e, PlanRefused))
-    assert [(m.axis, m.step) for m in refused.mismatches] == [("effect", "b")]
-    assert "writing is not permitted" in refused.mismatches[0].found
-    assert "a" not in _invoked(events) and "b" not in _invoked(events)
+    admitted = next(e for e in events if isinstance(e, PlanAdmitted))
+    assert admitted.refusals == ("b",) and admitted.asks == ()
+    assert "a" in _invoked(events) and "b" not in _invoked(events)
+    assert any(e.kind == "refused" and getattr(e, "step", "") == "b" for e in events)
+    answer = _tool_answer(model)
+    assert "found 1" in answer and "not permitted" in answer, "every result, per step"
 
 
-async def test_a_step_the_policy_asks_about_parks_the_plan_as_one_question() -> None:
-    """D121: one question for the plan on the host's handle; `Approve` spawns it; the steps inside
-    are judged again at their own invocation (the `wipe` is asked about there too — Phase 33's
-    boundary is untouched)."""
-    questions = Approvals()
+async def test_a_step_the_policy_asks_about_is_named_on_the_admission_and_asks_at_its_step() -> (
+    None
+):
+    """D121 as amended: admission names the steps the policy will ask about, and raises no question
+    of its own — the step asks at its invocation through the path that already exists (here the
+    in-process park, D57). A plan of one step therefore asks exactly once, as it always has; a
+    host that wants one card for the whole plan has the list and the rules to keep."""
     plan = a_plan(invoke("a", "look", topic="1"), invoke("b", "wipe", what="all"))
-    asked: list[Any] = []
-
-    async def the_host() -> None:
-        pending = await asyncio.wait_for(questions.next(), 10)
-        asked.append(pending)
-        assert pending.component == "compose", "the question is about the plan, not a step"
-        assert questions.pending() == (pending,), "exactly one question for the whole plan"
-        assert questions.answer(pending.handle, Approve())
-        # the write inside the admitted plan is asked about at its own step, as today
-        inner = await asyncio.wait_for(questions.next(), 10)
-        assert inner.component == "wipe" and inner.step == "b"
-        assert questions.answer(inner.handle, Approve())
-
-    host = asyncio.create_task(the_host())
-    events, _ = await _drive(plan, governance=AskBeforeWrites(), approvals=questions)
-    await host
-    assert len(asked) == 1
-    assert any(isinstance(e, PlanAdmitted) for e in events)
-    assert {"a", "b"} <= set(_invoked(events))
+    events, _ = await _drive(plan, governance=AskBeforeWrites())
+    admitted = next(e for e in events if isinstance(e, PlanAdmitted))
+    assert admitted.asks == ("b",), "what will ask, named up front"
+    assert "a" in _invoked(events), "the harmless step ran"
+    inner = [e for e in events if e.kind == "approval_requested" and getattr(e, "step", "") == "b"]
+    assert len(inner) == 1, "the write asked once, at its own step"
+    assert "b" not in _invoked(events) and not any(isinstance(e, Ended) for e in events), (
+        "and the run parks there, as today"
+    )
 
 
 # ---------------------------------------------------------------- limits meet

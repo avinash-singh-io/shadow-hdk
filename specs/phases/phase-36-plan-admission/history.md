@@ -71,3 +71,45 @@ runtime's (G2): the kernel measures, it cannot judge. [ARCH_CHANGE] pending for 
 the events list in `architecture/runtime.md` and the wire's kinds.
 
 ---
+
+### [DECISION] 2026-09-18 — D108/D121 amended: admission names a step's ask or refusal, it does not pre-empt it
+Topics: planning, admission, questions, governance
+Affects-phases: phase-36-plan-admission
+Affects-specs: epics/0009-the-harness-as-data.md#amendments, architecture/runtime.md#the-governed-step
+Detail: Implementing G2 against the whole suite showed the collision: with "a single call is a
+plan of one step", raising the plan's question at admission either failed where no `Questions`
+handle exists (breaking D57's park) or asked twice (plan, then step); and refusing a plan because
+one step would be refused broke BUG-012's promise that the plan runs and the planner sees every
+result — a step's own refusal is precisely a judgement the step *can* make. Admission therefore
+refuses only what no step can see — structure and existence — and dry-judges effects to **name**
+`PlanAdmitted.asks` and `.refusals`; each step is still refused, parked or asked live at its own
+invocation through the existing path (D57, D58, D88). A host that wants one card for a whole plan
+has the list and the rules to keep. D121's single question becomes a host presentation, not a
+runtime park. Proposed as Epic 0009's amendment; the epic record carries it pending the owner.
+
+---
+
+### [DISCOVERY] 2026-09-18 — BUG-054: two README snippet tests fail on main since the v0.30 README refresh
+Topics: docs, readme, tests
+Affects-phases: phase-36-plan-admission
+Affects-specs: none
+Detail: `test_the_readme_three_lines_run_for_real` and `test_the_readme_snippet_is_what_the_smoke_run_runs`
+read the README's snippets and run them; `ca432d0` changed both snippets without re-running the
+tests. Reproduced on `ecb15f1` before any change here. Fixed in G7 with the README and docs.
+
+---
+
+### [NOTE] 2026-09-18 — G2: admission inside spawn, true for every caller
+Topics: planning, admission, runtime, wire, fold
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md, architecture/wire.md
+Detail: `Children.admit()` before `run()`: structure and existence in the kernel, effects dry-judged
+in the child's context (a handed `context=` wins, BUG-030), the events on the record, `PlanNotAdmitted`
+to the caller. Three callers adapted honestly: the loop's `compose` answers the model with every
+mismatch; the `spawn` helper verb composes only what is offered (it used to lean on the mailbox
+step *failing*); the offer returns a refused one-call plan to a CLI as the error it always read.
+The plan crosses the wire with its limits and its proposing step, and a refusal crosses as
+`plan_refused`. A plan event never opens an item. [ARCH_CHANGE] pending for `/sync-docs`:
+the governed step's story gains admission; the wire's kinds and `ERROR_KINDS`.
+
+---

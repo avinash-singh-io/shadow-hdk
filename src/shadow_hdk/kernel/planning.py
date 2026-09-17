@@ -27,9 +27,10 @@ from typing import Literal
 from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.composition import Await, Composition, FanOut, Invoke, Sequence, Step, Until
 
-PlanAxis = Literal["depth", "fan_out", "steps", "component", "effect"]
-"""What a mismatch is about. `effect` is the runtime's: a step's declared profile dry-judged
-through the run's own governance — the kernel cannot judge, it can only measure."""
+PlanAxis = Literal["depth", "fan_out", "steps", "component"]
+"""What a mismatch is about — the judgements no step can make. A step's own effects are its own
+to be judged at its invocation; admission names them (`PlanAdmitted.asks`, `.refusals`), it does
+not pre-empt them."""
 
 
 @dataclass(frozen=True)

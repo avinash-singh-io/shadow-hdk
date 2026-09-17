@@ -21,6 +21,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import RunId
 from shadow_hdk.kernel.leases import Ceiling, Lease
 from shadow_hdk.kernel.observations import Proposal
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import (
     AuthorityPort,
     AuthorizerPort,
@@ -95,6 +96,10 @@ class RunOptions:
     parent: Any = MISSING
     cancellation: Cancellation | None = None
     """The host's handle on this run (D15). A child inherits its parent's unless handed its own."""
+    plan_limits: PlanLimits | None = None
+    """How much plan this run admits (D109): depth, fan-out, steps. A child receives the meet of
+    its parent's and its own; the host's default sits here, a pattern's on the pattern, a mode's on
+    the mode. `None` is unbounded — the lease is still the floor."""
     approvals: Questions | None = None
     """Where a component asks the host **live** while its step is still running (D58) — a step
     that holds a provider's session cannot park; the `Questions` port (D91), which the host's
@@ -172,6 +177,27 @@ class RunContext:
             if not isinstance(judgement, Refuse):
                 shown.append(registration)
         return shown
+
+    async def registered(self) -> list[Registration]:
+        """Everything the registry holds, refreshed — what admission checks existence against.
+        Unlike `visible()` this is not filtered by the policy: a component the policy would refuse
+        is registered, and a plan naming it is refused for its *effect*, not for not existing."""
+        await self._registry.refresh()
+        return list(self._registry.all())
+
+    async def judge(self, effects: EffectProfile, context: Context) -> Judgement:
+        """The run's own policy, asked outside a step — how admission dry-judges a plan's declared
+        effects (D108). A port failure is one (TD-006), as it is for the catalogue."""
+        return await self._judged(effects, context)
+
+    @property
+    def plan_limits(self) -> PlanLimits | None:
+        return self._session.plan_limits
+
+    async def emit(self, make: Any) -> None:
+        """Put an event of this run's on the record, stamped — for the runtime's own pieces that
+        live beside the step, admission among them."""
+        await self._emitter.emit(make)
 
     async def _judged(self, effects: EffectProfile, context: Context) -> Judgement:
         """Ask the policy, and let a **port** failure be one (TD-006, D7).
@@ -278,6 +304,14 @@ class RunContext:
         # mode, so `set_mode("read-only")` refused the turn's own step and let the agent's
         # `run_shell` — a child spawned through the offered registry — write a file.
         overrides.setdefault("context", dict(self._session.attributes))
+        # **A child admits no more plan than its parent** (D109): the meet of what this run holds
+        # and what the caller asked for — never wider, whoever asked.
+        asked = overrides.get("plan_limits")
+        mine = self._session.plan_limits
+        if asked is None:
+            overrides["plan_limits"] = mine
+        elif mine is not None:
+            overrides["plan_limits"] = mine.meet(asked)
         return RunOptions(lease=Lease(ceiling, floor), parent=self, **overrides)
 
     def reserve(self, ceiling: Ceiling) -> Lease:
