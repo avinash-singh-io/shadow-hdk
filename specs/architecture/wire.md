@@ -53,12 +53,19 @@ host ──► runtime   thread/start {root | roots: [{name, path}…], mode, pr
                                  principal, attributes,                     (who it is for — D82)
                                  budget: {steps, seconds, cents},           (its own ceiling — D84)
                                  requirements: {provider, environment}}     (what the host will trust — D96)
+                                 plan_limits: {depth, fan_out, steps}}   (the host's ceiling on a plan — D109)
                        → thread_id · root (the primary) · roots · environment (the sandbox's mode)
-                         · mode · modes (in the thread's scope) · principal · attributes
+                         · mode · modes (in the thread's scope; each with its `plan`) · principal · attributes
                          · capabilities (the accepted provider/environment selection)
-host ──► runtime   thread/resume → … · turns · pending  (the questions the last host left — D80)
+                         · plan_limits (the host's met with the mode's — what the next plan is admitted under)
+                         · unmapped_behaviour (the mode's fields this provider has no flag for — ENH-020)
+host ──► runtime   thread/resume {plan_limits?} → … · turns · pending  (the questions the last host left — D80)
 host ──► runtime   thread/close · list (each row: held_by — D81) · fork · rollback · archive
-host ──► runtime   thread/set_mode → events · environment      (the sandbox follows the mode — D76)
+host ──► runtime   thread/set_mode → events · environment · plan_limits · unmapped_behaviour
+                                                                 (the sandbox follows the mode — D76)
+host ──► runtime   thread/amend {handle, composition, answer?} → admitted · mismatches · events
+                       (D116: a parked plan continued on a different composition — admitted like
+                        the original, or refused with the plan untouched and the question open)
 host ──► runtime   thread/add_root {name, path} → events · roots  (added live, re-proven — D76)
 host ──► runtime   thread/set_option · remaining   (budget − spent, across resumes — D84)
 host ──► runtime   turn/start {when: enqueue | reject | interrupt,   → the turn's record, when it ends
@@ -176,8 +183,15 @@ irreversible registrations are therefore `observed` unless a host supplies that 
   (`[provider] idle_seconds`, D94) and is reopened on its session id at the next turn.
 - **Refusals are typed** (D92): every error carries `data.kind` from the published `ERROR_KINDS`
   — `thread_held {thread_id, holder}`, `turn_running {thread_id, turn_id}`, `not_found`,
-  `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone` — beside the code and the
-  sentence; the TypeScript client raises `RemoteError` with `kind` and `detail`.
+  `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone`, `capability_mismatch`,
+  `plan_refused {mismatches, amendment}` (D108) — beside the code and the sentence; the
+  TypeScript client raises `RemoteError` with `kind` and `detail`.
+- **The plan crosses whole** (Phase 36, protocol 3 unchanged — every addition is a method or a
+  field): `plan_admitted` and `plan_refused` are events on the stream like any other, folded
+  onto the open item as `Item.plan`, never opening one; a crossed `context.children.spawn`
+  carries `limits`, `proposed_by` and `step`, and its refusal comes back as `plan_refused` and
+  is re-raised as `PlanNotAdmitted` on the host's side, so admission is true for a component on
+  either side.
 - **Operations** (D86): `GET /healthz` answers without a bearer — ok, the kit's version, the
   sessions and threads open — for a load balancer, saying nothing a stranger could use;
   `initialize` says the kit's version beside the protocol's; `admin/sessions` and `admin/threads`,

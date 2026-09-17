@@ -222,3 +222,18 @@ chapter from the live run follow the publish, as 0.29.1's did — they cannot be
 step's admission; `RunState.plan` and the amend-as-resume; a second park in one leg.
 
 ---
+
+### [NOTE] 2026-09-18 — /sync-docs: the architecture specs carry Phase 36
+Topics: planning, admission, amend, wire, modes, runtime
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md, architecture/wire.md, architecture/adapters.md, decisions/impact-map.md
+Detail: Additive, so specs directly (Rule 10): `runtime.md` — the governed step gains admission
+before the transaction boundary; `children.py`, `step.py`, `state.py`, `loop.py`, `bindings.py`,
+`approvals.py`, `conversation.py` and `threads.py` rows say what Phase 36 put there, BUG-055
+included. `wire.md` — `plan_limits` and `unmapped_behaviour` on the thread methods,
+`thread/amend`, `plan_refused` among the typed kinds, and the note that the plan crosses whole
+with protocol 3 unchanged. `adapters.md` — `Pattern.plan`/`absorb`, `ModeSpec.plan` and the
+shipped ceilings, a `[plan]` table narrows only. The impact map gains the phase's topics.
+`momentum okf index` rewrote the decisions index again (BUG-050); restored from a copy.
+
+---

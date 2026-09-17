@@ -71,6 +71,15 @@ reflect_until = Pattern("reflect-until", ...)
 tools and answers. That is a fully deterministic one-agent product, with the same runtime a dynamic
 product uses. Adding a pattern — today's or one invented in five years — is a file.
 
+Since Phase 36 a pattern also carries `plan: PlanLimits | None` — met with the host's and the
+mode's at admission (D109) — and `absorb: bool` (D112): `True`, the plan's results come back as
+the tool result the model reads; `False`, the loop admits the plan, **defers** it, closes the
+planner's step on the record and runs the plan as the same run's child — the planner is told it
+was admitted, never its results. A refused plan is the tool result, every mismatch named (D111);
+the `compose` meta-tool and the registered `compose` component (`runtime/planning.py`, D110) are
+one path into `children.spawn`, and the loop treats a plan-labelled registration as its meta-tool
+rather than a second tool, so `single` stays unable to plan.
+
 ```python
 class AgentComponent(ComponentPort):
     def __init__(
@@ -205,6 +214,17 @@ presentation (id, name, description) and the **environment mode it needs**. Four
 | `ask` | workspace-write | the workspace is the ceiling; every write, run or delete inside it is asked about — Claude Code's *default*, Codex's *on-request* |
 | `workspace-write` | workspace-write | writes and commands inside the roots, silently; the web hidden (it reaches, uncontained) |
 | `full` | full | everything; a write outside the workspace, or a command that reaches, is asked about |
+
+A `ModeSpec` also carries `plan: PlanLimits | None` (D109, Phase 36) — how much plan the mode
+admits: depth, fan-out, steps. The shipped ceilings (`PLAN_OF`) narrow from `full` (4 · 32 · 256)
+through `workspace-write` (4 · 16 · 128) to `ask` and `read-only` (3 · 8 · 64) — generous on
+purpose, the lease the floor, but a ceiling so a runaway plan is refused before its first step.
+A mode document's `[plan]` table inherits the named policy's value on any axis it leaves out and
+is refused by name if it widens the policy on any axis (`widens_plan`, beside `widens`). The
+conversation meets the host's limits with the mode's at every turn, so `set_mode` changes what
+the next plan may be, live. A behaviour field the provider's record maps no flag for is named on
+the session's `unmapped`, the thread's `unmapped_behaviour` and the wire — never dropped (D64,
+ENH-020).
 
 Yours are files (`modes/reviewer.md`) or store rows naming a shipped policy — never effects by
 hand. The host's `ActRules` (D65, D85) are read in the field's order — **deny, then the
