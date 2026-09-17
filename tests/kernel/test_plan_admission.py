@@ -15,11 +15,11 @@ from typing import Any
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from shadow_hdk.kernel.planning import composition_digest, measure
 
 from shadow_hdk.kernel import Admitted as AdmittedPlan
 from shadow_hdk.kernel import Composition, PlanLimits, PlanMismatch, PlanRefused, admit
 from shadow_hdk.kernel.contracts import CONTRACTS, load, round_trip
+from shadow_hdk.kernel.planning import composition_digest, measure
 from shadow_hdk.runtime.testing import make_registration
 
 CORPUS = json.loads(
@@ -40,7 +40,7 @@ def mismatch_of(raw: dict[str, str]) -> PlanMismatch:
 
 @pytest.mark.parametrize("case", CORPUS["cases"], ids=[c["name"] for c in CORPUS["cases"]])
 def test_the_corpus_measures_every_composition_as_written(case: dict[str, Any]) -> None:
-    composition = load(case["composition"], Composition)
+    composition = load(json.dumps(case["composition"]), Composition)
     measured = measure(composition)
     assert (measured.depth, measured.fan_out, measured.steps) == (
         case["measures"]["depth"],
@@ -51,7 +51,7 @@ def test_the_corpus_measures_every_composition_as_written(case: dict[str, Any]) 
 
 @pytest.mark.parametrize("case", CORPUS["cases"], ids=[c["name"] for c in CORPUS["cases"]])
 def test_the_corpus_admits_or_refuses_exactly_as_written(case: dict[str, Any]) -> None:
-    composition = load(case["composition"], Composition)
+    composition = load(json.dumps(case["composition"]), Composition)
     outcome = admit(composition, REGISTERED, limits_of(case["limits"]))
     if case["expect"] == "admitted":
         assert isinstance(outcome, AdmittedPlan)
@@ -68,7 +68,7 @@ def test_admission_is_deterministic_and_total() -> None:
     """The same inputs give the same answer, and nothing raises — a malformed plan is a refusal,
     not an exception, the same rule the derivation engine follows (BUG-013)."""
     case = CORPUS["cases"][6]
-    composition = load(case["composition"], Composition)
+    composition = load(json.dumps(case["composition"]), Composition)
     first = admit(composition, REGISTERED, limits_of(case["limits"]))
     second = admit(composition, REGISTERED, limits_of(case["limits"]))
     assert first == second
@@ -78,20 +78,22 @@ def test_admission_is_deterministic_and_total() -> None:
 
 
 def test_the_digest_is_canonical_and_input_sensitive() -> None:
-    a = load(CORPUS["cases"][0]["composition"], Composition)
-    b = load(CORPUS["cases"][0]["composition"], Composition)
+    a = load(json.dumps(CORPUS["cases"][0]["composition"]), Composition)
+    b = load(json.dumps(CORPUS["cases"][0]["composition"]), Composition)
     assert composition_digest(a) == composition_digest(b)
     changed = load(
-        {
-            "steps": [
-                {
-                    "kind": "invoke",
-                    "id": "s1",
-                    "component": "look",
-                    "inputs": [{"name": "topic", "value": "y"}],
-                }
-            ]
-        },
+        json.dumps(
+            {
+                "steps": [
+                    {
+                        "kind": "invoke",
+                        "id": "s1",
+                        "component": "look",
+                        "inputs": [{"name": "topic", "value": "y"}],
+                    }
+                ]
+            }
+        ),
         Composition,
     )
     assert composition_digest(a) != composition_digest(changed)

@@ -4,6 +4,7 @@
 /* eslint-disable */
 
 export type * as ActivitySchema from "./schemas/Activity.js";
+export type * as AdmittedSchema from "./schemas/Admitted.js";
 export type * as AuthoritySnapshotSchema from "./schemas/AuthoritySnapshot.js";
 export type * as CompatibilitySchema from "./schemas/Compatibility.js";
 export type * as ComponentSchema from "./schemas/Component.js";
@@ -22,6 +23,9 @@ export type * as LeaseSchema from "./schemas/Lease.js";
 export type * as ModelRequestSchema from "./schemas/ModelRequest.js";
 export type * as ModelResponseSchema from "./schemas/ModelResponse.js";
 export type * as ObservationSchema from "./schemas/Observation.js";
+export type * as PlanLimitsSchema from "./schemas/PlanLimits.js";
+export type * as PlanMismatchSchema from "./schemas/PlanMismatch.js";
+export type * as PlanRefusedSchema from "./schemas/PlanRefused.js";
 export type * as ProposalSchema from "./schemas/Proposal.js";
 export type * as ProviderSchema from "./schemas/Provider.js";
 export type * as ProviderCapabilitiesSchema from "./schemas/ProviderCapabilities.js";

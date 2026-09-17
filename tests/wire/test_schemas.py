@@ -64,6 +64,8 @@ TWELVE = (
     "approval_requested",
     "input_requested",
     "spawned",
+    "plan_admitted",
+    "plan_refused",
     "held",
     "usage",
     "reasoning",

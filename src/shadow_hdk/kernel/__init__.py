@@ -89,6 +89,17 @@ from shadow_hdk.kernel.observations import (
     Proposal,
     Refused,
 )
+from shadow_hdk.kernel.planning import (
+    UNBOUNDED,
+    Admitted,
+    PlanLimits,
+    PlanMeasure,
+    PlanMismatch,
+    PlanRefused,
+    admit,
+    composition_digest,
+    measure,
+)
 from shadow_hdk.kernel.ports import (
     ActivityObserver,
     AgentPort,
@@ -157,6 +168,15 @@ __all__ = [
     "EffectJournalPort",
     "CapabilityEvidence",
     "CapabilityMismatch",
+    "UNBOUNDED",
+    "Admitted",
+    "PlanLimits",
+    "PlanMeasure",
+    "PlanMismatch",
+    "PlanRefused",
+    "admit",
+    "composition_digest",
+    "measure",
     "Compatibility",
     "EnvironmentCapabilities",
     "EnvironmentRequirements",

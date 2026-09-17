@@ -55,3 +55,19 @@ fan_out = the widest `FanOut`; steps = leaf steps with an `Until` body counted `
 times; an `Await` is a leaf.
 
 ---
+
+### [NOTE] 2026-09-18 — G1: the kernel's admission is pure, published and mutation-checked
+Topics: planning, admission, kernel, contracts, events
+Affects-phases: phase-36-plan-admission
+Affects-specs: architecture/runtime.md#events, architecture/wire.md
+Detail: `kernel/planning.py` — `PlanLimits` (depth, fan_out, steps; `meet`, `narrower_than`),
+`measure()` (deepest leaf and widest fan-out named for the mismatch), `leaves_of()`, `admit()`
+(structural then existence, the list complete and stable), `composition_digest()` (canonical
+JSON, sha-256, as `StagedEffect.digest`). `PlanAdmitted`/`PlanRefused` join the `Event` union —
+eighteen kinds now; `test_there_are_sixteen_kinds`, the wire's declared list and the
+industry-words set updated, the last with its field precedent (plan mode, workflow agents).
+Four contracts published with examples; TypeScript regenerated. The `effect` axis is the
+runtime's (G2): the kernel measures, it cannot judge. [ARCH_CHANGE] pending for `/sync-docs`:
+the events list in `architecture/runtime.md` and the wire's kinds.
+
+---

@@ -931,6 +931,186 @@
       "title": "Pending",
       "type": "object"
     },
+    "PlanAdmitted": {
+      "description": "A whole plan admitted before it compiled (D108): its digest, the authority it was admitted\nunder, the limits it fit \u2014 and whether it amended a plan already running (D116).",
+      "properties": {
+        "amendment": {
+          "default": false,
+          "title": "Amendment",
+          "type": "boolean"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "authority_digest": {
+          "default": "",
+          "title": "Authority Digest",
+          "type": "string"
+        },
+        "kind": {
+          "const": "plan_admitted",
+          "default": "plan_admitted",
+          "title": "Kind",
+          "type": "string"
+        },
+        "limits": {
+          "$ref": "#/$defs/PlanLimits",
+          "default": {
+            "depth": null,
+            "fan_out": null,
+            "steps": null
+          }
+        },
+        "plan_digest": {
+          "title": "Plan Digest",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "plan_digest"
+      ],
+      "title": "PlanAdmitted",
+      "type": "object"
+    },
+    "PlanLimits": {
+      "description": "How much plan a host, a mode or a parent admits. `None` is unbounded.\n\nOrder-bearing, like an effect profile: `meet` takes the narrower of each field, so limits\ncompose without a review and the narrowing proof covers them.",
+      "properties": {
+        "depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Depth"
+        },
+        "fan_out": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fan Out"
+        },
+        "steps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steps"
+        }
+      },
+      "title": "PlanLimits",
+      "type": "object"
+    },
+    "PlanMismatch": {
+      "description": "One way a plan does not fit, as data a host or a planner can act on.",
+      "properties": {
+        "axis": {
+          "enum": [
+            "depth",
+            "fan_out",
+            "steps",
+            "component",
+            "effect"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "found": {
+          "title": "Found",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis",
+        "step",
+        "required",
+        "found"
+      ],
+      "title": "PlanMismatch",
+      "type": "object"
+    },
+    "PlanRefused": {
+      "description": "A whole plan refused before anything ran \u2014 every mismatch, in the stable order. The\nplanner hears this as an observation and decides; nothing was trimmed (D111).",
+      "properties": {
+        "amendment": {
+          "default": false,
+          "title": "Amendment",
+          "type": "boolean"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "kind": {
+          "const": "plan_refused",
+          "default": "plan_refused",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mismatches": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanMismatch"
+          },
+          "title": "Mismatches",
+          "type": "array"
+        },
+        "plan_digest": {
+          "title": "Plan Digest",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "seq",
+        "at",
+        "plan_digest"
+      ],
+      "title": "PlanRefused",
+      "type": "object"
+    },
     "Proposal": {
       "description": "What the runtime hands to the sink. It proposes; it never commits anything anywhere.",
       "properties": {
@@ -1508,6 +1688,8 @@
       "invoked": "#/$defs/Invoked",
       "mode_changed": "#/$defs/ModeChanged",
       "observed": "#/$defs/Observed",
+      "plan_admitted": "#/$defs/PlanAdmitted",
+      "plan_refused": "#/$defs/PlanRefused",
       "proposed": "#/$defs/Proposed",
       "reasoning": "#/$defs/Reasoning",
       "refused": "#/$defs/shadow_hdk__kernel__events__Refused",
@@ -1548,6 +1730,12 @@
     },
     {
       "$ref": "#/$defs/Spawned"
+    },
+    {
+      "$ref": "#/$defs/PlanAdmitted"
+    },
+    {
+      "$ref": "#/$defs/PlanRefused"
     },
     {
       "$ref": "#/$defs/Held"

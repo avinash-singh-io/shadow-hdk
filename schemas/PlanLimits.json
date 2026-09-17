@@ -1,0 +1,43 @@
+{
+  "description": "How much plan a host, a mode or a parent admits. `None` is unbounded.\n\nOrder-bearing, like an effect profile: `meet` takes the narrower of each field, so limits\ncompose without a review and the narrowing proof covers them.",
+  "properties": {
+    "depth": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Depth"
+    },
+    "fan_out": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fan Out"
+    },
+    "steps": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Steps"
+    }
+  },
+  "title": "PlanLimits",
+  "type": "object"
+}

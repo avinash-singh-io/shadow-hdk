@@ -15,11 +15,11 @@ epic: the-harness-as-data
 - [x] Verify RED: collection fails on the absent names (`ImportError: cannot import name 'PlanLimits'`) — 2026-09-18; each scenario fails for its stated reason as its group lands
 
 ## Group 1 — Kernel
-- [ ] `kernel/planning.py`: `PlanLimits` + `meet` + `narrower_than`; `PlanMismatch`; `Admitted`; `PlanRefused`; `admit()`; `composition_digest()`
-- [ ] `kernel/events.py`: `PlanAdmitted`, `PlanRefused` in the `Event` union
-- [ ] `kernel/contracts.py` + `schemas/`: exported, round-trip, API export invariant
-- [ ] Mutation check on each corpus assertion (drop the depth check → the over-depth case must fail)
-- [ ] Verify: `uv run pytest -q tests/kernel` · `uv run mypy src/shadow_hdk/kernel`
+- [x] `kernel/planning.py`: `PlanLimits` + `meet` + `narrower_than`; `PlanMeasure` + `measure()`; `leaves_of()`; `PlanMismatch`; `Admitted`; `PlanRefused`; `admit()`; `composition_digest()`
+- [x] `kernel/events.py`: `PlanAdmitted`, `PlanRefused` in the `Event` union (eighteen kinds; the three kind-count tests updated)
+- [x] `kernel/contracts.py` + `schemas/` + `clients/typescript/src/schemas`: four contracts registered with examples, republished, regenerated; `tsc --noEmit` green
+- [x] Mutation check: depth check removed → 2 corpus cases fail; existence check removed → 2 fail; `meet` widened → 2 property tests fail; restored (a stale `.pyc` from a same-second, same-size edit had to be dropped)
+- [x] Verify: `uv run pytest -q tests/kernel tests/wire/test_schemas.py tests/invariants` → 242 passed · `uv run mypy src/shadow_hdk/kernel` → clean · ruff clean — 2026-09-18
 
 ## Group 2 — Runtime: admission in spawn
 - [ ] `children.spawn`: `admit()` → dry-judge each step → Refuse / Ask (one question) / Allow → `run()`; no `Spawned` on refusal

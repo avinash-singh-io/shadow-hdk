@@ -1,0 +1,36 @@
+{
+  "description": "One way a plan does not fit, as data a host or a planner can act on.",
+  "properties": {
+    "axis": {
+      "enum": [
+        "depth",
+        "fan_out",
+        "steps",
+        "component",
+        "effect"
+      ],
+      "title": "Axis",
+      "type": "string"
+    },
+    "found": {
+      "title": "Found",
+      "type": "string"
+    },
+    "required": {
+      "title": "Required",
+      "type": "string"
+    },
+    "step": {
+      "title": "Step",
+      "type": "string"
+    }
+  },
+  "required": [
+    "axis",
+    "step",
+    "required",
+    "found"
+  ],
+  "title": "PlanMismatch",
+  "type": "object"
+}
