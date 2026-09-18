@@ -2,7 +2,7 @@
 // protocol_version 3. Regenerate with `npm run generate`; the invariant
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
-export type Event = (Started | Composed | Invoked | EffectRecorded | Observed | Proposed | Refused1 | ApprovalRequested | InputRequested | Spawned | Held | UsageReported | Reasoning | ModeChanged | WorkspaceChanged | Ended)
+export type Event = (Started | Composed | Invoked | EffectRecorded | Observed | Proposed | Refused1 | ApprovalRequested | InputRequested | Spawned | PlanAdmitted | PlanRefused | Held | UsageReported | Reasoning | ModeChanged | WorkspaceChanged | Ended)
 export type At = string
 export type Kind = "started"
 export type MaxCostCents = (number | null)
@@ -120,45 +120,70 @@ export type ChildRunId = string
 export type Kind22 = "spawned"
 export type RunId9 = string
 export type Seq9 = number
+export type Amendment = boolean
+export type Asks = string[]
 export type At11 = string
-export type ChildRunId1 = string
-export type Handle5 = string
-export type Kind23 = "held"
+export type AuthorityDigest = string
+export type Kind23 = "plan_admitted"
+export type Depth = (number | null)
+export type FanOut1 = (number | null)
+export type Steps3 = (number | null)
+export type PlanDigest = string
+export type Refusals = string[]
 export type RunId10 = string
 export type Seq10 = number
-export type StepsSpent = number
+export type Step7 = string
+export type Amendment1 = boolean
 export type At12 = string
-export type Kind24 = "usage"
+export type Kind24 = "plan_refused"
+export type Axis = ("depth" | "fan_out" | "steps" | "component")
+export type Found = string
+export type Required = string
+export type Step8 = string
+export type Mismatches = PlanMismatch[]
+export type PlanDigest1 = string
 export type RunId11 = string
 export type Seq11 = number
-export type Step7 = string
+export type Step9 = string
+export type At13 = string
+export type ChildRunId1 = string
+export type Handle5 = string
+export type Kind25 = "held"
+export type RunId12 = string
+export type Seq12 = number
+export type StepsSpent = number
+export type At14 = string
+export type Kind26 = "usage"
+export type RunId13 = string
+export type Seq13 = number
+export type Step10 = string
 export type CostCents = (number | null)
 export type InputTokens = (number | null)
 export type OutputTokens = (number | null)
-export type At13 = string
-export type Kind25 = "reasoning"
-export type RunId12 = string
-export type Seq12 = number
-export type Step8 = string
-export type Text = string
-export type At14 = string
-export type Kind26 = "mode_changed"
-export type Mode = string
-export type RunId13 = string
-export type Seq13 = number
 export type At15 = string
-export type Kind27 = "workspace_changed"
+export type Kind27 = "reasoning"
+export type RunId14 = string
+export type Seq14 = number
+export type Step11 = string
+export type Text = string
+export type At16 = string
+export type Kind28 = "mode_changed"
+export type Mode = string
+export type RunId15 = string
+export type Seq15 = number
+export type At17 = string
+export type Kind29 = "workspace_changed"
 export type Name1 = string
 export type Path1 = string
 export type Roots = Root[]
-export type RunId14 = string
-export type Seq14 = number
-export type At16 = string
+export type RunId16 = string
+export type Seq16 = number
+export type At18 = string
 export type Detail = (string | null)
-export type Kind28 = "ended"
+export type Kind30 = "ended"
 export type Reason2 = ("completed" | "lease_exhausted" | "gave_up" | "cancelled" | "failed")
-export type RunId15 = string
-export type Seq15 = number
+export type RunId17 = string
+export type Seq17 = number
 export type StepsTaken = number
 
 export interface Started {
@@ -439,6 +464,57 @@ run_id: RunId9
 seq: Seq9
 }
 /**
+ * A whole plan admitted before it compiled (D108): its digest, the authority it was admitted
+ * under, the limits it fit — and whether it amended a plan already running (D116).
+ */
+export interface PlanAdmitted {
+amendment?: Amendment
+asks?: Asks
+at: At11
+authority_digest?: AuthorityDigest
+kind?: Kind23
+limits?: PlanLimits
+plan_digest: PlanDigest
+refusals?: Refusals
+run_id: RunId10
+seq: Seq10
+step?: Step7
+}
+/**
+ * How much plan a host, a mode or a parent admits. `None` is unbounded.
+ *
+ * Order-bearing, like an effect profile: `meet` takes the narrower of each field, so limits
+ * compose without a review and the narrowing proof covers them.
+ */
+export interface PlanLimits {
+depth?: Depth
+fan_out?: FanOut1
+steps?: Steps3
+}
+/**
+ * A whole plan refused before anything ran — every mismatch, in the stable order. The
+ * planner hears this as an observation and decides; nothing was trimmed (D111).
+ */
+export interface PlanRefused {
+amendment?: Amendment1
+at: At12
+kind?: Kind24
+mismatches?: Mismatches
+plan_digest: PlanDigest1
+run_id: RunId11
+seq: Seq11
+step?: Step9
+}
+/**
+ * One way a plan does not fit, as data a host or a planner can act on.
+ */
+export interface PlanMismatch {
+axis: Axis
+found: Found
+required: Required
+step: Step8
+}
+/**
  * A child parked instead of ending, and its parent is keeping it (D16).
  *
  * Without this a host would have to infer holding from the *absence* of `Ended` — which a child
@@ -446,12 +522,12 @@ seq: Seq9
  * not a reservation, because a parked run settles what it did not use back to its parent.
  */
 export interface Held {
-at: At11
+at: At13
 child_run_id: ChildRunId1
 handle: Handle5
-kind?: Kind23
-run_id: RunId10
-seq: Seq10
+kind?: Kind25
+run_id: RunId12
+seq: Seq12
 steps_spent: StepsSpent
 }
 /**
@@ -466,11 +542,11 @@ steps_spent: StepsSpent
  * kind that appears when there is nothing to report is a kind readers learn to skip.
  */
 export interface UsageReported {
-at: At12
-kind?: Kind24
-run_id: RunId11
-seq: Seq11
-step: Step7
+at: At14
+kind?: Kind26
+run_id: RunId13
+seq: Seq13
+step: Step10
 usage: Usage
 }
 /**
@@ -494,11 +570,11 @@ output_tokens?: OutputTokens
  * the place to summarise.
  */
 export interface Reasoning {
-at: At13
-kind?: Kind25
-run_id: RunId12
-seq: Seq12
-step: Step8
+at: At15
+kind?: Kind27
+run_id: RunId14
+seq: Seq14
+step: Step11
 text: Text
 }
 /**
@@ -506,22 +582,22 @@ text: Text
  * reader knows which policy judged the turns that follow.
  */
 export interface ModeChanged {
-at: At14
-kind?: Kind26
+at: At16
+kind?: Kind28
 mode: Mode
-run_id: RunId13
-seq: Seq13
+run_id: RunId15
+seq: Seq15
 }
 /**
  * The thread's roots changed mid-thread (D76) — a directory added while the conversation
  * ran — so a reader knows which turns could see which roots.
  */
 export interface WorkspaceChanged {
-at: At15
-kind?: Kind27
+at: At17
+kind?: Kind29
 roots: Roots
-run_id: RunId14
-seq: Seq14
+run_id: RunId16
+seq: Seq16
 }
 /**
  * One directory a thread works on, and the name it is addressed by.
@@ -531,11 +607,11 @@ name: Name1
 path: Path1
 }
 export interface Ended {
-at: At16
+at: At18
 detail?: Detail
-kind?: Kind28
+kind?: Kind30
 reason: Reason2
-run_id: RunId15
-seq: Seq15
+run_id: RunId17
+seq: Seq17
 steps_taken: StepsTaken
 }

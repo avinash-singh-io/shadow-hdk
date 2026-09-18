@@ -30,6 +30,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.planning import Admitted, PlanLimits, PlanMismatch, PlanRefused
 from shadow_hdk.kernel.ports import (
     Context,
     Judgement,
@@ -52,6 +53,10 @@ CONTRACTS: dict[str, Any] = {
     "Component": Component,
     "Registration": Registration,
     "Composition": Composition,
+    "PlanLimits": PlanLimits,
+    "PlanMismatch": PlanMismatch,
+    "Admitted": Admitted,
+    "PlanRefused": PlanRefused,
     "Observation": Observation,
     "Proposal": Proposal,
     "Lease": Lease,

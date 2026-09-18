@@ -48,6 +48,7 @@ from shadow_hdk.kernel import (
     ExecutionRequirements,
     ExecutionSelection,
     Lease,
+    PlanLimits,
     ProviderCapabilities,
     ThreadStore,
     Workspace,
@@ -76,6 +77,7 @@ from shadow_hdk.runtime.environment import MODES as ENVIRONMENT_MODES
 from shadow_hdk.runtime.environment import Mode as EnvironmentMode
 from shadow_hdk.runtime.environment import mode_named
 from shadow_hdk.runtime.person import person_components
+from shadow_hdk.runtime.planning import plan_components
 from shadow_hdk.runtime.switched import Switched, store_switches
 from shadow_hdk.runtime.threads import TURN, InMemoryThreads, Thread
 from shadow_hdk.serve.authority import HostAuthority, HostAuthorizer
@@ -206,7 +208,15 @@ async def workshop(
     # so every mode offers it.
     # Batteries (D70) are ports like any other, judged by the same modes: their profiles say what
     # they reach, so a confined mode hides them by itself.
-    offered: tuple[Any, ...] = (environment, chosen_from, person_components(), *batteries)
+    # A plan proposed as a component (D110): no effects, so every mode offers it; a resident
+    # CLI reaches it through the socket and is admitted like the loop.
+    offered: tuple[Any, ...] = (
+        environment,
+        chosen_from,
+        person_components(),
+        plan_components(),
+        *batteries,
+    )
     if store is not None:
         # Which components are on is the store's to say (D66): off at the next refresh.
         offered = tuple(Switched(port, store_switches(store)) for port in offered)
@@ -520,6 +530,7 @@ class ServeHost:
         attributes: Any = None,
         budget: Any = None,
         requirements: Any = None,
+        plan_limits: Any = None,
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -586,11 +597,32 @@ class ServeHost:
             budget=self._budget_of(budget),
             idle_seconds=self.settings.idle_seconds,
             requirements=execution,
+            plan_limits=self._plan_limits_of(plan_limits),
         )
         self._selections[thread.id] = selection
         thread.execution = selection
         self.provider = called
         return thread
+
+    def _plan_limits_of(self, given: Any) -> PlanLimits | None:
+        """The host's own plan limits (D109), in the wire's words — `{depth, fan_out, steps}`,
+        each a whole number or absent — as the kernel's; `None` when nothing was asked for. The
+        mode's limits meet them at every turn; a value that is not a whole number is refused."""
+        if given is None:
+            return None
+        if isinstance(given, PlanLimits):
+            return given
+        if not isinstance(given, dict):
+            raise ValueError("plan_limits must be an object of depth, fan_out and steps")
+        for key in ("depth", "fan_out", "steps"):
+            if key in given and given[key] is not None and not isinstance(given[key], int):
+                raise ValueError(f"plan_limits {key} must be a whole number")
+        unknown = set(given) - {"depth", "fan_out", "steps"}
+        if unknown:
+            raise ValueError(f"plan_limits has no axis {sorted(unknown)}")
+        return PlanLimits(
+            depth=given.get("depth"), fan_out=given.get("fan_out"), steps=given.get("steps")
+        )
 
     def _budget_of(self, given: Any) -> Ceiling | None:
         """A thread's own budget (D84), in the file's words — `{steps, seconds, cents}`, each
@@ -630,7 +662,9 @@ class ServeHost:
             )
         return environment
 
-    async def resume(self, thread_id: str, *, observer: Any = None) -> Thread:
+    async def resume(
+        self, thread_id: str, *, observer: Any = None, plan_limits: Any = None
+    ) -> Thread:
         record = await self.threads.get(thread_id)
         if record is None:
             raise KeyError(f"no thread {thread_id!r} in the store")
@@ -688,6 +722,7 @@ class ServeHost:
             modes=self.modes,
             holder=self.holder,
             idle_seconds=self.settings.idle_seconds,
+            plan_limits=self._plan_limits_of(plan_limits),
         )
         self._selections[thread.id] = selection
         thread.execution = selection

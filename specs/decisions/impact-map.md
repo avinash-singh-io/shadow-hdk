@@ -27,6 +27,8 @@ entry carries matching `Topics:`.
 | effect-journal, reconciliation, unknown-outcome, receipts | specs/architecture/runtime.md; specs/architecture/wire.md | Acting; The record |
 | model-agent, agent-surface, item-inputs, stream-session, heartbeat, authentication, typescript | specs/architecture/adapters.md; specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/testing.md | The agent adapter; Modules; The thread, crossed; Cases |
 | dynamic-planning, scheduling, generative-ui, collaboration, evolution | specs/planning/roadmap.md | Timeline; What comes next; Guiding Principles |
+| planning, admission, limits, amend, defer, checkpoint, state, component | specs/architecture/runtime.md; specs/architecture/wire.md; specs/architecture/adapters.md | The governed step; Modules; The thread, crossed; The agent adapter; The modes adapter |
+| behaviour, session, langgraph, questions | specs/architecture/adapters.md; specs/architecture/runtime.md | The modes adapter; Modules |
 | mypy, ci, landing | specs/architecture/testing.md | Layers |
 | spec-drift | specs/architecture/file-structure.md | (whole file) |
 | posture | specs/epics/0007-the-environment.md | Decisions |

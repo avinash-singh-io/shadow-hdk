@@ -61,6 +61,16 @@ def error_data(failed: BaseException) -> dict[str, Any]:
                 for gap in mismatches
             ],
         }
+    if name == "PlanNotAdmitted":
+        refusal = getattr(failed, "refusal", None)
+        return {
+            "kind": "plan_refused",
+            "amendment": bool(getattr(failed, "amendment", False)),
+            "mismatches": [
+                {"axis": m.axis, "step": m.step, "required": m.required, "found": m.found}
+                for m in getattr(refusal, "mismatches", ())
+            ],
+        }
     if name == "VersionMismatch":
         return {"kind": "version_mismatch"}
     if isinstance(failed, KeyError | FileNotFoundError):

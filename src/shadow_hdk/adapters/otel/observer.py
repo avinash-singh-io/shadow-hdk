@@ -58,6 +58,8 @@ class OpenTelemetryObserver(ObserverPort):
             "approval_requested",
             "input_requested",
             "spawned",
+            "plan_admitted",
+            "plan_refused",
             "usage",
             "held",
             "reasoning",
@@ -146,6 +148,31 @@ class OpenTelemetryObserver(ObserverPort):
                 self._run(event.run_id, at).add_event(
                     "spawned",
                     {"shadow_hdk.child_run_id": event.child_run_id, **_lease(event.lease)},
+                    at,
+                )
+            case "plan_admitted":
+                # Safe metadata only: the digest, the step, the shape it fit — never the plan.
+                self._run(event.run_id, at).add_event(
+                    "plan_admitted",
+                    {
+                        "shadow_hdk.step": event.step,
+                        "shadow_hdk.plan_digest": event.plan_digest,
+                        "shadow_hdk.amendment": event.amendment,
+                        "shadow_hdk.asks": len(event.asks),
+                        "shadow_hdk.refusals": len(event.refusals),
+                    },
+                    at,
+                )
+            case "plan_refused":
+                self._run(event.run_id, at).add_event(
+                    "plan_refused",
+                    {
+                        "shadow_hdk.step": event.step,
+                        "shadow_hdk.plan_digest": event.plan_digest,
+                        "shadow_hdk.amendment": event.amendment,
+                        "shadow_hdk.mismatches": len(event.mismatches),
+                        "shadow_hdk.axes": ",".join(sorted({m.axis for m in event.mismatches})),
+                    },
                     at,
                 )
             case "mode_changed":

@@ -46,11 +46,12 @@
 # signed-in turns with `show_raw_agent_reasoning=true` and `model_reasoning_summary="detailed"`
 # produced none: a `reasoning` item's shape (`item.type == "reasoning"`, `item.text`).
 # `reasoning_output_tokens` was 51 on a turn that showed no reasoning item, so the tokens are spent
-# and the text is withheld by the CLI in this mode. **Not yet proven end to end**: Codex calling
-# this run's tools through the registry relay — it called an injected stdio server's tools
-# (including a destructive one, once pre-permitted), and the relay is the same shape, but the
-# quota ran out one turn short of the proof. `uv run pytest -m live -rs` on a signed-in machine
-# with quota is where that proof runs.
+# and the text is withheld by the CLI in this mode. **The registry relay is proven end to end**
+# (2026-09-18, Codex CLI 0.154.0, Phase 36): Codex proposed a plan through this run's `compose`
+# component over the socket and both of the plan's `read_file` steps ran through our registry —
+# `tests/test_a_cli_plans_through_the_socket.py`, `uv run pytest -m live -rs` on a signed-in
+# machine. Earlier it had only called an injected stdio server's tools (including a destructive
+# one, once pre-permitted); the quota had run out one turn short of the relay proof.
 #
 # What else is transcribed:
 #   - `CODEX_HOME` must be named explicitly; the collector refuses a home-directory fallback so it

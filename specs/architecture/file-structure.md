@@ -30,6 +30,7 @@ shadow-hdk/
       step.py  compile.py  state.py  loop.py   the seven moves; Composition → StateGraph; run · resume
       children.py  cancel.py         spawn · send · release; held children; cancellation (D15, D16)
       approvals.py  person.py        the host's handle for a live question (D58); ask_person (D65)
+      planning.py                    compose — a plan proposed as a component (D110); admitted in children.spawn (D108)
       items.py  replay.py            the fold: events → items (D46); replay determinism
       environment.py  leash.py       an environment has a mode and a workspace (D48, D76); the leash
       processes.py  lines.py         start_held — the one place a session leader starts (D77); LineBuffer

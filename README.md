@@ -18,9 +18,14 @@ pip install shadow-hdk
 from shadow_hdk.serve import Harness
 
 async with Harness.load("harness.toml") as harness:
-    async for part in harness.turn("Review this repository and propose a release plan"):
-        print(part.kind)
+    async for part in harness.turn("add a .gitignore and run the tests"):
+        print(part.kind, part.item.component if part.item else "")
+    print(harness.thread.record.turns[-1].text)
 ```
+
+`turn()` yields every part of what happens, in order: the record's events by their own kind,
+`activity` beside them as it streams, `item` as each step folds closed, and `turn` — last — with
+the record. The suite runs these lines as printed, against the `harness.toml` below.
 
 `shadow-hdk` is MIT licensed, requires Python 3.12+, and is published as
 [`shadow-hdk`](https://pypi.org/project/shadow-hdk/).
@@ -284,7 +289,25 @@ support for HTTP. The generated TypeScript client lives in
 
 v0.30.0 uses **wire protocol v3**. Version 1 and 2 clients are refused during initialization.
 Regenerate or upgrade clients before connecting. See the
-[v0.30 migration guide](docs/migrations/0.30.md) for the exact contract changes.
+[v0.30 migration guide](docs/migrations/0.30.md) for the exact contract changes, and the
+[v0.31 migration guide](docs/migrations/0.31.md) for what Phase 36 adds to the same protocol.
+
+```ts
+import { HarnessClient } from "shadow-hdk-client";
+
+const client = new HarnessClient({ address: "http://127.0.0.1:8765" });
+await client.connect();
+const started = await client.thread.start({}); // root and mode from harness.toml; or pass them
+client.approvals.onRequest((request) => client.approvals.answer(request.handle, { kind: "approve" }));
+for await (const line of client.turn.start(started.thread_id, "hello from typescript")) {
+  if (line.kind === "item") console.log(line.item.step, line.item.outcome);
+  if (line.kind === "activity") process.stdout.write(line.activity.text);
+  if (line.kind === "done") console.log(line.turn.text);
+}
+```
+
+The suite drives exactly these calls against a live `serve --http` and type-checks the snippet
+against the client as it is.
 
 ---
 
@@ -342,12 +365,19 @@ uv run pytest
 
 - [Consumer guide: choosing ownership and an entry point](docs/consuming.md)
 - [v0.30 migration guide](docs/migrations/0.30.md)
+- [v0.31 migration guide](docs/migrations/0.31.md)
 - [Package guides](docs/packages/)
 - [Architecture overview](specs/architecture/overview.md)
 - [Roadmap](specs/planning/roadmap.md)
 - [Changelog](specs/changelog/2026-09.md)
 
 ## Release status
+
+**v0.31.0 — Plan admission** (Epic 0009, Phase 36) is the candidate at the release gate: a plan
+an agent, a CLI or a host proposes is a composition admitted whole — shape, existence and effects
+— under limits that narrow host → mode → parent, before its first step runs; `compose` is a
+component a resident CLI reaches through the socket; a parked plan can be amended on the record.
+See the [v0.31 migration guide](docs/migrations/0.31.md).
 
 **v0.30.0 — Production Boundary** is released. It adds evidence-backed execution selection, one
 durable model/CLI agent surface, reconnectable streaming, safer bearer configuration, and

@@ -15,3 +15,8 @@ measured or derived facts, not normalization: Claude Code has a controlled path,
 uncontrolled because configured MCP servers cannot be excluded, and OpenCode currently exposes a
 process session with final-only output through this adapter. A host compares these facts with
 `ProviderRequirements` before opening the agent.
+
+Which of a mode's behaviour fields a provider can take is also a fact of its record:
+`kernel.providers.unmapped_behaviour(provider, behaviour)` names the fields the record has no flag
+for. Every opener reports them on the session it hands back, and the thread and the wire carry them
+(`Thread.unmapped_behaviour`, `unmapped_behaviour` on the thread results) rather than losing them.

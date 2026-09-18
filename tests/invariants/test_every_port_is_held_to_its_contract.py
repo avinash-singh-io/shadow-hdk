@@ -74,6 +74,8 @@ CONTRACTED: dict[str, str] = {
     # the thread's own turn component (D62)
     "_TurnComponents": "tests/runtime/test_a_thread_is_turns_of_runs.py",
     "PersonComponents": "tests/runtime/test_approvals_add_rules_and_the_agent_asks_the_person.py",
+    # planning as a component (D110)
+    "PlanComponents": "tests/runtime/test_compose_is_a_component.py",
     "SqliteThreads": "tests/adapters/basic/test_threads_survive_the_process.py",
     "SqliteStore": "tests/adapters/basic/test_a_store_survives_the_process.py",
     "PostgresStore": "tests/adapters/postgres/test_postgres_holds_the_contracts.py",

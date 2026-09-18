@@ -38,6 +38,8 @@ from shadow_hdk.kernel.events import (
     InputRequested,
     Invoked,
     Observed,
+    PlanAdmitted,
+    PlanRefused,
     Reasoning,
     Refused,
     RunId,
@@ -83,6 +85,9 @@ class Item:
     """Canonical inputs, or a typed JSON omission marker when the projection is too large."""
     reasoning: str = ""
     effect: EffectRecorded | None = None
+    plan: PlanAdmitted | PlanRefused | None = None
+    """The latest plan event of this step (D108): a plan proposed here and admitted or refused,
+    with its digest and every mismatch — what a host renders as *planned* beside what ran."""
     """The latest public transaction fact for this step, when it crossed an effect boundary."""
     outcome: Outcome = "running"
     observation: Observation | None = None
@@ -106,6 +111,7 @@ class _Open:
     inputs: JsonValue = None
     reasoning: list[str] = field(default_factory=list)
     effect: EffectRecorded | None = None
+    plan: PlanAdmitted | PlanRefused | None = None
     outcome: Outcome = "running"
     observation: Observation | None = None
     reason: str | None = None
@@ -122,6 +128,7 @@ class _Open:
             inputs=self.inputs,
             reasoning="".join(self.reasoning),
             effect=self.effect,
+            plan=self.plan,
             outcome=self.outcome,
             observation=self.observation,
             reason=self.reason,
@@ -210,6 +217,16 @@ class Fold:
                 opened.at = event.at
             case EffectRecorded():
                 self._step(event.run_id, event.step).effect = event
+            case PlanAdmitted() | PlanRefused():
+                # **A plan event opens no step.** It names the step it was proposed in — which
+                # may be a child's call id when a resident CLI proposed it through the offer —
+                # so it attaches to that step if it is open here, else to the run's current one;
+                # an item is a step, and a plan is a fact about one.
+                key = (event.run_id, event.step)
+                if key in self.open:
+                    self.open[key].plan = event
+                elif (current := self.current.get(event.run_id)) is not None:
+                    self.open[(event.run_id, current)].plan = event
             case Observed():
                 opened = self._step(event.run_id, event.step)
                 opened.observation = event.observation

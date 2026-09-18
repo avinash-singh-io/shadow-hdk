@@ -1,6 +1,7 @@
 {
   "contracts": [
     "Activity",
+    "Admitted",
     "AuthoritySnapshot",
     "Compatibility",
     "Component",
@@ -19,6 +20,9 @@
     "ModelRequest",
     "ModelResponse",
     "Observation",
+    "PlanLimits",
+    "PlanMismatch",
+    "PlanRefused",
     "Proposal",
     "Provider",
     "ProviderCapabilities",

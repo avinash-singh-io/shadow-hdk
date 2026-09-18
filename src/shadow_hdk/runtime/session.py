@@ -16,6 +16,7 @@ from shadow_hdk.kernel.components import Registration
 from shadow_hdk.kernel.composition import StepId
 from shadow_hdk.kernel.events import EndReason, RunId
 from shadow_hdk.kernel.leases import Ceiling, Floor, Lease
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import ClockPort, Context, Usage
 from shadow_hdk.runtime.cancel import Cancellation
 
@@ -261,6 +262,7 @@ class Session:
         cancellation: Cancellation | None = None,
         approvals: Any = None,
         rules: Any = None,
+        plan_limits: PlanLimits | None = None,
     ) -> None:
         self.run_id = run_id
         self.parent_run_id = parent_run_id
@@ -270,6 +272,9 @@ class Session:
         self.approvals = approvals
         """Where a component asks the host live (D58); `None` is nobody to ask."""
         self.rules = rules
+        #: How much plan this run admits (D109): the host's, met with every parent's on the way
+        #: down. `None` is unbounded; the lease is the floor underneath in any case.
+        self.plan_limits = plan_limits
         """The host's act-rule registry (D65); `None` when rules are not kept."""
         self._context = dict(context or {})
         clashing = sorted(RESERVED_ATTRIBUTES & set(self._context))

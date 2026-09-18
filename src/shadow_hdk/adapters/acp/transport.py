@@ -23,6 +23,7 @@ from typing import Any
 from shadow_hdk.adapters.acp.agent import AcpAgent
 from shadow_hdk.kernel import AgentPort, AgentSession, Provider, ToolSource
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.providers import unmapped_behaviour
 
 
 class AcpProvider(AgentPort):
@@ -57,8 +58,8 @@ class AcpProvider(AgentPort):
 
         `behaviour` is accepted so this opener satisfies the port (D64); ACP carries a system
         prompt and model in `session/new` rather than as launch flags, so mapping it is a
-        follow-up when a host asks — until then a set behaviour is reported by the thread, not
-        dropped.
+        follow-up when a host asks — until then every field a behaviour sets is named on the
+        session's `unmapped` (ENH-020), which the thread and the wire report, not dropped.
 
         `tools` is where D42's socket closes: whoever called this built the registry's address, and
         it travels through here into the child's `session/new`. This adapter never learns whose
@@ -72,6 +73,7 @@ class AcpProvider(AgentPort):
             effects=self._effects,
             workspace=where,
             tools=tools,
+            unmapped=tuple(unmapped_behaviour(self._provider, behaviour)),
             **self._extra,
         )
         return agent

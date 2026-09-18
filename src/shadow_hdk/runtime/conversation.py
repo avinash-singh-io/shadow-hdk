@@ -59,6 +59,7 @@ from shadow_hdk.kernel.events import (
     WorkspaceChanged,
 )
 from shadow_hdk.kernel.events import Refused as RefusedEvent
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import (
     AgentPort,
     AgentSession,
@@ -147,10 +148,12 @@ class Turned:
 
 @dataclass(frozen=True)
 class Changed:
-    """What `set_mode` changed: the mode id and the environment mode now enforced."""
+    """What `set_mode` changed: the mode id, the environment mode now enforced, and the
+    behaviour fields the new mode set that the provider could not take (ENH-020)."""
 
     mode: str
     environment: str
+    unmapped: tuple[str, ...] = ()
 
 
 def _unwrapped(port: Any) -> Any:
@@ -258,9 +261,13 @@ class Conversation:
         turns_taken: int = 0,
         spent: Spent | None = None,
         idle_seconds: float | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> None:
         self.id = conversation_id
         self._idle_seconds = idle_seconds
+        #: The host's plan limits (D109), met with the mode's at every turn.
+        self._plan_limits = plan_limits
+        self._mode_plan: PlanLimits | None = None
         """After this long without a turn the provider's session is closed (D94) — the
         conversation stays open; the next turn reopens the provider on its session id. `None`
         keeps the provider for the conversation's whole life."""
@@ -272,6 +279,10 @@ class Conversation:
         self.workspace = workspace
         self.session_id = session_id
         """The provider's own session id, when it has one — what a reopen hands back (D76)."""
+        self.unmapped_behaviour: tuple[str, ...] = ()
+        """The behaviour fields the current mode set that the provider could not take (ENH-020),
+        read off the session at every open — named so a host can hide the control, never
+        silently dropped. Empty until the provider is open."""
         self.turns_taken = turns_taken
         self.last: Turned | None = None
         """What the last turn came to; `None` before the first."""
@@ -345,6 +356,7 @@ class Conversation:
         turns_taken: int = 0,
         spent: Spent | None = None,
         idle_seconds: float | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
@@ -378,9 +390,11 @@ class Conversation:
             turns_taken=turns_taken,
             spent=spent,
             idle_seconds=idle_seconds,
+            plan_limits=plan_limits,
         )
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
+            conversation._mode_plan = getattr(spec, "plan", None)
         await conversation._start()
         conversation._idle_from_now()
         return conversation
@@ -443,12 +457,17 @@ class Conversation:
         extra: dict[str, Any] = {}
         if self.session_id:
             extra["resume"] = self.session_id
-        return await self._agent.open(
+        session = await self._agent.open(
             tools=tuple(self._sources),
             workspace=str(self.workspace.primary.path),
             behaviour=self._behaviour,
             **extra,
         )
+        # What the opener could not take is read the way `session_id` is (ENH-020): off the
+        # session, by name, so a double or an adapter that predates the field reports nothing.
+        unmapped = getattr(session, "unmapped", ())
+        self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
+        return session
 
     def _remember_session(self) -> bool:
         """The provider's own session id, off the session (D76). `True` when it changed."""
@@ -488,6 +507,17 @@ class Conversation:
         return self._ports
 
     # ------------------------------------------------------------------ what it is
+
+    @property
+    def plan_limits(self) -> PlanLimits | None:
+        """How much plan a turn admits now (D109): the host's limits met with the current mode's —
+        read at every turn, so `set_mode` changes what the next plan may be, live."""
+        host, mode = self._plan_limits, self._mode_plan
+        if host is None:
+            return mode
+        if mode is None:
+            return host
+        return host.meet(mode)
 
     def remaining(self) -> Lease:
         """What may still be spent across the turns: the lease less what was spent (D84)."""
@@ -634,6 +664,7 @@ class Conversation:
                 cancellation=cancellation,
                 principal=self.principal or None,
                 context=self.context_for(turn_id),
+                plan_limits=self.plan_limits,
             )
             if began is not None:
                 await began(TurnRecord(id=turn_id, run_id=run_id, prompt=text, at=at))
@@ -796,22 +827,39 @@ class Conversation:
         if self._approvals is not None:
             self._approvals.answer(question.handle, Parked())
 
-    async def resume_parked(self, question: PendingQuestion, answer: Any) -> list[Event]:
+    async def resume_parked(
+        self,
+        question: PendingQuestion,
+        answer: Any,
+        *,
+        composition: Composition | None = None,
+    ) -> list[Event]:
         """The child run that parked on the question, woken from the checkpointer with the
-        answer — the same composition the offer built for the call, so the step is the same."""
-        inputs = question.inputs if isinstance(question.inputs, dict) else {}
-        composition = Composition(
-            (
-                Invoke(
-                    id=question.step,
-                    component=question.component or "",
-                    inputs=tuple(Binding(name=k, value=v) for k, v in inputs.items()),
-                ),
+        answer — on the composition it parked with (D116), read from the checkpoint; or, for an
+        **amendment**, on the one handed in, which the runtime admits before continuing."""
+        from shadow_hdk.runtime.loop import parked_composition
+
+        if composition is None:
+            composition = await parked_composition(self._checkpointer, question.run_id)
+        if composition is None:
+            # Nothing carried — the shape the offer built for the call, as before.
+            inputs = question.inputs if isinstance(question.inputs, dict) else {}
+            composition = Composition(
+                (
+                    Invoke(
+                        id=question.step,
+                        component=question.component or "",
+                        inputs=tuple(Binding(name=k, value=v) for k, v in inputs.items()),
+                    ),
+                )
             )
-        )
         left = self._meter.remaining().ceiling
+        # **What the thread has left, not a guess at the call** (BUG-024's rule, the other way
+        # round): the run being woken may hold a plan of many steps below the one step this
+        # composition names, and a carve sized for one call starved that plan at its first step.
+        # Admission bounds the plan; the meter settles what is not spent back to the thread.
         reserved = Ceiling(
-            max_steps=min(2, max(left.max_steps, 1)),
+            max_steps=max(left.max_steps, 1),
             max_wall_seconds=left.max_wall_seconds,
             max_cost_cents=left.max_cost_cents,
         )
@@ -824,6 +872,7 @@ class Conversation:
             checkpointer=self._checkpointer,
             principal=self.principal or None,
             context=self.context_for(question.turn),
+            plan_limits=self.plan_limits,
         )
         events: list[Event] = []
         steps_taken = 0
@@ -931,13 +980,16 @@ class Conversation:
         self.mode = mode_id
         if spec is not None:
             self._behaviour = behaviour
+            self._mode_plan = getattr(spec, "plan", None)
         # The provider is reopened on its own session (D76): the catalogue it holds is the old
         # mode's, and a resident CLI was measured to keep it after `list_changed` (BUG-032) — a
         # fresh process re-lists, and `--resume` keeps its memory of the conversation.
         await self._reopen_provider()
         # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
         await self.registry.changed()
-        return Changed(mode=mode_id, environment=self.environment_mode)
+        return Changed(
+            mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
+        )
 
     async def set_option(self, key: str, value: JsonValue) -> None:
         """A per-conversation governance option, read at the next step's `Context` (ACP's

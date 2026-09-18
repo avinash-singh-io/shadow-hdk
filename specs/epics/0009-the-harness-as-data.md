@@ -87,4 +87,5 @@ Order is computed from `deps`: 36 → 34 → 37. Each phase releases on its own 
 > Operator changes made during the run land here, newest last, and become
 > inputs to the derivation of every not-yet-started phase.
 
-_(none yet)_
+- 2026-09-18 (Phase 36 G2, proposed by the lane, pending the owner) — **D108/D121 amended:** admission refuses only what no step can see — structure and existence — and *names* the steps the policy will ask about or refuse (`PlanAdmitted.asks`, `.refusals`); each step is still judged at its own invocation through the existing live/park paths. Raising the plan's question at admission collided with D57's park and asked twice for a one-step plan; refusing a plan for one refusable step broke BUG-012's promise. D121's "one question for the plan" is a host presentation over the named asks, not a runtime park.
+- 2026-09-18 (Phase 36, proposed by the lane, pending the owner) — **ENH-020 folded into Phase 36 as Group 6** rather than a v0.30.1 quick-task: the honest fix is a public contract addition (the opener names unmapped behaviour; `Thread` and the wire surface it), and Rule 14 makes a contract change a phase.

@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "about": "Frozen evaluator v1 for D107-D109, D111: whole-plan admission. A composition is measured statically - depth (nesting of composite steps, a top-level leaf is depth 1), fan_out (the widest FanOut), steps (leaf steps, an Until body counted max_iterations times) - against PlanLimits, and every named component must be registered. Every expected mismatch is listed, in the stable order depth, fan_out, steps, then component per step in composition order. This file is not edited while Phase 36 is implemented; a v2 corpus is a new file.",
+  "registered": ["look", "wipe", "agent"],
+  "cases": [
+    {
+      "name": "a single call is a plan of one step, admitted",
+      "composition": {"steps": [{"kind": "invoke", "id": "s1", "component": "look", "inputs": [{"name": "topic", "value": "x"}]}]},
+      "limits": {"depth": 1, "fan_out": 1, "steps": 1},
+      "measures": {"depth": 1, "fan_out": 1, "steps": 1},
+      "expect": "admitted"
+    },
+    {
+      "name": "unbounded limits admit anything registered",
+      "composition": {"steps": [{"kind": "fan_out", "id": "f", "steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "b", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "c", "component": "look", "inputs": []}]}]},
+      "limits": {},
+      "measures": {"depth": 2, "fan_out": 3, "steps": 3},
+      "expect": "admitted"
+    },
+    {
+      "name": "over fan-out",
+      "composition": {"steps": [{"kind": "fan_out", "id": "f", "steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "b", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "c", "component": "look", "inputs": []}]}]},
+      "limits": {"fan_out": 2},
+      "measures": {"depth": 2, "fan_out": 3, "steps": 3},
+      "expect": [{"axis": "fan_out", "step": "f", "required": "2", "found": "3"}]
+    },
+    {
+      "name": "over depth - a sequence inside a fan-out inside a sequence",
+      "composition": {"steps": [{"kind": "sequence", "id": "outer", "steps": [
+        {"kind": "fan_out", "id": "f", "steps": [
+          {"kind": "sequence", "id": "inner", "steps": [
+            {"kind": "invoke", "id": "a", "component": "look", "inputs": []}]}]}]}]},
+      "limits": {"depth": 3},
+      "measures": {"depth": 4, "fan_out": 1, "steps": 1},
+      "expect": [{"axis": "depth", "step": "a", "required": "3", "found": "4"}]
+    },
+    {
+      "name": "over steps - an until body counts max_iterations times",
+      "composition": {"steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "until", "id": "u", "step": {"kind": "invoke", "id": "b", "component": "look", "inputs": []},
+         "condition": {"path": "$.ok", "equals": true}, "max_iterations": 5}]},
+      "limits": {"steps": 5},
+      "measures": {"depth": 2, "fan_out": 1, "steps": 6},
+      "expect": [{"axis": "steps", "step": "", "required": "5", "found": "6"}]
+    },
+    {
+      "name": "an unregistered component is refused by name, at its step",
+      "composition": {"steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "b", "component": "nope", "inputs": []}]},
+      "limits": {},
+      "measures": {"depth": 1, "fan_out": 1, "steps": 2},
+      "expect": [{"axis": "component", "step": "b", "required": "registered", "found": "nope"}]
+    },
+    {
+      "name": "several reasons at once - the list is complete and in stable order",
+      "composition": {"steps": [{"kind": "fan_out", "id": "f", "steps": [
+        {"kind": "sequence", "id": "s", "steps": [
+          {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+          {"kind": "invoke", "id": "b", "component": "ghost", "inputs": []}]},
+        {"kind": "invoke", "id": "c", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "d", "component": "phantom", "inputs": []}]}]},
+      "limits": {"depth": 2, "fan_out": 2, "steps": 3},
+      "measures": {"depth": 3, "fan_out": 3, "steps": 4},
+      "expect": [
+        {"axis": "depth", "step": "a", "required": "2", "found": "3"},
+        {"axis": "fan_out", "step": "f", "required": "2", "found": "3"},
+        {"axis": "steps", "step": "", "required": "3", "found": "4"},
+        {"axis": "component", "step": "b", "required": "registered", "found": "ghost"},
+        {"axis": "component", "step": "d", "required": "registered", "found": "phantom"}
+      ]
+    },
+    {
+      "name": "exactly at the limits is admitted",
+      "composition": {"steps": [{"kind": "fan_out", "id": "f", "steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "invoke", "id": "b", "component": "wipe", "inputs": []}]}]},
+      "limits": {"depth": 2, "fan_out": 2, "steps": 2},
+      "measures": {"depth": 2, "fan_out": 2, "steps": 2},
+      "expect": "admitted"
+    },
+    {
+      "name": "an await is a leaf step like an invoke",
+      "composition": {"steps": [
+        {"kind": "invoke", "id": "a", "component": "look", "inputs": []},
+        {"kind": "await", "id": "w", "component": "agent", "inputs": []}]},
+      "limits": {"steps": 1},
+      "measures": {"depth": 1, "fan_out": 1, "steps": 2},
+      "expect": [{"axis": "steps", "step": "", "required": "1", "found": "2"}]
+    }
+  ],
+  "meet": [
+    {"a": {"depth": 3, "fan_out": 4, "steps": 10}, "b": {"depth": 2, "fan_out": 8, "steps": 5}, "meet": {"depth": 2, "fan_out": 4, "steps": 5}},
+    {"a": {"depth": 3}, "b": {}, "meet": {"depth": 3}},
+    {"a": {}, "b": {}, "meet": {}}
+  ]
+}

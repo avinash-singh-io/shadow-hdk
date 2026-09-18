@@ -63,6 +63,9 @@ THREAD_SET_OPTION = "thread/set_option"
 THREAD_REMAINING = "thread/remaining"
 THREAD_ADD_ROOT = "thread/add_root"
 """A directory added to the thread's workspace while it runs (D76; Claude Code's `/add-dir`)."""
+THREAD_AMEND = "thread/amend"
+"""A parked plan continued on a different composition (D116): admitted under the thread's limits
+before the run takes it, or refused with every mismatch and the plan untouched."""
 TURN_START = "turn/start"
 TURN_STEER = "turn/steer"
 TURN_INTERRUPT = "turn/interrupt"
@@ -122,11 +125,13 @@ ERROR_KINDS: tuple[str, ...] = (
     "unknown_method",
     "refused",
     "gone",
+    "plan_refused",
 )
 """What `error.data.kind` may say (D92) — the vocabulary a client switches on, beside the code
 and the sentence. `thread_held` carries `thread_id` and `holder`; `turn_running` carries
 `thread_id` and `turn_id`; the rest carry nothing more. `refused` is every other application
-*no*; `gone` the other end leaving."""
+*no*; `gone` the other end leaving; `plan_refused` (D108) carries `mismatches` — each with
+`axis`, `step`, `required`, `found` — and `amendment`."""
 
 
 class WireError(Exception):
@@ -163,6 +168,7 @@ __all__ = [
     "STORE_PUT",
     "STORE_VERSION",
     "THREAD_ADD_ROOT",
+    "THREAD_AMEND",
     "THREAD_ARCHIVE",
     "THREAD_CLOSE",
     "THREAD_FORK",

@@ -12,6 +12,9 @@ import type { Activity } from "./schemas/Activity.js";
 import type { ExecutionRequirements } from "./schemas/ExecutionRequirements.js";
 import type { ExecutionSelection } from "./schemas/ExecutionSelection.js";
 import type { ProviderCapabilities } from "./schemas/ProviderCapabilities.js";
+import type { PlanLimits } from "./schemas/PlanLimits.js";
+import type { PlanMismatch } from "./schemas/PlanMismatch.js";
+import type { Composition } from "./schemas/Composition.js";
 import { PROTOCOL_VERSION } from "./schemas.js";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
@@ -82,14 +85,41 @@ export interface Started {
   roots: RootEntry[];
   /** The environment's own mode — what the sandbox enforces — beside `mode`, the policy's. */
   environment: string;
+  /**
+   * The behaviour fields the mode set that the provider could not take (ENH-020) — `system` or
+   * `model` on a CLI whose record maps no flag for them. Named so a host hides the control.
+   */
+  unmapped_behaviour: string[];
   provider: string;
   mode: string;
-  modes: { id: string; name: string; description: string; source: string; scope: string }[];
+  /**
+   * How much plan the next turn admits (D109): the host's limits met with the mode's, live —
+   * `null` where nothing bounds it. Changes with `thread/set_mode`.
+   */
+  plan_limits: PlanLimits | null;
+  modes: ModeRow[];
   /** Who the thread is for, and the product's words about it (D82). */
   principal: string;
   attributes: { [key: string]: JsonValue };
   /** The exact provider/environment facts accepted for this thread. */
   capabilities: ExecutionSelection;
+}
+
+export interface ModeRow {
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+  scope: string;
+  /** How much plan this mode admits (D109), or `null` when it defers to the host. */
+  plan: PlanLimits | null;
+}
+
+/** What `thread/amend` came to (D116): admitted and continued, or refused with every mismatch, the plan untouched. */
+export interface Amended {
+  admitted: boolean;
+  mismatches: PlanMismatch[];
+  events: Event[];
 }
 
 export interface ProviderRow {
@@ -420,18 +450,30 @@ export class HarnessClient {
       /** This thread's own ceiling over the file's default (D84); what it spends is on its record. */
       budget?: { steps?: number; seconds?: number; cents?: number | null };
       requirements?: ExecutionRequirements;
+      /** The host's own plan limits (D109), met with the mode's at every turn. */
+      plan_limits?: PlanLimits;
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
-    resume: (thread_id: string) => this.call<Resumed>("thread/resume", { thread_id }),
+    resume: (thread_id: string, plan_limits?: PlanLimits) =>
+      this.call<Resumed>("thread/resume", { thread_id, ...(plan_limits ? { plan_limits: plan_limits as unknown as JsonValue } : {}) }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
     list: () => this.call<{ threads: (JsonValue & { held_by?: string | null })[] }>("thread/list", {}),
     fork: (thread_id: string) => this.call<{ thread: JsonValue }>("thread/fork", { thread_id }),
     rollback: (thread_id: string, to_turn: number) => this.call<{ thread: JsonValue }>("thread/rollback", { thread_id, to_turn }),
     archive: (thread_id: string) => this.call<{ archived: string }>("thread/archive", { thread_id }),
-    setMode: (thread_id: string, mode: string) => this.call<{ events: Event[]; environment: string }>("thread/set_mode", { thread_id, mode }),
+    setMode: (thread_id: string, mode: string) =>
+      this.call<{ events: Event[]; environment: string; unmapped_behaviour: string[]; plan_limits: PlanLimits | null }>("thread/set_mode", { thread_id, mode }),
+    /** A parked plan continued on a different composition (D116): admitted under the thread's limits before the run takes it. */
+    amend: (thread_id: string, handle: string, composition: Composition, answer?: Answer) =>
+      this.call<Amended>("thread/amend", {
+        thread_id,
+        handle,
+        composition: composition as unknown as JsonValue,
+        ...(answer ? { answer: answer as unknown as JsonValue } : {}),
+      }),
     /** A directory added while the thread runs (D76): the sandbox re-proven over the new set. */
     addRoot: (thread_id: string, name: string, path: string) =>
-      this.call<{ events: Event[]; root: string; roots: RootEntry[]; environment: string }>("thread/add_root", { thread_id, name, path }),
+      this.call<{ events: Event[]; root: string; roots: RootEntry[]; environment: string; unmapped_behaviour: string[] }>("thread/add_root", { thread_id, name, path }),
     setOption: (thread_id: string, key: string, value: JsonValue) => this.call<{ ok: boolean }>("thread/set_option", { thread_id, key, value }),
     remaining: (thread_id: string) => this.call<{ lease: JsonValue }>("thread/remaining", { thread_id }),
   };
@@ -536,7 +578,7 @@ export class HarnessClient {
   readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
 
   /** Every mode, or — with a thread — the ones in that thread's scope (D82). */
-  readonly modes = { list: (thread_id?: string) => this.call<{ modes: Started["modes"] }>("modes/list", thread_id ? { thread_id } : {}) };
+  readonly modes = { list: (thread_id?: string) => this.call<{ modes: ModeRow[] }>("modes/list", thread_id ? { thread_id } : {}) };
   /** What the serving process has switched on (D70): every battery, on · off · unavailable and why. */
   readonly batteries = { list: () => this.call<{ batteries: BatteryRow[] }>("batteries/list", {}) };
   /** Providers this process can detect, with evidence-backed execution facts. */

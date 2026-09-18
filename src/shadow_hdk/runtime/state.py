@@ -51,6 +51,10 @@ class RunState(TypedDict):
     """What this run is holding, so a parent that parks comes back holding it still (D37).
     A handle mapped to `None` is one that was released — kept as a headstone so the record merges
     the same in any order, which is what a `FanOut` requires."""
+    plan: Annotated[JsonValue, merge_plan]
+    """The composition this run is executing, as JSON (D19), written at the start and by every
+    node — so a parked run's shape survives in the one durable place the runtime has, a settle
+    resumes the same plan, and an amended plan is told apart from it (D116)."""
     spent: Annotated[dict[str, float], merge_spent]
     """What the run has spent, in the only durable place the runtime has (D33). `run` and `resume`
     each build a fresh meter and emitter, so without this a lease of three steps admitted five
@@ -58,9 +62,18 @@ class RunState(TypedDict):
     checkpoint (D19)."""
 
 
+def merge_plan(left: JsonValue, right: JsonValue) -> JsonValue:
+    """The latest wins; every branch of one run writes the same plan."""
+    return right if right is not None else left
+
+
 def no_spend() -> dict[str, float]:
     return {"steps": 0, "cost_cents": 0, "unpriced": 0, "elapsed_seconds": 0.0, "seq": 0}
 
 
-def initial_state() -> RunState:
-    return RunState(handles={}, observations={}, iterations={}, children={}, spent=no_spend())
+def initial_state(plan: JsonValue = None) -> RunState:
+    """A fresh run's state. `plan` is the composition as JSON (D116), written here as well as by
+    every node, so a run that parks on its first step still carries the shape it parked with."""
+    return RunState(
+        handles={}, observations={}, iterations={}, children={}, plan=plan, spent=no_spend()
+    )
