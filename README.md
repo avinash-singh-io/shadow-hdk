@@ -364,6 +364,7 @@ uv run pytest
 ## Documentation
 
 - [Consumer guide: choosing ownership and an entry point](docs/consuming.md)
+- [For a product: what the kit answers, and how to compose it](docs/for-a-product.md)
 - [v0.30 migration guide](docs/migrations/0.30.md)
 - [v0.31 migration guide](docs/migrations/0.31.md)
 - [Package guides](docs/packages/)
