@@ -120,6 +120,21 @@ rather than remembered.
 | D104 | the append-only run/effect journal is authoritative; mutable records and UI are folds | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
 | D105 | the HDK event vocabulary remains generic and excludes adopter-owned concepts | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
 | D106 | open standards meet Shadow at adapters rather than dictating the kernel model | [`epics/0008-production-boundary.md`](/epics/0008-production-boundary.md) |
+| D107 | a plan is a `Composition`; a harness is data; no new grammar | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D108 | admission is whole-plan judgement, not authorization — structural → existence → effects, the mismatch list complete; Phase 33 still at the act | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D109 | limits are order-bearing values narrowing host → mode → parent by `meet`, carried on the mode as live data; the lease is the floor | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D110 | planning is a registered component; the loop's `compose` meta-tool is sugar over it | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D111 | a refused plan is an observation; the planner re-proposes; the runtime never trims a proposal | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D112 | a plan may run after its planner — a pattern field | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D113 | a harness is a component: its profile the `meet` of its parts; admitted recursively; parameters bound at instantiation | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D114 | a blueprint carries requirements and limits, never capabilities, credentials, tenant data or standing authority; selection and admission re-run at every instantiation | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D115 | a run request is durable and idempotent; the scheduler owns timing, consumed behind a port, never authority | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D116 | amend is a host handle on the record; admission applies to the amendment | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D117 | deps re-derived: 36 needs 33 only; 34 exists for the blueprint layer; 35 is orthogonal and later | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D118 | a harness is a distribution that ships with its runtime pinned inside; never a separate runtime to operate | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D119 | one runtime, many language surfaces — generated client, port stubs and scaffold per language; a native runtime elsewhere is a non-goal until an adopter needs it and the contracts are stable across two releases | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D120 | a harness runs on the Shadow runtime; export encodings are adapters; compile-to-X only when the field shares a target format | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D121 | one question for the plan: an `Ask` at admission parks the plan as a single question; the acts inside still get their Phase 33 grants | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
 
 ## Also here
 
