@@ -53,6 +53,7 @@ from shadow_hdk.kernel import (
     Usage,
 )
 from shadow_hdk.kernel.contracts import CONTRACTS, all_schemas, round_trip
+from shadow_hdk.kernel.planning import Admitted, PlanLimits, PlanMismatch, PlanRefused
 from shadow_hdk.kernel.ports import Message
 from shadow_hdk.kernel.providers import EnvVar, Provider
 
@@ -132,6 +133,13 @@ EXAMPLES = {
     "Provider": (PROVIDER, Provider),
     "Registration": (Registration("reg-1", COMPONENT), Registration),
     "Composition": (COMPOSITION, Composition),
+    "PlanLimits": (PlanLimits(depth=2, fan_out=3, steps=8), PlanLimits),
+    "PlanMismatch": (PlanMismatch(axis="fan_out", step="f", required="2", found="3"), PlanMismatch),
+    "Admitted": (Admitted(plan_digest="d" * 64, limits=PlanLimits(fan_out=3)), Admitted),
+    "PlanRefused": (
+        PlanRefused((PlanMismatch(axis="component", step="b", required="registered", found="x"),)),
+        PlanRefused,
+    ),
     "Observation": (Pending(handle="h1"), CONTRACTS["Observation"]),
     "Proposal": (Proposal("claim", {"text": "3 of 1842"}, PROVENANCE, ("i1",)), Proposal),
     "Lease": (LEASE, Lease),

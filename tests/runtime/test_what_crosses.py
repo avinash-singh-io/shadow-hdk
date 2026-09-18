@@ -73,6 +73,10 @@ def test_what_a_step_writes_into_the_graph_state_is_json() -> None:
             forget it (D33), and `json.dumps` below is what proves it crosses as plain types."""
             return {"steps": 1, "cost_cents": 2, "unpriced": 0, "elapsed_seconds": 0.5, "seq": 7}
 
+        # The composition being executed, as JSON (D116) — a step writes it so a resume can tell
+        # an amended plan from the one that parked; plain types, like everything else here.
+        plan: dict[str, object] = {"steps": []}
+
     import anyio
 
     node = _step_node(Invoke("s1", FREE.id), _Executor())  # type: ignore[arg-type]

@@ -59,6 +59,13 @@ NOT_CROSSING: dict[str, str] = {
     "forward_activity": "runtime-internal: the drive forwards a child's activity to the root",
     "principal": "a property of the run's options (D82): the crossed context carries it on every "
     "`Context` it builds, as `run_id` is carried",
+    "registered": "runtime-internal: admission (D108) checks a plan's components against the "
+    "registry where the record is; a crossed `compose` is admitted runtime-side",
+    "judge": "runtime-internal: admission dry-judges a plan's declared effects through the run's "
+    "own governance, where it lives; a crossed plan is judged runtime-side",
+    "plan_limits": "a property of the run's options (D109): a crossed spawn is admitted "
+    "runtime-side under the limits the runtime holds",
+    "emit": "runtime-internal: admission puts its events on the record where the record is",
 }
 """Method → why it does not cross. Every entry is a claim; an entry for a method that has since
 been made to cross is refused by the third test below."""
@@ -110,6 +117,7 @@ HANDLES_CROSSING: dict[str, str] = {
     "Thread.remaining": "THREAD_REMAINING",
     "Thread.tools": "TOOLS_LIST",
     "Thread.add_root": "THREAD_ADD_ROOT",
+    "Thread.amend": "THREAD_AMEND",  # a parked plan continued on a different composition (D116)
     "Thread.pending": "THREAD_RESUME",  # the questions the last host left, in the answer (D80)
     "Thread.settle": "APPROVALS_ANSWER",  # one handle answers a live question or a left one
     # Approvals
@@ -127,6 +135,8 @@ HANDLES_CROSSING: dict[str, str] = {
 """Host handle or thread operation → the `protocol.py` name that carries it."""
 
 HANDLES_NOT_CROSSING: dict[str, str] = {
+    "Thread.plan_limits": "crosses as `plan_limits` in the results of `thread/start`, "
+    "`thread/resume` and `thread/set_mode` — the host's met with the mode's, live (D109)",
     "Thread.turning": "a property read by the wire's own `turn/interrupt` and `run/cancel` to say "
     "whether anything was running; the answer crosses inside those",
     "Thread.id": "the id crosses as `thread_id` in every result and notification",
@@ -135,6 +145,8 @@ HANDLES_NOT_CROSSING: dict[str, str] = {
     "and `thread/add_root`, and in every `files/list` entry",
     "Thread.environment_mode": "crosses as `environment` in the results of `thread/start`, "
     "`thread/resume`, `thread/set_mode` and `thread/add_root`",
+    "Thread.unmapped_behaviour": "crosses as `unmapped_behaviour` in the results of "
+    "`thread/start`, `thread/resume`, `thread/set_mode` and `thread/add_root` (ENH-020)",
     "Thread.ports": "the host's composition, runtime-side by definition (D67): what a wire host "
     "reaches of it is `tools/list`, `modes/list`, `rules/list` and the store",
     "Thread.registry": "the offer served to the provider on the runtime's side; a wire host "

@@ -59,6 +59,7 @@ class JsonlSession(AgentSession):
         tools: tuple[ToolSource, ...] = (),
         timeout_s: float = DEFAULT_TIMEOUT_S,
         resume: str | None = None,
+        unmapped: tuple[str, ...] = (),
     ) -> None:
         self._provider = provider
         self._dialect = provider.dialect or Dialect()
@@ -73,10 +74,17 @@ class JsonlSession(AgentSession):
         to resume (D76): the first process is started with the dialect's resume flag, so a
         provider reopened after a mode change keeps its memory of the conversation."""
         self.stderr: str = ""
+        self._unmapped = unmapped
 
     @property
     def session_id(self) -> str | None:
         return self._session_id
+
+    @property
+    def unmapped(self) -> tuple[str, ...]:
+        """What the behaviour set that this record maps no flag for (ENH-020) — computed by the
+        opener from the record's `behaviour_args`, carried here so the thread can say it."""
+        return self._unmapped
 
     # ------------------------------------------------------------------ the process
 

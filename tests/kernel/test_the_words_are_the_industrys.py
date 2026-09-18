@@ -32,6 +32,8 @@ INDUSTRY_KINDS = {
     "approval_requested",
     "input_requested",
     "spawned",
+    "plan_admitted",  # a plan admitted before it runs — Claude Code's plan mode, ADK's workflows
+    "plan_refused",
     "held",
     "usage",
     "reasoning",

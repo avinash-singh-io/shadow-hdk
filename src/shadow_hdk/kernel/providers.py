@@ -299,4 +299,31 @@ class Provider:
         return self.name or self.id
 
 
-__all__ = ["Delta", "Dialect", "EnvVar", "Provider", "ProviderKind", "ProviderStatus"]
+def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[str]:
+    """Behaviour fields this provider has no flag for, that the behaviour set. Named, not dropped
+    (D64, ENH-020) — a host learns its mode asked for something this CLI cannot do. Pure over
+    the record and the behaviour, so every opener reads the same answer: the JSONL opener from
+    the record's `behaviour_args`, ACP from a record that maps none."""
+    if behaviour is None:
+        return []
+    dialect = provider.dialect or Dialect()
+    mapped = {a.field for a in dialect.behaviour_args} | {"tools_offered"}
+    unmapped: list[str] = []
+    for name in ("system", "append_system", "model", "effort", "temperature"):
+        if name in mapped:
+            continue
+        value = getattr(behaviour, name, None)
+        if value not in (None, "", ()):
+            unmapped.append(name)
+    return unmapped
+
+
+__all__ = [
+    "Delta",
+    "Dialect",
+    "EnvVar",
+    "Provider",
+    "ProviderKind",
+    "ProviderStatus",
+    "unmapped_behaviour",
+]

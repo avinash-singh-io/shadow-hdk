@@ -17,6 +17,7 @@ from shadow_hdk.kernel.components import Posture, RegistrationId
 from shadow_hdk.kernel.composition import Composition, Handle, StepId
 from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.planning import PlanLimits, PlanMismatch
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.kernel.workspace import Root
 
@@ -151,6 +152,44 @@ class InputRequested:
 
 
 @dataclass(frozen=True)
+class PlanAdmitted:
+    """A whole plan admitted before it compiled (D108): its digest, the authority it was admitted
+    under, the limits it fit — and whether it amended a plan already running (D116)."""
+
+    run_id: RunId
+    seq: int
+    at: str
+    plan_digest: str
+    step: StepId = ""
+    authority_digest: str = ""
+    limits: PlanLimits = PlanLimits()
+    asks: tuple[StepId, ...] = ()
+    """The steps the policy will ask about when they run — named now, so a host can present the
+    plan's questions as one card and keep rules for them, while each step still asks at its own
+    invocation through the proven path (live, parked, or parked on purpose)."""
+    refusals: tuple[StepId, ...] = ()
+    """The steps the policy will refuse when they run — named now; the step's own refusal, at its
+    invocation, is the refusal the planner is told, as it always was (BUG-012)."""
+    amendment: bool = False
+    kind: Literal["plan_admitted"] = "plan_admitted"
+
+
+@dataclass(frozen=True)
+class PlanRefused:
+    """A whole plan refused before anything ran — every mismatch, in the stable order. The
+    planner hears this as an observation and decides; nothing was trimmed (D111)."""
+
+    run_id: RunId
+    seq: int
+    at: str
+    plan_digest: str
+    step: StepId = ""
+    mismatches: tuple[PlanMismatch, ...] = ()
+    amendment: bool = False
+    kind: Literal["plan_refused"] = "plan_refused"
+
+
+@dataclass(frozen=True)
 class Spawned:
     run_id: RunId
     seq: int
@@ -271,6 +310,8 @@ Event = Annotated[
     | ApprovalRequested
     | InputRequested
     | Spawned
+    | PlanAdmitted
+    | PlanRefused
     | Held
     | UsageReported
     | Reasoning

@@ -34,7 +34,7 @@ def test_reasoned_is_in_the_union_and_round_trips() -> None:
     assert round_trip(thought, Event) == thought
 
 
-def test_there_are_sixteen_kinds() -> None:
+def test_there_are_eighteen_kinds() -> None:
     """Eleven was the number in every document; this is the count, held."""
     from typing import get_args
 
@@ -42,9 +42,10 @@ def test_there_are_sixteen_kinds() -> None:
     kinds = {member.__dataclass_fields__["kind"].default for member in members}
 
     assert "reasoning" in kinds
-    assert len(kinds) == 16, sorted(
+    assert len(kinds) == 18, sorted(
         kinds
-    )  # + input_requested (D61), mode_changed (D64), workspace_changed (D76)
+    )  # + input_requested (D61), mode_changed (D64), workspace_changed (D76),
+    # plan_admitted and plan_refused (D108)
 
 
 def test_a_response_carries_reasoning_and_defaults_to_none() -> None:

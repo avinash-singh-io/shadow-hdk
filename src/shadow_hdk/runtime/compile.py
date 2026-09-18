@@ -295,6 +295,8 @@ def _step_node(step: Step, executor: StepExecutor) -> Node:
             "observations": {step.id: json.loads(dump(observation, Observation))},
             # What the run holds after this step, so a park does not lose it (D37).
             "children": executor.holding(),
+            # The shape this run is executing, so a resume can tell an amendment (D116).
+            "plan": executor.plan,
             # What *this step* added, so the reducer can sum across a fan-out's branches (D33).
             "spent": {
                 **{name: after[name] - before[name] for name in SUMS},

@@ -4,17 +4,23 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-15 — v0.30.0 released
-> **Current Phase**: No active implementation phase. Epic 0008 is merged, tagged and published as
-> v0.30.0.
-> Phase 31 now establishes typed provider/environment capabilities, evidence and host execution
-> requirements before anything is built on their selection. Phase 33 (authority at the act) remains
-> derived and begins from the verified Phase 32 checkpoint. The epic releases once as **v0.30.0**.
+> **Last Updated**: 2026-09-18 — **Phase 36 complete, released as v0.31.0** (Epic 0009's first phase)
+> **Current Phase**: **none — between phases.** Phase 36 landed and released as v0.31.0;
+> **Phase 34 — the harness as data** is next in Epic 0009 (deps: 36, now met).
+> **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
+> settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
+> are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
 >
-> 1,688 non-live tests; mypy strict over 441 files; one distribution, `shadow-hdk`, is built as
-> **0.30.0** but not yet published. Phases 31–33 are pushed on the intentionally unmerged epic stack.
+> 1,773 non-live tests; mypy strict over 452 files; one distribution, `shadow-hdk`, at
+> **0.31.0** (protocol 3, unchanged — Phase 36's additions are methods and fields).
 >
-> **Latest Release**: **v0.30.0**, released 2026-09-15 — Epic 0008: evidence-backed
+> **Latest Release**: **v0.31.0**, released 2026-09-18 — Epic 0009, Phase 36 **plan admission**:
+> a plan is a composition admitted whole — shape, existence and effects — under limits that narrow
+> host → mode → parent, before its first step runs; `plan_admitted`/`plan_refused` on the record;
+> `compose` a registered component, so a resident CLI plans through the socket (proven live on
+> Codex); plan limits live on the mode; a plan may run after its planner; `thread/amend` for a
+> parked plan; `unmapped_behaviour` named rather than dropped (ENH-020). Contract additions
+> (protocol 3 unchanged), so a *Pins* row. BUG-054 and BUG-055 closed. Before it **v0.30.0**, released 2026-09-15 — Epic 0008: evidence-backed
 > capability selection, one durable model/CLI agent surface, and current-authority append-only
 > irreversible effects. GitHub Actions published to PyPI and passed the fresh-install smoke. Before
 > it **v0.29.1**, released 2026-09-14 — BUG-044 closed: `ask_person` answered `park` is kept, not answered `Parked()`; found by the React example wiring D88 to an input card. Before it **v0.29.0** — Phase 30, a product owns what it owns
@@ -104,6 +110,7 @@ approval.
 | 31 | A host knows what it can trust | Complete, merged | **v0.30.0** |
 | 32 | One agent surface | Complete, merged | **v0.30.0** |
 | 33 | Authority at the act | Complete, merged | **v0.30.0** |
+| 36 | Plan admission (Epic 0009) | Complete, merged | **v0.31.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -124,7 +131,6 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| _(none)_ | | | Epic 0008 released as v0.30.0 |
 
 ## Epic Release Checkpoints
 
@@ -133,18 +139,18 @@ approval.
 | 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 released |
 | 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 released |
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
+| 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 
 ## Upcoming Phases
 
-> Epic 0008 is scheduled under a strict test-first, per-feature release policy. Intent Studio may
-> continue product-owned work, but its new Shadow execution integration waits for the verified
-> v0.30.0 handoff after all three phases.
+> Epic 0009 runs under `release: per-phase`, `push: per-phase`, `tdd: strict`. Order is computed
+> from each phase's `deps`. Phases 35, 38, 39 and 40 stay on the roadmap after it.
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
-| 32 — one agent surface | 31 | CLI and API-model agents use one durable product-facing lifecycle |
-| 33 — authority at the act | 31 | controlled irreversible effects are current-authority, journaled and recoverable |
-| 34 — Shadow Harness, built to unfold | 32, 33 | the ready-made harness and HDK are progressive layers of one system |
+| 36 — plan admission | 33 | a proposed plan is admitted or refused as a whole — limits, existence, effects — before anything compiles; planning reaches a resident CLI; a plan may outlive its planner; a running composition can be amended on the record |
+| 34 — the harness as data | 36 | a harness is a typed, parameterised, versioned artifact that unfolds to a runnable one, is itself a component, and ships as a self-contained distribution or a language scaffold over one runtime |
+| 37 — the durable run request | 33, 34 | a run is requested idempotently, survives its process, is retried and cancelled by policy, and is created by cron, queue or webhook adapters that own timing and never authority |
 
 ## Blockers
 
@@ -160,9 +166,11 @@ approval.
 
 ## Next Actions
 
-1. Hand released v0.30.0 and its capability matrix/migration notes to Intent Studio; do not patch its execution layer in advance
-2. Plan Phase 34 — Shadow Harness, built to unfold — before implementation
-4. Still conditional: a Linux host for the remaining containment proofs and a lawyer's read on AGPL at arm's length
+1. The GitHub release for `v0.31.0` — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index). The tag is pushed; the release is the owner's to create
+2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
+3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
+4. Next lane: derive and start Phase 34 — the harness as data (deps 36, met): `momentum run derive phase-34-the-harness-as-data --epic the-harness-as-data --deps phase-36-plan-admission --write`, then `/start-phase`
+5. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made
 

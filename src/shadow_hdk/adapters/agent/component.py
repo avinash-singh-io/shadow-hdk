@@ -63,6 +63,7 @@ from shadow_hdk.kernel.ports import (
     Usage,
 )
 from shadow_hdk.runtime import RunContext, current_run
+from shadow_hdk.runtime.children import PlanNotAdmitted
 
 BRIEF_SCHEMA: dict[str, JsonValue] = {
     "type": "object",
@@ -288,6 +289,12 @@ class _Turnwise:
             registration
             for registration in await self.ctx.visible()
             if registration.id != self.agent.registration_id
+            # **The runtime's own `compose` is this loop's meta-tool, not a second tool** (D110).
+            # A registration carrying the `plan` label is planning offered to a resident CLI
+            # through the socket; for this loop the same path is the `compose` meta-tool, which
+            # the *pattern* grants or withholds — `single` must stay unable to plan, so the
+            # component is never shown beside it.
+            and "plan" not in registration.component.labels
         ]
         colliding = [r for r in visible if r.component.interface.name in BY_NAME]
         if colliding:
@@ -361,15 +368,25 @@ class _Turnwise:
         if verb == SPAWN:
             agent = str(arguments.get("agent", ""))
             brief = str(arguments.get("brief", ""))
-            child = Composition(
-                (
-                    Invoke("brief", agent, (Binding(name="brief", value=brief),)),
-                    Await("inbox", MAILBOX),
+            # **Wait on a mailbox only where one is offered.** The plan used to name the mailbox
+            # regardless and lean on that step *failing* in a deployment without one; admission
+            # (D108) refuses a plan naming a component that is not there before it runs, so the
+            # honest composition names only what exists — a helper with nowhere to wait finishes.
+            offered = {registration.id for registration in await self.ctx.visible()}
+            steps: tuple[Step, ...] = (
+                Invoke("brief", agent, (Binding(name="brief", value=brief),)),
+            )
+            if MAILBOX in offered:
+                steps += (Await("inbox", MAILBOX),)
+            child = Composition(steps)
+            try:
+                handle, events = await self.ctx.children.spawn(
+                    child, (await self.ctx.remaining_now()).ceiling, proposed_by=SPAWN
                 )
-            )
-            handle, events = await self.ctx.children.spawn(
-                child, (await self.ctx.remaining_now()).ceiling
-            )
+            except PlanNotAdmitted as refused:
+                # The delegation was refused as a whole — an unknown agent, say — and the
+                # coordinator is told why rather than handed a handle to nothing (D111).
+                return str(refused)
             self.helpers[f"@{len(self.helpers) + 1}"] = handle
             name = f"@{len(self.helpers)}"
             if not await self.ctx.children.is_held(handle):
@@ -505,9 +522,44 @@ class _Turnwise:
         # applied there as a second gate. A host-side nested run — what this did until Phase 23 —
         # put the child's events on a stream nobody reads when the agent is on the far side of a
         # wire, and was the one thing that kept the agent from running there at all.
-        handle, events = await self.ctx.children.spawn(
-            composition, ceiling, within=self.pattern.ceiling, within_name=self.pattern.name
-        )
+        try:
+            if not self.pattern.absorb:
+                # **The plan runs after this turn** (D112): admitted now, on the record now; it
+                # runs as this run's child once this step closes, and the model is told it is
+                # admitted rather than handed its results.
+                await self.ctx.children.defer(
+                    composition,
+                    ceiling,
+                    within=self.pattern.ceiling,
+                    within_name=self.pattern.name,
+                    limits=self.pattern.plan,
+                )
+                for call in calls:
+                    if call.name == COMPOSE or call.name not in BY_NAME:
+                        self.messages.append(
+                            Message(
+                                "tool",
+                                "that plan is admitted and will run after this turn; its results "
+                                "go on the record, not to you — say what you planned and finish.",
+                                tool_call_id=call.id,
+                            )
+                        )
+                return None
+            handle, events = await self.ctx.children.spawn(
+                composition,
+                ceiling,
+                within=self.pattern.ceiling,
+                within_name=self.pattern.name,
+                limits=self.pattern.plan,
+            )
+        except PlanNotAdmitted as refused:
+            # **The planner is told every reason and decides** (D111). The refusal is already on
+            # the record; here it is the answer to the call that proposed the plan — the same
+            # pairing rule as any tool result — and nothing was trimmed or run.
+            for call in calls:
+                if call.name == COMPOSE or call.name not in BY_NAME:
+                    self.messages.append(Message("tool", str(refused), tool_call_id=call.id))
+            return None
         return await self._absorb(handle, events, composition, calls)
 
     async def _absorb(
@@ -601,6 +653,22 @@ class _Turnwise:
         self.proposed = int(kept.get("proposed", 0))
         self.turns = int(kept.get("turns", 0))
 
+    async def _wake(self, handle: str, answer: Any) -> list[Event]:
+        """The held child woken with the host's answer — or, if the person amended the plan
+        (D116), woken on the amended composition, admitted first."""
+        from shadow_hdk.kernel.ports import Allow
+        from shadow_hdk.runtime.approvals import Amend
+
+        if isinstance(answer, Amend):
+            amended = answer.composition
+            if not isinstance(amended, Composition):
+                import json
+
+                amended = load(json.dumps(amended), Composition)
+            given = answer.answer if answer.answer is not None else Allow()
+            return await self.ctx.children.amend(handle, amended, given)
+        return await self.ctx.children.send(handle, answer)
+
     async def _answer_the_child(self, kept: dict[str, Any], answer: Any) -> Observation | None:
         """The host's answer goes into the held child, and what comes back is absorbed the way a
         fresh spawn's events are — so a child that parks *again* parks this step again."""
@@ -609,7 +677,7 @@ class _Turnwise:
         handle = str(kept["handle"])
         composition = load(json.dumps(kept["composition"]), Composition)
         calls = tuple(load(json.dumps(c), ToolCall) for c in kept.get("calls", []))
-        events = await self.ctx.children.send(handle, answer)
+        events = await self._wake(handle, answer)
         return await self._absorb(handle, events, composition, calls)
 
     # ------------------------------------------------------------------ bookkeeping

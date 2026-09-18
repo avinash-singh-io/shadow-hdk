@@ -19,12 +19,13 @@ from typing import Any, Protocol
 
 from pydantic import JsonValue
 
-from shadow_hdk.kernel import Binding, Ceiling, Composition, Invoke, Observation, Refused
+from shadow_hdk.kernel import Binding, Ceiling, Composition, Failed, Invoke, Observation, Refused
 from shadow_hdk.kernel.events import ApprovalRequested, Observed
 from shadow_hdk.kernel.events import Refused as RefusedEvent
 from shadow_hdk.kernel.ports import ToolSource
 from shadow_hdk.runtime.approvals import Parked
 from shadow_hdk.runtime.bindings import RunContext
+from shadow_hdk.runtime.children import PlanNotAdmitted
 
 REFUSED_NOT_RUNNING = "no turn is running, so there is nothing to call into"
 PARKED_REASON = (
@@ -116,16 +117,26 @@ class Routing:
         # **Reserve what this call can cost, not everything that is left** (BUG-024). A component
         # whose effects say it does not cost money reserves none; one that does reserves what
         # remains, which is the honest worst case.
-        costs = await _costs(context, name)
+        costs, plans = await _costs_and_plans(context, name)
         # **Through the runtime's own children, never a local `run()`** (D51). A child spawned this
         # way is held when it parks, and `send` resumes it with a ceiling clamped to what the
-        # parent still has.
+        # parent still has. Two steps are a tool call's worst case; a **plan** proposed through
+        # `compose` needs what the plan's steps need — admission (D108) bounds it, not this
+        # carve, so it is offered what the parent has left.
         ceiling = Ceiling(
-            max_steps=min(2, remaining.max_steps),
+            max_steps=remaining.max_steps if plans else min(2, remaining.max_steps),
             max_wall_seconds=remaining.max_wall_seconds,
             max_cost_cents=remaining.max_cost_cents if costs else 0,
         )
-        handle, events = await context.children.spawn(composition, ceiling)
+        try:
+            handle, events = await context.children.spawn(
+                composition, ceiling, proposed_by=self.name, step=step
+            )
+        except PlanNotAdmitted as refused:
+            # A call naming a tool that is not there is refused at admission (D108) instead of
+            # failing as a step; the provider hears the same words it always did — the words a
+            # model has learned to read — as an error result, never as the run ending.
+            return Failed(str(refused))
         observation, question = outcome_of(events, step)
         while observation is None and question is not None:
             # **The policy asked, and the child is waiting on this very call** (BUG-021, D58). The
@@ -149,11 +160,16 @@ class Routing:
         )
 
 
-async def _costs(context: RunContext, name: str) -> bool:
+async def _costs_and_plans(context: RunContext, name: str) -> tuple[bool, bool]:
+    """Whether the call may spend money, and whether it proposes a plan (the `plan` label — the
+    runtime's `compose`, or a host's own planning component)."""
     for registration in await context.visible():
         if registration.id == name:
-            return bool(registration.component.effects.costs)
-    return True  # unknown is the worst case
+            return (
+                bool(registration.component.effects.costs),
+                "plan" in registration.component.labels,
+            )
+    return True, False  # unknown is the worst case
 
 
 def outcome_of(events: list[Any], step: str) -> tuple[Observation | None, str | None]:

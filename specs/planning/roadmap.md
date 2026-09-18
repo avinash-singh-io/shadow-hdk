@@ -32,6 +32,20 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
+## Where this stands — 2026-09-18
+
+**Epic 0009 — the harness as data — is planned.** Two days of first-principles brainstorming with
+the owner (`specs/research/2026-09-18-what-belongs-in-the-kit.md`) re-derived what dynamic
+planning needs and found that none of it comes from Phases 34 or 35: a plan is already a
+`Composition`, `compose` already authors one, a child run already carries a carved lease and
+per-step judgement, and Phase 33 already supplies revisioned authority. What is missing is
+**admission** — the whole-plan judgement no step can make — so Phase 36 becomes *plan admission*
+with `deps: 33` (D117). Phase 34 comes back for the owner's reuse story, not for human presets:
+a harness as data with declared parameters, itself a component, shipped as a distribution with its
+runtime pinned inside, and scaffolded for other languages over one runtime (D113, D118, D119).
+Phase 37 gives the run a life beyond its process. Phases 35, 38, 39 and 40 keep their rows and
+follow. Fifteen decisions, D107–D121, are settled once in the epic record and derive each phase.
+
 ## Where this stands — 2026-09-15
 
 **Phases 0–30 are merged and released; Phase 31 is complete on the unreleased Epic 0008 stack.**
@@ -177,10 +191,10 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 31 | A host knows what it can trust | **DONE · v0.30.0** · Epic 0008 | 30 | typed provider/environment capabilities and evidence; typed execution requirements; conservative compatibility and refusal, in-process and over the wire |
 | 32 | One agent surface | **DONE · v0.30.0** · Epic 0008 | 31 | `ModelAgent`; model/CLI `Thread` parity; `Item.inputs`; reusable stream session, heartbeat and safer bearer input |
 | 33 | Authority at the act | **DONE · v0.30.0** · Epic 0008 | 31 | revisioned authority; `stage -> authorize -> execute -> reconcile`; single-use grants; durable journal, receipts, unknown outcomes and recovery |
-| 34 | Shadow Harness, built to unfold | planned | 32, 33 | `HarnessSpec`; primitive -> component -> pattern -> blueprint -> preset -> runnable reference harness; every layer replaceable |
-| 35 | Context engineering | planned | 32 | compaction that triggers itself; Code Mode over the socket; memory consumed |
-| 36 | Dynamic planning | planned | 34, 35 | an agent proposes the same workflow/harness artifacts a user composes; the host admits them under capability, authority, depth, fan-out and budget limits |
-| 37 | Durable triggers and scheduling | planned | 33, 34 | one-shot and recurring triggers; durable, idempotent run creation; retry and missed-run policy |
+| 34 | The harness as data | planned · **Epic 0009** | 36 | declared parameters on a composition; `HarnessSpec` → blueprint → preset → runnable; a harness as a component (its profile the `meet` of its parts) admitted recursively with the capability check; bundle in/out (`harness.toml` + files + composition JSON); `run` · `explain` · `check`; the reference presets from public parts only; `bundle --as wheel · oci · binary · dir · scaffold:<lang>` with the kit pinned inside; generated clients and port stubs per language; reproducible builds (D113, D114, D118, D119, D120) |
+| 35 | Context engineering | planned · after Epic 0009 (D117) | 32 | compaction that triggers itself; Code Mode over the socket; memory consumed |
+| 36 | Plan admission | **complete · v0.31.0** | 33 | `PlanLimits` (order-bearing) + `admit()` pure in the kernel; admission inside `spawn` — structural → existence → effects, the mismatch list complete; `plan_admitted` / `plan_refused` and their fold; planning as a registered component so a resident CLI can plan; limits on the mode as live data; run-after-planner as a pattern field; the amend handle; wire/TS parity (D107–D112, D116, D121) |
+| 37 | The durable run request | planned · **Epic 0009** | 33, 34 | `RunRequest` with identity, idempotency key and retry/catch-up policy as data; create, renew, cancel; a run that is not a turn; recovery after process death on SQLite and Postgres; a trigger port with cron, queue and webhook reference adapters; timing consumed, never authority (D115) |
 | 38 | The UI plane | planned | 32, 34 | activity and generative-UI adapters; reusable host components; declarative UI has no execution authority |
 | 39 | Collaboration | planned | 33, 36 | agents as peers; remote delegation; a second agent protocol as an adapter; peer capability discovery |
 | 40 | Evaluation and governed evolution | planned | 35, 36 | locked evaluators; replay and shadow comparison; versioned proposals; human-approved rollout and rollback |
@@ -212,10 +226,10 @@ files; the phases after it are capability, not readiness.
 | 31 | A host knows what it can trust | 30 | A host states typed execution requirements. Providers and environments report typed capabilities plus evidence, with unknown as the conservative default. Selection succeeds with a compatible pair or refuses with every mismatch, identically in process and over the wire. |
 | 32 | One agent surface | 31 | A model-backed agent is an `AgentPort` and therefore a durable `Thread`, not a second product runner. `Item.inputs` closes the projection gap. The wire's stream session becomes reusable in process, with heartbeat, silence detection and safer bearer input. |
 | 33 | Authority at the act | 31 | Principal, workspace, policy, registry, provider configuration and mode become an explicit revisioned authority. An irreversible effect is staged, authorized once by the host, executed only after an act-time recheck, and reconciled from a durable journal to a receipt or an explicit unknown outcome. |
-| 34 | Shadow Harness, built to unfold | 32, 33 | The ready-made surface is formalized without a second runtime: one `HarnessSpec` expands through primitive, component, pattern, blueprint and preset to Shadow Harness. A user can stop at any layer or materialize the next one down. |
+| 34 | The harness as data | 36 | A harness is a typed, parameterised, versioned artifact that unfolds to a runnable one, is itself a component, and ships as a self-contained distribution — its runtime pinned inside — or as a scaffold for another language over the one runtime. A blueprint carries requirements and limits, never capabilities, credentials or authority; selection and admission re-run at every instantiation. |
 | 35 | Context engineering | 32 | Compaction triggers itself at a declared threshold. Code Mode runs in the environment and calls the run registry so only what it prints enters context. Memory is consumed behind a component port, never built into the runtime. |
-| 36 | Dynamic planning | 34, 35 | A planner proposes the same typed composition or harness artifact a developer authors. Plans, phases, parallel workers and sub-agents are data; the host validates tools, authority, depth, fan-out and budgets before compilation. A deterministic workflow may contain model-backed components without becoming an agent-owned loop. |
-| 37 | Durable triggers and scheduling | 33, 34 | Time, webhook and external-event triggers create durable run requests. The scheduler owns timing, not authority; idempotent creation, retry policy, catch-up and cancellation are explicit. |
+| 36 | Plan admission | 33 | A proposed composition is admitted or refused as a whole before anything compiles: structural limits, existence of every component, and a dry judgement of declared effects, with every mismatch named. Admission is not authorization — Phase 33 still authorizes each irreversible act. A plan reaches the runtime through a registered component, so a resident CLI can plan; a plan may outlive its planner; a running composition can be amended on the record. |
+| 37 | The durable run request | 33, 34 | A run is requested idempotently and survives its process: created once per key, renewed, cancelled, retried and caught up by policy that is data. Cron, queue and webhook adapters create requests; the scheduler owns timing and never authority. |
 | 38 | The UI plane | 32, 34 | Generic activity projections cross an AG-UI-style adapter; declarative generative UI crosses an A2UI-style adapter and is rendered by host-owned components. A generated view can propose interaction but never acquire execution authority. |
 | 39 | Collaboration | 33, 36 | Agents become peers through transport adapters such as A2A: capability discovery, remote delegation and correlated child runs, with the receiving host retaining its own authority. |
 | 40 | Evaluation and governed evolution | 35, 36 | Frozen evaluators precede optimization. Accepted traces feed replay and shadow comparison; improvements are versioned proposals requiring human approval, pinned rollout and rollback rather than self-installation. |
@@ -230,6 +244,7 @@ the timeline are phases, not retrospective pseudo-epics.
 | 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
 | **0008 production boundary** | **31, 32, 33** | **complete; v0.30.0 released** |
+| **0009 the harness as data** | **36, 34, 37** | **planned 2026-09-18**; opened from `research/2026-09-18-what-belongs-in-the-kit.md`; D107–D121; released per phase |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable

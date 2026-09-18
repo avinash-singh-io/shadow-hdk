@@ -42,10 +42,13 @@ from shadow_hdk.kernel import (
     TurnRecord,
 )
 from shadow_hdk.kernel.capabilities import ExecutionRequirements, ExecutionSelection
-from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.composition import Composition
+from shadow_hdk.kernel.events import ApprovalRequested, Event
 from shadow_hdk.kernel.events import Refused as RefusedEvent
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import AgentPort, ThreadStore
 from shadow_hdk.kernel.workspace import Workspace
+from shadow_hdk.runtime.approvals import Amend
 from shadow_hdk.runtime.bindings import Ports
 from shadow_hdk.runtime.conversation import (
     TURN,
@@ -184,6 +187,7 @@ class Thread:
         budget: Ceiling | None = None,
         idle_seconds: float | None = None,
         requirements: ExecutionRequirements | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
 
@@ -236,6 +240,7 @@ class Thread:
                 attributes=given,
                 conversation_id=record.id,
                 idle_seconds=idle_seconds,
+                plan_limits=plan_limits,
             )
         except BaseException:
             await thread._let_go_of_hold()
@@ -260,6 +265,7 @@ class Thread:
         holder: str = "",
         hold_seconds: float = HOLD_SECONDS,
         idle_seconds: float | None = None,
+        plan_limits: PlanLimits | None = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
@@ -295,6 +301,7 @@ class Thread:
                 turns_taken=len(record.turns),
                 spent=record.spent,
                 idle_seconds=idle_seconds,
+                plan_limits=plan_limits,
             )
         except BaseException:
             await thread._let_go_of_hold()
@@ -411,6 +418,20 @@ class Thread:
         return self.conversation.environment_mode
 
     @property
+    def plan_limits(self) -> PlanLimits | None:
+        """How much plan the next turn admits (D109): the host's limits met with the current
+        mode's, live — `None` when neither bounds it."""
+        return self.conversation.plan_limits
+
+    @property
+    def unmapped_behaviour(self) -> tuple[str, ...]:
+        """The behaviour fields the current mode set that this provider could not take (ENH-020)
+        — `system` or `model` on a CLI whose record maps no flag for them. Named at open, at
+        resume and after every `set_mode`, so a host hides the control instead of showing one
+        that does nothing."""
+        return self.conversation.unmapped_behaviour
+
+    @property
     def pending(self) -> tuple[PendingQuestion, ...]:
         """The questions open on this thread (D80, D88) — the ones a host that died or a turn
         that parked left, until they are settled, and the ones the running turn is waiting on."""
@@ -473,6 +494,13 @@ class Thread:
             self._record = _replace(self._record, pending=now)
             await self._store.save(self._record)
 
+    async def amend(self, handle: str, composition: Composition, answer: Any = None) -> list[Event]:
+        """Continue a parked plan on a different composition (D116) — the person's answer to the
+        question is `Amend`, carried to whoever holds the plan, which admits the amendment under
+        the same limits, registry and policy as the original. Refused, the plan is as it was and
+        the question stays open."""
+        return await self.settle(handle, Amend(composition=composition, answer=answer))
+
     async def settle(self, handle: str, answer: Any) -> list[Event]:
         """Answer a question a turn left open (D80, D88).
 
@@ -493,6 +521,52 @@ class Thread:
             told = f"Your call {call_line(question)} could not be settled: no run parked on it"
         else:
             events = await self.conversation.resume_parked(question, answer)
+            if isinstance(answer, Amend) and any(
+                e.kind == "plan_refused" and getattr(e, "amendment", False) for e in events
+            ):
+                # The amendment was refused (D116): the plan is as it was, still waiting, and
+                # the question stays on the record for the next answer.
+                self.conversation.tell(
+                    f"The person tried to amend your plan from {question.turn}; the amendment "
+                    "was refused and your plan is as it was, still waiting."
+                )
+                self._record = _replace(self._record, spent=self.conversation.spent())
+                await self._store.save(self._record)
+                return events
+            asked_again = next(
+                (
+                    e
+                    for e in reversed(events)
+                    if isinstance(e, ApprovalRequested)
+                    and e.run_id == question.run_id
+                    and e.step == question.step
+                ),
+                None,
+            )
+            if asked_again is not None:
+                # The run parked again on the same step (D57): a plan that asks twice. The
+                # answer was applied; the next question takes the first one's place on the
+                # record under the same handle — it is the same call, still the person's to
+                # answer — and the agent is told its call is still waiting.
+                renewed = replace(
+                    question,
+                    question=asked_again.question,
+                    component=asked_again.component,
+                    inputs=asked_again.inputs,
+                )
+                self.conversation.tell(
+                    f"The person answered a question in your call {call_line(question)} from "
+                    f"{question.turn}; it is still waiting on: {asked_again.question}"
+                )
+                self._record = _replace(
+                    self._record,
+                    pending=tuple(
+                        renewed if q.handle == handle else q for q in self._record.pending
+                    ),
+                    spent=self.conversation.spent(),
+                )
+                await self._store.save(self._record)
+                return events
             observation = next(
                 (
                     e.observation

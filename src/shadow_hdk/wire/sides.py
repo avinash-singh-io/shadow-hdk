@@ -25,6 +25,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
 from shadow_hdk.kernel.leases import Ceiling
 from shadow_hdk.kernel.observations import Proposal
+from shadow_hdk.kernel.planning import PlanLimits
 from shadow_hdk.kernel.ports import (
     Allow,
     Ask,
@@ -228,11 +229,15 @@ class RuntimeSide:
         if self.live is None:
             raise RuntimeError("nothing is running, so there is nothing to spawn from")
         within = params.get("within")
+        limits = params.get("limits")
         handle, events = await self.live.children.spawn(
             load(json.dumps(params["composition"]), Composition),
             load(json.dumps(params["ceiling"]), Ceiling),
             within=load(json.dumps(within), EffectProfile) if within is not None else None,
             within_name=str(params.get("within_name") or ""),
+            limits=load(json.dumps(limits), PlanLimits) if limits is not None else None,
+            proposed_by=str(params.get("proposed_by") or "compose"),
+            step=str(params.get("step") or ""),
         )
         return {"handle": handle, "events": [json.loads(dump(e, Event)) for e in events]}
 

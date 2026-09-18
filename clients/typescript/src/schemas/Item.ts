@@ -37,10 +37,36 @@ export type IdempotencyKey = string
 export type Kind7 = "acted"
 export type Outcome = ("running" | "completed" | "refused" | "approval_requested" | "input_requested" | "failed" | "pending" | "acted")
 export type Parent = ([unknown, unknown] | null)
+export type Plan = (PlanAdmitted | PlanRefused | null)
+export type Amendment = boolean
+export type Asks = string[]
+export type At2 = string
+export type AuthorityDigest = string
+export type Kind8 = "plan_admitted"
+export type Depth = (number | null)
+export type FanOut = (number | null)
+export type Steps = (number | null)
+export type PlanDigest = string
+export type Refusals = string[]
+export type RunId1 = string
+export type Seq1 = number
+export type Step1 = string
+export type Amendment1 = boolean
+export type At3 = string
+export type Kind9 = "plan_refused"
+export type Axis = ("depth" | "fan_out" | "steps" | "component")
+export type Found = string
+export type Required = string
+export type Step2 = string
+export type Mismatches = PlanMismatch[]
+export type PlanDigest1 = string
+export type RunId2 = string
+export type Seq2 = number
+export type Step3 = string
 export type Reason1 = (string | null)
 export type Reasoning = string
-export type RunId1 = string
-export type Step1 = string
+export type RunId3 = string
+export type Step4 = string
 export type CostCents = (number | null)
 export type InputTokens = (number | null)
 export type OutputTokens = (number | null)
@@ -63,10 +89,11 @@ inputs?: {
 observation?: Observation
 outcome?: Outcome
 parent?: Parent
+plan?: Plan
 reason?: Reason1
 reasoning?: Reasoning
-run_id: RunId1
-step: Step1
+run_id: RunId3
+step: Step4
 usage?: (Usage | null)
 }
 /**
@@ -151,6 +178,57 @@ grounds?: {
 }
 idempotency_key: IdempotencyKey
 kind?: Kind7
+}
+/**
+ * A whole plan admitted before it compiled (D108): its digest, the authority it was admitted
+ * under, the limits it fit — and whether it amended a plan already running (D116).
+ */
+export interface PlanAdmitted {
+amendment?: Amendment
+asks?: Asks
+at: At2
+authority_digest?: AuthorityDigest
+kind?: Kind8
+limits?: PlanLimits
+plan_digest: PlanDigest
+refusals?: Refusals
+run_id: RunId1
+seq: Seq1
+step?: Step1
+}
+/**
+ * How much plan a host, a mode or a parent admits. `None` is unbounded.
+ *
+ * Order-bearing, like an effect profile: `meet` takes the narrower of each field, so limits
+ * compose without a review and the narrowing proof covers them.
+ */
+export interface PlanLimits {
+depth?: Depth
+fan_out?: FanOut
+steps?: Steps
+}
+/**
+ * A whole plan refused before anything ran — every mismatch, in the stable order. The
+ * planner hears this as an observation and decides; nothing was trimmed (D111).
+ */
+export interface PlanRefused {
+amendment?: Amendment1
+at: At3
+kind?: Kind9
+mismatches?: Mismatches
+plan_digest: PlanDigest1
+run_id: RunId2
+seq: Seq2
+step?: Step3
+}
+/**
+ * One way a plan does not fit, as data a host or a planner can act on.
+ */
+export interface PlanMismatch {
+axis: Axis
+found: Found
+required: Required
+step: Step2
 }
 /**
  * What the call cost. A model adapter that cannot say reports ``None`` for the field it does

@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.planning import PlanLimits
 
 COMPOSE = "compose"
 PROPOSE = "propose"
@@ -40,6 +41,14 @@ class Pattern:
     tool_names: frozenset[str] | None = None
     """`None` means every component the policy leaves visible; a set names this role's own."""
     ceiling: EffectProfile | None = None
+    plan: PlanLimits | None = None
+    """How much plan this pattern may author (D109) — met with the run's own at admission, so a
+    pattern is never admitted a wider plan than its host allows. `None` defers to the run."""
+    absorb: bool = True
+    """Whether a plan this pattern authors is absorbed into its own turn — the results come back
+    to the model as the answer to `compose` (the default, BUG-012) — or runs after the planner
+    (D112): the planner's step closes on the admission and the plan runs on as a held child of
+    the same parent run, its events on the record, nothing folded back into the transcript."""
     max_turns: int = 12
     offload_over: int | None = None
     """Large-result offloading (D47). A tool result rendering to more than this many characters
