@@ -156,11 +156,14 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
 - **Handing things to a served runtime.** Modes, rules, store, batteries, budget, provider, idle —
   `harness.toml` and store rows (`store/put`, `modes/list`, `rules/list`). Identity —
   `thread/start {principal, attributes, budget, requirements, plan_limits}` (D82).
-- **The product's own tools are the honest gap.** Neither `Harness` nor `ServeHost` takes
-  `components=`; a served thread's components are the serving process's. Today a product's tools
-  reach a served thread as a **battery** — an MCP server declared in a file under `batteries_dir`
-  (D70, `serve/batteries.py`, kinds `mcp` | `python`), switched on by rows. The record tools as one
-  MCP server is that shape. A `components=` hand-in is **ENH-022** below.
+- **The product's own tools reach a served thread as batteries — by design, not by gap.** Neither
+  `Harness` nor `ServeHost` takes `components=`, and that is deliberate: the served composition is
+  *data* — a file and rows — so a deployment can switch a tool off and the wire can list it, with
+  nothing in the process the file cannot say. A battery is a file under `batteries_dir` (D70,
+  `serve/batteries.py`): `kind = "python"` puts one Python callable behind the component port,
+  `kind = "mcp"` a server with many tools. A Python-native product that wants a `Ports` of its own
+  takes the `Thread` door — the same composition, in its own process. Two doors; neither is a
+  workaround.
 
 ## 8. Session resume
 
@@ -294,8 +297,9 @@ thread. A question the agent asks the person is `ask_person`, already in the com
 ### Door two — served, behind the product's backend (the server)
 
 The same parts, in a file the product's deployment writes and a process the product's backend
-fronts. The product's tools reach the served thread as a battery (an MCP server), until
-`components=` lands (ENH-022).
+fronts. The product's tools reach the served thread as batteries — files, so the deployment can
+switch them and the wire can list them (D70): one Python callable per `python` battery, or a whole
+tool set behind one `mcp` battery, as below.
 
 ```toml
 # harness.toml — every key maps to a port or a profile; an unknown key is refused by name
@@ -356,11 +360,17 @@ deployment behind `serve` changes where the process runs, not what it does.
 
 | id | what | why it is the kit's |
 |---|---|---|
-| ENH-022 | `components=` on `ServeHost` and `Harness`, so a product's own tools join a served thread's registry without an MCP hop | the seam found answering question 7; every product with tools of its own meets it |
+| ~~ENH-022~~ | `components=` on the facades — **withdrawn** the day it was filed | sugar for one product over two doors the kit already has (a `python` or `mcp` battery; the `Thread` door); the served composition stays data. Kept on the backlog so the reasoning is on the record |
 | ENH-023 | `Usage.cache_read_tokens` and `cache_write_tokens`, read from the Claude Code and Codex dialects | two field runtimes report it; a footer cannot be honest about cost without it |
 | ENH-024 | a typed `session_gone` refusal when a CLI's resume flag is rejected, instead of a bare failed turn | the product can act on it without reading stderr; it is a measured CLI behaviour, not a product concept |
 | ENH-025 | a capability-inventory evidence axis — a CLI's MCP servers and plugins — on the status probe | routing a Run by what a machine can do; two CLIs expose the list |
 | ENH-026 | this chapter kept true: re-read at every release that touches a port it names | a chapter a product builds against is a contract |
 
 What stays the product's: the artifact concept and its versions, the cloud-safe projection, the
-persona *names*, the settings ladder that resolves a mode, and the backend that fronts `serve`.
+persona *names*, the settings ladder that resolves a mode, the routing of work between machines,
+and the backend that fronts `serve`.
+
+The rule every row above was held to, after the fact: *the kit admits what two field runtimes
+show or every product needs; never a product's concept; never sugar for one product over a door
+it already has.* ENH-022 failed it and was withdrawn; ENH-025 is admitted as an evidence axis on
+the provider only — the routing it would serve is the product's.
