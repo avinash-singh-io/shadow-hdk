@@ -1,0 +1,79 @@
+name: helper wheels
+# The Linux confinement helper's distribution (Epic 0010, D123 — `shadow-hdk-linux-sandbox`,
+# bin-only, in lockstep with the kit), built the one way in the one place: glibc (manylinux 2.17 —
+# every distribution since 2014) and musl (Alpine), x86_64 and aarch64, in maturin's manylinux
+# containers with their cross toolchains, plus the sdist for an architecture nobody built for (it
+# needs cargo). `bindings = "bin"` tags the wheels `py3-none-<platform>`: no Python-version
+# coupling, which is what D123 declined. Called by `ci` on every push — so a release never finds
+# out the matrix broke — and by `publish`, which uploads what this produced.
+on:
+  workflow_call:
+
+jobs:
+  wheel:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64
+            libc: manylinux_2_17
+          - target: aarch64
+            libc: manylinux_2_17
+          - target: x86_64
+            libc: musllinux_1_2
+          - target: aarch64
+            libc: musllinux_1_2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native/sandbox
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.libc }}
+          command: build
+          args: --release --out dist
+      - name: one wheel, tagged for the platform and no Python version
+        run: |
+          ls native/sandbox/dist
+          ls native/sandbox/dist/*.whl | wc -l | grep -qx 1
+          ls native/sandbox/dist/*.whl | grep -q "py3-none-${{ matrix.libc }}_${{ matrix.target }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helper-${{ matrix.target }}-${{ matrix.libc }}
+          path: native/sandbox/dist/*.whl
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native/sandbox
+          command: sdist
+          args: --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helper-sdist
+          path: native/sandbox/dist/*.tar.gz
+
+  # The x86_64 glibc wheel installed into a fresh venv on this runner is the helper the kit
+  # finds beside the interpreter: `--probe` answers, and the same binary confines for real
+  # (the crate's own tests cover the kernel; this covers the wheel).
+  installed:
+    needs: wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: helper-x86_64-manylinux_2_17
+          path: dist/
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: |
+          uv venv fresh
+          uv pip install --python fresh/bin/python dist/*.whl
+          fresh/bin/shadow-hdk-linux-sandbox --probe
+          mkdir root && fresh/bin/shadow-hdk-linux-sandbox --mode workspace-write --root "$PWD/root" -- sh -c 'echo fine > root/inside && ! (echo bad > outside) && echo confined'
+          test -f root/inside && ! test -f outside

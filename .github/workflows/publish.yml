@@ -1,8 +1,11 @@
 name: publish
-# Builds the one distribution (D78) and publishes it — to TestPyPI on demand, to PyPI when a
-# release is published. The version in `pyproject.toml` must equal the tag's (the versions test
-# holds the tree to that number; this holds the number to the tag), and a fresh install from the
-# index must import and answer `initialize` before the run is called green.
+# Builds the one distribution (D78) and, beside it, the Linux confinement helper's platform
+# wheels (Epic 0010, D123 — `shadow-hdk-linux-sandbox`, bin-only, one per OS × arch, in lockstep
+# with the kit), and publishes them together — to TestPyPI on demand, to PyPI when a release is
+# published. The version in `pyproject.toml` must equal the tag's (the versions test holds the
+# tree to that number; this holds the number to the tag), and a fresh install from the index must
+# import, answer `initialize` and — on the Linux runner — find Landlock in force before the run
+# is called green.
 #
 # Credentials: `PYPI_API_TOKEN` (and `TEST_PYPI_API_TOKEN`) as repository secrets — the owner's,
 # never in the tree. Trusted publishing (OIDC, no token) is the better arrangement once the
@@ -45,8 +48,12 @@ jobs:
           name: dist
           path: dist/
 
+  # The helper's wheels and sdist — the same workflow `ci` runs on every push.
+  helper:
+    uses: ./.github/workflows/helper-wheels.yml
+
   publish:
-    needs: build
+    needs: [build, helper]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'release' && 'pypi' || inputs.index }}
     permissions:
@@ -58,6 +65,12 @@ jobs:
         with:
           name: dist
           path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: helper-*
+          path: dist/
+          merge-multiple: true
+      - run: ls dist | wc -l | grep -qx 7  # the kit's wheel and sdist, the helper's four wheels and sdist
       - name: publish
         env:
           INDEX: ${{ github.event_name == 'release' && 'pypi' || inputs.index }}
@@ -89,6 +102,10 @@ jobs:
             echo "not on the index yet (attempt $attempt)"; sleep 30
           done
           fresh/bin/python -c "import shadow_hdk.serve, shadow_hdk.kernel, shadow_hdk.wire; print('imported', '$VERSION')"
+          # The Linux helper came with the kit and this kernel has Landlock: the mechanism in force
+          # on a fresh Linux install is the native one (Epic 0010, D133), from the index, not the tree.
+          fresh/bin/shadow-hdk-linux-sandbox --probe
+          fresh/bin/python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'landlock', s; print(s)"
           printf '[environment]\nroot = "."\nmode = "read-only"\n' > harness.toml
           protocol=$(fresh/bin/python -c 'from shadow_hdk.wire import PROTOCOL_VERSION; print(PROTOCOL_VERSION)')
           printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol_version":"%s"}}\n' "$protocol" | fresh/bin/shadow-hdk serve harness.toml --stdio | grep -q "\"protocol_version\": \"$protocol\""
