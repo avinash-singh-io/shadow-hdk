@@ -4,11 +4,10 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-19 — **Phase 44 complete, released as v0.32.0** (tools as code, from any language)
-> **Current Phase**: **none — between phases.** Phase 44 landed and released as v0.32.0; next is
-> **Phase 45** (BUG-056, ENH-023, ENH-024, ENH-028, ENH-032 — the rest of what the product asked
-> for, all generic), then **Phase 41 — the OS layer** (Epic 0010) before Phase 34, the owner's
-> order to confirm.
+> **Last Updated**: 2026-09-19 — **v0.32.1** (BUG-056, quick-task) after **Phase 44 / v0.32.0**; Epic 0010 amended — Linux confinement first, the artifact optional, Windows deferred
+> **Current Phase**: **none — between phases.** Next, in the owner's order: the Linux confinement
+> lane (Epic 0010, Phase 42's Linux half — the Landlock helper, CI proving confinement), then
+> Phase 45 (ENH-023, ENH-024, ENH-028, ENH-032), then Phase 34 → 37. Windows (41, 43) deferred.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -129,6 +128,7 @@ approval.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.32.1 | 2026-09-19 | quick-task | BUG-056 — a change that reopens the provider is refused during a turn, typed (`turn_running`); the turn lock held across the change |
 | v0.25.3 | 2026-09-13 | patch | BUG-034 the mode in `harness.toml`/`--mode`/`Harness(mode=)` is a mode id (`ask` included), refused by name at open; `requires` refuses an unknown environment name; the architecture specs synced to the tree |
 | v0.25.2 | 2026-09-12 | patch | D77 one rule, one implementation: `start_held` the one place a session leader is started (an invariant refuses the next copy); `LineBuffer` the one framing; a root's name a rule, not an `exists()` guess |
 | v0.25.1 | 2026-09-12 | patch | BUG-033 a battery's MCP server is a held session leader, ended with its group; ENH-012 Claude Code launched with no settings sources and no auto-memory — a run's instructions are the mode's behaviour only |
@@ -183,7 +183,7 @@ approval.
 1. The GitHub release for `v0.32.0` after the merge and tag — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index)
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
-4. Phase 45 — the rest of what the product asked for, generic: BUG-056 (`set_mode` mid-turn, typed), ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
+4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
 5. Next lane, the owner's order to confirm: Phase 41 — the OS layer (Epic 0010) before Phase 34, so Phase 34's `bundle` stands on 42's launcher: `momentum run derive phase-41-the-os-layer --epic cross-platform --deps "" --write`, then `/start-phase`
 6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
