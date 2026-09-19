@@ -9,7 +9,7 @@ build-backend = "maturin"
 
 [project]
 name = "shadow-hdk-linux-sandbox"
-version = "0.33.0"
+version = "0.34.0"
 description = "Shadow HDK's Linux confinement helper: Landlock and seccomp applied before exec, invoked by the kit's local environment."
 readme = "README.md"
 requires-python = ">=3.12"
