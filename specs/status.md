@@ -4,10 +4,12 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-20 — **v0.33.0** — Phase 41 **Linux confinement** (Epic 0010's first lane) complete
-> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 45 (ENH-023,
-> ENH-024, ENH-028, ENH-032), then Phase 34 → 37. The artifact (42) is optional; Windows (43) is
-> deferred until asked — WSL2 meanwhile.
+> **Last Updated**: 2026-09-20 — **Phase 45 — truth both ways** started, after **v0.33.0** (Phase 41) and the post-release audit
+> **Current Phase**: **45 — truth both ways** on `phase-45-truth-both-ways` — cache tokens
+> (ENH-023), a typed `session_gone` (ENH-024), Codex `model`/`effort` measured (ENH-028), per-turn
+> attributes (ENH-037), the egress decision D138 (ENH-038), the 3.12–3.14 matrix (ENH-032), the
+> vendor-name invariant, Phase 36's proof on Claude Code; v0.34.0 at the gate. Then Phase 34 → 37;
+> 42 optional, 43 deferred.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -162,6 +164,7 @@ approval.
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 | 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
 | 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | 1,799 non-live passed on 3.12 **and** on 3.14 (macOS); on CI: 1,818 on Linux with Landlock in force, 1,799 on Linux with bubblewrap, 1,799 on macOS; the crate's 12 confinement tests on the ubuntu-24.04 runner; four platform wheels built, the x86_64 one installed and watched confining; mypy 461 files; ruff clean; OKF conformant; the 0.33.0 wheel installed fresh and answering `initialize` | v0.33.0 released |
+| 45 — truth both ways | `phase-45-truth-both-ways` | in progress — G1 RED next | v0.34.0 at the gate |
 
 ## Upcoming Phases
 

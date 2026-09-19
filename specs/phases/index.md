@@ -32,6 +32,7 @@
 * [phase-4-the-acp-bridge](/phases/phase-4-the-acp-bridge/overview.md) - complete
 * [phase-41-linux-confinement](/phases/phase-41-linux-confinement/overview.md) - complete
 * [phase-44-tools-as-code](/phases/phase-44-tools-as-code/overview.md) - complete
+* [phase-45-truth-both-ways](/phases/phase-45-truth-both-ways/overview.md) - in-progress
 * [phase-5-the-recording-server](/phases/phase-5-the-recording-server/overview.md) - complete
 * [phase-6-the-compiler-complete](/phases/phase-6-the-compiler-complete/overview.md) - complete
 * [phase-7-sub-agents](/phases/phase-7-sub-agents/overview.md) - complete

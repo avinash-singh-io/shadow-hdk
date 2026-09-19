@@ -43,6 +43,7 @@ type: Guide
 | **36** | **Plan admission** | **Complete, v0.31.0 release** | `phase-36-plan-admission` |
 | **44** | **Tools as code, from any language** | **Complete, v0.32.0 release** | `phase-44-tools-as-code` |
 | **41** | **Linux confinement** (Epic 0010) | **Complete, v0.33.0 release** | `phase-41-linux-confinement` |
+| **45** | **Truth both ways** | **In Progress** | `phase-45-truth-both-ways` |
 
 ## Phase Structure
 
