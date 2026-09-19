@@ -62,12 +62,12 @@ class ToolCallingThreads(ScriptedThreads):
     """The runtime's side: a thread host whose scripted agent calls the tools it is told to, and
     which takes the peer's components the wire hands it — the new keyword of the protocol."""
 
-    def __init__(self, tmp_path: Path, calls: list[tuple[str, dict[str, Any]]]) -> None:
+    def __init__(self, tmp_path: Path, calls: list[tuple[str, Any]]) -> None:
         super().__init__(tmp_path)
-        self.agent: Any = ScriptedAgent([(calls, "done"), (calls, "done again")])
+        self.agent: Any = ScriptedAgent([(list(calls), "done"), (list(calls), "done again")])
         self.peer_components_seen: list[Any] = []
 
-    async def open(  # type: ignore[override]
+    async def open(
         self,
         *,
         root: str,
@@ -102,9 +102,7 @@ class ToolCallingThreads(ScriptedThreads):
         self.agent.reach = thread.registry.call
         return thread
 
-    async def resume(  # type: ignore[override]
-        self, thread_id: str, *, observer: Any, peer_components: Any = ()
-    ) -> Thread:
+    async def resume(self, thread_id: str, *, observer: Any, peer_components: Any = ()) -> Thread:
         self.peer_components_seen.append(tuple(peer_components))
         ports = self._ports(observer)
         ports = Ports(
@@ -142,9 +140,12 @@ async def test_the_hosts_tool_is_offered_called_and_on_the_record(tmp_path: Path
         by_id = {t["id"]: t for t in tools["tools"]}
         assert "greet" in by_id, "the host's tool is offered beside the served ones"
         assert by_id["greet"]["source"] == "host", by_id["greet"]["source"]
-        assert by_id["greet"]["registration"]["component"]["provenance"][
-            "registered_by"
-        ].startswith("host:")
+        # The host's registration crosses **untouched**: a host may sign what it registers
+        # (D27) and the signature covers provenance, so the wire never stamps it.
+        assert (
+            by_id["greet"]["registration"]["component"]["provenance"]["registered_by"]
+            == GREET.component.provenance.registered_by
+        )
         assert "look" in by_id, "the served composition's own tools are still there"
 
         with anyio.fail_after(30):
@@ -210,7 +211,10 @@ async def test_a_host_that_is_gone_takes_its_tools_with_it_by_name() -> None:
             raise RemoteError(GONE, "the other end closed", {"kind": "gone"})
 
     port = RemoteComponents(cast(Any, ClosedPeer()), session="s-1")
-    assert await port.registrations() == []
-    assert port.problem and "host" in port.problem and "s-1" in port.problem
+    # The catalogue *raises*, naming the host, so the registry lists the port as unreachable and
+    # its tools vanish from the offer instead of lingering as names that answer nothing.
+    with pytest.raises(RuntimeError, match="host 's-1'.*gone"):
+        await port.registrations()
+    assert port.problem and "s-1" in port.problem
     failed = await port.invoke("greet", {"name": "ana"})
-    assert isinstance(failed, Failed) and "greet" in failed.reason and "gone" in failed.reason
+    assert isinstance(failed, Failed) and "greet" in failed.error and "gone" in failed.error

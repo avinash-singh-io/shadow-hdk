@@ -90,6 +90,7 @@ class RuntimeSide:
         observer: Any = None,
         threads: Any = None,
         admin: Any = None,
+        session: str = "this",
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
@@ -132,8 +133,17 @@ class RuntimeSide:
         self.peer.serves(CONTEXT_RESUMED, self._context_resumed)
         from shadow_hdk.wire.threads import SoleSession, ThreadMethods
 
+        self.session = session
+        """This connection's id as the transport knows it — HTTP's session id, the one
+        `admin/sessions` shows; `"this"` for the sole session over a pipe (D86). One connection,
+        one name (D77): the thread door's host components carry it, nothing mints another."""
         self.threads = ThreadMethods(
-            self.peer, threads, self._clock, admin=admin or SoleSession(self, clock=clock)
+            self.peer,
+            threads,
+            self._clock,
+            admin=admin or SoleSession(self, clock=clock),
+            holder=self,
+            session=session,
         )
         """The thread, crossed (D67): served when the process handed in a `ThreadHost`, refused
         with a reason when it did not. `admin` (D86) is what the process around this runtime

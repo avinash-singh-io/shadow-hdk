@@ -57,3 +57,36 @@ phase's own RED left). The rule is mechanism-independent and is what Epic 0010's
 held to. [ARCH_CHANGE] pending for `/sync-docs`: the environment's proof reads stdout only.
 
 ---
+
+### [DISCOVERY] 2026-09-19 — G2 review: three shortcuts withdrawn before commit, one latent issue filed
+Topics: wire, components, trust, provenance, sessions
+Affects-phases: phase-44-tools-as-code
+Affects-specs: architecture/wire.md#the-thread-crossed
+Detail: A review of the uncommitted Group 2 found three things that would have been patchwork and
+one that predates the phase. Withdrawn: (1) a "gone" check that read `.kind` off a `RemoteError`
+that has no such field, so only a wording match carried it — now `exc.code == GONE`, the wire's
+typed code; (2) a second connection id minted in `ThreadMethods` beside the transport's — now the
+transport's own id is handed down (`RuntimeSide(session=)`, HTTP's real one, `"this"` over a pipe;
+D77); (3) the runtime parsing `registered_by.startswith("host:")` — now the port *declares*
+`source = "host"` and `_source_of` asks, never parses. Filed (TD-013, P2): rewriting a host's
+registration — the phase's `registered_by` stamp, withdrawn, and the posture copy `run` has always
+made — breaks signed registrations (D27), because `signing_bytes` covers provenance; the annotation
+belongs beside the registration on the registry side. The host's registration now crosses
+untouched, and the test says so.
+
+---
+
+### [NOTE] 2026-09-19 — G2: the thread door carries the host's components by inversion
+Topics: wire, components, inversion, sessions
+Affects-phases: phase-44-tools-as-code
+Affects-specs: architecture/wire.md#the-thread-crossed, architecture/runtime.md#modules
+Detail: `thread/start` and `thread/resume {host_components: true}` add the calling connection's
+`RemoteComponents` to that thread's registry through a `peer_components` keyword the wire hands the
+thread host — the same port, the same `HostSide` handlers and the same HTTP split `run` has had
+since D21; nothing new crosses. `tools/list` says `source: "host"` because the port declares it. A
+host that goes away is named by the transport's own session id: its catalogue raises so the
+registry lists it unreachable and the tools vanish; an act in flight ends `Failed` naming tool and
+host. Proven over loopback and over HTTP with a second connection replacing the first's tools.
+[ARCH_CHANGE] pending for `/sync-docs`: the thread, crossed, gains the host's components.
+
+---

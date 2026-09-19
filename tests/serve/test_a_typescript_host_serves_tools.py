@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import anyio
 import pytest
@@ -32,9 +33,10 @@ def _node() -> str:
     return node
 
 
-def _saw(finished: subprocess.CompletedProcess[str]) -> dict:  # type: ignore[type-arg]
+def _saw(finished: subprocess.CompletedProcess[str]) -> dict[str, Any]:
     assert finished.returncode == 0, finished.stderr[-1200:]
-    return json.loads(finished.stdout.strip().splitlines()[-1])
+    seen: dict[str, Any] = json.loads(finished.stdout.strip().splitlines()[-1])
+    return seen
 
 
 async def test_a_typescript_tool_is_called_back_over_http(tmp_path: Path) -> None:

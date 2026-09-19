@@ -19,12 +19,12 @@ status: in-progress
 - [x] Verify — 2026-09-19: `tests/adapters/environment` 69 passed on 3.12; on 3.14 the 25 that failed yesterday pass (81 passed) and the whole non-live suite is 1,774 passed with only this phase's own RED (the TS invariants) failing; mutation (stdout+stderr) → 2 fail; BUG-058 found (a test's identity comparison 3.14 no longer honours) and closed inline
 
 ## Group 2 — The thread door inverts
-- [ ] `wire/threads.py` `_start`/`_resume` read `host_components`; `RemoteComponents(peer, holder)` handed to the host as `peer_components`; `ThreadHost` protocol + `serve/host.py` append it to `workshop()`'s components
-- [ ] `RemoteComponents`: `registered_by = "host:<session>"`; `source = "host"`; closed peer → `Failed` naming the host on invoke, empty-with-problem on registrations
-- [ ] Posture `observed` for a remote irreversible act; no effect transaction entered
-- [ ] One host port per thread; a new peer's resume replaces the old
-- [ ] Parity table names the parameter; protocol 3 unchanged
-- [ ] Verify: `uv run pytest -q tests/wire tests/serve tests/invariants tests/runtime` green; mutations bite (port not added → 4 fail; host-gone unnamed → 1 fails)
+- [x] `wire/threads.py` `_start`/`_resume` read `host_components`; `RemoteComponents(peer, holder, session=)` handed to the host as `peer_components` (only when asked); `ThreadHost` protocol + `serve/host.py::_handed` append it to `workshop()`'s components — never Python objects of a product's
+- [x] `RemoteComponents`: declares `source = "host"` (the runtime asks the port, never parses a spelling); the host's registration crosses **untouched** — the `registered_by` stamp was withdrawn in review because `signing_bytes` covers provenance (TD-013); a gone peer is the wire's typed `GONE` code, never its wording: `registrations()` raises naming the host so the registry lists the port unreachable, `invoke` returns `Failed` naming tool and host
+- [x] Posture `observed` for a remote irreversible act (the existing `_observed_if_remote_effect`, tested on the thread door); its rewrite of a signed registration is the same class as the withdrawn stamp — TD-013
+- [x] One host port per thread; a new connection's `thread/resume {host_components: true}` brings its own tools and the old host's are gone — proven over HTTP with two connections; the connection's id is the transport's own (`RuntimeSide(session=)`, HTTP's real id, `"this"` over a pipe — D77), nothing mints a second
+- [x] The parity invariants pass unchanged (the parameter is additive; `ERROR_KINDS` untouched; protocol 3)
+- [x] Verify — 2026-09-19: `tests/wire tests/serve tests/invariants tests/runtime` 781 passed with only the two TypeScript invariants RED (the smoke does not compile until G3); mypy 457 files clean; ruff clean; mutations — port never added → 3 fail; gone unnamed → 1 fails; gone never typed → 1 fails
 
 ## Group 3 — The TypeScript surface
 - [ ] stdio transport: `HarnessClient.spawn({ command, args, cwd, env })`, JSON lines, `close()` ends the tree, exit → typed error
