@@ -37,3 +37,4 @@ entry carries matching `Topics:`.
 | d32 | specs/epics/0007-the-environment.md | Decisions |
 | envelope | specs/phases/phase-16-mqtt/design.md | 3.1 The envelope |
 | link | specs/phases/phase-16-mqtt/design.md | 3.2 The link as a state machine |
+| linux, landlock, seccomp, bubblewrap, helper, native, mechanism, distribution, maturin | specs/architecture/adapters.md; specs/epics/0010-cross-platform.md | The environment — where the agent's effects land; Decisions |

@@ -42,6 +42,7 @@ type: Guide
 | **33** | **Authority at the act** | **Complete, v0.30.0 release** | `phase-33-authority-at-the-act` |
 | **36** | **Plan admission** | **Complete, v0.31.0 release** | `phase-36-plan-admission` |
 | **44** | **Tools as code, from any language** | **Complete, v0.32.0 release** | `phase-44-tools-as-code` |
+| **41** | **Linux confinement** (Epic 0010) | **In Progress** | `phase-41-linux-confinement` |
 
 ## Phase Structure
 

@@ -4,10 +4,12 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-19 — **v0.32.1** (BUG-056, quick-task) after **Phase 44 / v0.32.0**; Epic 0010 amended — Linux confinement first, the artifact optional, Windows deferred
-> **Current Phase**: **none — between phases.** Next, in the owner's order: the Linux confinement
-> lane (Epic 0010, Phase 42's Linux half — the Landlock helper, CI proving confinement), then
-> Phase 45 (ENH-023, ENH-024, ENH-028, ENH-032), then Phase 34 → 37. Windows (41, 43) deferred.
+> **Last Updated**: 2026-09-19 — **Phase 41 — Linux confinement** started (Epic 0010's first lane) after **v0.32.1** (BUG-056, quick-task) and **Phase 44 / v0.32.0**
+> **Current Phase**: **41 — Linux confinement** on `phase-41-linux-confinement` — the
+> `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec), bubblewrap behind it,
+> the D36 proof deciding which is in force and the evidence naming it; CI proving Linux both ways
+> and macOS; v0.33.0 at the gate. Then Phase 45 (ENH-023, ENH-024, ENH-028, ENH-032), then
+> Phase 34 → 37. The artifact (42) optional; Windows (43) deferred.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -154,6 +156,7 @@ approval.
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 | 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
+| 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | in progress — G0 RED next | v0.33.0 at the gate |
 
 ## Upcoming Phases
 
@@ -184,7 +187,7 @@ approval.
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
 4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
-5. Next lane, the owner's order to confirm: Phase 41 — the OS layer (Epic 0010) before Phase 34, so Phase 34's `bundle` stands on 42's launcher: `momentum run derive phase-41-the-os-layer --epic cross-platform --deps "" --write`, then `/start-phase`
+5. This lane: Phase 41 — Linux confinement (Epic 0010), G0 → G3, autonomous to the merge/release gate for v0.33.0; the GitHub release for `v0.32.1` is still the owner's (`gh release create v0.32.1`)
 6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made

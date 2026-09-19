@@ -8,7 +8,7 @@ type: Ad-hoc Record
 > **Created**: 2026-09-19
 > **Branch**: fix/BUG-056-set-mode-mid-turn
 > **Backlog**: BUG-056
-> **Status**: in-progress
+> **Status**: shipped
 
 ## Current Behavior
 
