@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.31.0"
-"""0.31.0 — plan admission (Epic 0009, Phase 36): a plan is admitted whole under limits that
+EXPECTED = "0.32.0"
+"""0.32.0 — tools as code, from any language (Phase 44): `thread/start {host_components}` carries a
+host's components by inversion (D21) on the thread door; the TypeScript client gains `tool()`,
+`components.serve`, a `Transport` and a stdio sidecar (`shadow-hdk-client/node`); the proof reads
+stdout (BUG-057). Contract additions, protocol 3 unchanged — a minor (D9).
+
+0.31.0 — plan admission (Epic 0009, Phase 36): a plan is admitted whole under limits that
 narrow host → mode → parent; `plan_admitted`/`plan_refused` events; `compose` a component;
 `thread/amend`, `plan_limits` and `unmapped_behaviour` on the wire, protocol 3 unchanged
 (additive). A contract addition in the published shape — a minor (D9).

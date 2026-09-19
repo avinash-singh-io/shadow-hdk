@@ -329,7 +329,9 @@ SandboxEnvironment.open(backend, root, mode=...)  # a box somebody else built, r
 #                                      run_shell · run_python
 #   every profile from ONE derivation — runtime.environment.effects_of(isolation, mode, operation)
 #     `Isolation` is what is TRUE (writes confined, reads confined, network denied, proven) — set by
-#     a watched denial (D36) or an honest no, never by a wrapper's claim
+#     a watched denial (D36) or an honest no, never by a wrapper's claim; the proof reads what a
+#     probe *printed* — a marker on stdout with a zero exit — never its stderr, because a 3.13+
+#     traceback echoes the probe's own source, marker included (BUG-057)
 #     `Mode` is what is WANTED; a mode the isolation cannot make true is refused at construction
 #     (CannotEnforce) rather than quietly widened
 #   read-only:        writes = ∅;      write_file and delete_file are not offered at all

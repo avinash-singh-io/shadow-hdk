@@ -104,9 +104,17 @@ class ThreadHost(Protocol):
         budget: Any = None,
         requirements: Any = None,
         plan_limits: Any = None,
+        peer_components: Any = (),
     ) -> Thread: ...
 
-    async def resume(self, thread_id: str, *, observer: Any, plan_limits: Any = None) -> Thread: ...
+    async def resume(
+        self,
+        thread_id: str,
+        *,
+        observer: Any,
+        plan_limits: Any = None,
+        peer_components: Any = (),
+    ) -> Thread: ...
 
     async def list(self) -> Any: ...
 
@@ -167,12 +175,24 @@ class ThreadMethods:
     """The thread methods, served on a peer over a `ThreadHost`."""
 
     def __init__(
-        self, peer: Any, host: ThreadHost | None, clock: Any, *, admin: Any = None
+        self,
+        peer: Any,
+        host: ThreadHost | None,
+        clock: Any,
+        *,
+        admin: Any = None,
+        holder: Any = None,
+        session: str = "this",
     ) -> None:
         self._peer = peer
         self._host = host
         self._clock = clock
         self._admin = admin
+        self._holder = holder
+        """Who keeps the live run for a host-side component's callbacks (`context.propose` and
+        the rest) — the `RuntimeSide`, as for `run`."""
+        self._session = session
+        """This connection's id, the transport's own (D77): the name a gone host is given."""
         self.threads: dict[str, Thread] = {}
         for method, handler in (
             (THREAD_START, self._start),
@@ -261,6 +281,7 @@ class ThreadMethods:
                 if params.get("plan_limits") is not None
                 else {}
             ),
+            **self._peer_components(params),
         )
         # The thread minted its own id; keep ours in step with it by re-tagging the observer.
         observer = thread.ports.observer  # the wire's own observer, re-tagged
@@ -295,6 +316,7 @@ class ThreadMethods:
                 if params.get("plan_limits") is not None
                 else {}
             ),
+            **self._peer_components(params),
         )
         self.threads[thread.id] = thread
         # A question the last host left open (D80) is offered again: pushed the way a live one
@@ -318,6 +340,19 @@ class ThreadMethods:
         }
         result["capabilities"] = _selection_json(_selection_of(host, thread.id))
         return result
+
+    def _peer_components(self, params: dict[str, Any]) -> dict[str, Any]:
+        """The host's own components, by inversion (ENH-030, D21): with `host_components: true`
+        this connection's `RemoteComponents` port joins the thread's registry — the runtime asks
+        the host what it has and asks it to act, exactly as `run` does. Passed only when asked
+        for, so a host written before the door opened is called the way it always was."""
+        if not params.get("host_components"):
+            return {}
+        from shadow_hdk.wire.remote import RemoteComponents
+
+        return {
+            "peer_components": (RemoteComponents(self._peer, self._holder, session=self._session),)
+        }
 
     async def _close(self, params: dict[str, Any]) -> dict[str, Any]:
         thread = self._thread(params)

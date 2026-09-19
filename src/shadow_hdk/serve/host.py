@@ -531,6 +531,7 @@ class ServeHost:
         budget: Any = None,
         requirements: Any = None,
         plan_limits: Any = None,
+        peer_components: Sequence[Any] = (),
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -578,7 +579,7 @@ class ServeHost:
         )
         thread = await Thread.open(
             agent=agent,
-            ports=self._handed(ports, observer),
+            ports=self._handed(ports, observer, peer_components),
             store=self.threads,
             root=where,
             lease=a_lease(self.settings.budget),
@@ -663,7 +664,12 @@ class ServeHost:
         return environment
 
     async def resume(
-        self, thread_id: str, *, observer: Any = None, plan_limits: Any = None
+        self,
+        thread_id: str,
+        *,
+        observer: Any = None,
+        plan_limits: Any = None,
+        peer_components: Sequence[Any] = (),
     ) -> Thread:
         record = await self.threads.get(thread_id)
         if record is None:
@@ -712,7 +718,7 @@ class ServeHost:
         thread = await Thread.resume(
             thread_id,
             agent=agent,
-            ports=self._handed(ports, observer),
+            ports=self._handed(ports, observer, peer_components),
             store=self.threads,
             lease=a_lease(self.settings.budget),
             registry=SocketOffer(name=self.settings.registry_name, withhold={TURN}),
@@ -728,14 +734,19 @@ class ServeHost:
         thread.execution = selection
         return thread
 
-    def _handed(self, ports: Ports, observer: Any) -> Ports:
-        """The shipped ports, with whatever this host was handed in their place."""
+    def _handed(self, ports: Ports, observer: Any, peer_components: Sequence[Any] = ()) -> Ports:
+        """The shipped ports, with whatever this host was handed in their place — and, on the
+        wire's word, the calling peer's own components beside the composition's (ENH-030). Those
+        are the wire's `RemoteComponents`, never Python objects of a product's: the served
+        composition stays data, and the host's code stays on the host's side of the wire."""
         handed: dict[str, Any] = {}
         if observer is not None:
             handed["observer"] = observer
         if self._governance is not None:
             handed["governance"] = self._governance
         handed["sink"] = self.sink
+        if peer_components:
+            handed["components"] = (*ports.components, *peer_components)
         return replace(ports, **handed)
 
     async def list(self) -> Any:

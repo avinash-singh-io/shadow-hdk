@@ -278,6 +278,7 @@ def build_app(
             threads=threads,
             checkpointer=await host_checkpointer(threads),
             admin=known,
+            session=session_id,
         )
         sessions[session_id] = session
         running[session_id] = asyncio.create_task(serve_session(session, to_host_receive))

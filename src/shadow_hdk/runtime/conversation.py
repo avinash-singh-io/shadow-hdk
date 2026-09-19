@@ -180,6 +180,11 @@ def environment_mode_of(ports: Ports) -> str:
 
 def _source_of(port: ComponentPort, registration: Registration) -> str:
     inner = _unwrapped(port)
+    declared = getattr(inner, "source", None)
+    if isinstance(declared, str) and declared:
+        # A port that says how its tools present — the wire's `RemoteComponents` says `host`
+        # (ENH-030) — is believed; the runtime asks, it never parses a spelling.
+        return declared
     who = registration.component.provenance.registered_by
     kind = type(inner).__name__
     return who if who.lower() == kind.lower() else f"{who}:{kind}"

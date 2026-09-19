@@ -53,13 +53,18 @@ host ──► runtime   thread/start {root | roots: [{name, path}…], mode, pr
                                  principal, attributes,                     (who it is for — D82)
                                  budget: {steps, seconds, cents},           (its own ceiling — D84)
                                  requirements: {provider, environment}}     (what the host will trust — D96)
-                                 plan_limits: {depth, fan_out, steps}}   (the host's ceiling on a plan — D109)
+                                 plan_limits: {depth, fan_out, steps},   (the host's ceiling on a plan — D109)
+                                 host_components: true}     (offer this connection's own tools — D21, Phase 44:
+                                                             the runtime asks it `components.registrations`
+                                                             and calls `components.invoke` back, as for `run`)
                        → thread_id · root (the primary) · roots · environment (the sandbox's mode)
                          · mode · modes (in the thread's scope; each with its `plan`) · principal · attributes
                          · capabilities (the accepted provider/environment selection)
                          · plan_limits (the host's met with the mode's — what the next plan is admitted under)
                          · unmapped_behaviour (the mode's fields this provider has no flag for — ENH-020)
-host ──► runtime   thread/resume {plan_limits?} → … · turns · pending  (the questions the last host left — D80)
+host ──► runtime   thread/resume {plan_limits?, host_components?} → … · turns · pending
+                       (the questions the last host left — D80; a new connection's own tools replace
+                        the old connection's — a thread outlives a connection)
 host ──► runtime   thread/close · list (each row: held_by — D81) · fork · rollback · archive
 host ──► runtime   thread/set_mode → events · environment · plan_limits · unmapped_behaviour
                                                                  (the sandbox follows the mode — D76)
@@ -186,6 +191,16 @@ irreversible registrations are therefore `observed` unless a host supplies that 
   `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone`, `capability_mismatch`,
   `plan_refused {mismatches, amendment}` (D108) — beside the code and the sentence; the
   TypeScript client raises `RemoteError` with `kind` and `detail`.
+- **A host's tools cross by inversion on the thread door** (Phase 44, protocol 3 unchanged):
+  `thread/start {host_components: true}` adds the calling connection's `RemoteComponents` port
+  to that thread's registry — the port `run` has always used — so a host in any language keeps
+  its tools as code on its own side and the runtime calls them back. `tools/list` says
+  `source: "host"` because the port declares it; the host's registration crosses untouched (a
+  signature covers provenance); a host that goes away is named by the transport's own session id
+  — its catalogue raises so the registry drops the tools, an act in flight ends `Failed` naming
+  tool and host; an irreversible host tool is recorded `observed` (D99–D104). The TypeScript
+  client stands on a `Transport`: HTTP as before, or a spawned runtime's stdio
+  (`shadow-hdk-client/node`) — the sidecar door, whose pinned binary is Epic 0010's.
 - **The plan crosses whole** (Phase 36, protocol 3 unchanged — every addition is a method or a
   field): `plan_admitted` and `plan_refused` are events on the stream like any other, folded
   onto the open item as `Item.plan`, never opening one; a crossed `context.children.spawn`
