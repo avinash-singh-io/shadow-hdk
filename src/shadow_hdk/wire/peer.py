@@ -40,6 +40,12 @@ def error_data(failed: BaseException) -> dict[str, Any]:
             "thread_id": getattr(failed, "thread_id", ""),
             "turn_id": getattr(failed, "turn_id", ""),
         }
+    if name == "SessionGone":
+        return {
+            "kind": "session_gone",
+            "thread_id": getattr(failed, "thread_id", ""),
+            "session_id": getattr(failed, "session_id", ""),
+        }
     if name == "IncompatibleCapabilities":
         compatibility = getattr(failed, "compatibility", None)
         mismatches = getattr(compatibility, "mismatches", ())

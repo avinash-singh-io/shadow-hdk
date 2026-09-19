@@ -308,6 +308,12 @@ def store_modes(store: Any, collection: str = "modes") -> StoreModes:
 
 
 def _looking() -> Policy:
+    """Look, do not touch: reads, the skills, the person, the web — nothing written or run. The
+    ceiling is uncontained on purpose (D138 kept it so): a read-only policy has to work over any
+    environment, a `full` one included, where nothing is proven contained, and a web read that
+    writes nothing is what this mode is for. What it cannot do is write — so what a reach could
+    carry out is what a read reached, and a product that must not have even that runs the web
+    behind a proxy (D137) or does not switch the battery on."""
     return Policy(
         "read-only",
         EffectProfile(
@@ -329,12 +335,17 @@ def _asking() -> Policy:
     answer."""
     return Policy(
         "ask",
+        # An uncontained reach — a web read from the serving process — is *asked*, not refused,
+        # since 0.34 (D138): "every write, run or delete inside the workspace is asked about" is
+        # this mode's definition, and Claude Code's default prompts before a fetch the same way;
+        # an `allow` rule for the one tool then stands in for the person. `workspace-write`, the
+        # silent mode, still hides it: it writes, and a reach beside a write is an egress channel.
         ceiling=EffectProfile(
             reads=EVERYTHING,
             writes=OURS,
             reaches=True,
             reversible=False,
-            contained=True,
+            contained=False,
             costs=True,
         ),
         ask_above=EffectProfile(

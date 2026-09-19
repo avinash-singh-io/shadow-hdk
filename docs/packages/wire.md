@@ -33,3 +33,11 @@ Phase 44 (0.32) keeps protocol `3` and opens the thread door to a host's own com
 a gone host named by the transport's session id, and an irreversible host tool recorded `observed`.
 The TypeScript client gained a `Transport` (HTTP as before; a spawned runtime's stdio from
 `shadow-hdk-client/node`), `tool()` and `components.serve`. See `docs/migrations/0.32.md`.
+
+Phase 45 (0.34) keeps protocol `3` and adds: `session_gone` in `ERROR_KINDS` — `turn/start`
+answers it, with `thread_id` and `session_id`, when the provider no longer has the session the
+thread resumed on (D139), and every turn record carries `failure` (`""` or `"session_gone"`);
+`attributes` on `turn/start` (that turn's words, merged for its judgements and never written
+back) and on `thread/resume` (the record's words replaced, D140); `cache_read_tokens` and
+`cache_write_tokens` on every `Usage` that crosses (D141). See the 0.34 note under
+`docs/migrations/`.

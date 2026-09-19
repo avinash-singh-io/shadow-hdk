@@ -1525,6 +1525,30 @@
     "Usage": {
       "description": "What the call cost. A model adapter that cannot say reports ``None`` for the field it does\nnot know \u2014 *unknown*, never zero (10 \u00a75 R2).",
       "properties": {
+        "cache_read_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Read Tokens"
+        },
+        "cache_write_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cache Write Tokens"
+        },
         "cost_cents": {
           "anyOf": [
             {

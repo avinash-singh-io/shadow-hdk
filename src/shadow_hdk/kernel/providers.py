@@ -75,6 +75,10 @@ class BehaviourArg:
 
     field: str
     flag: str
+    template: str = ""
+    """How the value is spelled after the flag, when the CLI takes it as `key=value` rather than
+    as a flag of its own: `{value}` is where the value goes — Codex's reasoning effort is
+    `-c model_reasoning_effort="{value}"` (ENH-028). Empty: the value as is."""
 
 
 @dataclass(frozen=True)
@@ -224,6 +228,16 @@ class Dialect:
     cost_usd_at: str = ""
     input_tokens_at: str = ""
     output_tokens_at: str = ""
+    session_gone_matches: tuple[str, ...] = ()
+    """Substrings that, in a failed turn's text or on the CLI's stderr, mean the session it was
+    asked to resume is gone (D139). Measured 2026-09-20: Claude Code 2.1.278 answers a `result`
+    with `is_error: true` and `errors: ["No conversation found with session ID: …"]`; Codex
+    0.154.0 writes `no rollout found for thread id …` to stderr and nothing to stdout."""
+    cache_read_tokens_at: str = ""
+    cache_write_tokens_at: str = ""
+    """Where the ending event says what the cache did (D141): `usage.cached_input_tokens` and
+    `usage.cache_write_input_tokens` on Codex; `usage.cache_read_input_tokens` and
+    `usage.cache_creation_input_tokens` on Claude Code. Empty where a CLI does not say."""
 
 
 @dataclass(frozen=True)

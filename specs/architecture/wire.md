@@ -189,8 +189,14 @@ irreversible registrations are therefore `observed` unless a host supplies that 
 - **Refusals are typed** (D92): every error carries `data.kind` from the published `ERROR_KINDS`
   — `thread_held {thread_id, holder}`, `turn_running {thread_id, turn_id}`, `not_found`,
   `invalid`, `version_mismatch`, `unknown_method`, `refused`, `gone`, `capability_mismatch`,
-  `plan_refused {mismatches, amendment}` (D108) — beside the code and the sentence; the
-  TypeScript client raises `RemoteError` with `kind` and `detail`.
+  `plan_refused {mismatches, amendment}` (D108), `session_gone {thread_id, session_id}` (D139 —
+  the provider no longer has the session the thread resumed on; the turn record carries
+  `failure`) — beside the code and the sentence; the TypeScript client raises `RemoteError`
+  with `kind` and `detail`.
+- **A host's words per turn** (Phase 45, D140): `turn/start {attributes}` are that turn's words,
+  merged over the record's for its judgements and never written back; `thread/resume
+  {attributes}` replaces the record's. Every `Usage` that crosses carries `cache_read_tokens`
+  and `cache_write_tokens` (D141).
 - **A host's tools cross by inversion on the thread door** (Phase 44, protocol 3 unchanged):
   `thread/start {host_components: true}` adds the calling connection's `RemoteComponents` port
   to that thread's registry — the port `run` has always used — so a host in any language keeps

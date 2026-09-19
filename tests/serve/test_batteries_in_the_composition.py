@@ -26,7 +26,8 @@ pytestmark = pytest.mark.anyio
 
 LOOKING: Mode = "read-only" if local_sandbox() is not None else "full"
 """A mode whose ceiling offers a battery (D70): `read-only` reads the web as it reads anything;
-where no sandbox can enforce a confined mode, `full`. Never `workspace-write`, which hides it."""
+where no sandbox can enforce a confined mode, `full`. Never `workspace-write`, which hides it;
+`ask` (0.34, D138) offers it and asks before each call."""
 
 REFERENCE_SERVER = Path(__file__).resolve().parents[1] / "adapters" / "mcp" / "server.py"
 

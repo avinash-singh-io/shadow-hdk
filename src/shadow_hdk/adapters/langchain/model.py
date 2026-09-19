@@ -126,6 +126,8 @@ class LangChainModel(ModelPort):
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             cost_cents=self._price(usage),
+            cache_read_tokens=usage.cache_read_tokens,
+            cache_write_tokens=usage.cache_write_tokens,
         )
 
 
@@ -231,10 +233,16 @@ def _usage_of(message: BaseMessage) -> Usage | None:
     metadata = getattr(message, "usage_metadata", None)
     if not metadata:
         return None
+    # `input_token_details` is where LangChain's providers put what the cache did — Anthropic's
+    # `cache_read_input_tokens`/`cache_creation_input_tokens`, OpenAI's `cached_tokens` — under
+    # the two names `cache_read` and `cache_creation`. Absent, the fields stay unknown (D141).
+    details = metadata.get("input_token_details") or {}
     return Usage(
         input_tokens=metadata.get("input_tokens"),
         output_tokens=metadata.get("output_tokens"),
         cost_cents=None,
+        cache_read_tokens=details.get("cache_read"),
+        cache_write_tokens=details.get("cache_creation"),
     )
 
 

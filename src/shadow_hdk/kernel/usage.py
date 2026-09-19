@@ -19,6 +19,12 @@ class Usage:
     input_tokens: int | None = None
     output_tokens: int | None = None
     cost_cents: int | None = None
+    cache_read_tokens: int | None = None
+    """Input tokens the provider served from its prompt cache — on a subscription CLI the bulk of
+    a turn's input, which `input_tokens` then does not show (D141)."""
+    cache_write_tokens: int | None = None
+    """Input tokens the provider wrote to its cache this call. `None` for both where the provider
+    does not report the cache — unknown, never zero, because zero says the cache did no work."""
 
 
 __all__ = ["Usage"]

@@ -15,7 +15,7 @@ import os
 import socket
 import sys
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -670,6 +670,7 @@ class ServeHost:
         observer: Any = None,
         plan_limits: Any = None,
         peer_components: Sequence[Any] = (),
+        attributes: Mapping[str, Any] | None = None,
     ) -> Thread:
         record = await self.threads.get(thread_id)
         if record is None:
@@ -729,6 +730,7 @@ class ServeHost:
             holder=self.holder,
             idle_seconds=self.settings.idle_seconds,
             plan_limits=self._plan_limits_of(plan_limits),
+            attributes=attributes,
         )
         self._selections[thread.id] = selection
         thread.execution = selection

@@ -151,6 +151,10 @@ rather than remembered.
 | D135 | consume the OS primitives (`landlock`, a Job-Object crate, `windows-rs`, PyApp); own the proof | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
 | D136 | `sandbox-exec`'s deprecation is an accepted, detected risk: the proof fails closed the day it goes | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
 | D137 | named seams left for later: network egress through a proxy with an allowlist; cloud confinement as a microVM backend | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D138 | a web read from the serving process under the shipped modes: `workspace-write` hides it, `read-only` allows it, `ask` asks before it (was: refused); an `allow` rule in `ask` is the served product's door; no vocabulary change | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
+| D139 | a turn's failure is typed on the record (`TurnRecord.failure`) and raised typed (`SessionGone`); the wire kind `session_gone`; how a CLI says it is a provider-file value | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
+| D140 | a turn's words are the turn's: `turn(attributes=)` merges for that turn's judgements and is never written back; `resume(attributes=)` replaces the record's | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
+| D141 | unknown, never zero, for cache tokens: `Usage.cache_read_tokens`/`cache_write_tokens` are `None` where unreported; `Spent` counts them | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
 
 ## Also here
 

@@ -18,10 +18,10 @@ type: Architecture
 | adapter tests | each adapter's own behaviour, against a fake of the thing it wraps — or the thing itself where a fake would prove nothing: the Postgres adapter runs against a real server named by `SHADOW_HDK_TEST_POSTGRES_URL` (CI's service container; the desk's own), and skips, saying so, without one (D79) | `tests/adapters/<x>/` |
 | determinism | two runs, same inputs, identical streams | `tests/runtime/test_replay.py` |
 | benchmark | the per-step budget holds (D11) | `tests/runtime/test_benchmark.py` |
-| invariants | the decoupling is a property, not a claim | `tests/invariants/` ✅ |
+| invariants | the decoupling is a property, not a claim — including that no vendor's name is in the kernel's or the runtime's code (D40, Phase 45) | `tests/invariants/` ✅ |
 | the bare harness | "generic" is true | `tests/test_bare_harness.py` |
 | the OS layer | the Linux helper watched denying and allowing on a kernel — a write outside, a socket, io_uring, a write inside, the exit codes — compiled out off Linux; the argument parser everywhere | `native/sandbox/tests/confines.rs`, `native/sandbox/src/args.rs` (`cargo test`) |
-| the runners | the same suite on every operating system the kit claims, each asserting the mechanism in force before it runs: Linux with the helper (`landlock`), Linux with the helper set aside (`bubblewrap`, the AppArmor sysctl), macOS (`seatbelt`); the crate's gate; the helper's four platform wheels built and the x86_64 one installed and watched confining — a red job blocks a release (Epic 0010, D126) | `.github/workflows/ci.yml`, `.github/workflows/helper-wheels.yml` |
+| the runners | the same suite on every operating system the kit claims and on every Python it claims (3.12 · 3.13 · 3.14, ENH-032), each asserting the mechanism in force before it runs: Linux with the helper (`landlock`), Linux with the helper set aside (`bubblewrap`, the AppArmor sysctl), macOS (`seatbelt`); the crate's gate; the helper's four platform wheels built and the x86_64 one installed and watched confining — a red job blocks a release (Epic 0010, D126) | `.github/workflows/ci.yml`, `.github/workflows/helper-wheels.yml` |
 
 ## Cases — Phase 0
 
@@ -168,3 +168,22 @@ governance, the stdout sink; the marker comes off, and the CI job fails if it is
 - The D36 proof is mechanism-independent by construction: the same three legs on seatbelt, the
   helper and bubblewrap, and the same test file (`test_local_is_confined_for_real.py`) green on all
   three runners.
+
+## Cases — Phase 45
+
+- `tests/adapters/jsonl/test_cache_tokens_are_read.py`, `tests/adapters/langchain/test_cache_tokens_come_through.py`,
+  `tests/runtime/test_the_meter_counts_cache_tokens.py` — the cache's tokens from the two dialects
+  and LangChain, counted and carried, unknown never zero (D141).
+- `tests/adapters/jsonl/test_a_session_gone_is_said.py` — the measured Claude Code and Codex texts
+  → `session_gone`; a megabyte on stderr no longer wedges a turn (BUG-059);
+  `tests/runtime/test_a_turn_names_why_it_failed.py` and `tests/wire/test_session_gone_crosses_the_wire.py`
+  — the record's `failure`, `SessionGone`, the wire kind with both ids (D139).
+- `tests/runtime/test_a_turns_words_are_the_turns.py`, `tests/wire/test_a_turns_words_cross_the_wire.py`
+  — a turn's words on that turn's judgements only, the catalogue between turns without them, a
+  resume's words replacing the record's, the reserved names (D140, BUG-061).
+- `tests/adapters/modes/test_a_reach_from_the_process_is_an_egress_channel.py` — the four shipped
+  policies over an uncontained reach, the `allow`-rule door in `ask`, a rule never widening (D138).
+- `tests/invariants/test_a_provider_is_a_file.py` — no vendor's name in kernel or runtime code;
+  the walk's self-test plants one.
+- Live, recorded in the phase's history: Phase 36's planning proof on Claude Code; Codex's argv
+  with `-m` and `-c model_reasoning_effort`; cache tokens and `session_gone` on both CLIs.

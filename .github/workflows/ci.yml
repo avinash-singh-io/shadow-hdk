@@ -9,6 +9,14 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Every Python the kit claims (ENH-032, D132): `requires-python >= 3.12`, development on
+    # 3.14. The whole suite, the coverage floor and the benchmark on each — a red leg blocks a
+    # release, as a red runner does (D126).
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    name: check (${{ matrix.python }})
     # The Postgres adapter's contract suites run against a real server (D79): this one. Without
     # the variable below they skip, saying so — the desk runs them against its own Postgres.
     services:
@@ -28,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
       # The Linux helper is a workspace member built by maturin at sync (Epic 0010, D123): cargo
       # on PATH, then the sync builds `native/sandbox` into the venv beside the interpreter, which
       # is where `local_sandboxes()` looks first.

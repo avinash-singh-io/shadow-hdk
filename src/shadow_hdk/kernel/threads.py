@@ -42,6 +42,10 @@ class TurnRecord:
     text: str = ""
     """What the agent said back — the turn's own answer, kept here so a host lists a thread
     without replaying every run."""
+    failure: Literal["", "session_gone"] = ""
+    """Why a `failed` turn failed, when the kit can say (D139): `session_gone` — the provider no
+    longer has the session the thread resumed on, so the thread's next move is a `fork`. Empty
+    for a failure the kit has no word for; the vocabulary grows by measured kinds only."""
 
 
 @dataclass(frozen=True)
@@ -60,6 +64,11 @@ class Spent:
     """Tokens counted across the turns (D90) — a subscription's own measure."""
     unmetered: bool = False
     """A model call reported no tokens: the counts are a floor, never the amount."""
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
+    """What the cache did across the turns (D141): counted where a call reported it; a call that
+    reported none of its tokens is `unmetered`, as above. A record from before these fields loads
+    with zeros — a floor, like the rest."""
 
 
 @dataclass(frozen=True)

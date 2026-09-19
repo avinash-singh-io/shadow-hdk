@@ -322,3 +322,20 @@ def test_the_signed_out_pattern_is_a_working_regex() -> None:
     assert any(re.search(p, said, re.IGNORECASE) for p in claude.auth_failure_patterns), (
         f"none of {claude.auth_failure_patterns} matches a real signed-out answer"
     )
+
+
+def test_a_behaviour_template_without_a_place_for_the_value_is_refused(tmp_path: Path) -> None:
+    """A `template` says how a value is spelled after its flag; one with no `{value}` would drop
+    the value silently — refused by name, like every other malformed mapping."""
+    bad = (
+        CLAUDE
+        + """
+[dialect]
+[[dialect.behaviour_args]]
+field = "effort"
+flag = "-c"
+template = "model_reasoning_effort=fixed"
+"""
+    )
+    with pytest.raises(MalformedProvider, match="template"):
+        load_provider(a_file(tmp_path, bad))

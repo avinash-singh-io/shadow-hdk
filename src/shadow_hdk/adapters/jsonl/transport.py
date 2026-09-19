@@ -85,14 +85,16 @@ def _behaviour_flags(dialect: Dialect, behaviour: Behaviour | None) -> list[str]
     """A behaviour's set fields as this CLI's flags (D64); an unset field adds nothing."""
     if behaviour is None:
         return []
-    by_field = {a.field: a.flag for a in dialect.behaviour_args}
     flags: list[str] = []
-    for name, flag in by_field.items():
-        value = getattr(behaviour, name, None)
-        if name == "tools_offered":
+    for arg in dialect.behaviour_args:
+        value = getattr(behaviour, arg.field, None)
+        if arg.field == "tools_offered":
             continue  # offered-set narrowing is the registry's, not a launch flag
         if value not in (None, "", ()):
-            flags += [flag, str(value)]
+            # A CLI that takes the value as `key=value` after a generic flag says so in its
+            # file's `template` (ENH-028); the value goes where `{value}` is.
+            spelled = arg.template.replace("{value}", str(value)) if arg.template else str(value)
+            flags += [arg.flag, spelled]
     return flags
 
 

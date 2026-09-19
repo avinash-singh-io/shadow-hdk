@@ -380,7 +380,14 @@ uv run pytest
 
 ## Release status
 
-**v0.33.0 — Linux confinement** (Epic 0010, Phase 41) is the candidate at the release gate: a
+**v0.34.0 — Truth both ways** (Phase 45) is the candidate at the release gate: what a turn really
+cost (`Usage`/`Spent` cache tokens), why it really failed (a typed `session_gone` on the record
+and the wire), Codex `model`/`effort` honoured as data and measured, a host's words per turn
+(`turn/start {attributes}`), `ask` asking before a web read from the serving process, CI on
+Python 3.12–3.14, and a test that keeps every vendor's name out of the kernel and the runtime.
+See the [v0.34 migration guide](docs/migrations/0.34.md).
+
+**v0.33.0 — Linux confinement** (Epic 0010, Phase 41) is released: a
 confined mode opens on Linux — Ubuntu 24.04 with its default AppArmor included — through the
 kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec, installed with
 the kit), bubblewrap behind it, the D36 proof deciding which is in force and `Isolation.mechanism`
