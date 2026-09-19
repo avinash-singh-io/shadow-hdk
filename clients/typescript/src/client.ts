@@ -16,26 +16,21 @@ import type { PlanLimits } from "./schemas/PlanLimits.js";
 import type { PlanMismatch } from "./schemas/PlanMismatch.js";
 import type { Composition } from "./schemas/Composition.js";
 import { PROTOCOL_VERSION } from "./schemas.js";
+import { HttpTransport, type HttpTransportOptions, type Transport } from "./transport.js";
+import { serveComponents, type Tool } from "./components.js";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
-export interface ClientOptions {
-  /** `http://127.0.0.1:8765` — loopback unless a token is set, as the server requires. */
-  address: string;
-  /** Sent as `Authorization: Bearer <token>` when the server was started with one. */
-  token?: string;
-  /** Answer the runtime's own requests (a component on this side). Rarely needed for threads. */
+/** The served shape: the client over HTTP + SSE. */
+export interface ClientOptions extends HttpTransportOptions {
+  /** Answer the runtime's own requests beyond what `components.serve` installs (rare). */
   onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
-  fetch?: typeof fetch;
-  /** Reattach to the same session when the stream drops (D94) — replaying what was missed —
-   *  retrying for about this long before giving up (default 60 s, the server's grace). `0` never
-   *  reconnects. */
-  reconnectSeconds?: number;
-  /** Treat an attached stream with no bytes for this long as dropped and reattach it. Defaults
-   *  to 45 s (three server heartbeat intervals); `0` disables silence detection. */
-  silenceSeconds?: number;
-  /** Told when the stream drops and when it is back, and when the session is gone for good. */
-  onStream?: (state: "reconnecting" | "connected" | "lost") => void;
+}
+
+/** The client over any transport — a spawned runtime's stdio (`shadow-hdk-client/node`), or your own. */
+export interface TransportClientOptions {
+  transport: Transport;
+  onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
 }
 
 export interface ApprovalRequest {
@@ -183,8 +178,6 @@ export interface FileEntry {
   mtime: number;
 }
 
-const SESSION_HEADER = "x-shadow-hdk-session";
-
 type Pending = { resolve: (value: JsonValue) => void; reject: (reason: Error) => void };
 
 /** What `error.data.kind` may say (D92) — the vocabulary a page switches on. */
@@ -217,164 +210,40 @@ export class RemoteError extends Error {
 }
 
 export class HarnessClient {
-  private readonly address: string;
-  private readonly token?: string;
-  private readonly onRequest?: ClientOptions["onRequest"];
-  private readonly doFetch: typeof fetch;
-  private sessionId: string | null = null;
+  private readonly transport: Transport;
+  private readonly onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
+  /** Handlers for the runtime's callbacks installed on this side — `components.serve` adds
+   *  `components.registrations` and `components.invoke`; `onRequest` answers the rest. */
+  private readonly handlers = new Map<string, (params: JsonValue) => Promise<JsonValue>>();
   private nextId = 1;
   private readonly pending = new Map<number, Pending>();
   private readonly listeners = new Map<string, Set<(params: JsonValue) => void>>();
-  private reader: Promise<void> | null = null;
-  private abort = new AbortController();
-  private lastEventId: number | null = null;
-  private readonly reconnectSeconds: number;
-  private readonly silenceSeconds: number;
-  private readonly onStream?: ClientOptions["onStream"];
 
-  constructor(options: ClientOptions) {
-    this.address = options.address.replace(/\/$/, "");
-    this.token = options.token;
+  /** Over HTTP (`{ address, token?, … }`) — the served shape — or over any `Transport`
+   *  (`{ transport }`): a spawned runtime's stdio is in `shadow-hdk-client/node`. */
+  constructor(options: ClientOptions | TransportClientOptions) {
+    this.transport = "transport" in options ? options.transport : new HttpTransport(options);
     this.onRequest = options.onRequest;
-    // Called as `this.doFetch(...)`, a `fetch` stored bare would run with `this` bound to the
-    // client — a browser refuses that ("Illegal invocation"); Node lets it pass. So the stored
-    // function calls the real one with no `this` at all, the supplied one included.
-    const underlying = options.fetch ?? fetch;
-    this.doFetch = (input, init) => underlying(input, init);
-    this.reconnectSeconds = options.reconnectSeconds ?? 60;
-    this.silenceSeconds = options.silenceSeconds ?? 45;
-    this.onStream = options.onStream;
+    this.transport.onLost = (reason) => {
+      for (const waiting of this.pending.values()) waiting.reject(new Error(reason));
+      this.pending.clear();
+    };
   }
 
   // ---------------------------------------------------------------- the session
 
-  /** Open the SSE stream (which *is* the session) and complete the handshake. */
+  /** Open the transport (over HTTP the SSE stream *is* the session) and complete the handshake. */
   async connect(): Promise<void> {
-    const opened = new Promise<void>((resolve, reject) => {
-      this.reader = this.readForever(resolve, reject);
-    });
-    await opened;
+    await this.transport.open((frame) => this.onFrame(frame));
     await this.call("initialize", { protocol_version: PROTOCOL_VERSION });
   }
 
   close(): void {
-    this.abort.abort();
+    this.transport.close();
     for (const waiting of this.pending.values()) waiting.reject(new Error("closed"));
     this.pending.clear();
   }
 
-  private headers(): Record<string, string> {
-    const headers: Record<string, string> = { "content-type": "application/json" };
-    if (this.token) headers.authorization = `Bearer ${this.token}`;
-    if (this.sessionId) headers[SESSION_HEADER] = this.sessionId;
-    return headers;
-  }
-
-  private async readForever(ready: () => void, failed: (e: Error) => void): Promise<void> {
-    let response: Response;
-    try {
-      response = await this.doFetch(`${this.address}/rpc`, { headers: this.headers(), signal: this.abort.signal });
-    } catch (error) {
-      failed(error as Error);
-      return;
-    }
-    if (!response.ok || !response.body) {
-      failed(new Error(`opening the session: ${response.status}`));
-      return;
-    }
-    this.sessionId = response.headers.get(SESSION_HEADER);
-    ready();
-    await this.readStream(response.body);
-    // The stream ended and we did not close it: the session is still there for a while (D94).
-    // Reattach with the last frame seen, replaying what was missed; give up when the server
-    // says the session is gone, or after the grace.
-    while (!this.abort.signal.aborted && this.reconnectSeconds > 0) {
-      this.onStream?.("reconnecting");
-      const body = await this.reattach();
-      if (body === null) break;
-      this.onStream?.("connected");
-      await this.readStream(body);
-    }
-    if (!this.abort.signal.aborted) {
-      this.onStream?.("lost");
-      for (const waiting of this.pending.values()) waiting.reject(new Error("the stream ended and the session is gone"));
-      this.pending.clear();
-    }
-  }
-
-  /** `GET /rpc` with the session header and `Last-Event-ID`, retried with a widening pause for
-   *  about `reconnectSeconds`; `null` when the session is gone (404) or the time is up. */
-  private async reattach(): Promise<ReadableStream<Uint8Array> | null> {
-    const deadline = Date.now() + this.reconnectSeconds * 1000;
-    let pause = 500;
-    while (Date.now() < deadline && !this.abort.signal.aborted) {
-      try {
-        const headers = this.headers();
-        if (this.lastEventId !== null) headers["last-event-id"] = String(this.lastEventId);
-        const response = await this.doFetch(`${this.address}/rpc`, { headers, signal: this.abort.signal });
-        if (response.status === 404 || response.status === 410) return null;
-        if (response.ok && response.body) return response.body;
-      } catch {
-        // not reachable yet: wait and try again
-      }
-      await new Promise((r) => setTimeout(r, pause));
-      pause = Math.min(pause * 2, 5000);
-    }
-    return null;
-  }
-
-  private async readStream(body: ReadableStream<Uint8Array>): Promise<void> {
-    const decoder = new TextDecoder();
-    const reader = body.getReader();
-    let buffer = "";
-    try {
-      for (;;) {
-        const { value, done } = await this.readBeforeSilence(reader);
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let cut: number;
-        while ((cut = buffer.indexOf("\n\n")) >= 0) {
-          const frame = buffer.slice(0, cut);
-          buffer = buffer.slice(cut + 2);
-          for (const line of frame.split("\n")) {
-            if (line.startsWith("id: ")) this.lastEventId = Number(line.slice(4));
-            else if (line.startsWith("data: ")) await this.onFrame(JSON.parse(line.slice(6)) as JsonValue);
-          }
-        }
-      }
-    } catch (error) {
-      if (!this.abort.signal.aborted) {
-        try {
-          await reader.cancel("the stream was silent or broken");
-        } catch {
-          // The transport already ended while it was being cancelled; reattach all the same.
-        }
-        return; // the stream broke or went silent: the caller reattaches
-      }
-    }
-  }
-
-  private readBeforeSilence(
-    reader: ReadableStreamDefaultReader<Uint8Array>,
-  ): Promise<ReadableStreamReadResult<Uint8Array>> {
-    if (this.silenceSeconds <= 0) return reader.read();
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(
-        () => reject(new Error("the stream exceeded its silence deadline")),
-        this.silenceSeconds * 1000,
-      );
-      reader.read().then(
-        (result) => {
-          clearTimeout(timer);
-          resolve(result);
-        },
-        (error: unknown) => {
-          clearTimeout(timer);
-          reject(error);
-        },
-      );
-    });
-  }
 
   private async onFrame(message: JsonValue): Promise<void> {
     if (message === null || typeof message !== "object" || Array.isArray(message)) return;
@@ -385,11 +254,13 @@ export class HarnessClient {
       if ("id" in frame) {
         // The runtime asks *us* — a port on this side. Answer, or say we cannot.
         try {
-          const result = this.onRequest ? await this.onRequest(method, params) : null;
-          if (!this.onRequest) throw new Error(`no handler on this side for ${method}`);
-          await this.post({ jsonrpc: "2.0", id: frame.id, result });
+          const installed = this.handlers.get(method);
+          const answer = installed ?? this.onRequest;
+          if (!answer) throw new Error(`no handler on this side for ${method}`);
+          const result = installed ? await installed(params) : await this.onRequest!(method, params);
+          await this.transport.send({ jsonrpc: "2.0", id: frame.id, result } as JsonValue);
         } catch (error) {
-          await this.post({ jsonrpc: "2.0", id: frame.id, error: { code: -32000, message: String(error) } });
+          await this.transport.send({ jsonrpc: "2.0", id: frame.id, error: { code: -32000, message: String(error) } } as JsonValue);
         }
         return;
       }
@@ -409,20 +280,11 @@ export class HarnessClient {
     }
   }
 
-  private async post(frame: { [key: string]: JsonValue | undefined }): Promise<void> {
-    const response = await this.doFetch(`${this.address}/rpc`, {
-      method: "POST",
-      headers: this.headers(),
-      body: JSON.stringify(frame),
-    });
-    if (response.status !== 202) throw new Error(`posting a frame: ${response.status}`);
-  }
-
-  /** One JSON-RPC call; the reply arrives down the SSE stream. */
+  /** One JSON-RPC call; the reply arrives back down the transport. */
   async call<T = JsonValue>(method: string, params: { [key: string]: JsonValue } = {}): Promise<T> {
     const id = this.nextId++;
     const answered = new Promise<JsonValue>((resolve, reject) => this.pending.set(id, { resolve, reject }));
-    await this.post({ jsonrpc: "2.0", id, method, params });
+    await this.transport.send({ jsonrpc: "2.0", id, method, params });
     return (await answered) as T;
   }
 
@@ -452,9 +314,17 @@ export class HarnessClient {
       requirements?: ExecutionRequirements;
       /** The host's own plan limits (D109), met with the mode's at every turn. */
       plan_limits?: PlanLimits;
+      /** Offer this side's tools — the ones `components.serve` installed — to the thread (D21):
+       *  the runtime asks this connection what it has and calls back to act. A thread outlives
+       *  a connection; a host that goes away takes its tools with it, by name. */
+      host_components?: boolean;
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
-    resume: (thread_id: string, plan_limits?: PlanLimits) =>
-      this.call<Resumed>("thread/resume", { thread_id, ...(plan_limits ? { plan_limits: plan_limits as unknown as JsonValue } : {}) }),
+    resume: (thread_id: string, options: { plan_limits?: PlanLimits; host_components?: boolean } = {}) =>
+      this.call<Resumed>("thread/resume", {
+        thread_id,
+        ...(options.plan_limits ? { plan_limits: options.plan_limits as unknown as JsonValue } : {}),
+        ...(options.host_components ? { host_components: true } : {}),
+      }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
     list: () => this.call<{ threads: (JsonValue & { held_by?: string | null })[] }>("thread/list", {}),
@@ -573,6 +443,14 @@ export class HarnessClient {
   /** What the thread's agent is offered now — every registration with the mode's judgement (Phase 28). */
   readonly tools = {
     list: (thread_id: string) => this.call<{ tools: OfferedTool[] }>("tools/list", { thread_id }),
+  };
+  /** Tools as code on this side of the wire (D21): `serve` installs the runtime's two callbacks —
+   *  what is here, and act — for the given tools; a thread started with `host_components: true`
+   *  offers them beside the served composition's, judged and recorded exactly the same. */
+  readonly components = {
+    serve: (tools: Tool[]): void => {
+      for (const [method, handler] of serveComponents(tools)) this.handlers.set(method, handler);
+    },
   };
   /** The skills the composition carries — shipped, from the store, minted — with their sources. */
   readonly skills = { list: () => this.call<{ skills: SkillEntry[] }>("skills/list", {}) };
