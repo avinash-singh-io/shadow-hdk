@@ -156,14 +156,22 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
 - **Handing things to a served runtime.** Modes, rules, store, batteries, budget, provider, idle —
   `harness.toml` and store rows (`store/put`, `modes/list`, `rules/list`). Identity —
   `thread/start {principal, attributes, budget, requirements, plan_limits}` (D82).
-- **The product's own tools reach a served thread as batteries — by design, not by gap.** Neither
-  `Harness` nor `ServeHost` takes `components=`, and that is deliberate: the served composition is
-  *data* — a file and rows — so a deployment can switch a tool off and the wire can list it, with
-  nothing in the process the file cannot say. A battery is a file under `batteries_dir` (D70,
-  `serve/batteries.py`): `kind = "python"` puts one Python callable behind the component port,
-  `kind = "mcp"` a server with many tools. A Python-native product that wants a `Ports` of its own
-  takes the `Thread` door — the same composition, in its own process. Two doors; neither is a
-  workaround.
+- **The product's own tools on a served thread — three doors, all code.** *(Rewritten at 0.32.)*
+  Neither `Harness` nor `ServeHost` takes a product's Python objects, and that is deliberate: the
+  served composition is *data* — a file and rows — so a deployment can switch a tool off and the
+  wire can list it, with nothing in the process the file cannot say. The doors:
+  1. **From any language, over the wire (0.32, ENH-030).** `thread/start {host_components: true}`
+     offers the calling connection's own tools — the runtime asks that connection what it has and
+     calls back to act, exactly as `run` has since D21. In TypeScript that is `tool()` +
+     `client.components.serve([...])` (`shadow-hdk-client`); the function runs in the product's
+     process, next to its database. A thread outlives a connection, so a host that goes away takes
+     its tools with it by name, and a reconnecting one brings its own.
+  2. **A battery** — a file under `batteries_dir` (D70, `serve/batteries.py`): `kind = "python"`
+     puts one Python callable behind the component port, `kind = "mcp"` a server with many tools;
+     switchable by rows, listed on the wire.
+  3. **The `Thread` door in Python** — the same composition in the product's own process, with a
+     `Ports` of its own.
+  None is a workaround; the first is the one a non-Python product was missing.
 
 ## 8. Session resume
 
@@ -286,7 +294,9 @@ async def open_thread(root: Path, *, principal: str, store_url: str) -> Thread:
         modes=modes,
         mode="deep-dive",
         principal=principal,
-        plan_limits=PlanLimits(depth=3, fan_out=8, steps=64),  # the host's ceiling; the mode narrows
+        plan_limits=PlanLimits(
+            depth=3, fan_out=8, steps=64
+        ),  # the host's ceiling; the mode narrows
     )
 ```
 
@@ -361,6 +371,7 @@ deployment behind `serve` changes where the process runs, not what it does.
 | id | what | why it is the kit's |
 |---|---|---|
 | ~~ENH-022~~ | `components=` on the facades — **withdrawn** the day it was filed | sugar for one product over two doors the kit already has (a `python` or `mcp` battery; the `Thread` door); the served composition stays data. Kept on the backlog so the reasoning is on the record |
+| ENH-030 · ENH-031 | **shipped in 0.32** — the thread door carries a host's components by inversion; the TypeScript host-side `ComponentPort` and the stdio sidecar | the code door a non-Python product was missing; D21's inversion, on the door products use |
 | ENH-023 | `Usage.cache_read_tokens` and `cache_write_tokens`, read from the Claude Code and Codex dialects | two field runtimes report it; a footer cannot be honest about cost without it |
 | ENH-024 | a typed `session_gone` refusal when a CLI's resume flag is rejected, instead of a bare failed turn | the product can act on it without reading stderr; it is a measured CLI behaviour, not a product concept |
 | ENH-025 | a capability-inventory evidence axis — a CLI's MCP servers and plugins — on the status probe | routing a Run by what a machine can do; two CLIs expose the list |

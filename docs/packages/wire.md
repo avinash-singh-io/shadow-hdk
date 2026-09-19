@@ -25,3 +25,11 @@ in `ERROR_KINDS`, `plan_limits` in and out of `thread/start` and `thread/resume`
 `thread/set_mode`), `plan` on every `modes/list` row, and `thread/amend` for a parked plan continued
 on a different composition. A crossed `context.children.spawn` carries `limits`, `proposed_by` and
 `step`, and a refusal crosses as `plan_refused` with its mismatches. See `docs/migrations/0.31.md`.
+
+Phase 44 (0.32) keeps protocol `3` and opens the thread door to a host's own components:
+`thread/start` and `thread/resume {host_components: true}` add the calling connection's
+`RemoteComponents` port to the thread's registry — `components.registrations` and
+`components.invoke` called back, as `run` has always done — with `source: "host"` in `tools/list`,
+a gone host named by the transport's session id, and an irreversible host tool recorded `observed`.
+The TypeScript client gained a `Transport` (HTTP as before; a spawned runtime's stdio from
+`shadow-hdk-client/node`), `tool()` and `components.serve`. See `docs/migrations/0.32.md`.

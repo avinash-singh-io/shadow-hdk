@@ -367,6 +367,7 @@ uv run pytest
 - [For a product: what the kit answers, and how to compose it](docs/for-a-product.md)
 - [v0.30 migration guide](docs/migrations/0.30.md)
 - [v0.31 migration guide](docs/migrations/0.31.md)
+- [v0.32 migration guide](docs/migrations/0.32.md)
 - [Package guides](docs/packages/)
 - [Architecture overview](specs/architecture/overview.md)
 - [Roadmap](specs/planning/roadmap.md)
@@ -374,7 +375,13 @@ uv run pytest
 
 ## Release status
 
-**v0.31.0 — Plan admission** (Epic 0009, Phase 36) is the candidate at the release gate: a plan
+**v0.32.0 — Tools as code, from any language** (Phase 44) is the candidate at the release gate: a
+host in any language writes its tools as code and the runtime calls them back on the thread door
+(`thread/start {host_components: true}`); the TypeScript client gains `tool()`, `components.serve`
+and a stdio sidecar; the confinement proof runs on Python 3.14. See the
+[v0.32 migration guide](docs/migrations/0.32.md).
+
+**v0.31.0 — Plan admission** (Epic 0009, Phase 36) is released: a plan
 an agent, a CLI or a host proposes is a composition admitted whole — shape, existence and effects
 — under limits that narrow host → mode → parent, before its first step runs; `compose` is a
 component a resident CLI reaches through the socket; a parked plan can be amended on the record.

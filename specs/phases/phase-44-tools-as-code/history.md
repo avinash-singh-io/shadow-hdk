@@ -107,3 +107,16 @@ states the sidecar's prerequisite (`uv`, via `uvx`) and points at Epic 0010 for 
 `thread.resume` takes an options object — the one signature change, for the migration note.
 
 ---
+
+### [NOTE] 2026-09-19 — G4: the docs, 0.32.0 at the gate
+Topics: docs, release, wire, typescript
+Affects-phases: phase-44-tools-as-code, phase-34-the-harness-as-data
+Affects-specs: epics/0009-the-harness-as-data.md#amendments, architecture/wire.md
+Detail: `docs/migrations/0.32.md` names every addition and the one TypeScript signature change
+(`thread.resume` takes an options object). `docs/for-a-product.md` §7 now says three code doors
+for a product's tools on a served thread, the first from any language — the answer that was
+"batteries or the Thread door" two days ago. Epic 0009 carries the amendment: ENH-030/031 landed
+here, ahead of Phase 34. The gate ran on both interpreters: 1,784 passed on 3.12 and on 3.14,
+identical; the 0.32.0 wheel installed fresh and answered `initialize`. Protocol 3 unchanged.
+
+---

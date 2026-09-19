@@ -138,7 +138,7 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 44 — tools as code, from any language | `phase-44-tools-as-code` | in progress | G0 RED — started 2026-09-19 |
+| 44 — tools as code, from any language | `phase-44-tools-as-code` | at the merge/release gate | G0–G4 done 2026-09-19; 0.32.0 candidate; `/sync-docs` then `/complete-phase` |
 
 ## Epic Release Checkpoints
 

@@ -35,7 +35,7 @@ status: in-progress
 - [x] Verify — 2026-09-19: `npm run generate && npm run check && npm run build` clean (no `npm test` script exists; the Python suite is the runner); `tests/serve tests/invariants tests/wire` 309 passed — the TS host tool called back over HTTP and over stdio, the README smoke, the client invariants including the silence-reattach over the refactored transport
 
 ## Group 4 — Docs, release
-- [ ] `0.32.md` under `docs/migrations/`; `docs/packages/wire.md`; `docs/consuming.md`; `docs/for-a-product.md` §7; `clients/typescript/README.md`
-- [ ] Backlog: ENH-030, ENH-031 (amended), BUG-057 closed; Epic 0009 amendment recorded
-- [ ] Version 0.32.0, `EXPECTED`, `uv lock`, changelog, status row; `/sync-docs`
-- [ ] Verify: four-zero gate on 3.12 and 3.14 · TS generate/check/build/test · `momentum okf check .` · fresh-install smoke of the 0.32.0 wheel · `/complete-phase` → STOP at the gate
+- [x] `docs/migrations/0.32.md`; `docs/packages/wire.md`; `docs/consuming.md` (a fifth row: `serve` + your tools as code, any language); `docs/for-a-product.md` §7 rewritten (three code doors, the first from any language); `clients/typescript/README.md` (*Tools as code*, *The sidecar* — done in G3)
+- [x] Backlog: ENH-030, ENH-031 (amended — the pin is Epic 0010 P42's), BUG-057 closed; BUG-058 and TD-013 filed on the way; ENH-032's row says its blocker is gone; Epic 0009's amendment recorded (ENH-030/031 ahead of Phase 34)
+- [x] Version 0.32.0, `EXPECTED` with its docstring entry, `uv lock`, README's release status and docs link, changelog, status row; `/sync-docs` next
+- [x] Verify — 2026-09-19: ruff check + format clean · mypy 457 files clean · **`uv run pytest -q -m 'not live'` 1,784 passed on 3.12 and 1,784 passed on 3.14**, nothing deselected · `npm run generate && npm run check && npm run build` clean, schemas without drift · `momentum okf check .` conformant (202 files) · the 0.32.0 wheel built, installed into a clean venv, imported and answered `initialize` on protocol 3 · `/complete-phase` → STOP at the gate
