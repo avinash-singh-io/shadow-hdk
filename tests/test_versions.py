@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.32.0"
-"""0.32.0 — tools as code, from any language (Phase 44): `thread/start {host_components}` carries a
+EXPECTED = "0.32.1"
+"""0.32.1 — a patch (D9): `set_mode` and `add_root` during a running turn refuse with the typed
+`TurnRunning` instead of closing the provider's session under the turn (BUG-056); no contract
+change — the refusal kind already existed.
+
+0.32.0 — tools as code, from any language (Phase 44): `thread/start {host_components}` carries a
 host's components by inversion (D21) on the thread door; the TypeScript client gains `tool()`,
 `components.serve`, a `Transport` and a stdio sidecar (`shadow-hdk-client/node`); the proof reads
 stdout (BUG-057). Contract additions, protocol 3 unchanged — a minor (D9).

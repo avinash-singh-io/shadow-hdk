@@ -81,4 +81,4 @@ Order is computed from deps: 41 first; 42 and 43 may run as parallel lanes.
 > Operator changes made during the run land here, newest last, and become
 > inputs to the derivation of every not-yet-started phase.
 
-_(none yet)_
+- 2026-09-19 (the owner's order, after `research/2026-09-19-how-the-field-ships.md`) — **The order is Linux confinement first; the artifact optional; Windows deferred.** The product's laptop release is macOS + Linux with the kit in-process, so the blockers are BUG-056 (shipped in 0.32.1) and Linux confinement on Ubuntu 24.04. Phase 42 is re-scoped: its Linux half (the Landlock helper with bwrap fallback; CI proving Linux confinement) comes first as the next lane; the per-OS artifact (PyApp, signing, the smoke) follows only when a sidecar without a first-run network fetch is required — a host may ship `uv` and run the kit through it meanwhile (mechanism C3). Phases 41 and 43 (Windows runs; Windows confined) are deferred until the owner asks; WSL2 is the Windows path meanwhile. D122–D137 unchanged.
