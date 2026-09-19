@@ -18,7 +18,7 @@ type: Architecture
   ADAPTERS   many small packages; each depends on runtime, none on another
     models: langchain (openai-compatible · anthropic · ollama · huggingface · …)
     agents: jsonl (Claude Code, Codex) · acp (OpenCode) · agent (the model loop as a component)
-    components: callable · mcp · environment (local on the OS sandbox · a box) · recording · devices · mqtt · derivation
+    components: callable · mcp · environment (local on the OS's own confinement — seatbelt · the Linux helper · bubblewrap, the proof deciding · a box) · recording · devices · mqtt · derivation
     governance: allow-all · modes (policy + behaviour + presentation + environment mode)
     sinks: list · stdout · file · callback          observers: stdout · callback · otel
                     │ implements ports

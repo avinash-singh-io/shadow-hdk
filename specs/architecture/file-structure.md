@@ -91,8 +91,12 @@ shadow-hdk/
     coder/                           a coding agent on the facade — three lines
     host/                            the deep demonstration: a product's own governance, record, view
     studio/                          a page shadow-hdk serve serves; talks the wire only (D69)
+  native/sandbox/                    the OS layer's Rust crate, shadow-hdk-sandbox (Epic 0010, D123)   Phase 41
+    Cargo.toml  pyproject.toml       one crate; packaged by maturin as the bin-only shadow-hdk-linux-sandbox wheel
+    src/main.rs  args.rs  linux.rs   the helper: arguments · Landlock + seccomp applied to itself · exec
+    tests/confines.rs                the binary watched denying and allowing, on a Linux kernel
   specs/                             momentum: vision · planning · architecture · phases · decisions · backlog
-  .github/workflows/                 ci (ruff · format · mypy · pytest · the TypeScript client) · publish · live
+  .github/workflows/                 ci (ruff · format · mypy · pytest · the TypeScript client · the helper's wheels, on Linux both ways and macOS) · publish · live · helper wheels
 ```
 
 ## Rules that shape it
@@ -100,7 +104,10 @@ shadow-hdk/
 - **One distribution, one import name.** `shadow-hdk` on PyPI; `shadow_hdk` in code — an ordinary
   package with `__init__.py`, its parts subpackages. The specialised SDKs are extras
   (`[langchain]` and its providers, `[mqtt]`, `[otel]`, `[sandbox]`, `[search]`, `[all]`); the
-  part that needs one imports it lazily and names the extra when it is missing (D78).
+  part that needs one imports it lazily and names the extra when it is missing (D78). The one
+  thing beside it is the OS layer's helper, `shadow-hdk-linux-sandbox` — a second distribution
+  because it is a binary, not Python, one `py3-none` wheel per OS × arch, a dependency of the kit
+  under a Linux marker and in lockstep with its version (Epic 0010, D123 as amended).
 - **Layering is a test.** `tests/invariants` walks the AST: nothing under `src/shadow_hdk/`
   imports a product; the kernel imports no I/O, clock, logging or framework; the runtime imports no
   adapter; no adapter imports another; the wire and the providers import no adapter. And a base
