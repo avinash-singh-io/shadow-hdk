@@ -29,7 +29,15 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      # The Linux helper is a workspace member built by maturin at sync (Epic 0010, D123): cargo
+      # on PATH, then the sync builds `native/sandbox` into the venv beside the interpreter, which
+      # is where `local_sandboxes()` looks first.
+      - uses: dtolnay/rust-toolchain@stable
       - run: uv sync --all-extras
+      - name: Landlock is the mechanism in force on this runner — Ubuntu 24.04, default AppArmor
+        run: |
+          uv run shadow-hdk-linux-sandbox --probe
+          uv run python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'landlock', s; print(s)"
       # The TypeScript client (Phase 26, D68): generated types diffed against the schemas, the
       # client type-checked and built, then proven against a live `serve --http` by the Python
       # suite. Node here so the invariant runs rather than skips.
@@ -54,3 +62,72 @@ jobs:
           --cov=shadow_hdk.runtime --cov-report=term-missing --cov-fail-under=90
       - name: the latency budget, measured and printed
         run: uv run pytest tests/runtime/test_benchmark.py -q -s
+
+  # The fallback, proven the same way (Epic 0010, D133): the helper set aside by name, bubblewrap
+  # installed, and the AppArmor restriction Ubuntu 24.04 ships lifted — the sysctl a machine
+  # without Landlock would need. The whole suite runs on the fallback, not a subset: a mechanism
+  # that passes the environment's tests and fails a served thread's is not a fallback.
+  bubblewrap:
+    runs-on: ubuntu-latest
+    env:
+      SHADOW_HDK_SANDBOX: bubblewrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update -q && sudo apt-get install -y -q bubblewrap
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: uv sync --all-extras
+      - name: bubblewrap is the mechanism in force, the helper set aside
+        run: uv run python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'bubblewrap', s; print(s)"
+      - run: uv run pytest -q --ignore=tests/runtime/test_benchmark.py
+
+  # macOS on seatbelt: the same suite, the same proof, the other operating system the kit claims
+  # (D126). No Postgres service here — its contract suites skip and say so; the TypeScript proofs
+  # run, so Node is set up as on Linux.
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+        working-directory: clients/typescript
+      - run: npm run build
+        working-directory: clients/typescript
+      - run: uv sync --all-extras
+      - name: seatbelt is the mechanism in force
+        run: uv run python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'seatbelt', s; print(s)"
+      - run: uv run pytest -q --ignore=tests/runtime/test_benchmark.py
+
+  # The helper's platform wheels, built on every push so a release never finds out the matrix
+  # broke (one definition, `helper-wheels.yml`, shared with `publish`).
+  wheels:
+    uses: ./.github/workflows/helper-wheels.yml
+
+  # The OS layer's native crate (Epic 0010, D123): formatted, clippy-clean at -D warnings, and its
+  # tests run on a Linux kernel — `tests/confines.rs` watches the built helper deny a write outside
+  # the root, allow one inside, refuse an internet socket and keep a unix one, refuse io_uring,
+  # pass a child's exit code through. Those tests are compiled out off Linux, so this job is the
+  # only place they run; a red run here blocks a release (D126).
+  native:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/sandbox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - name: the helper says what this kernel has
+        run: cargo run --quiet -- --probe

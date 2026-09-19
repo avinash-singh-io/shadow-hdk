@@ -2,7 +2,12 @@
 else built, behind the backend seam (D50)."""
 
 from shadow_hdk.adapters.environment.backends import Box, IsolationBackend, prove_box
-from shadow_hdk.adapters.environment.local import LocalEnvironment, LocalSandbox, local_sandbox
+from shadow_hdk.adapters.environment.local import (
+    LocalEnvironment,
+    LocalSandbox,
+    local_sandbox,
+    local_sandboxes,
+)
 from shadow_hdk.adapters.environment.sandbox import SandboxEnvironment
 
 __all__ = [
@@ -12,5 +17,6 @@ __all__ = [
     "LocalSandbox",
     "SandboxEnvironment",
     "local_sandbox",
+    "local_sandboxes",
     "prove_box",
 ]

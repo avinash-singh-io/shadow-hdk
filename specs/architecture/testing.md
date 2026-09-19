@@ -20,6 +20,8 @@ type: Architecture
 | benchmark | the per-step budget holds (D11) | `tests/runtime/test_benchmark.py` |
 | invariants | the decoupling is a property, not a claim | `tests/invariants/` ✅ |
 | the bare harness | "generic" is true | `tests/test_bare_harness.py` |
+| the OS layer | the Linux helper watched denying and allowing on a kernel — a write outside, a socket, io_uring, a write inside, the exit codes — compiled out off Linux; the argument parser everywhere | `native/sandbox/tests/confines.rs`, `native/sandbox/src/args.rs` (`cargo test`) |
+| the runners | the same suite on every operating system the kit claims, each asserting the mechanism in force before it runs: Linux with the helper (`landlock`), Linux with the helper set aside (`bubblewrap`, the AppArmor sysctl), macOS (`seatbelt`); the crate's gate; the helper's four platform wheels built and the x86_64 one installed and watched confining — a red job blocks a release (Epic 0010, D126) | `.github/workflows/ci.yml`, `.github/workflows/helper-wheels.yml` |
 
 ## Cases — Phase 0
 
@@ -152,3 +154,17 @@ governance, the stdout sink; the marker comes off, and the CI job fails if it is
 - `runtime/test_effect_records_are_public.py`, wire/schema/client parity and OpenTelemetry tests
   prove the generic `effect_recorded` lifecycle is public while receipt/refusal detail and grants
   do not leak into traces. Protocol 3 refuses older peers rather than omitting it.
+
+## Cases — Phase 41
+
+- `tests/adapters/environment/test_linux_confinement_is_native_first.py` proves the candidates'
+  order per platform, `SHADOW_HDK_SANDBOX` narrowing and refusing an unknown name, the helper's
+  argv, that a candidate confining nothing is passed over for one that does and that a refusal
+  names each one tried, and that `Isolation.mechanism` reaches the capability evidence; six cases
+  run only where the helper is installed on a Linux kernel (the CI runner) and prove it from the
+  environment's side — outside denied, a socket refused, `/dev/null` writable in `read-only`, a
+  temp file under the root.
+- `tests/test_versions.py` holds the crate, its distribution and the kit's pin to one number.
+- The D36 proof is mechanism-independent by construction: the same three legs on seatbelt, the
+  helper and bubblewrap, and the same test file (`test_local_is_confined_for_real.py`) green on all
+  three runners.

@@ -64,7 +64,7 @@ class SandboxEnvironment(Environment):
         where = (root or Path.cwd()).resolve()
         box = await backend.open(where, mode)
         try:
-            isolation = await prove_box(box, mode=mode)
+            isolation = await prove_box(box, mode=mode, mechanism=backend.name)
             requires(isolation, mode)
         except BaseException:
             await box.close()
