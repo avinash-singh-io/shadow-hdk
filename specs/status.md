@@ -156,7 +156,7 @@ approval.
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 | 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
-| 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | in progress — G0 RED next | v0.33.0 at the gate |
+| 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | G0–G3 done; the four-zero gate on 3.12 and 3.14, the crate's gate, the helper's 12 confinement tests on the Linux runner, CI on Linux both ways and macOS | v0.33.0 at the gate |
 
 ## Upcoming Phases
 

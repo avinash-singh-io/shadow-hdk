@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.32.1"
-"""0.32.1 — a patch (D9): `set_mode` and `add_root` during a running turn refuse with the typed
+EXPECTED = "0.33.0"
+"""0.33.0 — Linux confinement (Epic 0010, Phase 41): a confined mode opens on Linux through the
+kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec), a second
+distribution in lockstep with this one and a dependency under a Linux marker; bubblewrap behind
+it; the D36 proof deciding which is in force; `Isolation.mechanism` on the evidence;
+`local_sandboxes()`, `SHADOW_HDK_SANDBOX`. A contract addition in the published shape — a minor
+(D9); protocol 3 unchanged.
+
+0.32.1 — a patch (D9): `set_mode` and `add_root` during a running turn refuse with the typed
 `TurnRunning` instead of closing the provider's session under the turn (BUG-056); no contract
 change — the refusal kind already existed.
 
