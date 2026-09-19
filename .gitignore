@@ -17,6 +17,7 @@ build/
 .momentum/brainstorm-active
 .momentum/merge-approved
 .momentum/run-stop
+.momentum/run.json
 work/
 .DS_Store
 

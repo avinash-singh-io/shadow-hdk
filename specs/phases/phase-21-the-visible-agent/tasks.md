@@ -34,4 +34,4 @@ phase: 21
 - [x] D45–D47 recorded; index regenerated
 - [x] the coder example shows reasoning on a live turn
 - [x] README: twelve kinds
-- [ ] status, roadmap, changelog, board
+- [x] status, roadmap, changelog, board — *audit 2026-09-20: the 0.21.0 rows exist in all four; the box lagged*

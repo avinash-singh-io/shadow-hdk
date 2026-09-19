@@ -37,4 +37,4 @@ phase: 22
 - [x] D48–D50; index
 - [x] a live turn inside the environment
 - [x] README, file-structure, adapters.md
-- [ ] status, roadmap, changelog, board
+- [x] status, roadmap, changelog, board — *audit 2026-09-20: the 0.22.0 rows exist in all four; the box lagged*
