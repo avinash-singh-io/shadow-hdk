@@ -25,11 +25,11 @@ status: in-progress
 ## Group 4 — The door is `ask` (ENH-038, D138); the matrix (ENH-032); a provider is a file, by a test
 - [x] RED — 2026-09-20: 3 failed — `ask` refused the reach instead of asking, and the first draft's `read-only` assertions; the invariant passed on the tree and its self-test caught the planted name. The first draft narrowed `read-only`; `tests/test_a_mode_reaches_the_child.py` failed at once (over a `full` environment nothing is contained, so a contained ceiling offered nothing) and the architecture's modes table says `read-only` judges the web — reverted, D138 amended in the history
 - [x] `_asking` ceiling `contained=False` with `ask_above` contained (the door); `_looking` unchanged; the composition and battery tests kept at the documented truth; the modes guide's section; `ci.yml` `check` over 3.12/3.13/3.14; `.python-version` 3.14 (the dev venv rebuilt on 3.14.6); the 3.14 classifier; `tests/invariants/test_a_provider_is_a_file.py`
-- [ ] Verify: green; the invariant's mutation; CI green on the three legs for the pushed commit — run URL: _(…)_
+- [x] Verify — 2026-09-20: the full non-live suite 1,842 passed on 3.14; the invariant's self-test plants a name and catches it; CI on `aca389d` green on all twelve jobs — `check (3.12)`, `check (3.13)`, `check (3.14)`, `bubblewrap`, `macos`, `native`, the wheels — https://github.com/avinash-singh-io/shadow-hdk/actions/runs/35469895427
 
 ## Group 5 — The live proofs, the docs, the release
-- [ ] Live: Phase 36's proof on Claude Code; Codex with `model`/`effort` measured; cache tokens on both CLIs measured — recorded in `history.md` (a skip recorded as a skip)
-- [ ] Docs: the 0.34 note under `docs/migrations/`; `docs/for-a-product.md` (two ports one surface; §2, §8, §9; per-turn words); `docs/packages/adapters-langchain.md` (endpoints, local desktop); `docs/packages/wire.md`; the TS README
-- [ ] Backlog rows closed; BUG-059; `specs/decisions/index.md` D138–D141; `[ARCH_CHANGE]` entries
-- [ ] Version 0.34.0, `EXPECTED`, `uv lock`, changelog, status row
+- [x] Live — 2026-09-20: Phase 36's planning proof **passed on Claude Code** (8.6 s, an admission on the record); Codex launched with `-m gpt-5.6-sol -c model_reasoning_effort="low"` and `unmapped == ()`; cache tokens on Codex (12,032 of 17,393 read from the cache) and Claude Code (`input_tokens=2`, `cache_read=531`, `cache_write=2458`); a resume on an unknown id says `session_gone` on both — all recorded in `history.md`
+- [x] Docs: `docs/migrations/0.34.md`; `docs/for-a-product.md` (two ports one surface in §7; §2, §8, §9 rewritten; the follow-ups table); `docs/packages/adapters-langchain.md` (the OpenAI-compatible endpoints table; the desktop with a local model beside a CLI); `docs/packages/wire.md`; `docs/packages/adapters-modes.md` (G4); the TS README; README's release status
+- [x] ENH-023/024/028/032/037/038 closed; BUG-059/060/061 filed and closed; `specs/decisions/index.md` D138–D141 (D138 amended); the `[ARCH_CHANGE]` entry for `/sync-docs`
+- [x] Version 0.34.0 in the kit, the helper's crate and distribution (lockstep) and the pin; `EXPECTED` with its docstring; `uv lock` and `Cargo.lock`; changelog; status row
 - [ ] Verify: the four-zero gate on 3.12 and 3.14; the TS gate; `momentum okf check .`; the wheel fresh; CI green; `/complete-phase` → STOP at the gate

@@ -68,10 +68,18 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
   behaviour + presentation + environment + plan. `Behaviour` carries `system`, `append_system`,
   `model`, `effort`, `temperature`, `tools_offered`. So: drop the persona as a separate knob and
   make each former persona a mode document whose behaviour carries `append_system` and `effort`.
-  **One pill.** The catch, named honestly since 0.31 (ENH-020): only the Claude Code record maps
-  `system`/`append_system`/`model`/`effort` to flags; Codex and OpenCode map none. `thread/start`,
+  **One pill.** What each provider honours, named since 0.31 (ENH-020): the Claude Code record
+  maps `system`/`append_system`/`model`/`effort` to flags; since 0.34 the Codex record maps
+  `model` (`-m`) and `effort` (`-c model_reasoning_effort=…`, measured live — ENH-028) and names
+  `system`/`append_system`/`temperature` as unmapped; OpenCode maps none. `thread/start`,
   `thread/resume` and `thread/set_mode` return `unmapped_behaviour` — hide the control for that
   provider rather than show one that does nothing.
+- **A fact learnt after the thread opened reaches the judgement (0.34, D140).** `turn/start
+  {attributes}` and `Thread.turn(attributes=)` are that turn's words — the workspace, the run in
+  scope — merged over the record's for that turn's judgements and never written back;
+  `thread/resume {attributes}` replaces the record's words and the record shows it. `thread`,
+  `turn` and `mode` are the runtime's own names and are refused (an attribute named `mode` used to
+  switch the policy — BUG-061, closed).
 - **Mid-thread.** `set_mode` reopens the provider on its own session id (D76). Safe on **Claude
   Code** (`--resume`) and **Codex** (`exec resume`), both measured. **OpenCode** is
   `session = "process"` — ACP's `session/load` is not wired — so a mode change mid-thread there is a
@@ -147,6 +155,16 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
 
 ## 7. The served runtime
 
+- **Two ports, one surface.** Inference is `ModelPort` — `complete`/`stream`, a request in and
+  tokens and tool calls out — implemented by `LangChainModel` over OpenAI, Anthropic, Ollama and
+  every OpenAI-compatible endpoint (HuggingFace, OpenRouter, Together, Groq, vLLM, LM Studio;
+  `docs/packages/adapters-langchain.md`). Agency is `AgentPort` — `open(...)` → a session that
+  runs its **own** loop: Claude Code, Codex, OpenCode, and `ModelAgent`, the kit's loop over any
+  `ModelPort`. Every product opens one `Thread`, which consumes an `AgentPort` (D98): a thread
+  over Ollama and a thread over Claude Code hold, park, spend, cancel and recover identically.
+  The two ports stay two — a CLI's loop is the CLI's and cannot be re-implemented; an API model
+  answers a request and must stay reachable as one — and nothing outside them knows which
+  provider is in use (a test walks the kernel and the runtime for a vendor's name).
 - **It is the intended cloud shape.** One `serve` process per deployment, many sessions, the
   product's backend in front — Phase 29's *one app server behind every surface* (D79–D86),
   `docs/consuming.md` ("the recommended shape … behind the product's backend"), and chapter 7 of
@@ -179,19 +197,29 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
 - **Supported and measured on Claude Code and Codex; not on OpenCode** (`session = "process"`). The
   same working tree is the product's side: the kit reopens on `resume=` at whatever `root` the
   record says (D76) and does not verify the tree matches.
-- **When the vendor's session is gone: a failed turn, not a silent fresh session.** The CLI errors
-  on its own resume flag, the stream ends without a done event, and the session returns
-  `Turn(text="", failed=True)` with the CLI's stderr on `session.stderr`. The product can act on
-  `failed`; there is no typed *session gone* kind — **ENH-024** below.
+- **When the vendor's session is gone: typed, on the record and on the wire (0.34, D139).** The
+  turn ends `failed` with `failure = "session_gone"` on its record; in process `Thread.turn`
+  raises `SessionGone(thread_id, session_id, provider)` once the stream has ended; over the wire
+  `turn/start` answers `error.data.kind = "session_gone"` with both ids. The next move is
+  `thread/fork` — a fresh provider session with the transcript. How each CLI says it is its
+  provider file's `session_gone_matches`, measured on both (Claude Code answers a `result` with
+  `is_error: true` and `errors: ["No conversation found with session ID: …"]`; Codex writes `no
+  rollout found for thread id …` to stderr). Any other failure is a `failed` turn with an empty
+  `failure`, as before — and a provider's failed turn *is* `failed` now: until 0.34 it was
+  recorded `completed` with the error as its text (BUG-060).
 
 ## 9. Spend
 
 - **Show what the kit says.** `Usage` is `input_tokens`, `output_tokens`, `cost_cents`, each `None`
   when the source did not report; `Spent` carries `unpriced` and `unmetered` so a footer can be
   honest per call (D84, D90). The same shape for API-metered and CLI sources.
-- **No cache-read or cache-write field, and not planned** — but it meets the admission rule (Claude
-  Code reports cache-read and cache-creation tokens; Codex reports cached input): an additive kernel
-  field and two dialect paths. **ENH-023** below.
+- **What the cache did, since 0.34 (ENH-023, D141).** `Usage.cache_read_tokens` and
+  `cache_write_tokens` — `None` where a provider does not report them, never zero — and
+  `Spent.cache_read_tokens` / `cache_write_tokens` summed across the turns. Measured: a Claude
+  Code turn `input_tokens=2, cache_read_tokens=531, cache_write_tokens=2458` (the bulk of the
+  input in the cache, `input_tokens` the fresh part); a Codex turn `input_tokens=17393,
+  cache_read_tokens=12032` (Codex counts the cached part into `input_tokens`; subtract for the
+  fresh part). A LangChain model reports them from `input_token_details` where its provider does.
 
 ## 10. Registration and composition
 
@@ -382,8 +410,8 @@ supported (Epic 0010, Phase 43; WSL2 meanwhile). `full` opens everywhere and say
 |---|---|---|
 | ~~ENH-022~~ | `components=` on the facades — **withdrawn** the day it was filed | sugar for one product over two doors the kit already has (a `python` or `mcp` battery; the `Thread` door); the served composition stays data. Kept on the backlog so the reasoning is on the record |
 | ENH-030 · ENH-031 | **shipped in 0.32** — the thread door carries a host's components by inversion; the TypeScript host-side `ComponentPort` and the stdio sidecar | the code door a non-Python product was missing; D21's inversion, on the door products use |
-| ENH-023 | `Usage.cache_read_tokens` and `cache_write_tokens`, read from the Claude Code and Codex dialects | two field runtimes report it; a footer cannot be honest about cost without it |
-| ENH-024 | a typed `session_gone` refusal when a CLI's resume flag is rejected, instead of a bare failed turn | the product can act on it without reading stderr; it is a measured CLI behaviour, not a product concept |
+| ENH-023 | **shipped in 0.34** — `Usage.cache_read_tokens` and `cache_write_tokens`, read from the Claude Code and Codex dialects and LangChain's `input_token_details` | two field runtimes report it; a footer cannot be honest about cost without it |
+| ENH-024 | **shipped in 0.34** — a typed `session_gone` refusal when a CLI's resume flag is rejected: `TurnRecord.failure`, `SessionGone`, the wire kind | the product can act on it without reading stderr; it is a measured CLI behaviour, not a product concept |
 | ENH-025 | a capability-inventory evidence axis — a CLI's MCP servers and plugins — on the status probe | routing a Run by what a machine can do; two CLIs expose the list |
 | ENH-026 | this chapter kept true: re-read at every release that touches a port it names | a chapter a product builds against is a contract |
 
