@@ -75,8 +75,9 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
 - **Mid-thread.** `set_mode` reopens the provider on its own session id (D76). Safe on **Claude
   Code** (`--resume`) and **Codex** (`exec resume`), both measured. **OpenCode** is
   `session = "process"` — ACP's `session/load` is not wired — so a mode change mid-thread there is a
-  fresh session with the conversation's memory gone. `set_mode` is not guarded against a running
-  turn; the honest contract is *between turns*, and `Thread.turning` says which it is.
+  fresh session with the conversation's memory gone. Since 0.32.1 `set_mode` and `add_root`
+  during a running turn refuse with the typed `TurnRunning` (`turn_running` on the wire) — the
+  contract is *between turns, or not at all*, and `Thread.turning` says which it is.
 
 ## 3. Holding a question across a process death
 
