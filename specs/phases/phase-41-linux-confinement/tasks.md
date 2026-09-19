@@ -12,14 +12,14 @@ status: in-progress
 - [x] `tests/adapters/environment/test_linux_confinement_is_native_first.py`: the candidates in order per platform; `SHADOW_HDK_SANDBOX` narrowing and refusing an unknown name; the landlock `wrap`; two pretend candidates — the proof passes the first over and keeps the second, names both when neither confines; the mechanism on the evidence; the Linux-only proofs (skipped elsewhere)
 - [x] `test_local_is_confined_for_real.py::test_which_sandbox_this_machine_has_is_reported_not_guessed` — Linux with the helper → `landlock`
 - [x] `tests/test_versions.py`: the crate, its distribution and the kit's pin in lockstep
-- [x] The crate's RED: `native/sandbox/Cargo.toml`, an empty `src/main.rs`, `src/args.rs` tests, `tests/confines.rs` (Linux only)
+- [x] The crate's RED: `native/sandbox/Cargo.toml`, an empty `native/sandbox/src/main.rs`, `native/sandbox/src/args.rs` tests, `native/sandbox/tests/confines.rs` (Linux only)
 - [x] Verify RED — 2026-09-19: the new Python file fails at import on the absent `local_sandboxes`; `test_the_linux_helper_moves_with_the_kit` fails on the absent `native/sandbox/pyproject.toml` (the 14 other tests in those files pass, 1 skips); `cargo test` fails to compile on the absent `parse`/`Command`/`Mode`/`UsageError` (8 errors), on the host and for `x86_64-unknown-linux-musl`; ruff clean
 
 ## Group 1 — The helper
-- [x] `native/sandbox/`: `Cargo.toml`, `src/args.rs`, `src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)
+- [x] `native/sandbox/`: `Cargo.toml`, `native/sandbox/src/args.rs`, `native/sandbox/src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `native/sandbox/src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)
 - [x] `.github/workflows/ci.yml`: the `native` job — fmt, clippy `-D warnings`, `cargo test` on ubuntu-latest
 - [x] Verify (local) — 2026-09-19: `cargo fmt --check` clean; `cargo clippy --all-targets -- -D warnings` clean on the host, on `x86_64-unknown-linux-musl` and on `aarch64-unknown-linux-musl`; `cargo test` 9 argument tests pass (the 13 confinement tests compiled out on macOS); `cargo build --release --target x86_64-unknown-linux-musl` (rust-lld) links a 458 KB static-pie ELF
-- [ ] Verify (CI): the `native` job green — `tests/confines.rs` watched the binary deny and allow on the runner's kernel; run URL: _(…)_
+- [ ] Verify (CI): the `native` job green — `native/sandbox/tests/confines.rs` watched the binary deny and allow on the runner's kernel; run URL: _(…)_
 
 ## Group 2 — The machine's mechanisms, the proof deciding
 - [ ] `runtime/environment.py`: `Isolation.mechanism`; `capabilities_of` names it in the evidence
@@ -32,7 +32,7 @@ status: in-progress
 
 ## Group 3 — Publish, docs, release
 - [ ] `publish.yml`: the `helper` matrix (maturin-action, manylinux_2_17 and musllinux_1_2, x86_64 and aarch64, the sdist); one `uv publish` over both artifact sets; the smoke asserts landlock in force after the fresh install
-- [ ] Docs: `docs/migrations/0.33.md`; `docs/packages/adapters-environment.md`; `docs/for-a-product.md`'s caveat; README's platform line
+- [ ] Docs: the 0.33 note under `docs/migrations/`; `docs/packages/adapters-environment.md`; `docs/for-a-product.md`'s caveat; README's platform line
 - [ ] Backlog rows; Epic 0010 criteria 1–3 and 9 recorded; `[ARCH_CHANGE]` for `specs/architecture/adapters.md`
 - [ ] Version 0.33.0 everywhere the versions test looks; `EXPECTED` and its docstring; `uv lock`; changelog; status row
 - [ ] Verify: the four-zero gate on 3.12 and 3.14; the cargo gate; `momentum okf check .`; the wheel installed fresh on macOS pulls nothing extra; all four CI jobs green on the release commit; `/complete-phase` → STOP at the gate

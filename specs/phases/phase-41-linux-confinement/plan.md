@@ -68,8 +68,8 @@ shadow-hdk-linux-sandbox --probe
   `native/sandbox/pyproject.toml` at `EXPECTED`; the kit's dependency on
   `shadow-hdk-linux-sandbox` pinned `== EXPECTED` under the Linux marker.
 - **The crate's RED**: `native/sandbox/Cargo.toml` (package `shadow-hdk-sandbox`, bin
-  `shadow-hdk-linux-sandbox`), `src/main.rs` empty of the modules, `src/args.rs` tests (mode,
-  roots, `--probe`, `--`, the usage error), `tests/confines.rs` (Linux only: probe → JSON and
+  `shadow-hdk-linux-sandbox`), `native/sandbox/src/main.rs` empty of the modules, `native/sandbox/src/args.rs` tests (mode,
+  roots, `--probe`, `--`, the usage error), `native/sandbox/tests/confines.rs` (Linux only: probe → JSON and
   exit 0 / 120; outside denied; inside allowed; socket refused; `/dev/null` writable in
   `read-only`; a child's exit code through; not-found → 127).
 - Verify: the Python file fails on the absent names (`local_sandboxes`, `mechanism`); the versions
@@ -82,14 +82,14 @@ shadow-hdk-linux-sandbox --probe
 - `native/sandbox/Cargo.toml`: edition 2024, `[[bin]] name = "shadow-hdk-linux-sandbox"`,
   `[target.'cfg(target_os = "linux")'.dependencies]` `landlock = "0.4"`, `seccompiler = "0.5"`,
   `libc = "0.2"`; `[profile.release]` `strip`, `lto`, `codegen-units = 1`, `panic = "abort"`.
-- `src/args.rs`: `Args { probe, mode, roots, argv }` from `std::env::args_os`, no clap; `Mode` from
+- `native/sandbox/src/args.rs`: `Args { probe, mode, roots, argv }` from `std::env::args_os`, no clap; `Mode` from
   its two names; errors carry the usage line.
-- `src/linux.rs`: `probe()` — `landlock_create_ruleset(NULL, 0, LANDLOCK_CREATE_RULESET_VERSION)`
+- `native/sandbox/src/linux.rs`: `probe()` — `landlock_create_ruleset(NULL, 0, LANDLOCK_CREATE_RULESET_VERSION)`
   by raw syscall for the ABI; `confine(mode, roots)` — the `landlock` crate's `Ruleset` with
   `AccessFs::from_all(abi)` handled, `path_beneath_rules` for `/` (read), the roots (all, for
   `workspace-write`), the devices (all); `AccessNet::from_all(abi)` handled with no rule where
   ABI ≥ 4; `restrict_self()` and `RulesetStatus::NotEnforced` → exit 120; then `seccompiler`'s
-  filter for the running arch, `apply_filter`; then `execvp`. `src/main.rs`: the Linux entry, and
+  filter for the running arch, `apply_filter`; then `execvp`. `native/sandbox/src/main.rs`: the Linux entry, and
   on any other OS a stub that says the helper confines on Linux only and exits 121 (so the crate
   builds, lints and unit-tests on the development machine and under `uv sync --all-packages`).
 - `native/sandbox/pyproject.toml`: `[build-system] maturin>=1.7,<2`, `[project] name =
@@ -101,7 +101,7 @@ shadow-hdk-linux-sandbox --probe
 - Verify (local): `cargo fmt --check`; `cargo clippy --all-targets -- -D warnings` on the host and
   `--target x86_64-unknown-linux-musl`; `cargo test` (the argument tests; the Linux tests compiled
   out); `cargo build --release --target x86_64-unknown-linux-musl` links. Verify (CI): the `native`
-  job green on the pushed commit — `tests/confines.rs` watched the binary deny and allow on a
+  job green on the pushed commit — `native/sandbox/tests/confines.rs` watched the binary deny and allow on a
   kernel; the run's URL recorded in `tasks.md`.
 
 **Commit:** `feat(native): the Linux helper — Landlock and seccomp applied before exec (Epic 0010 D123, D133)`
@@ -147,7 +147,7 @@ shadow-hdk-linux-sandbox --probe
   `publish` downloads both artifact sets into `dist/` and publishes them in one `uv publish`; the
   smoke asserts `shadow-hdk-linux-sandbox --probe` exits 0 and `local_sandbox().name ==
   "landlock"` on the runner after the fresh install.
-- Docs: `docs/migrations/0.33.md` (what a Linux host sees now; `SHADOW_HDK_SANDBOX`;
+- Docs: the 0.33 note under `docs/migrations/` (what a Linux host sees now; `SHADOW_HDK_SANDBOX`;
   `Isolation.mechanism`; the dependency; the fallback's sysctl); `docs/packages/adapters-environment.md`;
   `docs/for-a-product.md`'s Linux line in the caveats; `README.md`'s platform sentence if there is
   one; `clients/typescript/README.md` unchanged (the sidecar's pin stays Phase 42's).
