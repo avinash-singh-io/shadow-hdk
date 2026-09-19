@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 ---
 # Phase 44 — tools as code, from any language — Tasks
 > Mirrors `plan.md`. `[x]` done · `[/]` in-progress · `[ ]` todo.
@@ -8,7 +8,7 @@ status: in-progress
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 
 ## Group 0 — RED *(blocks)*
-- [ ] `test_a_hosts_tools_cross_on_the_thread_door.py` under `tests/wire/`: `host_components: true` → `source: "host"` in `tools/list`; a turn's call runs on the host side and `Observed` carries its output; `registered_by` starts `host:`; an irreversible host tool → posture `observed`; host gone → no host tools on refresh, in-flight invoke `Failed` naming the host; a new peer's `thread/resume` restores; no flag → no port
+- [x] `tests/wire/test_a_hosts_tools_cross_on_the_thread_door.py`: `host_components: true` → `source: "host"` in `tools/list`; a turn's call runs on the host side and `Observed` carries its output; the host's registration crosses **untouched** (the `registered_by` stamp was withdrawn in the G2 review — a signature covers provenance); an irreversible host tool → posture `observed`; a gone peer → the catalogue raises naming the host and an in-flight invoke is `Failed` naming tool and host; no flag → no port; the second connection's `thread/resume` is proven in the HTTP file
 - [x] `tests/wire/test_a_hosts_tools_cross_over_http.py` (its own file rather than a case in `test_serve.py`): the same through `serve --http`, and a second host's `thread/resume` replacing the first's tools
 - [x] `tests/adapters/environment/test_the_proof_reads_stdout.py`: a fake box echoing the script to stderr and exiting non-zero → `writes_confined=True`; the 3.13+ echo measured; a source guard
 - [x] `clients/typescript/src/host-tools-smoke.ts` + `tests/serve/test_a_typescript_host_serves_tools.py` (+ `tests/serve/_stdio_runtime_double.py`): a tool served from TS, called through `serve --http` and through `HarnessClient.spawn` over a spawned stdio runtime

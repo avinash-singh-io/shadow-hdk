@@ -201,6 +201,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 41 | The OS layer | planned · **Epic 0010** | — | the `shadow-hdk-sandbox` crate: the Linux helper (Landlock + seccomp, bwrap fallback) and Windows process control (Job Objects); the leash's cross-OS contract; the D36 proof on three CI runners; Windows confined modes refusing honestly until 43 |
 | 42 | The artifact | planned · **Epic 0010** | 41 | one download per OS/arch (PyApp, embedded) with the helpers inside; the signing pipeline; the fresh-install smoke from the artifact on three OSes every release; size and time-to-first-turn recorded; the `serve` container image |
 | 43 | Windows confinement | planned · **Epic 0010** | 41 | the elevated model or WSL2, decided with evidence (D134), behind the D36 proof: `workspace-write` and `read-only` open on Windows with `proven=True` |
+| 44 | Tools as code, from any language | **complete · v0.32.0** | 36 | `thread/start {host_components}` — a host's components by inversion on the thread door (D21); the TypeScript host-side `ComponentPort`, a `Transport`, the stdio sidecar; the D36 proof reads stdout (BUG-057), the suite on 3.14. ENH-030/031 pulled ahead of Phase 34 by Epic 0009's amendment |
 
 ## What comes next — the consumable line
 
@@ -239,6 +240,7 @@ files; the phases after it are capability, not readiness.
 | 41 | The OS layer | — | Process supervision and confinement are native per OS behind one contract: a small Rust helper where the OS needs in-process syscalls or an elevated executable, the policy and the D36 proof in Python; the same suites green on macOS, Linux and Windows. |
 | 42 | The artifact | 41 | The kit is one download per OS with no prerequisite — the interpreter, the kit and the helpers inside — signed where the OS requires, smoke-tested from the artifact on three OSes at every release, its size and start measured. |
 | 43 | Windows confinement | 41 | A confined mode opens on Windows only after a write outside the roots is watched denied and the network refused, by whichever of the field's two models the evidence chooses. |
+| 44 | Tools as code, from any language | 36 | A host in any language writes its tools as code and the runtime calls them back on the thread door, judged and recorded as its own; the first proof is TypeScript over HTTP and over a spawned stdio runtime. |
 
 ## Epics
 

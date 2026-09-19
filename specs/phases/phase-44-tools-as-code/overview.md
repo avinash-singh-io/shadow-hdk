@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 tags: [wire, components, inversion, typescript, sidecar, stdio, proof, environment]
 deps: [phase-36-plan-admission]
 ---
