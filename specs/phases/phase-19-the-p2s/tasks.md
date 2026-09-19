@@ -58,5 +58,5 @@ phase: 19-the-p2s
 ## Phase 19 — closed
 - [x] **Every P0, P1 and P2 in the backlog is closed**, bar ENH-003, which is deliberately deferred to the first OPC-UA or ROS adapter and needs a server or a ROS distribution that is not on this machine
 - [x] records, board, status, roadmap
-- [ ] TD-006, TD-007, TD-008
-- [ ] records, board, status, roadmap
+- [x] TD-006, TD-007, TD-008 — *audit 2026-09-20: TD-006 and TD-008 closed in Phase 19; TD-007's implementation halves (TD-010/011) closed by Phase 33, its row closed today*
+- [x] records, board, status, roadmap — *audit 2026-09-20: done at the time (board rows for 0.12.0–0.13.1 exist); the box lagged*
