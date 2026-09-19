@@ -58,4 +58,9 @@ exit=0
 ```
 
 The wider suites: `tests/runtime tests/wire tests/serve tests/invariants` — 789 passed, 2 skipped.
-The whole non-live suite is run at the gate below.
+
+```
+$ uv run pytest -q -m 'not live'
+1788 passed, 14 skipped, 13 deselected, 85 warnings in 164.46s (0:02:44)
+exit=0
+```
