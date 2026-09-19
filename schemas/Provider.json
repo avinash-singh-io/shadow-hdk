@@ -104,6 +104,16 @@
           "title": "Behaviour Args",
           "type": "array"
         },
+        "cache_read_tokens_at": {
+          "default": "",
+          "title": "Cache Read Tokens At",
+          "type": "string"
+        },
+        "cache_write_tokens_at": {
+          "default": "",
+          "title": "Cache Write Tokens At",
+          "type": "string"
+        },
         "cost_usd_at": {
           "default": "",
           "title": "Cost Usd At",

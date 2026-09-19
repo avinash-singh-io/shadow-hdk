@@ -8,9 +8,9 @@ status: in-progress
 > without a recorded red→green (Rule 13, strict). Live measurements are recorded, never assumed.
 
 ## Group 1 — What a turn really cost (ENH-023, D141)
-- [ ] RED: the Codex- and Claude-shaped streams' cache fields; absent → `None`; LangChain `input_token_details`; the meter and `Spent`; an old checkpoint/record loads; the contracts round-trip
-- [ ] `Usage.cache_read_tokens`/`cache_write_tokens`; `Spent.cache_read_tokens`/`cache_write_tokens`; `Dialect.cache_read_tokens_at`/`cache_write_tokens_at`; the JSONL session; LangChain; the meter's count/spent/restore; the two provider files with the measured lines; schemas and TS regenerated; the package docs
-- [ ] Verify: the group green; the wider suites; no schema drift; mutation (cache not counted) → the meter test fails
+- [x] RED — 2026-09-20: 12 tests failed on the absent `Usage.cache_read_tokens`, `Spent.cache_read_tokens` and `Dialect.cache_read_tokens_at` (5 + 3 + 2 + 2 by reason)
+- [x] `Usage.cache_read_tokens`/`cache_write_tokens`; `Spent.cache_read_tokens`/`cache_write_tokens`; `Dialect.cache_read_tokens_at`/`cache_write_tokens_at`; the JSONL session; LangChain; the meter's count/spent/restore; the two provider files with the measured lines; schemas and TS regenerated; the package docs
+- [x] Verify — 2026-09-20: 12 green; `tests/kernel tests/runtime tests/adapters/jsonl tests/adapters/langchain tests/wire tests/invariants tests/providers` 971 passed; mypy 464 files clean; ruff clean; schemas republished (Event, Item, ModelResponse, Provider) and the TS types regenerated without drift; mutation — the meter not counting the cache → 2 fail
 
 ## Group 2 — Why a turn really failed (ENH-024, D139; BUG-059)
 - [ ] RED: the measured Claude Code lines → `session_gone`; Codex's stderr line → `session_gone`; another failure → not; 1 MB of stderr → the turn still ends; `TurnRecord.failure`; `SessionGone` raised; the wire's kind with both ids; parity

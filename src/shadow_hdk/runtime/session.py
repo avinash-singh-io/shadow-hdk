@@ -41,6 +41,8 @@ class LeaseMeter:
         self._running = True
         """Whether the clock is running (D90): a run's always is; a thread's only in a turn."""
         self._input_tokens = 0
+        self._cache_read_tokens = 0
+        self._cache_write_tokens = 0
         self._output_tokens = 0
         self._tokens_known = True
 
@@ -96,10 +98,19 @@ class LeaseMeter:
             return
         self._input_tokens += usage.input_tokens or 0
         self._output_tokens += usage.output_tokens or 0
+        # What the cache did (D141): counted where reported; a call silent about the cache but
+        # not about its tokens is metered — the cache counts are then a floor on their own.
+        self._cache_read_tokens += usage.cache_read_tokens or 0
+        self._cache_write_tokens += usage.cache_write_tokens or 0
 
     @property
     def tokens(self) -> tuple[int, int]:
         return self._input_tokens, self._output_tokens
+
+    @property
+    def cache_tokens(self) -> tuple[int, int]:
+        """Read and written by the provider's cache, across the calls that reported it (D141)."""
+        return self._cache_read_tokens, self._cache_write_tokens
 
     @property
     def tokens_are_known(self) -> bool:
@@ -138,6 +149,8 @@ class LeaseMeter:
             "input_tokens": self._input_tokens,
             "output_tokens": self._output_tokens,
             "unmetered": 0 if self._tokens_known else 1,
+            "cache_read_tokens": self._cache_read_tokens,
+            "cache_write_tokens": self._cache_write_tokens,
             "seq": 0,
         }
 
@@ -148,6 +161,8 @@ class LeaseMeter:
         self._cost_known = not int(spent.get("unpriced", 0))
         self._carried_seconds = float(spent.get("elapsed_seconds", 0.0))
         self._input_tokens = int(spent.get("input_tokens", 0))
+        self._cache_read_tokens = int(spent.get("cache_read_tokens", 0))
+        self._cache_write_tokens = int(spent.get("cache_write_tokens", 0))
         self._output_tokens = int(spent.get("output_tokens", 0))
         self._tokens_known = not int(spent.get("unmetered", 0))
 

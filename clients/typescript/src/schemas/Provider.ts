@@ -25,6 +25,8 @@ export type AllowToolPrefix = string
 export type Field = string
 export type Flag = string
 export type BehaviourArgs = BehaviourArg[]
+export type CacheReadTokensAt = string
+export type CacheWriteTokensAt = string
 export type CostUsdAt = string
 export type DeltaKindAt = string
 export type DeltaOn = string[]
@@ -141,6 +143,8 @@ allow_arg?: AllowArg
 allow_override?: AllowOverride
 allow_tool_prefix?: AllowToolPrefix
 behaviour_args?: BehaviourArgs
+cache_read_tokens_at?: CacheReadTokensAt
+cache_write_tokens_at?: CacheWriteTokensAt
 cost_usd_at?: CostUsdAt
 delta_kind_at?: DeltaKindAt
 delta_on?: DeltaOn

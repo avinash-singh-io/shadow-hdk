@@ -235,6 +235,8 @@ def spent_of(meter: LeaseMeter) -> Spent:
         input_tokens=int(counted["input_tokens"]),
         output_tokens=int(counted["output_tokens"]),
         unmetered=bool(counted["unmetered"]),
+        cache_read_tokens=int(counted["cache_read_tokens"]),
+        cache_write_tokens=int(counted["cache_write_tokens"]),
     )
 
 
@@ -305,6 +307,8 @@ class Conversation:
                     "input_tokens": spent.input_tokens,
                     "output_tokens": spent.output_tokens,
                     "unmetered": 1 if spent.unmetered else 0,
+                    "cache_read_tokens": spent.cache_read_tokens,
+                    "cache_write_tokens": spent.cache_write_tokens,
                 }
             )
         # **The clock runs only in a turn** (D90): a conversation sitting open spends nothing.

@@ -224,6 +224,11 @@ class Dialect:
     cost_usd_at: str = ""
     input_tokens_at: str = ""
     output_tokens_at: str = ""
+    cache_read_tokens_at: str = ""
+    cache_write_tokens_at: str = ""
+    """Where the ending event says what the cache did (D141): `usage.cached_input_tokens` and
+    `usage.cache_write_input_tokens` on Codex; `usage.cache_read_input_tokens` and
+    `usage.cache_creation_input_tokens` on Claude Code. Empty where a CLI does not say."""
 
 
 @dataclass(frozen=True)

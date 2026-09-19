@@ -218,6 +218,8 @@ class JsonlSession(AgentSession):
                 input_tokens=_as_int(read_at(event, dialect.input_tokens_at)),
                 output_tokens=_as_int(read_at(event, dialect.output_tokens_at)),
                 cost_cents=_cents(read_at(event, dialect.cost_usd_at)),
+                cache_read_tokens=_as_int(read_at(event, dialect.cache_read_tokens_at)),
+                cache_write_tokens=_as_int(read_at(event, dialect.cache_write_tokens_at)),
             ),
         )
 
