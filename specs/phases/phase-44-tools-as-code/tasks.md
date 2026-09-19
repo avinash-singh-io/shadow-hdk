@@ -9,10 +9,10 @@ status: in-progress
 
 ## Group 0 — RED *(blocks)*
 - [ ] `test_a_hosts_tools_cross_on_the_thread_door.py` under `tests/wire/`: `host_components: true` → `source: "host"` in `tools/list`; a turn's call runs on the host side and `Observed` carries its output; `registered_by` starts `host:`; an irreversible host tool → posture `observed`; host gone → no host tools on refresh, in-flight invoke `Failed` naming the host; a new peer's `thread/resume` restores; no flag → no port
-- [ ] `tests/wire/test_serve.py`: the same through `serve --http`
-- [ ] `test_the_proof_reads_stdout.py` under `tests/adapters/environment/`: a fake box echoing the script to stderr and exiting non-zero → `writes_confined=True`
-- [ ] a `test/` directory under `clients/typescript/`: a tool served from TS, called through `serve --http` and through `HarnessClient.spawn` over stdio
-- [ ] Verify RED: collection fails on the absent names; each test fails for its stated reason
+- [x] `tests/wire/test_a_hosts_tools_cross_over_http.py` (its own file rather than a case in `test_serve.py`): the same through `serve --http`, and a second host's `thread/resume` replacing the first's tools
+- [x] `tests/adapters/environment/test_the_proof_reads_stdout.py`: a fake box echoing the script to stderr and exiting non-zero → `writes_confined=True`; the 3.13+ echo measured; a source guard
+- [x] `clients/typescript/src/host-tools-smoke.ts` + `tests/serve/test_a_typescript_host_serves_tools.py` (+ `tests/serve/_stdio_runtime_double.py`): a tool served from TS, called through `serve --http` and through `HarnessClient.spawn` over a spawned stdio runtime
+- [x] Verify RED — 2026-09-19: 8 failed for their stated reasons (the host's tool absent from `tools/list`; `RemoteComponents` takes no `session`; the proof reads `WROTE` from stderr; the smoke not built); `tsc` fails on `tool`/`spawn`; 3 measurement guards pass as they should
 
 ## Group 1 — The proof
 - [ ] `_prove.attempt` returns `(returncode, stdout, stderr)`; markers read from stdout with `returncode == 0`; `not outside.exists()` kept
