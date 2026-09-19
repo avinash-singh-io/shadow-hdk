@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 ---
 # Phase 45 — truth both ways — Tasks
 > Mirrors `plan.md`. `[x]` done · `[/]` in-progress · `[ ]` todo.
@@ -32,4 +32,4 @@ status: in-progress
 - [x] Docs: `docs/migrations/0.34.md`; `docs/for-a-product.md` (two ports one surface in §7; §2, §8, §9 rewritten; the follow-ups table); `docs/packages/adapters-langchain.md` (the OpenAI-compatible endpoints table; the desktop with a local model beside a CLI); `docs/packages/wire.md`; `docs/packages/adapters-modes.md` (G4); the TS README; README's release status
 - [x] ENH-023/024/028/032/037/038 closed; BUG-059/060/061 filed and closed; `specs/decisions/index.md` D138–D141 (D138 amended); the `[ARCH_CHANGE]` entry for `/sync-docs`
 - [x] Version 0.34.0 in the kit, the helper's crate and distribution (lockstep) and the pin; `EXPECTED` with its docstring; `uv lock` and `Cargo.lock`; changelog; status row
-- [ ] Verify: the four-zero gate on 3.12 and 3.14; the TS gate; `momentum okf check .`; the wheel fresh; CI green; `/complete-phase` → STOP at the gate
+- [x] Verify — 2026-09-20: ruff check clean, format clean after one doc code block; mypy 471 files; **1,846 passed on 3.14 and 1,846 on 3.12** (benchmark included); the cargo gate; the TS types generated without drift, checked, built; `momentum okf check .` conformant (214 files); CI green on `aca389d` (the same code) — on the release commit every job was refused by GitHub billing (*recent account payments have failed or your spending limit needs to be increased*), recorded in the retrospective; `/complete-phase` → STOP at the gate

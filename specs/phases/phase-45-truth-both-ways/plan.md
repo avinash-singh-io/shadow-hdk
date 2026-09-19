@@ -1,6 +1,6 @@
 ---
 type: Plan
-status: in-progress
+status: complete
 ---
 
 # Phase 45 — truth both ways — Plan

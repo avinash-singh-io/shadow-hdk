@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 tags: [usage, cache-tokens, session-gone, failure, behaviour, codex, claude-code, attributes, judgement, modes, contained, web, ci, python-3.14, invariants, providers]
 deps: [phase-44-tools-as-code]
 ---

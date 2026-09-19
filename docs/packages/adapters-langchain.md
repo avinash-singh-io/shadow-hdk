@@ -49,11 +49,13 @@ from shadow_hdk.providers import ready
 from shadow_hdk.serve import a_thread
 
 # inference by a local model — the kit's own loop runs it (ModelAgent, D98)
-async with a_thread(root, model=LangChainModel("ollama:llama3.1")) as thread: ...
+async with a_thread(root, model=LangChainModel("ollama:llama3.1")) as thread:
+    ...
 
 # agency by whichever coding CLI is signed in — the loop is the CLI's (D43)
-found = await ready()               # or ready("codex"); raises NoProvider naming what would fix it
-async with a_thread(root) as thread: ...
+found = await ready()  # or ready("codex"); raises NoProvider naming what would fix it
+async with a_thread(root) as thread:
+    ...
 ```
 
 Both are one `Thread`: the same record, the same modes, the same questions and spend. Which key,

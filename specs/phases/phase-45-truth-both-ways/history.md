@@ -1,6 +1,6 @@
 ---
 type: History
-status: in-progress
+status: complete
 ---
 
 # phase-45-truth-both-ways — History
