@@ -37,3 +37,11 @@ Affects-specs: none
 Detail: Twenty Python tests — the candidates per platform, the operator's narrowing, the helper's argv, the proof passing a candidate over and naming each tried, the mechanism on the evidence, and six that run only on a Linux kernel with the helper installed (the CI runner) — plus the lockstep test and the crate's own: eight argument tests and thirteen integration tests that watch the built binary deny a write outside, allow one inside and in every root, deny a write in `read-only` while `/dev/null` stays writable, refuse `AF_INET`/`AF_INET6` and keep `AF_UNIX`, refuse `io_uring_setup` with `EPERM`, pass the child's exit code through, name a missing command at 127, say the usage at 121, and carry the environment and the working directory. The `io_uring` test is there because seccomp does not see io_uring operations: a runtime that blocked `socket` and left `io_uring_setup` open would have blocked nothing.
 
 ---
+
+### [NOTE] 2026-09-19 — G1: the helper, and three choices inside it
+Topics: landlock, seccomp, io_uring, abi, devices, exit-codes, maturin
+Affects-phases: phase-41-linux-confinement
+Affects-specs: none
+Detail: (1) The Landlock ABI is a build-time choice, `ABI::V5`, per the crate's own guidance — never derived from the running kernel — with best-effort compatibility below it; a kernel that enforces nothing is exit 120, a kernel that enforces part (ABI 4 on Ubuntu 24.04) is accepted and the Python proof decides. (2) seccomp refuses `io_uring_setup` beside non-`AF_UNIX` `socket`: io_uring can create and connect sockets without a `socket` syscall since 5.19, so the field's usual "block the socket syscalls" leaves a door; the integration test asserts `EPERM` on it. (3) `/dev/full`, `/dev/ptmx` and `/dev/pts` join BUG-023's device list on Linux — a command given a pseudo-terminal, or allocating one, must be able to write it. The helper is 458 KB as a static-pie musl binary; the crate builds and refuses honestly (120) off Linux so it lints, unit-tests and packages on any machine.
+
+---

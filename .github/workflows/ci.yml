@@ -54,3 +54,24 @@ jobs:
           --cov=shadow_hdk.runtime --cov-report=term-missing --cov-fail-under=90
       - name: the latency budget, measured and printed
         run: uv run pytest tests/runtime/test_benchmark.py -q -s
+
+  # The OS layer's native crate (Epic 0010, D123): formatted, clippy-clean at -D warnings, and its
+  # tests run on a Linux kernel — `tests/confines.rs` watches the built helper deny a write outside
+  # the root, allow one inside, refuse an internet socket and keep a unix one, refuse io_uring,
+  # pass a child's exit code through. Those tests are compiled out off Linux, so this job is the
+  # only place they run; a red run here blocks a release (D126).
+  native:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/sandbox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - name: the helper says what this kernel has
+        run: cargo run --quiet -- --probe

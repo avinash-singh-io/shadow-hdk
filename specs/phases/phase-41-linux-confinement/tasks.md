@@ -16,9 +16,9 @@ status: in-progress
 - [x] Verify RED — 2026-09-19: the new Python file fails at import on the absent `local_sandboxes`; `test_the_linux_helper_moves_with_the_kit` fails on the absent `native/sandbox/pyproject.toml` (the 14 other tests in those files pass, 1 skips); `cargo test` fails to compile on the absent `parse`/`Command`/`Mode`/`UsageError` (8 errors), on the host and for `x86_64-unknown-linux-musl`; ruff clean
 
 ## Group 1 — The helper
-- [ ] `native/sandbox/`: `Cargo.toml`, `src/args.rs`, `src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)
-- [ ] `.github/workflows/ci.yml`: the `native` job — fmt, clippy `-D warnings`, `cargo test` on ubuntu-latest
-- [ ] Verify (local): `cargo fmt --check`; clippy on the host and on `x86_64-unknown-linux-musl`; `cargo test`; a release build for the musl target links
+- [x] `native/sandbox/`: `Cargo.toml`, `src/args.rs`, `src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)
+- [x] `.github/workflows/ci.yml`: the `native` job — fmt, clippy `-D warnings`, `cargo test` on ubuntu-latest
+- [x] Verify (local) — 2026-09-19: `cargo fmt --check` clean; `cargo clippy --all-targets -- -D warnings` clean on the host, on `x86_64-unknown-linux-musl` and on `aarch64-unknown-linux-musl`; `cargo test` 9 argument tests pass (the 13 confinement tests compiled out on macOS); `cargo build --release --target x86_64-unknown-linux-musl` (rust-lld) links a 458 KB static-pie ELF
 - [ ] Verify (CI): the `native` job green — `tests/confines.rs` watched the binary deny and allow on the runner's kernel; run URL: _(…)_
 
 ## Group 2 — The machine's mechanisms, the proof deciding

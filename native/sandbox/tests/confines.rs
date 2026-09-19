@@ -9,7 +9,10 @@ use std::process::{Command, Output};
 const HELPER: &str = env!("CARGO_BIN_EXE_shadow-hdk-linux-sandbox");
 
 fn probe() -> Output {
-    Command::new(HELPER).arg("--probe").output().expect("the helper runs")
+    Command::new(HELPER)
+        .arg("--probe")
+        .output()
+        .expect("the helper runs")
 }
 
 /// The kernel this runs on has Landlock, or the helper says so and the rest cannot be proven here.
@@ -21,7 +24,10 @@ fn landlock_here() -> bool {
             eprintln!("no Landlock on this kernel — the helper says so; the proofs below skip");
             false
         }
-        other => panic!("--probe exited {other:?}: {}", String::from_utf8_lossy(&out.stderr)),
+        other => panic!(
+            "--probe exited {other:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        ),
     }
 }
 
@@ -37,7 +43,10 @@ fn run(mode: &str, roots: &[&Path], argv: &[&str]) -> Output {
 }
 
 fn a_root() -> tempfile::TempDir {
-    tempfile::Builder::new().prefix("shadow-hdk-confines-").tempdir().unwrap()
+    tempfile::Builder::new()
+        .prefix("shadow-hdk-confines-")
+        .tempdir()
+        .unwrap()
 }
 
 fn shell(script: &str) -> Vec<&str> {
@@ -70,7 +79,12 @@ fn a_write_inside_the_root_lands() {
         &[root.path()],
         &shell(&format!("echo fine > {}", inside.display())),
     );
-    assert_eq!(out.status.code(), Some(0), "{}", String::from_utf8_lossy(&out.stderr));
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     assert_eq!(std::fs::read_to_string(&inside).unwrap(), "fine\n");
 }
 
@@ -88,7 +102,10 @@ fn a_write_outside_the_root_is_denied_and_leaves_no_file() {
         &shell(&format!("echo bad > {}", outside.display())),
     );
     assert_ne!(out.status.code(), Some(0));
-    assert!(!outside.exists(), "a confined command wrote outside the root");
+    assert!(
+        !outside.exists(),
+        "a confined command wrote outside the root"
+    );
 }
 
 #[test]
@@ -104,8 +121,17 @@ fn every_root_is_writable_and_nothing_between_them() {
         one.path().join("a").display(),
         two.path().join("b").display()
     );
-    let out = run("workspace-write", &[one.path(), two.path()], &shell(&script));
-    assert_eq!(out.status.code(), Some(0), "{}", String::from_utf8_lossy(&out.stderr));
+    let out = run(
+        "workspace-write",
+        &[one.path(), two.path()],
+        &shell(&script),
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let out = run(
         "workspace-write",
         &[one.path(), two.path()],
@@ -122,12 +148,25 @@ fn read_only_denies_a_write_in_the_root_and_allows_the_null_device() {
     }
     let root = a_root();
     let inside = root.path().join("sneaky.txt");
-    let out = run("read-only", &[], &shell(&format!("echo x > {}", inside.display())));
+    let out = run(
+        "read-only",
+        &[],
+        &shell(&format!("echo x > {}", inside.display())),
+    );
     assert_ne!(out.status.code(), Some(0));
     assert!(!inside.exists(), "read-only let a command write");
     // Devices are not files (BUG-023): `git` opens /dev/null read-write at startup.
-    let out = run("read-only", &[], &shell("echo x > /dev/null && cat /dev/null && echo ok"));
-    assert_eq!(out.status.code(), Some(0), "{}", String::from_utf8_lossy(&out.stderr));
+    let out = run(
+        "read-only",
+        &[],
+        &shell("echo x > /dev/null && cat /dev/null && echo ok"),
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "ok");
 }
 
@@ -136,14 +175,21 @@ fn reads_are_open_everywhere() {
     if !landlock_here() {
         return;
     }
-    let out = run("read-only", &[], &shell("cat /etc/hostname > /dev/null && ls / > /dev/null"));
-    assert_eq!(out.status.code(), Some(0), "{}", String::from_utf8_lossy(&out.stderr));
+    let out = run(
+        "read-only",
+        &[],
+        &shell("cat /etc/hostname > /dev/null && ls / > /dev/null"),
+    );
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 }
 
 fn python() -> Option<PathBuf> {
-    ["python3", "python"]
-        .iter()
-        .find_map(|name| which(name))
+    ["python3", "python"].iter().find_map(|name| which(name))
 }
 
 fn which(name: &str) -> Option<PathBuf> {
@@ -168,22 +214,43 @@ fn an_internet_socket_is_refused_and_a_unix_socket_is_not() {
     let inet = run(
         "workspace-write",
         &[root.path()],
-        &[&python, "-c", "import socket; socket.socket(socket.AF_INET); print('OPENED')"],
+        &[
+            &python,
+            "-c",
+            "import socket; socket.socket(socket.AF_INET); print('OPENED')",
+        ],
     );
-    assert_ne!(inet.status.code(), Some(0), "an internet socket opened inside the sandbox");
+    assert_ne!(
+        inet.status.code(),
+        Some(0),
+        "an internet socket opened inside the sandbox"
+    );
     assert!(!String::from_utf8_lossy(&inet.stdout).contains("OPENED"));
     let inet6 = run(
         "workspace-write",
         &[root.path()],
-        &[&python, "-c", "import socket; socket.socket(socket.AF_INET6); print('OPENED')"],
+        &[
+            &python,
+            "-c",
+            "import socket; socket.socket(socket.AF_INET6); print('OPENED')",
+        ],
     );
     assert_ne!(inet6.status.code(), Some(0));
     let unix = run(
         "workspace-write",
         &[root.path()],
-        &[&python, "-c", "import socket; socket.socket(socket.AF_UNIX); print('OPENED')"],
+        &[
+            &python,
+            "-c",
+            "import socket; socket.socket(socket.AF_UNIX); print('OPENED')",
+        ],
     );
-    assert_eq!(unix.status.code(), Some(0), "{}", String::from_utf8_lossy(&unix.stderr));
+    assert_eq!(
+        unix.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&unix.stderr)
+    );
     let connect = run(
         "workspace-write",
         &[root.path()],
@@ -215,7 +282,10 @@ fn io_uring_cannot_be_set_up() {
                   print('ERRNO', ctypes.get_errno() if r < 0 else 0)";
     let out = run("workspace-write", &[root.path()], &[&python, "-c", script]);
     let said = String::from_utf8_lossy(&out.stdout);
-    assert!(said.contains("ERRNO 1"), "io_uring_setup was not refused with EPERM: {said}");
+    assert!(
+        said.contains("ERRNO 1"),
+        "io_uring_setup was not refused with EPERM: {said}"
+    );
 }
 
 #[test]
@@ -265,5 +335,15 @@ fn the_environment_and_the_working_directory_reach_the_child() {
         .unwrap();
     let said = String::from_utf8_lossy(&out.stdout);
     assert!(said.contains("carried"), "{said}");
-    assert!(said.contains(&root.path().canonicalize().unwrap().to_string_lossy().to_string()), "{said}");
+    assert!(
+        said.contains(
+            &root
+                .path()
+                .canonicalize()
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
+        ),
+        "{said}"
+    );
 }
