@@ -935,20 +935,34 @@ class Conversation:
                 offered.append(Offered(registration, kind, _source_of(port, registration)))
         return offered
 
+    @contextlib.asynccontextmanager
+    async def _between_turns(self) -> AsyncIterator[None]:
+        """A change that reopens the provider or the environment happens **between turns, or
+        not at all** (BUG-056). With a turn running it is refused with the typed `TurnRunning`
+        — the refusal `turn(when="reject")` gives (D81), which the wire names `turn_running` —
+        rather than closing a session under the turn. And the change *holds* the turn lock
+        while it runs, so a turn asked for meanwhile waits and then runs on the new session
+        instead of racing the reopen. The check and the acquire have no await between them:
+        on one event loop nothing can take the lock in the gap."""
+        if self._turning.locked():
+            raise TurnRunning(self.id, self._running_turn)
+        async with self._turning:
+            yield
+
     async def add_root(self, name: str, path: Path | str) -> list[Event]:
         """A directory added while the conversation runs (D76; Claude Code's `/add-dir`): the
         environment is re-opened on the new set — the confinement proof runs again — and
         `WorkspaceChanged` says so. Refused, unchanged, when the name is taken, the directory
-        nests another root, or the sandbox cannot confine the new set."""
+        nests another root, or the sandbox cannot confine the new set; refused with
+        `TurnRunning` while a turn runs — between turns, or not at all (BUG-056)."""
         grown = self.workspace.with_root(Root(name, str(path)))
-        if self._turning.locked():
-            raise RuntimeError("a root is added between turns, not during one")
-        environment = environment_of(self._ports)
-        if environment is not None:
-            await environment.reopen(workspace=grown)
-        self.workspace = grown
-        await self.registry.changed()  # the tools describe the roots; a resident agent re-lists
-        await self._reopen_provider()  # and one that does not (BUG-032) is reopened, resumed
+        async with self._between_turns():
+            environment = environment_of(self._ports)
+            if environment is not None:
+                await environment.reopen(workspace=grown)
+            self.workspace = grown
+            await self.registry.changed()  # the tools describe the roots; a resident agent re-lists
+            await self._reopen_provider()  # and one that does not (BUG-032) is reopened, resumed
         return await self.announce(lambda **k: WorkspaceChanged(roots=grown.roots, **k))
 
     async def set_mode(self, mode_id: str) -> Changed | None:
@@ -960,7 +974,8 @@ class Conversation:
         proven again — before the policy flips, so a page never says `full` over a sandbox that
         is not. `None` when nothing changed. An unknown mode, or one out of the principal's
         scope (D82), raises and changes nothing; a sandbox that cannot make the environment
-        mode true raises and changes nothing.
+        mode true raises and changes nothing. **Between turns, or not at all:** while a turn
+        runs it is refused with `TurnRunning` (BUG-056), and while it runs a turn waits.
         """
         if self._modes is not None:
             find = getattr(self._modes, "find", None)
@@ -979,19 +994,20 @@ class Conversation:
         if mode_id == self.mode and behaviour == self._behaviour:
             return None
         wanted = getattr(spec, "environment", None) if spec is not None else None
-        environment = environment_of(self._ports)
-        if environment is not None and wanted and wanted != environment.mode:
-            await environment.reopen(mode=wanted)  # raises `CannotEnforce`: nothing changed
-        self.mode = mode_id
-        if spec is not None:
-            self._behaviour = behaviour
-            self._mode_plan = getattr(spec, "plan", None)
-        # The provider is reopened on its own session (D76): the catalogue it holds is the old
-        # mode's, and a resident CLI was measured to keep it after `list_changed` (BUG-032) — a
-        # fresh process re-lists, and `--resume` keeps its memory of the conversation.
-        await self._reopen_provider()
-        # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
-        await self.registry.changed()
+        async with self._between_turns():  # refused with `TurnRunning` during a turn (BUG-056)
+            environment = environment_of(self._ports)
+            if environment is not None and wanted and wanted != environment.mode:
+                await environment.reopen(mode=wanted)  # raises `CannotEnforce`: nothing changed
+            self.mode = mode_id
+            if spec is not None:
+                self._behaviour = behaviour
+                self._mode_plan = getattr(spec, "plan", None)
+            # The provider is reopened on its own session (D76): the catalogue it holds is the
+            # old mode's, and a resident CLI was measured to keep it after `list_changed`
+            # (BUG-032) — a fresh process re-lists, and `--resume` keeps its memory.
+            await self._reopen_provider()
+            # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
+            await self.registry.changed()
         return Changed(
             mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
         )
