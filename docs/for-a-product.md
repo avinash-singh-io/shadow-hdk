@@ -365,6 +365,15 @@ The record, the events, the fold, the questions, the lease, admission, authority
 in this document — because they are one composition. A product that starts in-process and moves a
 deployment behind `serve` changes where the process runs, not what it does.
 
+### Where it runs — the operating systems
+
+A confined mode (`read-only`, `workspace-write`) opens only where the OS can be watched denying
+(D36): on macOS through seatbelt; on Linux through the kit's `shadow-hdk-linux-sandbox` helper
+(Landlock + seccomp; installed with the kit on x86_64 and aarch64; nothing to configure on
+Ubuntu 24.04), bubblewrap behind it. `env.isolation.mechanism` — and the capability evidence — say
+which is in force, so a product's "confined by …" line is read, not assumed. Windows is not yet
+supported (Epic 0010, Phase 43; WSL2 meanwhile). `full` opens everywhere and says what it reaches.
+
 ---
 
 ## Follow-ups this raised — filed on the kit's backlog

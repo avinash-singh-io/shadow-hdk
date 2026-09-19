@@ -71,7 +71,7 @@ import { tool } from "shadow-hdk-client";
 
 const client = await spawnHarness({
   command: "uvx",
-  args: ["--from", "shadow-hdk==0.32.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
+  args: ["--from", "shadow-hdk==0.33.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
 });
 client.components.serve([tool("greet", { description: "Greet.", effects: {} }, async ({ name }) => ({ greeting: `hello, ${name}` }))]);
 const started = await client.thread.start({ host_components: true });
@@ -82,8 +82,10 @@ client.close(); // ends the runtime and its tree
 **What is spawned is a command you name, and today it needs `uv` on the machine.** That is the
 honest state: the kit is a Python distribution, so the documented default runs it through `uvx`.
 The pinned, no-prerequisite binary per OS — the interpreter inside, nothing to install first — is
-Epic 0010's (cross-platform), Phase 42. When it lands, the `command` becomes that binary and
-nothing else here changes.
+Epic 0010's (cross-platform), Phase 42 — optional, when a sidecar without a first-run network
+fetch is required; a host may ship `uv` itself meanwhile. When it lands, the `command` becomes
+that binary and nothing else here changes. On Linux the spawned runtime confines commands through
+the kit's own helper (0.33, `shadow-hdk-linux-sandbox`), which `uvx` installs with it.
 
 The server emits a heartbeat comment after 15 seconds idle. If no bytes arrive for
 `silenceSeconds` (45 by default), the client cancels the silent response and reattaches with the

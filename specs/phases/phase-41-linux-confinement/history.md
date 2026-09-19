@@ -61,3 +61,19 @@ Affects-specs: none
 Detail: The `bubblewrap` job runs the full non-live suite with `SHADOW_HDK_SANDBOX=bubblewrap`, not the environment's tests alone — a mechanism that passes the environment's proof and fails a served thread's is not a fallback. The `macos` job runs the same suite on seatbelt; the Postgres contract suites skip there and say so. With `native`, four jobs; a red one blocks a release (D126). The `check` job asserts `landlock` is the mechanism in force before the suite, `bubblewrap` asserts its own, `macos` asserts seatbelt — so a runner that silently fell back would fail its assertion, not pass a weaker proof.
 
 ---
+
+### [DECISION] 2026-09-19 — G3: the helper's wheels are built on every push, by one workflow
+Topics: ci, publish, maturin, wheels, distribution
+Affects-phases: phase-41-linux-confinement, phase-42-the-artifact
+Affects-specs: none
+Detail: The four platform wheels and the sdist are built by `helper-wheels.yml`, a reusable workflow `ci` calls on every push and `publish` calls at a release — one definition, so a release never finds out at publish time that the cross matrix broke, and the x86_64 glibc wheel is installed into a fresh venv on the runner to probe and confine for real before anything is published. The aarch64 wheels are built and not run (ENH-036: an arm runner). `publish` uploads seven files in one `uv publish` so the index lists the helper the moment it lists the kit, and the fresh-install smoke asserts Landlock from the index.
+
+---
+
+### [DISCOVERY] 2026-09-19 — Two rows from the helper's design
+Topics: landlock, scope, aarch64, ci
+Affects-phases: phase-42-the-artifact
+Affects-specs: none
+Detail: ENH-035 — Landlock ABI 6 can scope abstract unix sockets and signals to the sandbox; the helper keeps `AF_UNIX` whole today (Codex's exemption) so a confined command could signal its parent or reach a desktop's D-Bus; decide with a measurement of what breaks. ENH-036 — the aarch64 wheels are never executed in CI; GitHub's arm runners are free for public repositories.
+
+---
