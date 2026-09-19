@@ -120,3 +120,14 @@ here, ahead of Phase 34. The gate ran on both interpreters: 1,784 passed on 3.12
 identical; the 0.32.0 wheel installed fresh and answered `initialize`. Protocol 3 unchanged.
 
 ---
+
+### [NOTE] 2026-09-19 — /sync-docs: the architecture specs carry Phase 44
+Topics: wire, components, proof, environment
+Affects-phases: phase-44-tools-as-code
+Affects-specs: architecture/wire.md, architecture/adapters.md, architecture/runtime.md
+Detail: Additive, so the specs directly (Rule 10): `wire.md` — `host_components` on
+`thread/start`/`resume` and a paragraph on the host's tools crossing by inversion, the gone host,
+the posture, the TypeScript transport; `adapters.md` — the proof reads stdout, never stderr;
+`runtime.md` — a tool's `source` is what its port declares when it declares one.
+
+---
