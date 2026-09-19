@@ -90,3 +90,20 @@ host. Proven over loopback and over HTTP with a second connection replacing the 
 [ARCH_CHANGE] pending for `/sync-docs`: the thread, crossed, gains the host's components.
 
 ---
+
+### [NOTE] 2026-09-19 — G3: tools as code from TypeScript, over HTTP and over a spawned stdio runtime
+Topics: typescript, sidecar, stdio, components
+Affects-phases: phase-44-tools-as-code
+Affects-specs: architecture/wire.md#the-thread-crossed
+Detail: The client now stands on a `Transport` — `HttpTransport` holds what the client held (the
+SSE session, reattach, silence detection; the invariants that drive them pass unchanged) and
+`StdioTransport` in `node.ts` spawns a runtime and speaks JSON lines, exported as
+`shadow-hdk-client/node` so a browser bundle never imports `node:child_process`. `tool()` builds a
+`Registration` in the published shape with effects in the battery document's vocabulary;
+`components.serve` installs the two callbacks; `thread.start({ host_components: true })`. Proven by
+the Python suite driving `host-tools-smoke.ts`: the same TypeScript function called back over
+HTTP and over a spawned stdio runtime, its output on the record, `source: "host"`. The README
+states the sidecar's prerequisite (`uv`, via `uvx`) and points at Epic 0010 for the pinned binary.
+`thread.resume` takes an options object — the one signature change, for the migration note.
+
+---

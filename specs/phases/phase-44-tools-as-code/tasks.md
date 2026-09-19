@@ -27,12 +27,12 @@ status: in-progress
 - [x] Verify — 2026-09-19: `tests/wire tests/serve tests/invariants tests/runtime` 781 passed with only the two TypeScript invariants RED (the smoke does not compile until G3); mypy 457 files clean; ruff clean; mutations — port never added → 3 fail; gone unnamed → 1 fails; gone never typed → 1 fails
 
 ## Group 3 — The TypeScript surface
-- [ ] stdio transport: `HarnessClient.spawn({ command, args, cwd, env })`, JSON lines, `close()` ends the tree, exit → typed error
-- [ ] `tool()` + `components.serve()`: registrations from the generated `Registration` type; `components.invoke` dispatch; thrown → `failed`; `Refused` → `refused`
-- [ ] `thread.start({ host_components })`, `thread.resume(id, { host_components })` typed
-- [ ] `smoke.ts` over HTTP and stdio; `npm test` against a real `serve`; the Python serve test gains the host-tool case
-- [ ] README: the sidecar section — configurable command, documented default, the pinned binary is Epic 0010 P42's
-- [ ] Verify: `npm run generate && npm run check && npm run build && npm test`; Python serve tests green
+- [x] The client refactored onto a `Transport` (`transport.ts`: `HttpTransport` carries the SSE session, reattach and silence detection unchanged; the invariants that drive them pass); `node.ts` — `StdioTransport` and `spawnHarness({ command, args, cwd, env })` over JSON lines, `close()` ends stdin then SIGTERM then SIGKILL, an exit fails what is waiting with its reason; exported as `shadow-hdk-client/node` so the browser build never sees `node:child_process`
+- [x] `components.ts`: `tool(id, { description, effects, input, output, name, labels }, handler)` → the generated `Registration` (effects in the battery document's vocabulary); `client.components.serve(tools)` installs `components.registrations` / `components.invoke`; a thrown error → `failed`, a thrown `Refusal` → `refused`, an unknown id → `failed` naming it; installed handlers answer before `onRequest`
+- [x] `thread.start({ host_components })`; `thread.resume(id, { plan_limits, host_components })` — an options object now (0.31.0 took a bare `PlanLimits`; the migration note says so)
+- [x] `host-tools-smoke.ts` over HTTP and over a spawned stdio runtime (`tests/serve/_stdio_runtime_double.py`), driven by `tests/serve/test_a_typescript_host_serves_tools.py` — the Python suite is the runner, as for the README smoke; no separate node test runner was added
+- [x] README: *Tools as code* and *The sidecar* — the configurable command, the `uvx` default that needs `uv` today, and the sentence that the pinned binary is Epic 0010 Phase 42's
+- [x] Verify — 2026-09-19: `npm run generate && npm run check && npm run build` clean (no `npm test` script exists; the Python suite is the runner); `tests/serve tests/invariants tests/wire` 309 passed — the TS host tool called back over HTTP and over stdio, the README smoke, the client invariants including the silence-reattach over the refactored transport
 
 ## Group 4 — Docs, release
 - [ ] `0.32.md` under `docs/migrations/`; `docs/packages/wire.md`; `docs/consuming.md`; `docs/for-a-product.md` §7; `clients/typescript/README.md`
