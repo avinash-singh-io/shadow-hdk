@@ -31,6 +31,10 @@ dependencies = [
     "uvicorn>=0.30",
     "httpx>=0.27",                        # a client of that listener, and the TypeScript proof's peer
     "langgraph-checkpoint-sqlite>=3.1",   # a parked run sleeps on disk by default (D80), not in memory
+    # The Linux confinement helper (Epic 0010, D123/D133): Landlock + seccomp applied before exec,
+    # a bin-only platform wheel built from `native/sandbox`, in lockstep with this version. On the
+    # two architectures it is built for; elsewhere on Linux the environment falls back to bwrap.
+    "shadow-hdk-linux-sandbox==0.32.1; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 
 [project.optional-dependencies]
@@ -96,6 +100,15 @@ dev = [
 [tool.uv]
 # The suite exercises every adapter, so a development sync installs every extra.
 default-groups = ["dev"]
+
+# The Linux helper is a workspace member so the lock resolves it from the tree and a Linux
+# `uv sync` builds it with maturin (cargo on PATH); a published `shadow-hdk` wheel resolves the
+# same name from the index. Off Linux the marker leaves it out.
+[tool.uv.workspace]
+members = ["native/sandbox"]
+
+[tool.uv.sources]
+shadow-hdk-linux-sandbox = { workspace = true }
 
 [tool.ruff]
 line-length = 100

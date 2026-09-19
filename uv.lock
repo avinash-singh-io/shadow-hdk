@@ -7,6 +7,12 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[manifest]
+members = [
+    "shadow-hdk",
+    "shadow-hdk-linux-sandbox",
+]
+
 [[package]]
 name = "agent-client-protocol"
 version = "0.12.1"
@@ -2646,6 +2652,7 @@ dependencies = [
     { name = "langgraph-checkpoint-sqlite" },
     { name = "mcp" },
     { name = "pydantic" },
+    { name = "shadow-hdk-linux-sandbox", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "starlette" },
     { name = "uvicorn" },
 ]
@@ -2738,6 +2745,7 @@ requires-dist = [
     { name = "shadow-hdk", extras = ["langchain"], marker = "extra == 'ollama'" },
     { name = "shadow-hdk", extras = ["langchain"], marker = "extra == 'openai'" },
     { name = "shadow-hdk", extras = ["openai", "anthropic", "ollama", "huggingface", "mqtt", "otel", "sandbox", "search", "postgres"], marker = "extra == 'all'" },
+    { name = "shadow-hdk-linux-sandbox", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')", editable = "native/sandbox" },
     { name = "starlette", specifier = ">=0.37" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
@@ -2755,6 +2763,11 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
     { name = "twine", specifier = ">=6" },
 ]
+
+[[package]]
+name = "shadow-hdk-linux-sandbox"
+version = "0.32.1"
+source = { editable = "native/sandbox" }
 
 [[package]]
 name = "shellingham"

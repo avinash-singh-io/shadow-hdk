@@ -226,7 +226,7 @@ async def test_a_sandbox_that_does_not_actually_confine_is_refused(
         def wrap(self, argv: list[str], *, root: Any, mode: str) -> list[str]:
             return argv  # confines nothing
 
-    monkeypatch.setattr(module, "local_sandbox", lambda: Pretends("pretend", "/bin/true"))
+    monkeypatch.setattr(module, "local_sandboxes", lambda: (Pretends("pretend", "/bin/true"),))
 
     with pytest.raises(CannotEnforce, match="did not see the denials"):
         await LocalEnvironment.open(a_root(tmp_path), mode="workspace-write")

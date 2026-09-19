@@ -58,7 +58,7 @@ def _pretend_machine(
     monkeypatch.setattr(sys, "platform", platform)
     monkeypatch.delenv("SHADOW_HDK_SANDBOX", raising=False)
     monkeypatch.delenv("SHADOW_HDK_LINUX_SANDBOX", raising=False)
-    monkeypatch.setattr(module.shutil, "which", lambda name: on_path.get(name))
+    monkeypatch.setattr(shutil, "which", lambda name: on_path.get(name))
     monkeypatch.setattr(module, "_helper_installed", lambda: None)
 
     def probe(binary: str) -> str | None:
@@ -98,7 +98,7 @@ def test_without_the_helper_linux_has_bubblewrap_or_nothing(monkeypatch: Any) ->
     _pretend_machine(monkeypatch, platform="linux", on_path={"bwrap": "/usr/bin/bwrap"})
     assert [box.name for box in local_sandboxes()] == ["bubblewrap"]
     _pretend_machine(monkeypatch, platform="linux", on_path={})
-    assert local_sandboxes() == [] and local_sandbox() is None
+    assert not local_sandboxes() and local_sandbox() is None
 
 
 def test_on_macos_the_candidate_is_seatbelt_alone(monkeypatch: Any) -> None:
@@ -140,7 +140,8 @@ def test_an_unknown_name_in_the_setting_is_refused_naming_the_known_ones(monkeyp
 def test_the_helper_is_invoked_with_the_mode_and_every_root(tmp_path: Path) -> None:
     box = LocalSandbox("landlock", "/venv/bin/" + HELPER)
     one, two = tmp_path / "one", tmp_path / "two"
-    one.mkdir(), two.mkdir()
+    one.mkdir()
+    two.mkdir()
     workspace = Workspace.of(one).with_root(Root("two", str(two)))
 
     wrapped = box.wrap(["sh", "-c", "true"], root=workspace, mode="workspace-write")
@@ -192,7 +193,7 @@ async def test_a_candidate_that_confines_nothing_is_passed_over_for_one_that_doe
     real = local_sandbox()
     assert real is not None
     monkeypatch.setattr(
-        module, "local_sandboxes", lambda: [ConfinesNothing("pretend", "/bin/true"), real]
+        module, "local_sandboxes", lambda: (ConfinesNothing("pretend", "/bin/true"), real)
     )
 
     env = await LocalEnvironment.open(a_root(tmp_path), mode="workspace-write")
@@ -207,7 +208,7 @@ async def test_when_no_candidate_confines_the_refusal_names_each_one_tried(
     monkeypatch.setattr(
         module,
         "local_sandboxes",
-        lambda: [ConfinesNothing("pretend", "/bin/true"), ConfinesNothing("other", "/bin/true")],
+        lambda: (ConfinesNothing("pretend", "/bin/true"), ConfinesNothing("other", "/bin/true")),
     )
 
     with pytest.raises(CannotEnforce) as refused:
@@ -221,7 +222,7 @@ async def test_when_no_candidate_confines_the_refusal_names_each_one_tried(
 async def test_where_there_is_no_candidate_the_refusal_names_the_mechanisms_and_the_fix(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
-    monkeypatch.setattr(module, "local_sandboxes", lambda: [])
+    monkeypatch.setattr(module, "local_sandboxes", lambda: ())
 
     with pytest.raises(CannotEnforce) as refused:
         await LocalEnvironment.open(a_root(tmp_path), mode="read-only")

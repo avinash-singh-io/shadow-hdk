@@ -19,15 +19,15 @@ status: in-progress
 - [x] `native/sandbox/`: `Cargo.toml`, `native/sandbox/src/args.rs`, `native/sandbox/src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `native/sandbox/src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)
 - [x] `.github/workflows/ci.yml`: the `native` job — fmt, clippy `-D warnings`, `cargo test` on ubuntu-latest
 - [x] Verify (local) — 2026-09-19: `cargo fmt --check` clean; `cargo clippy --all-targets -- -D warnings` clean on the host, on `x86_64-unknown-linux-musl` and on `aarch64-unknown-linux-musl`; `cargo test` 9 argument tests pass (the 13 confinement tests compiled out on macOS); `cargo build --release --target x86_64-unknown-linux-musl` (rust-lld) links a 458 KB static-pie ELF
-- [ ] Verify (CI): the `native` job green — `native/sandbox/tests/confines.rs` watched the binary deny and allow on the runner's kernel; run URL: _(…)_
+- [x] Verify (CI) — 2026-09-19: the `native` job green on `1d4145a` — fmt, clippy `-D warnings`, 9 argument tests and **12 confinement tests** passed on the ubuntu-24.04 image (Landlock ABI 7 reported by `--probe`): a write outside denied and no file left, inside allowed in every root and nothing between them, `read-only` denying the root while `/dev/null` writes, reads open everywhere, `AF_INET`/`AF_INET6` refused and `AF_UNIX` kept, `io_uring_setup` → `EPERM`, the exit code through, 127 named, 121 with the usage, environment and cwd carried — https://github.com/avinash-singh-io/shadow-hdk/actions/runs/35460151424/job/105942432468
 
 ## Group 2 — The machine's mechanisms, the proof deciding
-- [ ] `runtime/environment.py`: `Isolation.mechanism`; `capabilities_of` names it in the evidence
-- [ ] `adapters/environment/local.py`: `LocalSandbox.detail`; `local_sandboxes()` (helper via env → scripts dir → `PATH`, kept when `--probe` exits 0; then `bwrap`; seatbelt on darwin); `SHADOW_HDK_SANDBOX`; the landlock `wrap`; `LocalEnvironment.open` proving each candidate and keeping the first proven, refusing naming each tried; `_prove` stamps the mechanism
-- [ ] `backends.py`: `prove_box` stamps the mechanism where the backend has a name
-- [ ] `pyproject.toml`: the Linux dependency with its marker; the uv workspace member and source; `uv lock`
-- [ ] CI: `check` builds the helper and asserts landlock in force; the `bubblewrap` job (sysctl, apt, `SHADOW_HDK_SANDBOX`, asserts bubblewrap); the `macos` job
-- [ ] Verify (local, macOS, 3.12 and 3.14): `tests/adapters/environment tests/wire tests/serve tests/test_versions.py` green; mutations — verdict ignored → the pretend test fails; mechanism not stamped → the evidence test fails
+- [x] `runtime/environment.py`: `Isolation.mechanism`; `capabilities_of` names it in the evidence
+- [x] `adapters/environment/local.py`: `LocalSandbox.detail`; `local_sandboxes()` (helper via env → scripts dir → `PATH`, kept when `--probe` exits 0; then `bwrap`; seatbelt on darwin); `SHADOW_HDK_SANDBOX`; the landlock `wrap`; `LocalEnvironment.open` proving each candidate and keeping the first proven, refusing naming each tried; `_prove` stamps the mechanism
+- [x] `backends.py`: `prove_box` stamps the mechanism where the backend has a name
+- [x] `pyproject.toml`: the Linux dependency with its marker; the uv workspace member and source; `uv lock`
+- [x] CI: `check` builds the helper and asserts landlock in force; the `bubblewrap` job (sysctl, apt, `SHADOW_HDK_SANDBOX`, asserts bubblewrap); the `macos` job
+- [x] Verify (local, macOS) — 2026-09-19: `tests/adapters/environment tests/wire tests/serve tests/test_versions.py tests/invariants` **395 passed** on 3.12 and **395 passed** on 3.14.6; the full non-live suite 1,799 passed on 3.12; ruff check + format clean; mypy 461 files clean; `uv lock` resolved the workspace member; `uv sync --all-packages` built the helper with maturin on macOS and it refused honestly (120, `supported: false`) while detection listed seatbelt alone; mutations — the verdict ignored → 2 fail (passed-over, names-each-tried); the mechanism not stamped → 2 fail (passed-over, the evidence)
 - [ ] Verify (CI): `check` (landlock), `bubblewrap` (bubblewrap) and `macos` (seatbelt) green; run URL: _(…)_
 
 ## Group 3 — Publish, docs, release

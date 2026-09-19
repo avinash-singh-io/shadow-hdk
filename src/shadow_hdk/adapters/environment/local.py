@@ -1,9 +1,20 @@
 """A local environment, confined by the operating system's own sandbox (D49).
 
-Codex's model, taken whole: the OS sandbox around the *process* — `sandbox-exec` on macOS,
-bubblewrap on Linux — so the file tools and the shell tool are ordinary and the environment is what
-is confined. Nothing here re-implements a sandbox; principle 5 says consume, and the operating
-system already ships one.
+Codex's model, taken whole: the OS sandbox around the *process* — `sandbox-exec` on macOS; on
+Linux the kit's own helper applying Landlock and seccomp to itself before `exec`, bubblewrap behind
+it (Epic 0010, D133) — so the file tools and the shell tool are ordinary and the environment is
+what is confined. Nothing here re-implements a sandbox; principle 5 says consume, and the operating
+system already ships one — where it ships the syscalls but not the tool, the helper is the tool
+(`native/sandbox`, D123), and the policy stays here.
+
+**A machine has candidates, in the field's order, and the proof decides.** `local_sandboxes()`
+lists what this machine has — the helper when it is installed and the kernel has Landlock, then
+bubblewrap; seatbelt on macOS — and `LocalEnvironment.open` proves each in turn, keeping the
+first the proof accepts. Nothing is trusted for being found first: a candidate that confines
+nothing is passed over, and when none confines the refusal names each one tried. What was watched
+denying is on the evidence by name (`Isolation.mechanism`). `SHADOW_HDK_SANDBOX` narrows the
+candidates to one — an operator on a machine where one mechanism misbehaves, or a CI job proving
+the fallback.
 
 **Proven at construction, by what is denied (D36).** Before an environment in a confined mode
 exists, it tries to write outside its root and must fail, tries to open a socket and must fail, and
@@ -22,9 +33,13 @@ lies.
 
 from __future__ import annotations
 
+import functools
+import json
+import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -44,6 +59,14 @@ from shadow_hdk.runtime.leash import run_leashed
 
 PROBE_TIMEOUT_S = 20.0
 
+HELPER = "shadow-hdk-linux-sandbox"
+"""The Linux helper's name — the `shadow-hdk-linux-sandbox` distribution puts it beside the
+interpreter; `SHADOW_HDK_LINUX_SANDBOX` names it anywhere else."""
+
+MECHANISMS = ("landlock", "bubblewrap", "seatbelt")
+"""Every way the kit knows to confine a local process, by name — what `SHADOW_HDK_SANDBOX` may
+say, and what `Isolation.mechanism` reports."""
+
 
 @dataclass(frozen=True)
 class LocalSandbox:
@@ -51,6 +74,8 @@ class LocalSandbox:
 
     name: str
     binary: str
+    detail: str = ""
+    """What detection learned beyond the binary — the helper's Landlock ABI, say."""
 
     def wrap(self, argv: list[str], *, root: Path | Workspace, mode: Mode) -> list[str]:
         workspace = root if isinstance(root, Workspace) else Workspace.of(root)
@@ -58,18 +83,90 @@ class LocalSandbox:
             return argv
         if self.name == "seatbelt":
             return [self.binary, "-p", _seatbelt_profile(workspace, mode), *argv]
+        if self.name == "landlock":
+            return [self.binary, *_helper_args(workspace, mode), *argv]
         if self.name == "bubblewrap":
             return [*_bubblewrap_args(self.binary, workspace, mode), *argv]
         raise AssertionError(self.name)  # pragma: no cover
 
 
+@functools.cache
+def local_sandboxes() -> tuple[LocalSandbox, ...]:
+    """The ways this machine can put a process in a box, in the field's order — reported rather
+    than guessed, and decided among by the proof at construction (D133). Cached: what a kernel
+    has does not change while a process runs, and the helper's probe is a subprocess."""
+    found: list[LocalSandbox] = []
+    if sys.platform == "darwin":
+        if (binary := shutil.which("sandbox-exec")) is not None:
+            found.append(LocalSandbox("seatbelt", binary))
+    else:
+        if sys.platform == "linux" and (helper := _helper_path()) is not None:
+            if (detail := _helper_probe(helper)) is not None:
+                found.append(LocalSandbox("landlock", helper, detail))
+        if (bwrap := shutil.which("bwrap")) is not None:
+            found.append(LocalSandbox("bubblewrap", bwrap))
+    if only := os.environ.get("SHADOW_HDK_SANDBOX"):
+        if only not in MECHANISMS:
+            raise ValueError(
+                f"SHADOW_HDK_SANDBOX={only!r} names no mechanism the kit has; "
+                f"the names are {', '.join(MECHANISMS)}"
+            )
+        found = [box for box in found if box.name == only]
+    return tuple(found)
+
+
 def local_sandbox() -> LocalSandbox | None:
-    """Which sandbox this machine has, reported rather than guessed."""
-    if sys.platform == "darwin" and (found := shutil.which("sandbox-exec")):
-        return LocalSandbox("seatbelt", found)
-    if (found := shutil.which("bwrap")) is not None:
-        return LocalSandbox("bubblewrap", found)
-    return None
+    """The first of this machine's candidates — what a confined mode will try first — or None."""
+    return next(iter(local_sandboxes()), None)
+
+
+def _helper_path() -> str | None:
+    """Where the Linux helper is: named outright, beside this interpreter (where its wheel put
+    it), or on `PATH` — in that order, so a product launched from a desktop app whose `PATH` is
+    bare still finds the one its own environment installed."""
+    return os.environ.get("SHADOW_HDK_LINUX_SANDBOX") or _helper_installed() or shutil.which(HELPER)
+
+
+def _helper_installed() -> str | None:
+    scripts = sysconfig.get_path("scripts")
+    if not scripts:
+        return None
+    candidate = Path(scripts) / HELPER
+    return str(candidate) if candidate.is_file() and os.access(candidate, os.X_OK) else None
+
+
+def _helper_probe(binary: str) -> str | None:
+    """What the helper says of this kernel: a detail when it can confine here, None when it
+    cannot (exit 120 — no Landlock) or could not be asked. Installed is not the same as usable."""
+    try:
+        done = subprocess.run(
+            [binary, "--probe"],
+            capture_output=True,
+            text=True,
+            timeout=PROBE_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if done.returncode != 0:
+        return None
+    try:
+        said = json.loads(done.stdout)
+    except ValueError:
+        return None
+    if not isinstance(said, dict) or not said.get("supported"):
+        return None
+    return f"landlock abi {said.get('landlock_abi')}, helper {said.get('version')}"
+
+
+def _helper_args(workspace: Workspace, mode: Mode) -> list[str]:
+    """The helper's contract (`native/sandbox/README.md`): the mode, every root for
+    `workspace-write` (D76), then the command after `--`."""
+    args = ["--mode", mode]
+    if mode == "workspace-write":
+        for r in workspace.roots:
+            args += ["--root", str(Path(r.path).resolve())]
+    return [*args, "--"]
 
 
 def _seatbelt_profile(workspace: Workspace, mode: Mode) -> str:
@@ -162,6 +259,50 @@ def _prove(box: LocalSandbox, root: Path | Workspace, mode: Mode) -> Isolation:
         network_denied=network_denied,
         proven=writes_confined and network_denied and inside_ok,
         secrets_denied=False,
+        mechanism=box.name,
+    )
+
+
+def _prove_one_of(
+    candidates: tuple[LocalSandbox, ...], workspace: Workspace, mode: Mode
+) -> tuple[LocalSandbox | None, Isolation, list[str]]:
+    """Prove the candidates in order and keep the first the proof accepts (D133). What each
+    rejected one failed to show comes back by name, for the refusal."""
+    tried: list[str] = []
+    for box in candidates:
+        isolation = _prove(box, workspace, mode)
+        if isolation.proven:
+            return box, isolation, tried
+        tried.append(
+            f"{box.name} was found but the proof did not see the denials ({_unseen(isolation)})"
+        )
+    return None, Isolation.none(), tried
+
+
+def _unseen(isolation: Isolation) -> str:
+    missing = []
+    if not isolation.writes_confined:
+        missing.append("a write outside the root denied")
+    if not isolation.network_denied:
+        missing.append("the network denied")
+    if isolation.writes_confined and isolation.network_denied and not isolation.proven:
+        missing.append("a write inside the root allowed")
+    return ", ".join(missing)
+
+
+def _hint(tried: list[str]) -> str:
+    if tried:
+        return "; ".join(tried)
+    narrowed = os.environ.get("SHADOW_HDK_SANDBOX")
+    have = (
+        f"this machine has no OS sandbox the kit knows: the {HELPER} helper (Landlock, Linux "
+        "5.13+; installed with shadow-hdk on x86_64 and aarch64), bwrap on Linux (Ubuntu 24.04 "
+        "needs `sysctl kernel.apparmor_restrict_unprivileged_userns=0`), sandbox-exec on macOS"
+    )
+    return (
+        f"{have}; SHADOW_HDK_SANDBOX={narrowed!r} narrowed the candidates to it"
+        if narrowed
+        else have
     )
 
 
@@ -212,19 +353,15 @@ class LocalEnvironment(Environment):
         # and the sandbox would allow nothing — found by running the README's snippet for real.
         workspace = resolved(workspace or Workspace.of(root or Path.cwd()))
         where = Path(workspace.primary.path)
-        box = local_sandbox()
-        isolation = (
-            Isolation.none() if mode == "full" or box is None else _prove(box, workspace, mode)
-        )
+        box: LocalSandbox | None = None
+        isolation = Isolation.none()
+        tried: list[str] = []
+        if mode != "full":
+            box, isolation, tried = _prove_one_of(local_sandboxes(), workspace, mode)
         try:
             requires(isolation, mode)
         except Exception as cannot:
-            hint = (
-                "this machine has no OS sandbox (sandbox-exec on macOS, bwrap on Linux)"
-                if box is None
-                else f"{box.name} was found but the proof did not see the denials"
-            )
-            raise type(cannot)(f"{cannot} — {hint}") from None
+            raise type(cannot)(f"{cannot} — {_hint(tried)}") from None
         return cls(
             where,
             mode=mode,
@@ -276,4 +413,4 @@ def _any(value: Any) -> Any:  # pragma: no cover — typing helper
     return value
 
 
-__all__ = ["LocalEnvironment", "LocalSandbox", "local_sandbox"]
+__all__ = ["LocalEnvironment", "LocalSandbox", "local_sandbox", "local_sandboxes"]

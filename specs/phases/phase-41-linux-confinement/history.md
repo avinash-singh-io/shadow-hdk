@@ -45,3 +45,19 @@ Affects-specs: none
 Detail: (1) The Landlock ABI is a build-time choice, `ABI::V5`, per the crate's own guidance — never derived from the running kernel — with best-effort compatibility below it; a kernel that enforces nothing is exit 120, a kernel that enforces part (ABI 4 on Ubuntu 24.04) is accepted and the Python proof decides. (2) seccomp refuses `io_uring_setup` beside non-`AF_UNIX` `socket`: io_uring can create and connect sockets without a `socket` syscall since 5.19, so the field's usual "block the socket syscalls" leaves a door; the integration test asserts `EPERM` on it. (3) `/dev/full`, `/dev/ptmx` and `/dev/pts` join BUG-023's device list on Linux — a command given a pseudo-terminal, or allocating one, must be able to write it. The helper is 458 KB as a static-pie musl binary; the crate builds and refuses honestly (120) off Linux so it lints, unit-tests and packages on any machine.
 
 ---
+
+### [ARCH_CHANGE] 2026-09-19 — G2: the environment chooses among the machine's mechanisms; the evidence names one
+Topics: sandbox, environment, mechanism, landlock, bubblewrap, seatbelt, evidence, distribution
+Affects-phases: phase-41-linux-confinement
+Affects-specs: architecture/adapters.md#the-environment
+Detail: `specs/architecture/adapters.md` says `LocalEnvironment` wraps every command in `sandbox-exec` (macOS) or bubblewrap (Linux). Additive change for `/sync-docs`: on Linux the first candidate is the kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp, found beside the interpreter, on `PATH` or by `SHADOW_HDK_LINUX_SANDBOX`, kept when `--probe` says the kernel has Landlock), bubblewrap second; `local_sandboxes()` lists the candidates in that order, `LocalEnvironment.open` proves each and keeps the first the proof accepts, a refusal names each one tried, and `Isolation.mechanism` puts the name on the capability evidence (`landlock confines writes`). `SHADOW_HDK_SANDBOX` narrows to one name. The helper is a dependency of `shadow-hdk` under a Linux x86_64/aarch64 marker, a uv workspace member built by maturin at sync. The leash, `Environment`, `Isolation`'s other fields and `run_leashed` are unchanged (D124).
+
+---
+
+### [DECISION] 2026-09-19 — The whole suite runs on the fallback, and macOS is a runner
+Topics: ci, bubblewrap, macos, d126
+Affects-phases: phase-41-linux-confinement
+Affects-specs: none
+Detail: The `bubblewrap` job runs the full non-live suite with `SHADOW_HDK_SANDBOX=bubblewrap`, not the environment's tests alone — a mechanism that passes the environment's proof and fails a served thread's is not a fallback. The `macos` job runs the same suite on seatbelt; the Postgres contract suites skip there and say so. With `native`, four jobs; a red one blocks a release (D126). The `check` job asserts `landlock` is the mechanism in force before the suite, `bubblewrap` asserts its own, `macos` asserts seatbelt — so a runner that silently fell back would fail its assertion, not pass a weaker proof.
+
+---
