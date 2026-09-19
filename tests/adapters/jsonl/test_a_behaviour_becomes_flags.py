@@ -76,3 +76,40 @@ def test_the_shipped_claude_code_file_maps_the_measured_flags() -> None:
     assert by_field["append_system"] == "--append-system-prompt"
     assert by_field["model"] == "--model"
     assert by_field["effort"] == "--effort"
+
+
+# ---------------------------------------------------------------- a flag that takes key=value
+
+
+def test_a_templated_flag_renders_the_value_into_its_argument() -> None:
+    """Codex takes reasoning effort as a config override — `-c model_reasoning_effort="high"` —
+    not as a flag of its own. A `template` on the mapping says how the value is spelled after the
+    flag (D64, ENH-028); `{value}` is where it goes."""
+    provider = Provider(
+        id="fake",
+        kind="agent",
+        bin="fake-cli",
+        transport="jsonl",
+        dialect=Dialect(
+            behaviour_args=(
+                BehaviourArg(field="model", flag="-m"),
+                BehaviourArg(
+                    field="effort", flag="-c", template='model_reasoning_effort="{value}"'
+                ),
+            )
+        ),
+    )
+    argv = argv_for(provider, tools=(), behaviour=Behaviour(model="gpt-5", effort="low"))
+    assert argv[argv.index("-m") + 1] == "gpt-5"
+    assert argv[argv.index("-c") + 1] == 'model_reasoning_effort="low"'
+
+
+def test_the_shipped_codex_file_maps_model_and_effort_and_names_the_rest() -> None:
+    from shadow_hdk.providers import shipped
+
+    codex = shipped()["codex"]
+    behaviour = Behaviour(system="be brief", model="gpt-5", effort="low", temperature=0.1)
+    argv = argv_for(codex, tools=(), behaviour=behaviour)
+    assert argv[argv.index("-m") + 1] == "gpt-5"
+    assert argv[argv.index("-c") + 1] == 'model_reasoning_effort="low"'
+    assert unmapped_behaviour(codex, behaviour) == ["system", "temperature"]

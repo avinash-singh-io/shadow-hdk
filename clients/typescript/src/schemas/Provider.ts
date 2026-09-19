@@ -24,7 +24,10 @@ export type AllowOverride = string
 export type AllowToolPrefix = string
 export type Field = string
 export type Flag = string
+export type Template = string
 export type BehaviourArgs = BehaviourArg[]
+export type CacheReadTokensAt = string
+export type CacheWriteTokensAt = string
 export type CostUsdAt = string
 export type DeltaKindAt = string
 export type DeltaOn = string[]
@@ -49,6 +52,7 @@ export type Resident = boolean
 export type ResumeArgs = string[]
 export type SayAt = string
 export type SayOn = string[]
+export type SessionGoneMatches = string[]
 export type SessionIdAt = string
 export type StopReasonAt = string
 export type SubtypeKey = string
@@ -141,6 +145,8 @@ allow_arg?: AllowArg
 allow_override?: AllowOverride
 allow_tool_prefix?: AllowToolPrefix
 behaviour_args?: BehaviourArgs
+cache_read_tokens_at?: CacheReadTokensAt
+cache_write_tokens_at?: CacheWriteTokensAt
 cost_usd_at?: CostUsdAt
 delta_kind_at?: DeltaKindAt
 delta_on?: DeltaOn
@@ -162,6 +168,7 @@ resident?: Resident
 resume_args?: ResumeArgs
 say_at?: SayAt
 say_on?: SayOn
+session_gone_matches?: SessionGoneMatches
 session_id_at?: SessionIdAt
 stop_reason_at?: StopReasonAt
 subtype_key?: SubtypeKey
@@ -175,6 +182,7 @@ type_key?: TypeKey
 export interface BehaviourArg {
 field: Field
 flag: Flag
+template?: Template
 }
 /**
  * One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,

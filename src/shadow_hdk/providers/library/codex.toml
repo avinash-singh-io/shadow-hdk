@@ -96,6 +96,16 @@ failed_text_at = "error.message"
 cost_usd_at = ""
 input_tokens_at = "usage.input_tokens"
 output_tokens_at = "usage.output_tokens"
+# What the cache did (D141), from the same `turn.completed` line measured above: the bulk of a
+# subscription turn's input is a cache read, and `input_tokens` counts it in — so a product that
+# wants the fresh part subtracts.
+cache_read_tokens_at = "usage.cached_input_tokens"
+cache_write_tokens_at = "usage.cache_write_input_tokens"
+# The session is gone (D139). Measured 2026-09-20 on codex-cli 0.154.0 with `exec resume
+# <unknown> --json`: nothing on stdout at all, and on stderr
+#   Error: thread/resume: thread/resume failed: no rollout found for thread id <id> (code -32600)
+# — which the session reads off stderr (it drains the pipe; BUG-059).
+session_gone_matches = ["no rollout found for thread id"]
 
 mcp_config_arg = "-c"
 mcp_config_shape = "overrides"
@@ -103,6 +113,20 @@ allow_override = 'mcp_servers.{name}.default_tools_approval_mode="approve"'
 mcp_strict_args = []
 disallow_arg = ""
 disallow = []
+
+# A mode's behaviour becomes these flags (D64, ENH-028), measured 2026-09-20 from
+# `codex exec --help` on codex-cli 0.154.0: `-m, --model <MODEL>` is a flag of its own; reasoning
+# effort is a config override — `-c model_reasoning_effort="<low|medium|high>"` — so its mapping
+# carries a `template` saying how the value is spelled after `-c`. `system`, `append_system` and
+# `temperature` have no flag here and are named on the thread's `unmapped_behaviour`.
+[[dialect.behaviour_args]]
+field = "model"
+flag = "-m"
+
+[[dialect.behaviour_args]]
+field = "effort"
+flag = "-c"
+template = 'model_reasoning_effort="{value}"'
 
 [capabilities]
 tool_path = "uncontrolled"

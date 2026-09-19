@@ -1,9 +1,10 @@
 """ENH-020, D64: a behaviour field the provider maps no flag for is *named*, never dropped.
 
-Only `claude-code.toml` maps `system`, `append_system`, `model` and `effort`; Codex and OpenCode
-map none. A host that set a system prompt or a model on such a thread used to get neither and no
-word of it. Now the opened session says what it could not take, the thread carries it, and the
-wire crosses it — so a host can hide the controls it cannot honour for that provider.
+`claude-code.toml` maps `system`, `append_system`, `model` and `effort`; `codex.toml` maps `model`
+and `effort` (0.34, ENH-028); OpenCode maps none. A host that set a system prompt or a model on
+such a thread used to get neither and no word of it. Now the opened session says what it could
+not take, the thread carries it, and the wire crosses it — so a host can hide the controls it
+cannot honour for that provider.
 """
 
 from __future__ import annotations
@@ -36,7 +37,8 @@ async def test_a_codex_session_names_the_fields_its_record_maps_no_flag_for(tmp_
         workspace=str(tmp_path),
         behaviour=Behaviour(system="be brief", model="o3", effort="high"),
     )
-    assert session.unmapped == ("system", "model", "effort"), "named, in the behaviour's order"
+    # Since 0.34 (ENH-028) Codex's file maps `model` and `effort`; `system` still has no flag.
+    assert session.unmapped == ("system",), "named, in the behaviour's order"
 
 
 async def test_a_claude_code_session_maps_them_all(tmp_path: Path) -> None:

@@ -8,6 +8,8 @@ export type JsonValue = unknown
 export type Id = string
 export type Name = string
 export type ToolCalls = ToolCall[]
+export type CacheReadTokens = (number | null)
+export type CacheWriteTokens = (number | null)
 export type CostCents = (number | null)
 export type InputTokens = (number | null)
 export type OutputTokens = (number | null)
@@ -28,6 +30,8 @@ name: Name
  * not know — *unknown*, never zero (10 §5 R2).
  */
 export interface Usage {
+cache_read_tokens?: CacheReadTokens
+cache_write_tokens?: CacheWriteTokens
 cost_cents?: CostCents
 input_tokens?: InputTokens
 output_tokens?: OutputTokens

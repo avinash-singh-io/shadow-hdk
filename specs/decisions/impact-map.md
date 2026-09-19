@@ -38,3 +38,4 @@ entry carries matching `Topics:`.
 | envelope | specs/phases/phase-16-mqtt/design.md | 3.1 The envelope |
 | link | specs/phases/phase-16-mqtt/design.md | 3.2 The link as a state machine |
 | linux, landlock, seccomp, bubblewrap, helper, native, mechanism, distribution, maturin | specs/architecture/adapters.md; specs/epics/0010-cross-platform.md | The environment — where the agent's effects land; Decisions |
+| usage, cache-tokens, session-gone, failure, attributes, judgement, egress, contained | specs/architecture/runtime.md; specs/architecture/adapters.md; specs/architecture/wire.md | The thread; The modes adapter; The thread, crossed |

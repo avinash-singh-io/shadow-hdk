@@ -10,6 +10,11 @@
         "flag": {
           "title": "Flag",
           "type": "string"
+        },
+        "template": {
+          "default": "",
+          "title": "Template",
+          "type": "string"
         }
       },
       "required": [
@@ -103,6 +108,16 @@
           },
           "title": "Behaviour Args",
           "type": "array"
+        },
+        "cache_read_tokens_at": {
+          "default": "",
+          "title": "Cache Read Tokens At",
+          "type": "string"
+        },
+        "cache_write_tokens_at": {
+          "default": "",
+          "title": "Cache Write Tokens At",
+          "type": "string"
         },
         "cost_usd_at": {
           "default": "",
@@ -228,6 +243,14 @@
             "type": "string"
           },
           "title": "Say On",
+          "type": "array"
+        },
+        "session_gone_matches": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Session Gone Matches",
           "type": "array"
         },
         "session_id_at": {

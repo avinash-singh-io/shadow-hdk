@@ -75,7 +75,7 @@ from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
-from shadow_hdk.runtime.session import RESERVED_ATTRIBUTES, LeaseMeter
+from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
 
@@ -134,6 +134,8 @@ class Turned:
     text: str
     spent: Spent
     pending: tuple[PendingQuestion, ...] = ()
+    failure: str = ""
+    """Why a failed turn failed, when the kit can say (D139): `session_gone`, or empty."""
 
     def as_record(self) -> TurnRecord:
         return TurnRecord(
@@ -143,6 +145,7 @@ class Turned:
             at=self.at,
             outcome=self.outcome,  # type: ignore[arg-type]
             text=self.text,
+            failure=self.failure,  # type: ignore[arg-type]
         )
 
 
@@ -235,6 +238,8 @@ def spent_of(meter: LeaseMeter) -> Spent:
         input_tokens=int(counted["input_tokens"]),
         output_tokens=int(counted["output_tokens"]),
         unmetered=bool(counted["unmetered"]),
+        cache_read_tokens=int(counted["cache_read_tokens"]),
+        cache_write_tokens=int(counted["cache_write_tokens"]),
     )
 
 
@@ -281,6 +286,9 @@ class Conversation:
         """The policy's mode id — what the governance selects by (the context key `mode`)."""
         self.principal = principal
         self.attributes: dict[str, JsonValue] = dict(attributes or {})
+        self._turn_attributes: dict[str, JsonValue] = {}
+        """The running turn's own words (D140): merged over `attributes` for that turn's
+        judgements, emptied when it ends, never written back."""
         self.workspace = workspace
         self.session_id = session_id
         """The provider's own session id, when it has one — what a reopen hands back (D76)."""
@@ -305,6 +313,8 @@ class Conversation:
                     "input_tokens": spent.input_tokens,
                     "output_tokens": spent.output_tokens,
                     "unmetered": 1 if spent.unmetered else 0,
+                    "cache_read_tokens": spent.cache_read_tokens,
+                    "cache_write_tokens": spent.cache_write_tokens,
                 }
             )
         # **The clock runs only in a turn** (D90): a conversation sitting open spends nothing.
@@ -375,7 +385,7 @@ class Conversation:
                 raise ValueError("a conversation needs a root or a workspace")
             workspace = Workspace.of(root)
         given = dict(attributes or {})
-        if taken := sorted(set(given) & RESERVED_ATTRIBUTES):
+        if taken := sorted(set(given) & HOST_RESERVED):
             raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
         conversation = cls(
             conversation_id=conversation_id or ports.clock.new_id(),
@@ -549,6 +559,7 @@ class Conversation:
             "turn": turn_id,
             **({"mode": self.mode} if self.mode else {}),
             **self.attributes,
+            **self._turn_attributes,
             **self._options,
         }
 
@@ -566,6 +577,7 @@ class Conversation:
         when: When = "enqueue",
         on_question: OnQuestion = "wait",
         began: Any = None,
+        attributes: Mapping[str, JsonValue] | None = None,
     ) -> AsyncIterator[Event]:
         """One exchange: the person's text in, the run's events out, `last` set at the end.
 
@@ -579,10 +591,15 @@ class Conversation:
         `cancelled` — and starts this one. `on_question` (D88): `wait` puts a question to the
         host's handle and waits; `park` keeps it and ends the turn `parked`. `began`, when
         given, is awaited with the turn's `TurnRecord` once the turn has the lock and a run id —
-        a keeper of records writes the turn down there, before anything runs.
+        a keeper of records writes the turn down there, before anything runs. `attributes`
+        (D140) are this turn's words — a fact the host learnt after the conversation opened —
+        merged over the conversation's for this turn's judgements and never written back.
         """
         if when not in ("enqueue", "reject", "interrupt"):
             raise ValueError(f"when={when!r}: one of enqueue, reject, interrupt")
+        words = dict(attributes or {})
+        if taken := sorted(set(words) & HOST_RESERVED):
+            raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
         if on_question not in ("wait", "park"):
             raise ValueError(f"on_question={on_question!r}: one of wait, park")
         if self._holder is None:
@@ -621,10 +638,12 @@ class Conversation:
             self._current = cancellation
             self._interrupted = False
             self._running_turn = turn_id
+            self._turn_attributes = words
             self._parked_children = []
             self._open_questions = []
             self.turns_taken = number
             unreported: list[bool] = []
+            gone: list[bool] = []
 
             async def turn_component(inputs: Any) -> Observation:
                 context = current_run()
@@ -640,13 +659,22 @@ class Conversation:
                     # as it arrived (the jsonl session does); the whole is then a repeat. Only a
                     # provider that recorded nothing has this said for it (principle 6: once).
                     await context.reasoning(done.reasoning)
+                if done.usage is None:
+                    # A turn the provider said nothing about (D90): the count is a floor.
+                    unreported.append(True)
+                if done.failed:
+                    # **The provider said the turn did not work** — read from what it reported
+                    # (`Turn.failed`), so the record says `failed` rather than a `completed`
+                    # turn whose text happens to be an error (BUG-060). A gone session is the
+                    # one failure the kit has a word for (D139); the conversation reads it here
+                    # and the thread raises it typed once the stream has ended.
+                    if done.session_gone:
+                        gone.append(True)
+                    return Failed(done.text or "the provider said the turn failed")
                 output: dict[str, JsonValue] = {"text": done.text, "stop_reason": done.stop_reason}
                 if done.usage is not None:
                     # The step's cost, where the meter reads it (D20).
                     output["usage"] = json.loads(dump(done.usage, Usage))
-                else:
-                    # A turn the provider said nothing about (D90): the count is a floor.
-                    unreported.append(True)
                 return Completed(output)
 
             base = self._ports
@@ -692,6 +720,7 @@ class Conversation:
                             said = str(event.observation.output.get("text", ""))
                         elif isinstance(event.observation, Failed):
                             outcome = "failed"
+                            said = event.observation.error
                     if isinstance(event, RefusedEvent) and event.step == turn_id:
                         outcome = "refused"
                         said = event.reason
@@ -721,6 +750,7 @@ class Conversation:
             finally:
                 self._current = None
                 self._running_turn = ""
+                self._turn_attributes = {}
                 if self._interrupted:
                     # The person stopped it. The run may still say `completed` — a provider that
                     # was told returns what it had — but the turn was cut short, and says so.
@@ -752,6 +782,7 @@ class Conversation:
                     text=said,
                     spent=self.spent(),
                     pending=kept,
+                    failure="session_gone" if gone and outcome == "failed" else "",
                 )
 
     @property

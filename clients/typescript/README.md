@@ -60,6 +60,20 @@ catalogue drops them and an act in flight ends `failed` naming the host — and 
 is recorded with posture `observed`: the runtime never held its authority boundary (D99–D104).
 `tools/list` names these tools with `source: "host"`.
 
+## A turn's words, and why a turn failed (0.34)
+
+```ts
+// this turn's words — a fact learnt after the thread opened — on this turn's judgements only
+for await (const line of client.turn.start(id, "check the invoice", { attributes: { workspace: "w-1" } })) { … }
+// the record's words replaced, on a resume
+await client.thread.resume(id, { attributes: { tenant: "acme", workspace: "w-2" } });
+```
+
+A turn record carries `failure`: `"session_gone"` when the provider no longer has the session the
+thread resumed on — `turn/start` then rejects with `RemoteError.kind === "session_gone"` and
+`detail.session_id`; `thread.fork(id)` is the next move. `Usage` on events carries
+`cache_read_tokens` and `cache_write_tokens` (null where the provider does not say).
+
 ## The sidecar — a runtime this process starts
 
 From Node, `shadow-hdk-client/node` starts the runtime as a child and speaks JSON-RPC over its
@@ -71,7 +85,7 @@ import { tool } from "shadow-hdk-client";
 
 const client = await spawnHarness({
   command: "uvx",
-  args: ["--from", "shadow-hdk==0.33.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
+  args: ["--from", "shadow-hdk==0.34.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
 });
 client.components.serve([tool("greet", { description: "Greet.", effects: {} }, async ({ name }) => ({ greeting: `hello, ${name}` }))]);
 const started = await client.thread.start({ host_components: true });

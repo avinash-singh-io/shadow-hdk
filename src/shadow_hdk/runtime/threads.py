@@ -62,6 +62,7 @@ from shadow_hdk.runtime.conversation import (
     environment_mode_of,
 )
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
+from shadow_hdk.runtime.session import HOST_RESERVED
 
 HOLD_SECONDS = 30.0
 """How long a hold on a thread lives without renewal (D81): a host that died is out of the way
@@ -75,6 +76,21 @@ class ThreadHeld(RuntimeError):
         super().__init__(f"thread {thread_id!r} is held by {holder!r}")
         self.thread_id = thread_id
         self.holder = holder
+
+
+class SessionGone(RuntimeError):
+    """The provider no longer has the session this thread resumed on (D139): the turn is on the
+    record `failed` with `failure = "session_gone"`, and the thread's next move is a `fork` — a
+    fresh provider session with the transcript. Raised once the turn's stream has ended, so the
+    record is true whether or not anyone catches it."""
+
+    def __init__(self, thread_id: str, session_id: str, provider: str) -> None:
+        super().__init__(
+            f"thread {thread_id!r}: provider {provider!r} no longer has session {session_id!r}"
+        )
+        self.thread_id = thread_id
+        self.session_id = session_id
+        self.provider = provider
 
 
 class InMemoryThreads(ThreadStore):
@@ -266,20 +282,29 @@ class Thread:
         hold_seconds: float = HOLD_SECONDS,
         idle_seconds: float | None = None,
         plan_limits: PlanLimits | None = None,
+        attributes: Mapping[str, JsonValue] | None = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
         says was spent (D84). `ThreadHeld` when another process holds it (D81) — nothing is read
-        as left by a dead host while a live one has the thread."""
+        as left by a dead host while a live one has the thread. `attributes` (D140), when given,
+        are the host's current words and **replace** the record's — written to the record, so
+        the trail shows when the words changed; `None` keeps the record's."""
         record = await store.get(thread_id)
         if record is None:
             raise KeyError(f"no thread {thread_id!r} in the store")
+        if attributes is not None:
+            given = dict(attributes)
+            if taken := sorted(set(given) & HOST_RESERVED):
+                raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
+            record = _replace(record, attributes=given)
         thread = cls(record, _unopened(), store=store, holder=holder, hold_seconds=hold_seconds)
         await thread._take_hold(create=False)
         try:
-            if record.version < RECORD_VERSION:
+            if record.version < RECORD_VERSION or attributes is not None:
                 # A record from an older kit, written back in this one's shape (D93): every
-                # field it lacked has its default, and the version now says so.
+                # field it lacked has its default, and the version now says so — and a record
+                # whose words the host replaced (D140), saved as such.
                 thread._record = _replace(record, version=RECORD_VERSION)
                 await store.save(thread._record)
             await thread._settle_what_the_last_host_left()
@@ -440,11 +465,18 @@ class Thread:
     # ------------------------------------------------------------------ turning
 
     async def turn(
-        self, text: str, *, when: When = "enqueue", on_question: OnQuestion = "wait"
+        self,
+        text: str,
+        *,
+        when: When = "enqueue",
+        on_question: OnQuestion = "wait",
+        attributes: Mapping[str, JsonValue] | None = None,
     ) -> AsyncIterator[Event]:
         """One exchange, on the record: the turn written down before it runs, its questions as
         they open (D80), its outcome and what it spent when it ends (D84); a question the turn
-        parked on purpose (D88) stays on the record for `settle`."""
+        parked on purpose (D88) stays on the record for `settle`. `attributes` are this turn's
+        words (D140): merged over the record's for this turn's judgements, never written to the
+        record — `resume(attributes=)` is how the record's own change."""
         conversation = self.conversation
 
         async def began(turn: TurnRecord) -> None:
@@ -453,7 +485,7 @@ class Thread:
 
         try:
             async for event in conversation.turn(
-                text, when=when, on_question=on_question, began=began
+                text, when=when, on_question=on_question, began=began, attributes=attributes
             ):
                 await self._keep_pending(conversation)
                 yield event
@@ -483,6 +515,8 @@ class Thread:
                 )
                 await self._store.save(self._record)
                 await self._remember_session()
+        if last is not None and last.failure == "session_gone":
+            raise SessionGone(self.id, self._record.session_id or "", self._record.provider)
 
     async def _keep_pending(self, conversation: Conversation) -> None:
         """The running turn's open questions, on the record as they open and close (D80) — so a

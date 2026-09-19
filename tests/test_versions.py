@@ -18,8 +18,16 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.33.0"
-"""0.33.0 — Linux confinement (Epic 0010, Phase 41): a confined mode opens on Linux through the
+EXPECTED = "0.34.0"
+"""0.34.0 — truth both ways (Phase 45): `Usage`/`Spent` cache tokens (D141); `TurnRecord.failure`,
+`SessionGone` and the wire kind `session_gone` (D139); `turn(attributes=)` and
+`resume(attributes=)` on the thread and the wire (D140); Codex `model`/`effort` as data;
+`ask` asking before an uncontained reach (D138); `thread`/`turn`/`mode` reserved as attribute
+names (BUG-061); a failed provider turn recorded `failed` (BUG-060). Contract additions and
+three named behaviour changes in the published shape — a minor (D9); protocol 3 unchanged. The
+Linux helper moves with it (lockstep) though unchanged.
+
+0.33.0 — Linux confinement (Epic 0010, Phase 41): a confined mode opens on Linux through the
 kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec), a second
 distribution in lockstep with this one and a dependency under a Linux marker; bubblewrap behind
 it; the D36 proof deciding which is in force; `Isolation.mechanism` on the evidence;

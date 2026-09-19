@@ -25,3 +25,28 @@ a document's `[plan]` table inherits the named policy's value on any axis it lea
 refused by name if it widens the policy on any axis (`widens_plan`). `PLAN_OF` holds the shipped
 ceilings. `Conversation.plan_limits` meets the host's with the mode's at every turn, so
 `set_mode` changes what the next plan may be without a reopen.
+
+**A web read from the serving process, under the shipped modes (0.34, D138).** A battery that
+reads the web from the serving process declares `reaches = true, contained = false` — true, and
+the shipped policies judge it as they judge anything. `read-only` allows it: look, and look at
+the web; it writes nothing a reach could carry out, and a read-only policy has to work over any
+environment, a `full` one included, where nothing is proven contained. `workspace-write` — the
+silent writing mode — hides it: a reach beside writes is an egress channel. `ask` **asks** before
+it: "every write, run or delete inside the workspace is asked about" is its definition, and
+Claude Code's default prompts before a fetch the same way (before 0.34 `ask` refused it outright,
+which left a served product no door but re-vouching the effect). An `allow` rule for the one tool
+then stands in for the person — the door a served product uses:
+
+```toml
+# a rules row, or `store/put` on the `rules` collection: search runs without a prompt, in `ask`
+[[rule]]
+component = "web_search"
+decision = "allow"
+mode = "ask"
+```
+
+`full` allows it as it allows anything. A product that wants its own line hands `ModeGovernance`
+a `Mode` of its own (a ceiling and an ask line); a rule never widens a shipped ceiling. Nothing
+re-vouches a battery's effects to get past a ceiling: the `ddgs` file says `contained = false`
+because that is true. A read that *is* contained — through a proxy with an allowlist (D137) —
+narrows every ceiling and needs no door.

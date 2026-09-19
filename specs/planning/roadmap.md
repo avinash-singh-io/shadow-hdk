@@ -202,6 +202,7 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 42 | The artifact | planned · **Epic 0010**, optional (amended 2026-09-19) | 41 | one download per OS/arch (PyApp, embedded) with the helpers inside; the signing pipeline; the fresh-install smoke from the artifact every release; size and time-to-first-turn recorded; the `serve` container image — when a sidecar without a first-run network fetch is required; a host may ship `uv` meanwhile |
 | 43 | Windows | planned · **Epic 0010**, deferred (amended 2026-09-19); WSL2 meanwhile | 41 | the leash's Windows primitives (Job Objects) so the suite runs on a Windows runner with confined modes refusing honestly; then the elevated model or WSL2, decided with evidence (D134), behind the D36 proof: `workspace-write` and `read-only` open on Windows with `proven=True` |
 | 44 | Tools as code, from any language | **complete · v0.32.0** | 36 | `thread/start {host_components}` — a host's components by inversion on the thread door (D21); the TypeScript host-side `ComponentPort`, a `Transport`, the stdio sidecar; the D36 proof reads stdout (BUG-057), the suite on 3.14. ENH-030/031 pulled ahead of Phase 34 by Epic 0009's amendment |
+| 45 | Truth both ways | **complete · v0.34.0** | 44 | what a turn really cost (cache tokens, ENH-023, D141); why it really failed (a typed `session_gone`, ENH-024, D139); Codex `model`/`effort` as data, measured (ENH-028); a host's words per turn (ENH-037, D140); a reach from the serving process is an egress channel — the confined ceilings say contained, the door is a mode (ENH-038, D138); the 3.12–3.14 matrix (ENH-032); the vendor-name invariant; Phase 36's proof on Claude Code |
 
 ## What comes next — the consumable line
 
@@ -241,6 +242,7 @@ files; the phases after it are capability, not readiness.
 | 42 | The artifact | 41 | The kit is one download per OS with no prerequisite — the interpreter, the kit and the helpers inside — signed where the OS requires, smoke-tested from the artifact at every release, its size and start measured. Optional until a sidecar needs a network-free first run. |
 | 43 | Windows | 41 | The suite runs on Windows with the leash's own primitives and confined modes refusing honestly; then a confined mode opens on Windows only after a write outside the roots is watched denied and the network refused, by whichever of the field's two models the evidence chooses. Deferred until asked; WSL2 meanwhile. |
 | 44 | Tools as code, from any language | 36 | A host in any language writes its tools as code and the runtime calls them back on the thread door, judged and recorded as its own; the first proof is TypeScript over HTTP and over a spawned stdio runtime. |
+| 45 | Truth both ways | 44 | The kit tells a host the truth about its provider — what a turn cost, why it failed, that a second CLI honours the behaviour asked for — and a host tells the kit its truth per turn; a reach from the serving process is treated as the egress channel it is. |
 
 ## Epics
 

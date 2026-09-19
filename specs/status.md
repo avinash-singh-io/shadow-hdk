@@ -4,10 +4,12 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-20 — **v0.33.0** — Phase 41 **Linux confinement** (Epic 0010's first lane) complete
-> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 45 (ENH-023,
-> ENH-024, ENH-028, ENH-032), then Phase 34 → 37. The artifact (42) is optional; Windows (43) is
-> deferred until asked — WSL2 meanwhile.
+> **Last Updated**: 2026-09-20 — **v0.34.0** — Phase 45 **truth both ways** complete, after v0.33.0 (Phase 41) the same day
+> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 34 → 37 (Epic
+> 0009). The artifact (42) is optional; Windows (43) is deferred until asked — WSL2 meanwhile.
+> **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
+> spending limit needs to be increased*) since 2026-09-19 21:23 UTC — CI on the release commit and
+> the publish workflow wait on billing.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -17,10 +19,15 @@ type: Status
 > decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
 > the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
 >
-> 1,799 non-live tests; mypy strict over 461 files; one distribution, `shadow-hdk`, at
-> **0.33.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
+> 1,846 non-live tests; mypy strict over 471 files; one distribution, `shadow-hdk`, at
+> **0.34.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
 >
-> **Latest Release**: **v0.33.0**, released 2026-09-20 — Epic 0010, Phase 41 **Linux confinement**:
+> **Latest Release**: **v0.34.0**, released 2026-09-20 — Phase 45 **truth both ways**: `Usage`/`Spent`
+> cache tokens (D141); a typed `session_gone` on the record, raised, on the wire (D139) — with
+> BUG-059/060 closed; `turn(attributes=)`/`resume(attributes=)` (D140) — with BUG-061 closed; Codex
+> `model`/`effort` as data, measured; `ask` asks before a web read from the process (D138); CI on
+> 3.12–3.14; the vendor-name invariant; Phase 36's proof on Claude Code. Contract additions and
+> three named behaviour changes, protocol 3 unchanged — a *Pins* row. Before it **v0.33.0**, released 2026-09-20 — Epic 0010, Phase 41 **Linux confinement**:
 > a confined mode opens on Linux — Ubuntu 24.04 with its default AppArmor included — through the
 > kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec; a second
 > distribution in lockstep, a dependency under a Linux marker), bubblewrap behind it, the D36 proof
@@ -130,6 +137,7 @@ approval.
 | 36 | Plan admission (Epic 0009) | Complete, merged | **v0.31.0** |
 | 44 | Tools as code, from any language | Complete, merged | **v0.32.0** |
 | 41 | Linux confinement (Epic 0010) | Complete, merged | **v0.33.0** |
+| 45 | Truth both ways | Complete, merged | **v0.34.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -162,6 +170,7 @@ approval.
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 | 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
 | 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | 1,799 non-live passed on 3.12 **and** on 3.14 (macOS); on CI: 1,818 on Linux with Landlock in force, 1,799 on Linux with bubblewrap, 1,799 on macOS; the crate's 12 confinement tests on the ubuntu-24.04 runner; four platform wheels built, the x86_64 one installed and watched confining; mypy 461 files; ruff clean; OKF conformant; the 0.33.0 wheel installed fresh and answering `initialize` | v0.33.0 released |
+| 45 — truth both ways | `phase-45-truth-both-ways` | 1,846 passed on 3.14 **and** on 3.12; mypy 471 files; ruff clean; the TS types without drift; OKF conformant; CI green on `aca389d` (the same code; the release commit's run refused by GitHub billing); live: Phase 36's proof on Claude Code, Codex `-m`/`-c model_reasoning_effort`, cache tokens and `session_gone` on both CLIs | v0.34.0 released |
 
 ## Upcoming Phases
 
@@ -188,7 +197,7 @@ approval.
 
 ## Next Actions
 
-1. Both releases are done and published: `v0.33.0` (the kit and the helper's wheels; the smoke from PyPI found Landlock in force) and `v0.32.1` (first reached PyPI 2026-09-20). Next lane: Phase 45
+1. **GitHub billing** — fix it, then `gh run rerun 35470259560` (CI on the release commit) and the `v0.34.0` GitHub release (it triggers the publish workflow: the kit and the helper's wheels, PyPI, the smoke). Until then the tag can stand and `uv publish` from the laptop with the owner's token is the fallback
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
 4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too

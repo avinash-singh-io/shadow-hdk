@@ -197,13 +197,18 @@ def _echo(text: str) -> dict[str, str]:
 
 
 def test_the_shipped_modes_judge_a_battery_by_its_profile_and_no_rule_is_added() -> None:
-    """`workspace-write` requires containment and a battery is its own process: refused by the
-    ceiling as it stands. `read-only` reads the web as it reads anything; `full` allows."""
+    """`workspace-write` requires containment and a battery reaches from its own process: refused
+    by the ceiling as it stands. `read-only` reads the web as it reads anything; `ask` asks before
+    it since 0.34 (D138); `full` allows."""
+    from shadow_hdk.adapters.modes import shipped_modes
     from shadow_hdk.serve.host import CONFINED, LOOKING, OPEN
 
     web = shipped_batteries().load()[0].tools["web_search"].effects
+    asking = next(m.policy for m in shipped_modes() if m.id == "ask")
     assert not web.narrows(CONFINED.ceiling)
     assert web.narrows(LOOKING.ceiling)
+    assert web.narrows(asking.ceiling) and asking.ask_above is not None
+    assert not web.narrows(asking.ask_above), "inside the ceiling, above the ask line: asked"
     assert web.narrows(OPEN.ceiling)
 
 
