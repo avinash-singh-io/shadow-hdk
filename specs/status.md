@@ -5,8 +5,10 @@ type: Status
 # Project Status
 
 > **Last Updated**: 2026-09-18 — **Phase 36 complete, released as v0.31.0** (Epic 0009's first phase)
-> **Current Phase**: **none — between phases.** Phase 36 landed and released as v0.31.0;
-> **Phase 34 — the harness as data** is next in Epic 0009 (deps: 36, now met).
+> **Current Phase**: **Phase 44 — tools as code, from any language**, started 2026-09-19 on
+> `phase-44-tools-as-code` (ENH-030, ENH-031, BUG-057 — the thread door's inversion, the TypeScript
+> host-side stub and stdio sidecar, the proof on 3.13+; a forward-only amendment to Epic 0009 pulling
+> two D119 surfaces ahead of Phase 34). Phase 36 landed and released as v0.31.0.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -136,6 +138,7 @@ approval.
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 44 — tools as code, from any language | `phase-44-tools-as-code` | in progress | G0 RED — started 2026-09-19 |
 
 ## Epic Release Checkpoints
 

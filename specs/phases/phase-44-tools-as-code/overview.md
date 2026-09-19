@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: planned
+status: in-progress
 tags: [wire, components, inversion, typescript, sidecar, stdio, proof, environment]
 deps: [phase-36-plan-admission]
 ---
@@ -40,7 +40,7 @@ the bundle and the remaining D119 surfaces.
 ## Scope
 
 **In:** ENH-030, ENH-031, BUG-057; the TS README's sidecar section with the honest prerequisite;
-`docs/for-a-product.md` §7 rewritten; `docs/migrations/0.32.md`; Epic 0009's amendment; v0.32.0.
+`docs/for-a-product.md` §7 rewritten; `0.32.md` under `docs/migrations/`; Epic 0009's amendment; v0.32.0.
 
 **Out:** the pinned binary (Epic 0010 Phase 42); a Go or other-language stub (Phase 34); BUG-056,
 ENH-023, ENH-024, ENH-028, ENH-032 (Phase 45, next); ENH-027 (OpenCode); a `components=` of Python

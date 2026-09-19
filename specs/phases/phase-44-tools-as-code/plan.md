@@ -1,6 +1,6 @@
 ---
 type: Plan
-status: planned
+status: in-progress
 ---
 
 # Phase 44 — tools as code, from any language — Plan
@@ -21,10 +21,10 @@ runs per group on 3.12; Group 1 and the final gate also on 3.14.
 
 ## Group 0 — RED *(sequential, blocks)*
 
-- **Loopback, host-side components on a thread** (`tests/wire/test_a_hosts_tools_cross_on_the_thread_door.py`): a `ThreadHost` double, a host-side `Ports` whose component port is an in-process double answering `components.registrations` / `components.invoke` on the host peer; `thread/start {host_components: true}` → `tools/list` lists the host's tool with `source: "host"`; a turn whose scripted agent calls it → `Observed` carries the host's output, `Invoked.component` is the host's id, `registered_by` starts with `host:`; a host tool declaring an irreversible effect → posture `observed`; the host peer closed mid-thread → the next refresh lists no host tools and an in-flight invoke ends `Failed` naming the host; a new peer's `thread/resume {host_components: true}` restores them; `thread/start` without the flag adds no port.
+- **Loopback, host-side components on a thread** (`test_a_hosts_tools_cross_on_the_thread_door.py` under `tests/wire/`): a `ThreadHost` double, a host-side `Ports` whose component port is an in-process double answering `components.registrations` / `components.invoke` on the host peer; `thread/start {host_components: true}` → `tools/list` lists the host's tool with `source: "host"`; a turn whose scripted agent calls it → `Observed` carries the host's output, `Invoked.component` is the host's id, `registered_by` starts with `host:`; a host tool declaring an irreversible effect → posture `observed`; the host peer closed mid-thread → the next refresh lists no host tools and an in-flight invoke ends `Failed` naming the host; a new peer's `thread/resume {host_components: true}` restores them; `thread/start` without the flag adds no port.
 - **HTTP** (`tests/wire/test_serve.py` gains a case): the same through `serve --http`, the host's replies up by POST.
-- **The proof** (`tests/adapters/environment/test_the_proof_reads_stdout.py`): a fake `LocalSandbox` whose `wrap` runs `python -c "import sys; sys.stderr.write(<the script>); sys.exit(1)"` → `writes_confined=True`, `proven` depends only on stdout; the same root proven on the interpreter running the suite.
-- **TypeScript RED** (`clients/typescript/test/`): a tool served with `components.serve`, called by a scripted provider through `serve --http` (the existing harness of `smoke.ts`) and through `HarnessClient.spawn` over stdio; `thread.start({ host_components: true })` typed.
+- **The proof** (`test_the_proof_reads_stdout.py` under `tests/adapters/environment/`): a fake `LocalSandbox` whose `wrap` runs `python -c "import sys; sys.stderr.write(<the script>); sys.exit(1)"` → `writes_confined=True`, `proven` depends only on stdout; the same root proven on the interpreter running the suite.
+- **TypeScript RED** (a `test/` directory under `clients/typescript/`): a tool served with `components.serve`, called by a scripted provider through `serve --http` (the existing harness of `smoke.ts`) and through `HarnessClient.spawn` over stdio; `thread.start({ host_components: true })` typed.
 - Verify: collection fails on the absent names; each test fails for its stated reason.
 
 **Commit:** `test: Phase 44 RED — tools as code from any language`
@@ -49,8 +49,8 @@ runs per group on 3.12; Group 1 and the final gate also on 3.14.
 
 ## Group 3 — The TypeScript surface *(sequential)*
 
-- `clients/typescript/src/transport/stdio.ts`: `HarnessClient.spawn({ command, args, cwd, env })` — a child process over JSON lines (one `LineBuffer` equivalent), the same frame handling as HTTP; `close()` ends the child and its tree; a child that exits ends the client with a typed error.
-- `clients/typescript/src/components.ts`: `tool(id, { description, effects, input }, handler)` → a `Registration` (generated type) with an `Interface` from the JSON-schema `input`; `client.components.serve(tools)` installs the `onRequest` dispatch for `components.registrations` and `components.invoke`, wrapping a thrown error as `{ kind: "failed", reason }` and a handler's `Refused` as `{ kind: "refused" }`.
+- `transport/stdio.ts` under `clients/typescript/src/`: `HarnessClient.spawn({ command, args, cwd, env })` — a child process over JSON lines (one `LineBuffer` equivalent), the same frame handling as HTTP; `close()` ends the child and its tree; a child that exits ends the client with a typed error.
+- `components.ts` under `clients/typescript/src/`: `tool(id, { description, effects, input }, handler)` → a `Registration` (generated type) with an `Interface` from the JSON-schema `input`; `client.components.serve(tools)` installs the `onRequest` dispatch for `components.registrations` and `components.invoke`, wrapping a thrown error as `{ kind: "failed", reason }` and a handler's `Refused` as `{ kind: "refused" }`.
 - `thread.start({ host_components: true, ... })`, `thread.resume(id, { host_components: true })` typed.
 - `smoke.ts`: a host tool through HTTP and through stdio; `npm test` drives both against a real `serve`; the Python side's `tests/serve/test_the_typescript_client_talks_to_serve.py` gains the host-tool case.
 - README: the sidecar section — the configurable command, the documented default (`uvx --from shadow-hdk==<version> shadow-hdk serve --stdio`, needs `uv`), and the sentence that the pinned binary is Epic 0010 Phase 42's.
@@ -60,7 +60,7 @@ runs per group on 3.12; Group 1 and the final gate also on 3.14.
 
 ## Group 4 — Docs, release *(sequential, last)*
 
-- `docs/migrations/0.32.md`; `docs/packages/wire.md`; `docs/consuming.md` (the four doors: the thread door now takes a host's components from any language); `docs/for-a-product.md` §7 rewritten; `clients/typescript/README.md`.
+- `0.32.md` under `docs/migrations/`; `docs/packages/wire.md`; `docs/consuming.md` (the four doors: the thread door now takes a host's components from any language); `docs/for-a-product.md` §7 rewritten; `clients/typescript/README.md`.
 - Backlog: ENH-030, ENH-031 (amended: the pin is P42's), BUG-057 closed. Epic 0009: the amendment recorded under *Amendments*.
 - Version 0.32.0, `tests/test_versions.py` `EXPECTED`, `uv lock`, changelog, status row. `/sync-docs` for the architecture docs (wire.md: the thread, crossed).
 - Verify: the four-zero gate on 3.12 and 3.14; `npm run generate && npm run check && npm run build && npm test`; `momentum okf check .`; the fresh-install smoke of the 0.32.0 wheel; then `/complete-phase` and STOP at the merge/release gate.
