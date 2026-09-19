@@ -69,7 +69,10 @@ class Counted:
         TypeAdapter.__init__ = self._real  # type: ignore[method-assign]
 
     def of(self, wanted: Any) -> int:
-        return sum(1 for what in self.built if what is wanted)
+        # Equality, not identity: on Python 3.14 `Event | None` evaluated twice is two equal
+        # union objects with one hash — the cache still holds, keyed by the type — where 3.12
+        # happened to hand back the very same object (found running the suite on 3.14).
+        return sum(1 for what in self.built if what == wanted)
 
 
 def _warm() -> None:

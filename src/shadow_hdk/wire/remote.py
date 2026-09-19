@@ -38,7 +38,7 @@ from shadow_hdk.kernel.ports import (
     ModelResponse,
     SinkPort,
 )
-from shadow_hdk.wire.peer import Peer
+from shadow_hdk.wire.peer import GONE, Peer, RemoteError
 from shadow_hdk.wire.protocol import COMPLETE, INVOKE, JUDGE, PROPOSE, REGISTRATIONS
 
 
@@ -99,11 +99,29 @@ class RemoteModel(ModelPort):
 
 
 class RemoteComponents(ComponentPort):
-    """The registry lives on the host; the runtime asks what is there and asks it to act."""
+    """The registry lives on the host; the runtime asks what is there and asks it to act.
 
-    def __init__(self, peer: Peer, holder: Any = None) -> None:
+    On the thread door (ENH-030) the port is *one connection's*: `session` is the transport's
+    own id for it (the same one `admin/sessions` shows — one connection, one name, D77), and
+    when the connection is gone the port says so by name — its catalogue raises (the registry
+    lists it as unreachable, so the tools vanish rather than linger) and an act in flight ends
+    `Failed` naming the host, never a hang and never a silent nothing (P44-2).
+
+    **The registration is not rewritten.** A host may sign what it registers (D27), and the
+    signature covers provenance; a port that stamped `registered_by` would have every signed
+    registration refused as tampered. What this port adds about itself it *declares* — `source`,
+    which the registry reads beside the registration — it never edits the host's object.
+    """
+
+    source = "host"
+    """How a tool of this port presents in the offer: the other side of the wire's own."""
+
+    def __init__(self, peer: Peer, holder: Any = None, *, session: str = "") -> None:
         self._peer = peer
         self._holder = holder
+        self.session = session
+        self.problem: str | None = None
+        """Why this port has no catalogue, when it has none: the host is gone."""
 
     def _live(self) -> Any:
         """The run this invoke is inside.
@@ -120,8 +138,23 @@ class RemoteComponents(ComponentPort):
             self._holder.live = context
         return context
 
+    @staticmethod
+    def _gone(exc: BaseException) -> bool:
+        """The other end went away — the wire's typed code, never its wording."""
+        return isinstance(exc, RemoteError) and exc.code == GONE
+
+    def _who(self) -> str:
+        return f"host {self.session!r}" if self.session else "the host"
+
     async def registrations(self) -> Sequence[Registration]:
-        listed = await self._peer.call(REGISTRATIONS, {})
+        try:
+            listed = await self._peer.call(REGISTRATIONS, {})
+        except Exception as exc:
+            if self._gone(exc):
+                self.problem = f"{self._who()} that offered these tools is gone: {exc}"
+                raise RuntimeError(self.problem) from exc
+            raise
+        self.problem = None
         registrations = [load(json.dumps(entry), Registration) for entry in listed]
         # The remote host performs the invocation after this runtime asks it to. Until authority,
         # authorization and journal ports cross that boundary, an irreversible remote operation
@@ -129,13 +162,22 @@ class RemoteComponents(ComponentPort):
         return [_observed_if_remote_effect(registration) for registration in registrations]
 
     async def invoke(self, registration: RegistrationId, inputs: JsonValue) -> Observation:
-        # **No guard here, deliberately.** The obvious thing is to catch a `RemoteError` and
-        # return `Failed` — D7, a component is untrusted and its raising is data. But `step.py`
-        # already catches every exception out of a component port and observes it as `Failed`, so a
-        # second catch
-        # cannot change any outcome: a mutation deleting this one left every test green, which is
-        # what redundant handling looks like from outside. A guard that cannot change an outcome
-        # claims something is handled where nothing is, so the only guard is the one in `step.py`.
+        # **One guard here, and only for a host that is gone.** `step.py` already catches every
+        # exception out of a component port and observes it as `Failed`, so a general catch could
+        # not change any outcome — a mutation deleting one left every test green. A gone host is
+        # different: what the record says matters, and *"RemoteError: the other end closed"*
+        # names nothing a reader can act on, where *"the host 'p-1' that offered 'greet' is gone"*
+        # does (P44-2). Every other failure keeps flowing to the one guard in `step.py`.
+        try:
+            return await self._invoke(registration, inputs)
+        except Exception as exc:
+            if self._gone(exc):
+                from shadow_hdk.kernel.observations import Failed
+
+                return Failed(f"{self._who()} that offered {registration!r} is gone: {exc}")
+            raise
+
+    async def _invoke(self, registration: RegistrationId, inputs: JsonValue) -> Observation:
         answered = await self._peer.call(
             INVOKE,
             {

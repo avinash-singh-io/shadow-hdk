@@ -125,26 +125,33 @@ def _prove(box: LocalSandbox, root: Path | Workspace, mode: Mode) -> Isolation:
     outside = primary.parent / f".shadow-hdk-probe-{primary.name}"
     insides = [Path(r.path).resolve() / ".shadow-hdk-probe" for r in workspace.roots]
 
-    def attempt(script: str) -> tuple[int, str]:
+    def attempt(script: str, marker: str) -> bool:
+        """Did the probe *say* the marker — on stdout, with a zero exit? A traceback is stderr,
+        and since Python 3.13 a traceback for `-c` code echoes the source line, marker and all:
+        a denied write's traceback contains `WROTE`. Reading it as a write returned
+        `writes_confined=False` and refused every confined mode on 3.13 and 3.14 (BUG-057)."""
         argv = box.wrap([sys.executable, "-c", script], root=workspace, mode=mode)
         done = subprocess.run(
             argv, capture_output=True, text=True, timeout=PROBE_TIMEOUT_S, cwd=primary, check=False
         )
-        return done.returncode, done.stdout + done.stderr
+        return done.returncode == 0 and marker in done.stdout
 
     try:
-        _, wrote_outside = attempt(f"open({str(outside)!r}, 'w').write('x'); print('WROTE')")
-        writes_confined = "WROTE" not in wrote_outside and not outside.exists()
-        _, reached = attempt(
+        wrote_outside = attempt(f"open({str(outside)!r}, 'w').write('x'); print('WROTE')", "WROTE")
+        writes_confined = not wrote_outside and not outside.exists()
+        reached = attempt(
             "import socket; s=socket.socket(); s.settimeout(2); "
-            "print('REACHED' if s.connect_ex(('127.0.0.1', 22)) == 0 else 'DENIED')"
+            "print('REACHED' if s.connect_ex(('127.0.0.1', 22)) == 0 else 'DENIED')",
+            "REACHED",
         )
-        network_denied = "REACHED" not in reached
+        network_denied = not reached
         inside_ok = True
         if mode == "workspace-write":
             for inside in insides:
-                _, wrote_inside = attempt(f"open({str(inside)!r}, 'w').write('x'); print('WROTE')")
-                inside_ok = inside_ok and "WROTE" in wrote_inside
+                wrote_inside = attempt(
+                    f"open({str(inside)!r}, 'w').write('x'); print('WROTE')", "WROTE"
+                )
+                inside_ok = inside_ok and wrote_inside
     finally:
         outside.unlink(missing_ok=True)
         for inside in insides:

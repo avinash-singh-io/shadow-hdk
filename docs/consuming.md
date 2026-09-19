@@ -12,6 +12,7 @@ its ownership begins, and keeps everything it already has.
 | `Conversation` — the governed turn | the product | the product | as above, with a provider that owns its loop — a coding CLI on a subscription |
 | `Thread` — turns as runs, kept | the kit's record | either (`ThreadStore`) | you want threads, turns, items and parked runs on the record, in-process |
 | `Harness` / `serve` — the app server | the kit | one url, or handed in | a Python process behind your backend, or any language over the wire |
+| `serve` + your tools as code (0.32) | the kit | one url | any language: `thread/start {host_components: true}` offers the connection's own tools; the runtime calls them back (D21). `tool()` + `components.serve` in TypeScript |
 
 The recommended shape for most products is the last door **behind the product's backend**:
 users, permissions and the product's tables stay there; threads, turns, the record and parked

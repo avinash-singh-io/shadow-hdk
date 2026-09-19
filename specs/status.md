@@ -4,17 +4,29 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-18 — **Phase 36 complete, released as v0.31.0** (Epic 0009's first phase)
-> **Current Phase**: **none — between phases.** Phase 36 landed and released as v0.31.0;
-> **Phase 34 — the harness as data** is next in Epic 0009 (deps: 36, now met).
+> **Last Updated**: 2026-09-19 — **Phase 44 complete, released as v0.32.0** (tools as code, from any language)
+> **Current Phase**: **none — between phases.** Phase 44 landed and released as v0.32.0; next is
+> **Phase 45** (BUG-056, ENH-023, ENH-024, ENH-028, ENH-032 — the rest of what the product asked
+> for, all generic), then **Phase 41 — the OS layer** (Epic 0010) before Phase 34, the owner's
+> order to confirm.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
+> **Epic 0010 — cross-platform — is planned** (`specs/epics/0010-cross-platform.md`, D122–D137,
+> 2026-09-19): the OS layer native per OS as small Rust helpers with the proof in Python (A+),
+> one artifact per OS, three CI runners; Phases 41 → 42 ‖ 43; the engine's language a dated
+> decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
+> the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
 >
 > 1,773 non-live tests; mypy strict over 452 files; one distribution, `shadow-hdk`, at
 > **0.31.0** (protocol 3, unchanged — Phase 36's additions are methods and fields).
 >
-> **Latest Release**: **v0.31.0**, released 2026-09-18 — Epic 0009, Phase 36 **plan admission**:
+> **Latest Release**: **v0.32.0**, released 2026-09-19 — Phase 44 **tools as code, from any
+> language**: `thread/start {host_components: true}` carries a host's components by inversion (D21)
+> on the thread door; the TypeScript client gains `tool()`, `components.serve`, a `Transport` and a
+> stdio sidecar (`shadow-hdk-client/node`); the D36 proof reads stdout (BUG-057) and the whole
+> suite runs on Python 3.14. Contract additions, protocol 3 unchanged — a *Pins* row. Before it
+> **v0.31.0**, released 2026-09-18 — Epic 0009, Phase 36 **plan admission**:
 > a plan is a composition admitted whole — shape, existence and effects — under limits that narrow
 > host → mode → parent, before its first step runs; `plan_admitted`/`plan_refused` on the record;
 > `compose` a registered component, so a resident CLI plans through the socket (proven live on
@@ -111,6 +123,7 @@ approval.
 | 32 | One agent surface | Complete, merged | **v0.30.0** |
 | 33 | Authority at the act | Complete, merged | **v0.30.0** |
 | 36 | Plan admission (Epic 0009) | Complete, merged | **v0.31.0** |
+| 44 | Tools as code, from any language | Complete, merged | **v0.32.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -140,6 +153,7 @@ approval.
 | 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 released |
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
+| 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
 
 ## Upcoming Phases
 
@@ -166,11 +180,12 @@ approval.
 
 ## Next Actions
 
-1. The GitHub release for `v0.31.0` — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index). The tag is pushed; the release is the owner's to create
+1. The GitHub release for `v0.32.0` after the merge and tag — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index)
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
-4. Next lane: derive and start Phase 34 — the harness as data (deps 36, met): `momentum run derive phase-34-the-harness-as-data --epic the-harness-as-data --deps phase-36-plan-admission --write`, then `/start-phase`
-5. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
+4. Phase 45 — the rest of what the product asked for, generic: BUG-056 (`set_mode` mid-turn, typed), ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
+5. Next lane, the owner's order to confirm: Phase 41 — the OS layer (Epic 0010) before Phase 34, so Phase 34's `bundle` stands on 42's launcher: `momentum run derive phase-41-the-os-layer --epic cross-platform --deps "" --write`, then `/start-phase`
+6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made
 
