@@ -29,3 +29,11 @@ Affects-specs: architecture/adapters.md#the-environment
 Detail: `shadow-hdk-linux-sandbox --mode <m> [--root <dir>]... -- <argv>` applies Landlock (reads everywhere; writes beneath the roots for `workspace-write`; the null/zero/random/tty/pts devices writable in both confined modes — BUG-023's rule kept; TCP bind/connect denied where the ABI has it) and seccomp (`socket` outside `AF_UNIX` and `io_uring_setup` → `EPERM`) to itself and `execvp`s — one process, the child's exit code; `--probe` reports the ABI as JSON; 120 when it cannot confine, 121 for usage, 126/127 for a command that cannot run. On the Python side `local_sandboxes()` lists the machine's mechanisms in the field's order (the helper, then bubblewrap; seatbelt on macOS), `LocalEnvironment.open` proves each in turn and keeps the first the D36 proof accepts, `Isolation.mechanism` names it on the evidence, and `SHADOW_HDK_SANDBOX` narrows the candidates to one for an operator or a CI job. The leash is untouched: the helper is exec'd inside the same process group `sandbox-exec` is.
 
 ---
+
+### [NOTE] 2026-09-19 — G0 RED: what the phase must make true, written down first
+Topics: tdd, red, landlock, proof, evidence, lockstep
+Affects-phases: phase-41-linux-confinement
+Affects-specs: none
+Detail: Twenty Python tests — the candidates per platform, the operator's narrowing, the helper's argv, the proof passing a candidate over and naming each tried, the mechanism on the evidence, and six that run only on a Linux kernel with the helper installed (the CI runner) — plus the lockstep test and the crate's own: eight argument tests and thirteen integration tests that watch the built binary deny a write outside, allow one inside and in every root, deny a write in `read-only` while `/dev/null` stays writable, refuse `AF_INET`/`AF_INET6` and keep `AF_UNIX`, refuse `io_uring_setup` with `EPERM`, pass the child's exit code through, name a missing command at 127, say the usage at 121, and carry the environment and the working directory. The `io_uring` test is there because seccomp does not see io_uring operations: a runtime that blocked `socket` and left `io_uring_setup` open would have blocked nothing.
+
+---

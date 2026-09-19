@@ -16,6 +16,7 @@ with, and still hold the refusal and `full`.
 
 from __future__ import annotations
 
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -185,13 +186,30 @@ async def test_the_leash_still_holds_inside_the_box(tmp_path: Path) -> None:
 
 
 def test_which_sandbox_this_machine_has_is_reported_not_guessed() -> None:
+    """The first of the machine's candidates in the field's order (D133): seatbelt on macOS; on
+    Linux the helper when it is installed and its kernel has Landlock, else bubblewrap; else
+    nothing. An operator's `SHADOW_HDK_SANDBOX` narrows the order, so the test reads it too."""
     found = local_sandbox()
+    narrowed = os.environ.get("SHADOW_HDK_SANDBOX")
     if sys.platform == "darwin":
         assert found is not None and found.name == "seatbelt"
+    elif narrowed:
+        assert found is not None and found.name == narrowed
+    elif shutil.which("shadow-hdk-linux-sandbox") and _helper_probe_exits_zero():
+        assert found is not None and found.name == "landlock"
     elif shutil.which("bwrap"):
         assert found is not None and found.name == "bubblewrap"
     else:
         assert found is None
+
+
+def _helper_probe_exits_zero() -> bool:
+    import subprocess
+
+    done = subprocess.run(
+        ["shadow-hdk-linux-sandbox", "--probe"], capture_output=True, text=True, check=False
+    )
+    return done.returncode == 0
 
 
 async def test_a_sandbox_that_does_not_actually_confine_is_refused(

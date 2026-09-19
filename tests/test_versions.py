@@ -194,6 +194,26 @@ def test_the_distribution_is_at_the_expected_version() -> None:
     assert _distribution() == {"shadow-hdk": EXPECTED}
 
 
+def test_the_linux_helper_moves_with_the_kit() -> None:
+    """The `shadow-hdk-sandbox` crate and its `shadow-hdk-linux-sandbox` distribution (Epic 0010,
+    D123) ship beside the kit and are pinned by it under a Linux marker: one number, three places
+    — the crate, its `pyproject.toml`, the kit's dependency line — or a Linux install resolves a
+    helper from a different release than the kit that invokes it."""
+    crate = tomllib.loads((ROOT / "native" / "sandbox" / "Cargo.toml").read_text())
+    helper = tomllib.loads((ROOT / "native" / "sandbox" / "pyproject.toml").read_text())
+    kit = tomllib.loads((ROOT / "pyproject.toml").read_text())
+
+    assert crate["package"]["name"] == "shadow-hdk-sandbox"
+    assert crate["package"]["version"] == EXPECTED
+    assert helper["project"]["name"] == "shadow-hdk-linux-sandbox"
+    assert helper["project"]["version"] == EXPECTED
+    pins = [d for d in kit["project"]["dependencies"] if d.startswith("shadow-hdk-linux-sandbox")]
+    assert len(pins) == 1, kit["project"]["dependencies"]
+    assert pins[0].startswith(f"shadow-hdk-linux-sandbox=={EXPECTED};")
+    assert "sys_platform == 'linux'" in pins[0]
+    assert "native/sandbox" in kit["tool"]["uv"]["workspace"]["members"]
+
+
 def test_the_parts_every_phase_relies_on_are_still_here() -> None:
     """A subset, not an equality: each phase adds adapters, and a test that had to be edited every
     time one arrived would be edited without being read."""

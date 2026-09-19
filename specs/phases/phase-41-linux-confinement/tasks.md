@@ -9,11 +9,11 @@ status: in-progress
 > **TDD strict:** no task may be marked `[x]` without a recorded red→green.
 
 ## Group 0 — RED *(blocks)*
-- [ ] `tests/adapters/environment/test_linux_confinement_is_native_first.py`: the candidates in order per platform; `SHADOW_HDK_SANDBOX` narrowing and refusing an unknown name; the landlock `wrap`; two pretend candidates — the proof passes the first over and keeps the second, names both when neither confines; the mechanism on the evidence; the Linux-only proofs (skipped elsewhere)
-- [ ] `test_local_is_confined_for_real.py::test_which_sandbox_this_machine_has_is_reported_not_guessed` — Linux with the helper → `landlock`
-- [ ] `tests/test_versions.py`: the crate, its distribution and the kit's pin in lockstep
-- [ ] The crate's RED: `native/sandbox/Cargo.toml`, an empty `src/main.rs`, `src/args.rs` tests, `tests/confines.rs` (Linux only)
-- [ ] Verify RED: the Python tests fail on the absent names; the versions test on the absent crate; `cargo test` fails to compile on the absent `args`
+- [x] `tests/adapters/environment/test_linux_confinement_is_native_first.py`: the candidates in order per platform; `SHADOW_HDK_SANDBOX` narrowing and refusing an unknown name; the landlock `wrap`; two pretend candidates — the proof passes the first over and keeps the second, names both when neither confines; the mechanism on the evidence; the Linux-only proofs (skipped elsewhere)
+- [x] `test_local_is_confined_for_real.py::test_which_sandbox_this_machine_has_is_reported_not_guessed` — Linux with the helper → `landlock`
+- [x] `tests/test_versions.py`: the crate, its distribution and the kit's pin in lockstep
+- [x] The crate's RED: `native/sandbox/Cargo.toml`, an empty `src/main.rs`, `src/args.rs` tests, `tests/confines.rs` (Linux only)
+- [x] Verify RED — 2026-09-19: the new Python file fails at import on the absent `local_sandboxes`; `test_the_linux_helper_moves_with_the_kit` fails on the absent `native/sandbox/pyproject.toml` (the 14 other tests in those files pass, 1 skips); `cargo test` fails to compile on the absent `parse`/`Command`/`Mode`/`UsageError` (8 errors), on the host and for `x86_64-unknown-linux-musl`; ruff clean
 
 ## Group 1 — The helper
 - [ ] `native/sandbox/`: `Cargo.toml`, `src/args.rs`, `src/linux.rs` (probe by raw syscall; the Landlock ruleset per mode; the seccomp filter; exec), `src/main.rs` (Linux entry; a stub elsewhere), `pyproject.toml` (maturin, `bindings = "bin"`), `README.md` (the contract, the exit codes)

@@ -1,0 +1,32 @@
+# The OS layer's native parts (Epic 0010, D123): one crate, one small static helper per operating
+# system that needs one, invoked by the Python leash exactly as `sandbox-exec` is on macOS. The
+# policy — which mode allows what — the detection and the D36 proof stay in Python; this crate is
+# the syscalls a child has to make on itself before `exec`.
+[package]
+name = "shadow-hdk-sandbox"
+version = "0.32.1"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Shadow HDK's OS-layer helpers: the Linux sandbox (Landlock + seccomp, applied before exec)"
+repository = "https://github.com/avinash-singh-io/shadow-hdk"
+publish = false
+
+[[bin]]
+name = "shadow-hdk-linux-sandbox"
+path = "src/main.rs"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.4"
+seccompiler = "0.5"
+libc = "0.2"
+
+[dev-dependencies]
+serde_json = "1"
+tempfile = "3"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

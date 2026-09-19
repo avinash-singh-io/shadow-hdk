@@ -19,3 +19,6 @@ build/
 .momentum/run-stop
 work/
 .DS_Store
+
+# The Rust crate under native/ builds into its own target directory
+native/**/target/
