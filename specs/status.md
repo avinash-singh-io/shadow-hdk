@@ -10,6 +10,11 @@ type: Status
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
+> **Epic 0010 — cross-platform — is planned** (`specs/epics/0010-cross-platform.md`, D122–D137,
+> 2026-09-19): the OS layer native per OS as small Rust helpers with the proof in Python (A+),
+> one artifact per OS, three CI runners; Phases 41 → 42 ‖ 43; the engine's language a dated
+> decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
+> the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
 >
 > 1,773 non-live tests; mypy strict over 452 files; one distribution, `shadow-hdk`, at
 > **0.31.0** (protocol 3, unchanged — Phase 36's additions are methods and fields).
@@ -169,8 +174,9 @@ approval.
 1. The GitHub release for `v0.31.0` — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index). The tag is pushed; the release is the owner's to create
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
-4. Next lane: derive and start Phase 34 — the harness as data (deps 36, met): `momentum run derive phase-34-the-harness-as-data --epic the-harness-as-data --deps phase-36-plan-admission --write`, then `/start-phase`
-5. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
+4. The 0.31.1 hotfix: BUG-056 (`set_mode` mid-turn), BUG-057 (the proof on 3.13+), ENH-032 (3.14 in the matrix) — a quick-task; then the product-facing ENH-028 (Codex `model`/`effort` mappings) and ENH-023 (cache tokens)
+5. Next lane, the owner's order to confirm: Phase 41 — the OS layer (Epic 0010) before Phase 34, so Phase 34's `bundle` stands on 42's launcher: `momentum run derive phase-41-the-os-layer --epic cross-platform --deps "" --write`, then `/start-phase`
+6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made
 

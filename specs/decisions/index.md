@@ -135,6 +135,22 @@ rather than remembered.
 | D119 | one runtime, many language surfaces — generated client, port stubs and scaffold per language; a native runtime elsewhere is a non-goal until an adopter needs it and the contracts are stable across two releases | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
 | D120 | a harness runs on the Shadow runtime; export encodings are adapters; compile-to-X only when the field shares a target format | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
 | D121 | one question for the plan: an `Ask` at admission parks the plan as a single question; the acts inside still get their Phase 33 grants | [`epics/0009-the-harness-as-data.md`](/epics/0009-the-harness-as-data.md) |
+| D122 | layers decide separately: the OS layer native per OS; the ecosystem Python; the engine's language a dated decision | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D123 | the OS layer's native parts are small static helper executables from one Rust crate, invoked by the Python leash; policy and the proof stay in Python; no PyO3 required | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D124 | one contract, native primitives: POSIX process groups · Job Objects; seatbelt · Landlock+seccomp (bwrap fallback) · restricted tokens — never "POSIX and hope" | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D125 | proof before claim, per OS: no confined mode opens unproven; refuse with `CannotEnforce`, never a silent `full` — stricter than Claude Code's default, equal to its hard mode | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D126 | same semantics on three OSes, proven by the same suites on three CI runners; a red runner blocks the release | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D127 | one artifact per OS/arch, no prerequisite, PyApp fully embedded; the server a container image; size and start time measured against the field's ~100 MB norm | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D128 | the engine and the ecosystem are unchanged by this epic: LangGraph stays; no engine code in Rust; the facade signatures unchanged | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D129 | B (a native engine) is a dated decision at the close of Epic 0009, no later than 2026-12-31, on the LangGraph ledger, the artifact's measurements and Windows proof status | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D130 | the record is the source of truth; a checkpoint is a view: Phase 37 builds on the `RunStore` port, never on LangGraph's checkpoint classes | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D131 | release keys stay outside the tree; signable artifacts; every nested Mach-O signed with hardened runtime on macOS | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D132 | development on Python 3.14; consumers keep `>= 3.12`; the artifact pins the interpreter the matrix proves | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D133 | Linux confinement is Landlock + seccomp in-process by the helper, bubblewrap the fallback, the proof deciding which is in force | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D134 | Windows ships in two steps: process control and honest `full` first; confinement by the elevated model or WSL2, decided in Phase 43 with evidence; no unelevated ACL prototype | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D135 | consume the OS primitives (`landlock`, a Job-Object crate, `windows-rs`, PyApp); own the proof | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D136 | `sandbox-exec`'s deprecation is an accepted, detected risk: the proof fails closed the day it goes | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D137 | named seams left for later: network egress through a proxy with an allowlist; cloud confinement as a microVM backend | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
 
 ## Also here
 

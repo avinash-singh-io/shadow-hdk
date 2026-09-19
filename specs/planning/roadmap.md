@@ -198,6 +198,9 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 38 | The UI plane | planned | 32, 34 | activity and generative-UI adapters; reusable host components; declarative UI has no execution authority |
 | 39 | Collaboration | planned | 33, 36 | agents as peers; remote delegation; a second agent protocol as an adapter; peer capability discovery |
 | 40 | Evaluation and governed evolution | planned | 35, 36 | locked evaluators; replay and shadow comparison; versioned proposals; human-approved rollout and rollback |
+| 41 | The OS layer | planned · **Epic 0010** | — | the `shadow-hdk-sandbox` crate: the Linux helper (Landlock + seccomp, bwrap fallback) and Windows process control (Job Objects); the leash's cross-OS contract; the D36 proof on three CI runners; Windows confined modes refusing honestly until 43 |
+| 42 | The artifact | planned · **Epic 0010** | 41 | one download per OS/arch (PyApp, embedded) with the helpers inside; the signing pipeline; the fresh-install smoke from the artifact on three OSes every release; size and time-to-first-turn recorded; the `serve` container image |
+| 43 | Windows confinement | planned · **Epic 0010** | 41 | the elevated model or WSL2, decided with evidence (D134), behind the D36 proof: `workspace-write` and `read-only` open on Windows with `proven=True` |
 
 ## What comes next — the consumable line
 
@@ -233,6 +236,9 @@ files; the phases after it are capability, not readiness.
 | 38 | The UI plane | 32, 34 | Generic activity projections cross an AG-UI-style adapter; declarative generative UI crosses an A2UI-style adapter and is rendered by host-owned components. A generated view can propose interaction but never acquire execution authority. |
 | 39 | Collaboration | 33, 36 | Agents become peers through transport adapters such as A2A: capability discovery, remote delegation and correlated child runs, with the receiving host retaining its own authority. |
 | 40 | Evaluation and governed evolution | 35, 36 | Frozen evaluators precede optimization. Accepted traces feed replay and shadow comparison; improvements are versioned proposals requiring human approval, pinned rollout and rollback rather than self-installation. |
+| 41 | The OS layer | — | Process supervision and confinement are native per OS behind one contract: a small Rust helper where the OS needs in-process syscalls or an elevated executable, the policy and the D36 proof in Python; the same suites green on macOS, Linux and Windows. |
+| 42 | The artifact | 41 | The kit is one download per OS with no prerequisite — the interpreter, the kit and the helpers inside — signed where the OS requires, smoke-tested from the artifact on three OSes at every release, its size and start measured. |
+| 43 | Windows confinement | 41 | A confined mode opens on Windows only after a write outside the roots is watched denied and the network refused, by whichever of the field's two models the evidence chooses. |
 
 ## Epics
 
@@ -245,6 +251,7 @@ the timeline are phases, not retrospective pseudo-epics.
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
 | **0008 production boundary** | **31, 32, 33** | **complete; v0.30.0 released** |
 | **0009 the harness as data** | **36, 34, 37** | **planned 2026-09-18**; opened from `research/2026-09-18-what-belongs-in-the-kit.md`; D107–D121; released per phase |
+| **0010 cross-platform** | **41, 42, 43** | **planned 2026-09-19**; opened from `research/2026-09-19-cross-platform-grounding.md`; D122–D137; the OS layer native per OS (A+), the engine's language reviewed under D129 with `research/2026-09-19-the-langgraph-ledger.md`; released per phase |
 
 ## Guiding Principles
 1. Ship working software in every phase; each phase leaves every package releasable
