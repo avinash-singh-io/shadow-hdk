@@ -15,8 +15,8 @@ status: in-progress
 - [x] Verify RED — 2026-09-19: 8 failed for their stated reasons (the host's tool absent from `tools/list`; `RemoteComponents` takes no `session`; the proof reads `WROTE` from stderr; the smoke not built); `tsc` fails on `tool`/`spawn`; 3 measurement guards pass as they should
 
 ## Group 1 — The proof
-- [ ] `_prove.attempt` returns `(returncode, stdout, stderr)`; markers read from stdout with `returncode == 0`; `not outside.exists()` kept
-- [ ] Verify: `uv run pytest -q tests/adapters/environment` green on 3.12 and 3.14; mutation (stdout+stderr) fails the new test
+- [x] `_prove.attempt(script, marker) -> bool`: the marker read from stdout with `returncode == 0`, never stderr; `not outside.exists()` kept; the reason in the docstring
+- [x] Verify — 2026-09-19: `tests/adapters/environment` 69 passed on 3.12; on 3.14 the 25 that failed yesterday pass (81 passed) and the whole non-live suite is 1,774 passed with only this phase's own RED (the TS invariants) failing; mutation (stdout+stderr) → 2 fail; BUG-058 found (a test's identity comparison 3.14 no longer honours) and closed inline
 
 ## Group 2 — The thread door inverts
 - [ ] `wire/threads.py` `_start`/`_resume` read `host_components`; `RemoteComponents(peer, holder)` handed to the host as `peer_components`; `ThreadHost` protocol + `serve/host.py` append it to `workshop()`'s components
