@@ -1,6 +1,6 @@
 ---
 type: Plan
-status: in-progress
+status: complete
 ---
 
 # Phase 41 — Linux confinement — Plan

@@ -1,6 +1,6 @@
 ---
 type: Phase
-status: in-progress
+status: complete
 epic: cross-platform
 tags: [linux, landlock, seccomp, bubblewrap, sandbox, rust, helper, proof, environment, ci, maturin]
 deps: []

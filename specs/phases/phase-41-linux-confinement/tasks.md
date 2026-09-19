@@ -1,6 +1,6 @@
 ---
 type: Tasks
-status: in-progress
+status: complete
 ---
 # Phase 41 — Linux confinement — Tasks
 > Mirrors `plan.md`. `[x]` done · `[/]` in-progress · `[ ]` todo.
@@ -35,4 +35,4 @@ status: in-progress
 - [x] Docs: `docs/migrations/0.33.md`; `docs/packages/adapters-environment.md`; `docs/for-a-product.md` — *Where it runs — the operating systems*; README's environments paragraph and release status; `clients/typescript/README.md` re-pinned to 0.33.0 with Phase 42 named optional
 - [x] ENH-035 (Landlock ABI 6 scopes) and ENH-036 (the aarch64 wheels on an arm runner) filed; Epic 0010's third amendment records criteria 1–3 and 9 on Linux and macOS; `[ARCH_CHANGE]` in this phase's history for `specs/architecture/adapters.md`
 - [x] Version 0.33.0 in `pyproject.toml` (and its pin), `native/sandbox/Cargo.toml`, `native/sandbox/pyproject.toml`; `EXPECTED` with its docstring entry; `uv lock` and `Cargo.lock`; changelog; status row
-- [/] Verify — 2026-09-19: ruff check + format clean · mypy 461 files clean · **1,799 non-live passed on 3.12** (3.14: _(pending)_) · `cargo fmt --check`, clippy `-D warnings` on the host and the musl target, 9 unit tests · `momentum okf check .` conformant (209 files) · the 0.33.0 wheel built, installed into a clean venv on macOS pulling no helper (the marker), imported, and answered `initialize` on protocol 3 with version 0.33.0; its METADATA carries `Requires-Dist: shadow-hdk-linux-sandbox==0.33.0; sys_platform == 'linux' and (…)` · CI on the release commit: _(pending)_ · `/complete-phase` → STOP at the gate
+- [x] Verify — 2026-09-19/20: ruff check + format clean · mypy 461 files clean · **1,803 passed on 3.12 and 1,803 on 3.14** (benchmark included; 1,799 without) · `cargo fmt --check`, clippy `-D warnings` on the host and the musl target, 9 unit tests · `momentum okf check .` conformant (209 files) · the 0.33.0 wheel built, installed into a clean venv on macOS pulling no helper (the marker), imported, and answered `initialize` on protocol 3 with version 0.33.0; its METADATA carries `Requires-Dist: shadow-hdk-linux-sandbox==0.33.0; sys_platform == 'linux' and (…)` · CI on the release commit `cb1acb2`: all ten jobs green (https://github.com/avinash-singh-io/shadow-hdk/actions/runs/35461278235) · `/complete-phase` → STOP at the gate
