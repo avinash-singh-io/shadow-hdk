@@ -114,6 +114,7 @@ class ThreadHost(Protocol):
         observer: Any,
         plan_limits: Any = None,
         peer_components: Any = (),
+        attributes: Any = None,
     ) -> Thread: ...
 
     async def list(self) -> Any: ...
@@ -308,6 +309,9 @@ class ThreadMethods:
         if take_over is not None:
             # A page reloaded (D94): the thread its old session still holds, closed there first.
             await take_over(thread_id, self)
+        attributes = params.get("attributes")  # the host's current words (D140), or nothing
+        if attributes is not None and not isinstance(attributes, dict):
+            raise ValueError("attributes must be an object")
         thread = await host.resume(
             thread_id,
             observer=ActivityToWire(self._peer, thread_id),
@@ -316,6 +320,7 @@ class ThreadMethods:
                 if params.get("plan_limits") is not None
                 else {}
             ),
+            **({"attributes": attributes} if attributes is not None else {}),
             **self._peer_components(params),
         )
         self.threads[thread.id] = thread
@@ -477,10 +482,15 @@ class ThreadMethods:
         text = str(params.get("text", ""))
         when = cast(When, str(params.get("when", "enqueue") or "enqueue"))
         on_question = cast(OnQuestion, str(params.get("on_question", "wait") or "wait"))
+        attributes = params.get("attributes")  # this turn's words (D140), or nothing
+        if attributes is not None and not isinstance(attributes, dict):
+            raise ValueError("attributes must be an object")
         fold = Fold()
         count = 0
         # **One fold, both sides of the wire** (D46) — the same one `run` uses.
-        async for event in thread.turn(text, when=when, on_question=on_question):
+        async for event in thread.turn(
+            text, when=when, on_question=on_question, attributes=attributes
+        ):
             count += 1
             await self._peer.notify(
                 EVENT, {"thread_id": thread.id, "event": json.loads(dump(event, Event))}

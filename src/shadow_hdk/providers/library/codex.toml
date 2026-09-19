@@ -114,6 +114,20 @@ mcp_strict_args = []
 disallow_arg = ""
 disallow = []
 
+# A mode's behaviour becomes these flags (D64, ENH-028), measured 2026-09-20 from
+# `codex exec --help` on codex-cli 0.154.0: `-m, --model <MODEL>` is a flag of its own; reasoning
+# effort is a config override — `-c model_reasoning_effort="<low|medium|high>"` — so its mapping
+# carries a `template` saying how the value is spelled after `-c`. `system`, `append_system` and
+# `temperature` have no flag here and are named on the thread's `unmapped_behaviour`.
+[[dialect.behaviour_args]]
+field = "model"
+flag = "-m"
+
+[[dialect.behaviour_args]]
+field = "effort"
+flag = "-c"
+template = 'model_reasoning_effort="{value}"'
+
 [capabilities]
 tool_path = "uncontrolled"
 session = "resumable"

@@ -54,3 +54,19 @@ Affects-specs: none
 Detail: Writing ENH-024's tests found that (1) the JSONL session never read the CLI's stderr pipe — the flood test hung for the full 60 s before the reader existed, and Codex's *session gone* had been unreadable — and (2) `Turn.failed` was set by every dialect and read by nothing: a provider's failed turn landed on the record as `completed` with the error sentence as its answer. Both closed in the same group: a stderr reader keeping the last 64 KB, and a failed `Turn` becoming a `Failed` observation so the outcome is `failed` and `failure` can name why. The thread-record test now covers the plain failure too.
 
 ---
+
+### [DISCOVERY] 2026-09-20 — G3: BUG-061 — an attribute named `mode` switched the policy
+Topics: attributes, judgement, mode, governance, reserved
+Affects-phases: phase-45-truth-both-ways
+Affects-specs: architecture/runtime.md#the-thread
+Detail: Writing the reserved-name test for per-turn words with `{"mode": "full"}` found it was *not* refused: only the step's keys (`posture`, `component`, `inputs`) were reserved, and `context_for` wrote the conversation's `thread`/`turn`/`mode` before the host's attributes, so an attribute of the same name won — and `ModeGovernance` selects its policy by that key. Measured: a `read-only` thread with `attributes={"mode": "full"}` was judged under `full` on every act. Closed by `HOST_RESERVED` (the step's keys and the conversation's), refused at open, turn and resume; the run's own clash check keeps to the step's keys. A contract narrowing for a host that used those names — the migration note says so.
+
+---
+
+### [NOTE] 2026-09-20 — G3: a flag that takes key=value is data, not a code path
+Topics: behaviour, codex, template, provider-file
+Affects-phases: phase-45-truth-both-ways
+Affects-specs: architecture/adapters.md#the-agent-adapter
+Detail: Codex takes reasoning effort as a config override (`-c model_reasoning_effort="high"`), not a flag of its own; `BehaviourArg` was `{field, flag}` and could not say it. One optional field, `template` (with `{value}` where the value goes), keeps the mapping in the provider file — any CLI whose flag takes `key=value` uses it — and the runtime stays ignorant of Codex. The loader refuses a template with no `{value}`, since it would drop the value silently.
+
+---

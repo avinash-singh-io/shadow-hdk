@@ -261,6 +261,17 @@ class LeaseMeter:
 RESERVED_ATTRIBUTES = frozenset({"posture", "component", "inputs"})
 """What `context_for` writes itself, and a host may not (TD-007, D30)."""
 
+CONVERSATION_KEYS = frozenset({"thread", "turn", "mode"})
+"""What a conversation writes onto every judgement's context beside the step's own keys — and
+so a host's attribute may not be named either (BUG-061): **`mode` is the key the shipped
+governance selects its policy by**, and before 0.34 an attribute named `mode` overrode it, so a
+`read-only` thread was judged as `full` by naming an attribute. Refused by name at open, at a
+turn and at a resume; the run's own check above stays on the step's keys, because the
+conversation's are legitimately in the run's context by then."""
+
+HOST_RESERVED = RESERVED_ATTRIBUTES | CONVERSATION_KEYS
+"""Every name a host's attributes may not use."""
+
 
 class Session:
     """One run's identity, handles and meter."""

@@ -107,12 +107,19 @@ def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
         if "behaviour_args" in spoken:
             try:
                 spoken["behaviour_args"] = tuple(
-                    BehaviourArg(field=a["field"], flag=a["flag"]) for a in spoken["behaviour_args"]
+                    BehaviourArg(field=a["field"], flag=a["flag"], template=a.get("template", ""))
+                    for a in spoken["behaviour_args"]
                 )
             except (KeyError, TypeError) as wrong:
                 raise MalformedProvider(
                     f"{where}: each dialect.behaviour_args entry needs field and flag"
                 ) from wrong
+            for arg in spoken["behaviour_args"]:
+                if arg.template and "{value}" not in arg.template:
+                    raise MalformedProvider(
+                        f"{where}: dialect.behaviour_args {arg.field!r}: a template must say "
+                        "where the value goes with {value}"
+                    )
         if "deltas" in spoken:
             try:
                 spoken["deltas"] = tuple(

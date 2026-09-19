@@ -18,9 +18,9 @@ status: in-progress
 - [x] Verify — 2026-09-20: 10 green; `tests/adapters/jsonl tests/runtime tests/wire tests/serve tests/invariants tests/providers tests/kernel` 1,023 passed; mypy 467 files; ruff clean; schemas and TS regenerated, the client type-checks and builds; mutations — matches ignored → 2 fail; `failure` unwritten → 2 fail. BUG-060 found on the way (a provider's failed turn recorded `completed`) and closed with it
 
 ## Group 3 — A host's words per turn; a second CLI's behaviour (ENH-037, D140; ENH-028)
-- [ ] RED: the turn's words on that turn's judgements only; a rule scoped by them; reserved names; `resume(attributes=)`; the wire's two parameters; Codex argv with `-m` and `-c model_reasoning_effort="…"`; `unmapped_behaviour` shrinks; a malformed template
-- [ ] `BehaviourArg.template`; `argv_for`; the loader; `codex.toml`; `Conversation.turn(attributes=)`; `Thread.turn/resume(attributes=)`; the wire; the TS client
-- [ ] Verify: green; mutations — words leaking to the next turn → 1 fails; template unrendered → 1 fails
+- [x] RED — 2026-09-20: 8 failed on the absent `Thread.turn(attributes=)`, `Thread.resume(attributes=)`, `BehaviourArg.template`, the unrendered `-m`, and the template validation that did not raise
+- [x] `BehaviourArg.template`; `argv_for`; the loader (a template without `{value}` refused); `codex.toml` maps `model` (`-m`) and `effort` (`-c model_reasoning_effort="{value}"`); `Conversation.turn(attributes=)` merged last in `context_for` and cleared in `finally`; `Thread.turn(attributes=)`; `Thread.resume(attributes=)` replacing and saving; `ServeHost.resume(attributes=)`; the wire's `turn/start` and `thread/resume`; the TS client's options. BUG-061 found (an attribute named `mode` switched the policy) and closed with `HOST_RESERVED`
+- [x] Verify — 2026-09-20: `tests/runtime tests/wire tests/serve tests/adapters/jsonl tests/providers tests/invariants` 912 passed; mypy 469 files; ruff clean; the Provider schema republished and the TS client regenerated, type-checked and built; mutations — the words not cleared between turns → 1 fails (the catalogue judged with them); the words written back → 1 fails; the template unrendered → 2 fail
 
 ## Group 4 — The ceiling stands (ENH-038, D138); the matrix (ENH-032); a provider is a file, by a test
 - [ ] RED: an uncontained reach refused under shipped `read-only` and `workspace-write`, asked under a product mode; the invariant catches a planted vendor name

@@ -325,11 +325,17 @@ export class HarnessClient {
        *  a connection; a host that goes away takes its tools with it, by name. */
       host_components?: boolean;
     }) => this.call<Started>("thread/start", params as unknown as { [key: string]: JsonValue }),
-    resume: (thread_id: string, options: { plan_limits?: PlanLimits; host_components?: boolean } = {}) =>
+    /** `attributes` (D140) are the host's current words — they **replace** the record's and the
+     *  record shows the change; omit them to keep the record's. */
+    resume: (
+      thread_id: string,
+      options: { plan_limits?: PlanLimits; host_components?: boolean; attributes?: { [key: string]: JsonValue } } = {},
+    ) =>
       this.call<Resumed>("thread/resume", {
         thread_id,
         ...(options.plan_limits ? { plan_limits: options.plan_limits as unknown as JsonValue } : {}),
         ...(options.host_components ? { host_components: true } : {}),
+        ...(options.attributes ? { attributes: options.attributes } : {}),
       }),
     close: (thread_id: string) => this.call<{ closed: string }>("thread/close", { thread_id }),
     /** Every thread in the store; `held_by` names the process that has it open (D81), or is null. */
@@ -362,7 +368,13 @@ export class HarnessClient {
     start: (
       thread_id: string,
       text: string,
-      options: { when?: "enqueue" | "reject" | "interrupt"; on_question?: "wait" | "park" } = {},
+      options: {
+        when?: "enqueue" | "reject" | "interrupt";
+        on_question?: "wait" | "park";
+        /** This turn's words (D140): merged over the record's for this turn's judgements, never
+         *  written back — a fact the host learnt after the thread opened. */
+        attributes?: { [key: string]: JsonValue };
+      } = {},
     ): AsyncIterable<TurnLine | { kind: "done"; turn: TurnRecord }> => {
       const queue: (TurnLine | { kind: "done"; turn: TurnRecord })[] = [];
       let wake: (() => void) | null = null;
@@ -382,6 +394,7 @@ export class HarnessClient {
         text,
         ...(options.when ? { when: options.when } : {}),
         ...(options.on_question ? { on_question: options.on_question } : {}),
+        ...(options.attributes ? { attributes: options.attributes } : {}),
       })
         .then((result) => push({ kind: "done", turn: result.turn }))
         .catch((error: Error) => push({ kind: "done", turn: { id: "", run_id: "", prompt: text, at: "", outcome: "failed", text: String(error) } }))

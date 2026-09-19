@@ -75,6 +75,10 @@ class BehaviourArg:
 
     field: str
     flag: str
+    template: str = ""
+    """How the value is spelled after the flag, when the CLI takes it as `key=value` rather than
+    as a flag of its own: `{value}` is where the value goes — Codex's reasoning effort is
+    `-c model_reasoning_effort="{value}"` (ENH-028). Empty: the value as is."""
 
 
 @dataclass(frozen=True)

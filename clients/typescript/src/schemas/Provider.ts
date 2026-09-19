@@ -24,6 +24,7 @@ export type AllowOverride = string
 export type AllowToolPrefix = string
 export type Field = string
 export type Flag = string
+export type Template = string
 export type BehaviourArgs = BehaviourArg[]
 export type CacheReadTokensAt = string
 export type CacheWriteTokensAt = string
@@ -181,6 +182,7 @@ type_key?: TypeKey
 export interface BehaviourArg {
 field: Field
 flag: Flag
+template?: Template
 }
 /**
  * One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,

@@ -75,7 +75,7 @@ from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
-from shadow_hdk.runtime.session import RESERVED_ATTRIBUTES, LeaseMeter
+from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
 
@@ -286,6 +286,9 @@ class Conversation:
         """The policy's mode id — what the governance selects by (the context key `mode`)."""
         self.principal = principal
         self.attributes: dict[str, JsonValue] = dict(attributes or {})
+        self._turn_attributes: dict[str, JsonValue] = {}
+        """The running turn's own words (D140): merged over `attributes` for that turn's
+        judgements, emptied when it ends, never written back."""
         self.workspace = workspace
         self.session_id = session_id
         """The provider's own session id, when it has one — what a reopen hands back (D76)."""
@@ -382,7 +385,7 @@ class Conversation:
                 raise ValueError("a conversation needs a root or a workspace")
             workspace = Workspace.of(root)
         given = dict(attributes or {})
-        if taken := sorted(set(given) & RESERVED_ATTRIBUTES):
+        if taken := sorted(set(given) & HOST_RESERVED):
             raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
         conversation = cls(
             conversation_id=conversation_id or ports.clock.new_id(),
@@ -556,6 +559,7 @@ class Conversation:
             "turn": turn_id,
             **({"mode": self.mode} if self.mode else {}),
             **self.attributes,
+            **self._turn_attributes,
             **self._options,
         }
 
@@ -573,6 +577,7 @@ class Conversation:
         when: When = "enqueue",
         on_question: OnQuestion = "wait",
         began: Any = None,
+        attributes: Mapping[str, JsonValue] | None = None,
     ) -> AsyncIterator[Event]:
         """One exchange: the person's text in, the run's events out, `last` set at the end.
 
@@ -586,10 +591,15 @@ class Conversation:
         `cancelled` — and starts this one. `on_question` (D88): `wait` puts a question to the
         host's handle and waits; `park` keeps it and ends the turn `parked`. `began`, when
         given, is awaited with the turn's `TurnRecord` once the turn has the lock and a run id —
-        a keeper of records writes the turn down there, before anything runs.
+        a keeper of records writes the turn down there, before anything runs. `attributes`
+        (D140) are this turn's words — a fact the host learnt after the conversation opened —
+        merged over the conversation's for this turn's judgements and never written back.
         """
         if when not in ("enqueue", "reject", "interrupt"):
             raise ValueError(f"when={when!r}: one of enqueue, reject, interrupt")
+        words = dict(attributes or {})
+        if taken := sorted(set(words) & HOST_RESERVED):
+            raise ValueError(f"attributes {taken} are the runtime's own; choose other names")
         if on_question not in ("wait", "park"):
             raise ValueError(f"on_question={on_question!r}: one of wait, park")
         if self._holder is None:
@@ -628,6 +638,7 @@ class Conversation:
             self._current = cancellation
             self._interrupted = False
             self._running_turn = turn_id
+            self._turn_attributes = words
             self._parked_children = []
             self._open_questions = []
             self.turns_taken = number
@@ -739,6 +750,7 @@ class Conversation:
             finally:
                 self._current = None
                 self._running_turn = ""
+                self._turn_attributes = {}
                 if self._interrupted:
                     # The person stopped it. The run may still say `completed` — a provider that
                     # was told returns what it had — but the turn was cut short, and says so.

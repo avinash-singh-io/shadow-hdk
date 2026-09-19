@@ -10,6 +10,11 @@
         "flag": {
           "title": "Flag",
           "type": "string"
+        },
+        "template": {
+          "default": "",
+          "title": "Template",
+          "type": "string"
         }
       },
       "required": [
