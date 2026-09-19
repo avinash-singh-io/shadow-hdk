@@ -20,7 +20,7 @@ type: Architecture
 | `modes` | governance | 1 · 25 · 28 | a mode is a ceiling profile plus an ask line — data; since D64 a `ModeSpec` is policy + behaviour + presentation, and since D76 it names the environment mode it needs; four ship — `read-only`, `ask`, `workspace-write`, `full` — and the rest are files or store rows |
 | `environment` | component | 22 · 28 | where effects land, with a mode, on one or many roots — the `workspace` and `sandbox_subprocess` adapters of Phase 3 folded into it (D48–D50, D76) |
 | `acp` | model + component | 4 | OpenCode, or anything Zed-compatible, driven over the Agent Client Protocol |
-| `jsonl` | agent | 20 | a CLI answering in line-delimited JSON — Claude Code, Codex — resident or per turn, resumed on its own session id (D76) |
+| `jsonl` | agent | 20 | a CLI answering in line-delimited JSON — Claude Code, Codex — resident or per turn, resumed on its own session id (D76); its stderr read as it arrives (BUG-059); every quirk a value in the provider's file — where the cache tokens are, what a gone session says (`session_gone_matches`, D139), how a behaviour field is spelled after its flag (`BehaviourArg.template`) — never a code path (D40, held by `tests/invariants/test_a_provider_is_a_file.py`) |
 | `recording` | component | 5 · 20 · 23 | an MCP server exposing our registry to a child agent; every call an observation. Served over a loopback socket through a relay console script (D44), and **nothing reaches it without the token the serve minted** — first line, constant time, refusals counted and never logged (D52). A call the policy asks about runs as a held child and the question is put to the host **live** while the CLI waits (D58) |
 | `effect_rules` | governance | 10 | rules as rows over profiles, composed by intersection, with the narrowing check |
 | `sandbox_gvisor`, `sandbox_firecracker` | component | 11 | contained execution |
@@ -211,7 +211,7 @@ presentation (id, name, description) and the **environment mode it needs**. Four
 | mode | environment | judges |
 |---|---|---|
 | `read-only` | read-only | reads, the skills, the person, the web; nothing written or run |
-| `ask` | workspace-write | the workspace is the ceiling; every write, run or delete inside it is asked about — Claude Code's *default*, Codex's *on-request* |
+| `ask` | workspace-write | the workspace is the ceiling; every write, run or delete inside it is asked about — and, since 0.34 (D138), a reach from the serving process (the web, uncontained) is asked about too, an `allow` rule for the tool standing in — Claude Code's *default*, Codex's *on-request* |
 | `workspace-write` | workspace-write | writes and commands inside the roots, silently; the web hidden (it reaches, uncontained) |
 | `full` | full | everything; a write outside the workspace, or a command that reaches, is asked about |
 
