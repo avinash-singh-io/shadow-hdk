@@ -8,7 +8,7 @@ type: Ad-hoc Record
 > **Created**: 2026-09-15
 > **Branch**: docs/readme-v030
 > **Backlog**: none
-> **Status**: in-progress
+> **Status**: shipped — `ca432d0` is on `main` (the v0.30 README); the record lagged, found by the post-0.33.0 audit 2026-09-20
 
 ## Current Behavior
 

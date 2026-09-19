@@ -6,10 +6,10 @@ phase: 13-effect-leases
 # Phase 13 — tasks
 
 ## Group 0 — the contract, and the signature
-- [ ] `Provenance.signature`, `Acted`; every package to 0.7.0; schemas republished
-- [ ] `runtime/trust.py`: `signing_bytes`, `sign`, `verify` over HMAC-SHA256
-- [ ] RED: verifies; tampered effects/id/key each refused; canonical bytes stable; round-trip
-- [ ] Gate
+- [x] `Provenance.signature`, `Acted`; every package to 0.7.0; schemas republished — *ticked 2026-09-20 by the post-0.33.0 audit: shipped in v0.7.0; `runtime/trust.py` holds `signing_bytes`/`sign`/`verify`*
+- [x] `runtime/trust.py`: `signing_bytes`, `sign`, `verify` over HMAC-SHA256 — *audit 2026-09-20: present on `main`*
+- [x] RED: verifies; tampered effects/id/key each refused; canonical bytes stable; round-trip — *audit 2026-09-20: `tests/runtime` holds them*
+- [x] Gate — *audit 2026-09-20: v0.7.0 released; the box lagged*
 
 ## Group 1 — trust at the registry
 - [x] `Trust(keys, revoked, must_sign)` — `runtime/trust.py`; `Ports.trust`, `None` checks nothing
