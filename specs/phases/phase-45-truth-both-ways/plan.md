@@ -116,24 +116,25 @@ The admission rule and the owner's standing rule (the kit is a substrate) govern
 
 **Commit:** `feat(threads): a turn's words are the turn's; Codex's model and effort as data (ENH-037, D140; ENH-028)`
 
-## Group 4 — The ceiling stands (ENH-038, D138); the matrix; the invariant (ENH-032)
+## Group 4 — The door is `ask` (ENH-038, D138); the matrix; the invariant (ENH-032)
 
-- RED (tests/adapters/modes/test_a_reach_from_the_process_is_an_egress_channel.py,
-  tests/invariants/test_a_provider_is_a_file.py, the CI matrix by inspection): under shipped
-  `read-only` an effect `reaches=True, contained=False, writes=∅` is refused; under
-  `workspace-write` refused; under a product mode file with ceiling `contained = false` and
-  `ask_above.contained = true` it is asked and a contained reach allowed; the `ddgs` battery's
-  file unchanged (`contained = false`); the invariant walks `src/shadow_hdk/kernel` and
+- RED (`tests/adapters/modes/test_a_reach_from_the_process_is_an_egress_channel.py`,
+  `tests/invariants/test_a_provider_is_a_file.py`, the CI matrix by inspection): under shipped
+  `workspace-write` an effect `reaches=True, contained=False, writes=∅` is refused; under
+  `read-only` allowed; under `ask` asked, and allowed by an `allow` row for the tool in `ask`
+  (which does nothing under `workspace-write` — a rule never widens); a contained reach allowed
+  everywhere; the `ddgs` battery's file unchanged; the invariant walks `src/shadow_hdk/kernel` and
   `src/shadow_hdk/runtime` code tokens (docstrings and comments stripped by `tokenize`) and
-  refuses `claude`, `codex`, `openai`, `anthropic`, `ollama`, `opencode`; its self-test plants
-  one and sees it caught.
-- `adapters/modes/registry.py::_looking` ceiling `contained=True`; `docs/packages/adapters-
-  modes.md` (or the modes guide that exists): *opening web reads with a mode of your own*;
+  refuses `claude`, `codex`, `openai`, `anthropic`, `ollama`, `opencode`, `langchain`; its self-test
+  plants one and sees it caught.
+- `adapters/modes/registry.py::_asking` ceiling `contained=False` with `ask_above` contained (the
+  door); `_looking` unchanged — see the G4 amendment; `docs/packages/adapters-modes.md`: *a web
+  read under the shipped modes*;
   `.github/workflows/ci.yml` `check` over `python-version: ["3.12", "3.13", "3.14"]`;
   `.python-version` → `3.14`; `pyproject.toml` classifiers `3.14`; the invariant.
 - Verify: green; the invariant's mutation; CI green on the three legs for the pushed commit.
 
-**Commit:** `feat(modes): a reach from the serving process is an egress channel — read-only's ceiling says contained (ENH-038, D138); the 3.12–3.14 matrix (ENH-032); a provider is a file, by a test`
+**Commit:** `feat(modes): ask asks before a web read from the process (ENH-038, D138); the 3.12–3.14 matrix (ENH-032); a provider is a file, by a test`
 
 ## Group 5 — The live proofs, the docs, the release *(last)*
 

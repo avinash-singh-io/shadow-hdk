@@ -22,9 +22,9 @@ status: in-progress
 - [x] `BehaviourArg.template`; `argv_for`; the loader (a template without `{value}` refused); `codex.toml` maps `model` (`-m`) and `effort` (`-c model_reasoning_effort="{value}"`); `Conversation.turn(attributes=)` merged last in `context_for` and cleared in `finally`; `Thread.turn(attributes=)`; `Thread.resume(attributes=)` replacing and saving; `ServeHost.resume(attributes=)`; the wire's `turn/start` and `thread/resume`; the TS client's options. BUG-061 found (an attribute named `mode` switched the policy) and closed with `HOST_RESERVED`
 - [x] Verify — 2026-09-20: `tests/runtime tests/wire tests/serve tests/adapters/jsonl tests/providers tests/invariants` 912 passed; mypy 469 files; ruff clean; the Provider schema republished and the TS client regenerated, type-checked and built; mutations — the words not cleared between turns → 1 fails (the catalogue judged with them); the words written back → 1 fails; the template unrendered → 2 fail
 
-## Group 4 — The ceiling stands (ENH-038, D138); the matrix (ENH-032); a provider is a file, by a test
-- [ ] RED: an uncontained reach refused under shipped `read-only` and `workspace-write`, asked under a product mode; the invariant catches a planted vendor name
-- [ ] `_looking` ceiling `contained=True`; the modes guide's section; `ci.yml` matrix 3.12/3.13/3.14; `.python-version` 3.14; classifiers; the invariant
+## Group 4 — The door is `ask` (ENH-038, D138); the matrix (ENH-032); a provider is a file, by a test
+- [x] RED — 2026-09-20: 3 failed — `ask` refused the reach instead of asking, and the first draft's `read-only` assertions; the invariant passed on the tree and its self-test caught the planted name. The first draft narrowed `read-only`; `tests/test_a_mode_reaches_the_child.py` failed at once (over a `full` environment nothing is contained, so a contained ceiling offered nothing) and the architecture's modes table says `read-only` judges the web — reverted, D138 amended in the history
+- [x] `_asking` ceiling `contained=False` with `ask_above` contained (the door); `_looking` unchanged; the composition and battery tests kept at the documented truth; the modes guide's section; `ci.yml` `check` over 3.12/3.13/3.14; `.python-version` 3.14 (the dev venv rebuilt on 3.14.6); the 3.14 classifier; `tests/invariants/test_a_provider_is_a_file.py`
 - [ ] Verify: green; the invariant's mutation; CI green on the three legs for the pushed commit — run URL: _(…)_
 
 ## Group 5 — The live proofs, the docs, the release

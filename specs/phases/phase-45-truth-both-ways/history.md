@@ -70,3 +70,11 @@ Affects-specs: architecture/adapters.md#the-agent-adapter
 Detail: Codex takes reasoning effort as a config override (`-c model_reasoning_effort="high"`), not a flag of its own; `BehaviourArg` was `{field, flag}` and could not say it. One optional field, `template` (with `{value}` where the value goes), keeps the mapping in the provider file — any CLI whose flag takes `key=value` uses it — and the runtime stays ignorant of Codex. The loader refuses a template with no `{value}`, since it would drop the value silently.
 
 ---
+
+### [DECISION] 2026-09-20 — D138 amended in G4: `read-only` keeps its documented ceiling; the door is `ask`
+Topics: modes, contained, web, read-only, ask, egress
+Affects-phases: phase-45-truth-both-ways
+Affects-specs: architecture/adapters.md#the-modes-adapter
+Detail: The first D138 entry called `read-only`'s `contained = false` an inconsistency and narrowed it. Writing the change found two things. (1) It was not an inconsistency but the documented design — `specs/architecture/adapters.md`'s modes table says `read-only` judges "reads, the skills, the person, the web; nothing written or run". (2) `contained` is stamped on every operation of an environment from the environment's proof, so over a `full` environment even `read_file` is `contained = false`, and a `read-only` policy with a contained ceiling offered *nothing* there — `tests/test_a_mode_reaches_the_child.py` said so at once. The narrowing was reverted before it was committed. What stands of D138: `workspace-write` (the silent writing mode) hides an uncontained reach — a reach beside writes is an egress channel; `read-only` allows it — it writes nothing a reach could carry out, and a read-only policy must work over any environment; **`ask` asks before it** (was: refused outright), which is its own definition and Claude Code's default; an `allow` rule for the one tool in `ask` is the served product's door. No vocabulary change; the battery's file unchanged. The lesson is the phase's: a decision made from one file's evidence is checked against the architecture *before* the code moves, not after the suite says so.
+
+---

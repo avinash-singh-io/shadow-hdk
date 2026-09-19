@@ -29,15 +29,18 @@ Claude Code half of Phase 36's live proof.
 
 Recorded in `history.md` as they are made; listed in `specs/decisions/index.md`.
 
-- **D138 — A reach from the serving process is an egress channel; the confined ceilings keep
-  `contained = true`, and the door is a mode.** `read-only`'s ceiling said `contained = false`
-  while `workspace-write`'s said `true` — the narrower mode was wider on one axis, and its own
-  environment proves the network denied for commands while an in-process battery could reach out.
-  Both confined ceilings now say `contained = true`. A product that wants web reads under a
-  confined mode ships a mode of its own — ceiling `contained = false`, `ask_above`
-  `contained = true` — so an uncontained reach is *asked*, expressible as data today and proven by
-  a test. The battery's `contained = false` stays honest; the future is D137's egress proxy, where
-  a proxied read *is* contained.
+- **D138 — A web read from the serving process, under the shipped modes: `workspace-write`
+  hides it, `read-only` allows it, `ask` asks — and the door is `ask` plus an `allow` rule.**
+  The battery's `contained = false` is true and stays. `workspace-write`, the silent writing
+  mode, hides an uncontained reach (a reach beside writes is an egress channel). `read-only`
+  allows it, as its documented definition says — look, and look at the web; it writes nothing a
+  reach could carry out, and a read-only policy must work over any environment, a `full` one
+  included, where nothing is proven contained. `ask` asks before it (before 0.34 it refused
+  outright, which left a served product no door but re-vouching the effect): "every write, run or
+  delete inside the workspace is asked about" is its definition and Claude Code's default. A row
+  `component = "web_search", decision = "allow", mode = "ask"` then stands in for the person. No
+  vocabulary change. *(Amended in G4 — the first draft narrowed `read-only`; the architecture and
+  the suite said no.)*
 - **D139 — A turn's failure is typed on the record and raised typed.** `TurnRecord.failure`
   names why a turn failed from a small vocabulary (`session_gone` first); `Thread.turn` raises
   `SessionGone(thread_id, session_id, provider)` at the end of the stream; the wire's error kind
@@ -70,8 +73,8 @@ Recorded in `history.md` as they are made; listed in `specs/decisions/index.md`.
 - ENH-037 — `Conversation.turn(attributes=)`, `Thread.turn(attributes=)`,
   `Thread.resume(attributes=)`; `turn/start {attributes}`, `thread/resume {attributes}`; the TS
   client.
-- ENH-038 — D138: `read-only`'s ceiling `contained = true`; a test that a product-defined mode
-  opens web reads with `ask`; the modes guide says how; a migration note.
+- ENH-038 — D138: `ask` asks before an uncontained reach; a test over the four shipped policies
+  and the `allow`-rule door; the modes guide says how; a migration note.
 - ENH-032 — the `check` job over 3.12 · 3.13 · 3.14; `.python-version` 3.14; the classifiers;
   `requires-python` unchanged.
 - The vendor-name invariant: no `claude`, `codex`, `openai`, `anthropic`, `ollama`, `opencode`
@@ -113,9 +116,8 @@ one product would use.
 4. A rule scoped `attribute:value` given on `turn(attributes=)` decides that turn's acts and not
    the next turn's; `resume(attributes=)` changes what later turns are judged by and the record
    shows the new words.
-5. Under the shipped `read-only` and `workspace-write` modes an uncontained reach is refused; under
-   a product mode with `contained = false` and `ask_above.contained = true` it is asked; the
-   `ddgs` battery's file is unchanged.
+5. Under shipped `workspace-write` an uncontained reach is refused, under `read-only` allowed,
+   under `ask` asked — and allowed by one `allow` rule; the `ddgs` battery's file is unchanged.
 6. CI's `check` job runs on 3.12, 3.13 and 3.14; the dev environment is 3.14.
 7. The invariant fails on a vendor name in runtime code (mutation shown) and passes on the tree.
 8. The four-zero gate on 3.12 and 3.14; protocol 3 unchanged (every addition a field or a kind);
