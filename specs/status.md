@@ -188,11 +188,11 @@ approval.
 
 ## Next Actions
 
-1. The GitHub release for `v0.33.0` after the merge and tag — it triggers the publish workflow (the kit and the helper's four wheels + sdist, PyPI, the fresh-install smoke asserting Landlock from the index)
+1. Both releases are done and published: `v0.33.0` (the kit and the helper's wheels; the smoke from PyPI found Landlock in force) and `v0.32.1` (first reached PyPI 2026-09-20). Next lane: Phase 45
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
 4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
-5. The GitHub releases for `v0.32.1` and `v0.33.0` are the owner's (`gh release create …`) — the 0.33.0 one publishes the kit **and** the helper's wheels together and smoke-tests Landlock from the index
+5. The ecosystem board's Pins rows for 0.30.0 → 0.33.0 (`intent-ecosystem/lanes/board.md`, lane P's repository — the text is in the kit's handover) and ENH-037/038/039 answered back to lane P
 6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made
