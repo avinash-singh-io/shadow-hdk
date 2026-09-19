@@ -78,6 +78,11 @@ class Isolation:
     secrets_denied: bool | None = None
     """True when denial is established, false when secrets remain reachable, and None when this
     mechanism has not established either. Read confinement alone is not proof of secret denial."""
+    mechanism: str = ""
+    """What was watched denying — `seatbelt`, `landlock`, `bubblewrap`, a box backend's name — or
+    empty where nothing was. A machine may have more than one way to confine a process and the
+    proof decides which is in force (Epic 0010, D133); the name is on the evidence so a host reads
+    *which*, not only *whether*."""
 
     @classmethod
     def none(cls) -> Isolation:
@@ -140,23 +145,26 @@ def capabilities_of(isolation: Isolation, mode: Mode) -> EnvironmentCapabilities
         if isolation.secrets_denied is True
         else ("ambient" if isolation.secrets_denied is False else "unknown")
     )
+    # The evidence names the mechanism where one was watched: "landlock confines writes" tells a
+    # host which of a machine's ways is in force; "isolation confines writes" only that one is.
+    by = isolation.mechanism or "isolation"
     evidence = (
         CapabilityEvidence(
             "reads",
             "derived",
-            "isolation confines reads" if isolation.reads_confined else "reads are not confined",
+            f"{by} confines reads" if isolation.reads_confined else "reads are not confined",
         ),
         CapabilityEvidence(
             "writes",
             "derived",
             "read-only mode offers no writes"
             if mode == "read-only"
-            else ("isolation confines writes" if isolation.writes_confined else "writes are open"),
+            else (f"{by} confines writes" if isolation.writes_confined else "writes are open"),
         ),
         CapabilityEvidence(
             "network",
             "derived",
-            "isolation denies network" if isolation.network_denied else "network is available",
+            f"{by} denies network" if isolation.network_denied else "network is available",
         ),
         CapabilityEvidence(
             "secrets",

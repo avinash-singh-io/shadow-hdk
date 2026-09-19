@@ -1,0 +1,32 @@
+# The Linux helper as a distribution (Epic 0010, D123 as amended 2026-09-19): maturin packages the
+# `shadow-hdk-linux-sandbox` binary alone — `bindings = "bin"`, no Python module, no Python ABI —
+# so there is one `py3-none-<platform>` wheel per OS × arch and never one per Python version.
+# `shadow-hdk` depends on it under a Linux marker; the version moves with the kit's
+# (`tests/test_versions.py`).
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "shadow-hdk-linux-sandbox"
+version = "0.33.0"
+description = "Shadow HDK's Linux confinement helper: Landlock and seccomp applied before exec, invoked by the kit's local environment."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Rust",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/avinash-singh-io/shadow-hdk"
+Repository = "https://github.com/avinash-singh-io/shadow-hdk"
+
+[tool.maturin]
+bindings = "bin"
+strip = true

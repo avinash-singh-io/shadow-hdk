@@ -63,7 +63,7 @@ def _said(observation: Observation) -> str:
     return ""
 
 
-async def prove_box(box: Box, *, mode: Mode) -> Isolation:
+async def prove_box(box: Box, *, mode: Mode, mechanism: str = "") -> Isolation:
     """Three attempts, watched: a write outside the mount, a socket, a write inside (D36, D50).
 
     Reads are taken as confined in a box — the process cannot see the host at all — which is the
@@ -104,6 +104,7 @@ async def prove_box(box: Box, *, mode: Mode) -> Isolation:
         network_denied=network_denied,
         proven=writes_confined and network_denied and inside_ok,
         secrets_denied=None,
+        mechanism=mechanism,
     )
 
 

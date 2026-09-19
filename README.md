@@ -279,6 +279,11 @@ workspace mode confines writes to the workspace and denies network access, but d
 to confine reads or deny ambient secrets. A production host should require only properties it truly
 needs and let Shadow refuse a configuration that cannot establish them.
 
+Confinement is the operating system's own, proven before a confined mode opens: seatbelt on macOS;
+on Linux the kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp, installed with the kit)
+with bubblewrap behind it, the proof deciding which is in force and the evidence naming it.
+Windows is not yet supported (Epic 0010, Phase 43; WSL2 meanwhile).
+
 ---
 
 ## Protocol and clients
@@ -375,11 +380,19 @@ uv run pytest
 
 ## Release status
 
-**v0.32.0 — Tools as code, from any language** (Phase 44) is the candidate at the release gate: a
+**v0.33.0 — Linux confinement** (Epic 0010, Phase 41) is the candidate at the release gate: a
+confined mode opens on Linux — Ubuntu 24.04 with its default AppArmor included — through the
+kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec, installed with
+the kit), bubblewrap behind it, the D36 proof deciding which is in force and `Isolation.mechanism`
+naming it; CI runs the suite on Linux both ways and on macOS. See the
+[v0.33 migration guide](docs/migrations/0.33.md).
+
+**v0.32.0 — Tools as code, from any language** (Phase 44) is released: a
 host in any language writes its tools as code and the runtime calls them back on the thread door
 (`thread/start {host_components: true}`); the TypeScript client gains `tool()`, `components.serve`
 and a stdio sidecar; the confinement proof runs on Python 3.14. See the
-[v0.32 migration guide](docs/migrations/0.32.md).
+[v0.32 migration guide](docs/migrations/0.32.md). 0.32.1 followed with BUG-056 (a `set_mode` or
+`add_root` during a running turn refuses with `turn_running` instead of killing the turn).
 
 **v0.31.0 — Plan admission** (Epic 0009, Phase 36) is released: a plan
 an agent, a CLI or a host proposes is a composition admitted whole — shape, existence and effects

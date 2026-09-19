@@ -4,10 +4,10 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-19 — **v0.32.1** (BUG-056, quick-task) after **Phase 44 / v0.32.0**; Epic 0010 amended — Linux confinement first, the artifact optional, Windows deferred
-> **Current Phase**: **none — between phases.** Next, in the owner's order: the Linux confinement
-> lane (Epic 0010, Phase 42's Linux half — the Landlock helper, CI proving confinement), then
-> Phase 45 (ENH-023, ENH-024, ENH-028, ENH-032), then Phase 34 → 37. Windows (41, 43) deferred.
+> **Last Updated**: 2026-09-20 — **v0.33.0** — Phase 41 **Linux confinement** (Epic 0010's first lane) complete
+> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 45 (ENH-023,
+> ENH-024, ENH-028, ENH-032), then Phase 34 → 37. The artifact (42) is optional; Windows (43) is
+> deferred until asked — WSL2 meanwhile.
 > **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
 > settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
 > are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
@@ -17,10 +17,16 @@ type: Status
 > decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
 > the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
 >
-> 1,773 non-live tests; mypy strict over 452 files; one distribution, `shadow-hdk`, at
-> **0.31.0** (protocol 3, unchanged — Phase 36's additions are methods and fields).
+> 1,799 non-live tests; mypy strict over 461 files; one distribution, `shadow-hdk`, at
+> **0.33.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
 >
-> **Latest Release**: **v0.32.0**, released 2026-09-19 — Phase 44 **tools as code, from any
+> **Latest Release**: **v0.33.0**, released 2026-09-20 — Epic 0010, Phase 41 **Linux confinement**:
+> a confined mode opens on Linux — Ubuntu 24.04 with its default AppArmor included — through the
+> kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied before exec; a second
+> distribution in lockstep, a dependency under a Linux marker), bubblewrap behind it, the D36 proof
+> deciding which is in force and `Isolation.mechanism` naming it on the evidence; CI runs the suite
+> on Linux both ways and on macOS, a red runner blocking a release. Contract additions, protocol 3
+> unchanged — a *Pins* row. Before it **v0.32.1** (BUG-056) and **v0.32.0**, released 2026-09-19 — Phase 44 **tools as code, from any
 > language**: `thread/start {host_components: true}` carries a host's components by inversion (D21)
 > on the thread door; the TypeScript client gains `tool()`, `components.serve`, a `Transport` and a
 > stdio sidecar (`shadow-hdk-client/node`); the D36 proof reads stdout (BUG-057) and the whole
@@ -123,6 +129,7 @@ approval.
 | 33 | Authority at the act | Complete, merged | **v0.30.0** |
 | 36 | Plan admission (Epic 0009) | Complete, merged | **v0.31.0** |
 | 44 | Tools as code, from any language | Complete, merged | **v0.32.0** |
+| 41 | Linux confinement (Epic 0010) | Complete, merged | **v0.33.0** |
 
 ## Ad-hoc / Patch Releases
 
@@ -154,6 +161,7 @@ approval.
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
 | 36 — plan admission (Epic 0009) | `phase-36-plan-admission` | 1,773 non-live passed, mypy 452 files, ruff clean, OKF conformant, schemas without drift, the TypeScript client generated and built, the 0.31.0 wheel installed fresh and answering `initialize`; live on Codex CLI 0.154.0 | v0.31.0 released |
 | 44 — tools as code, from any language | `phase-44-tools-as-code` | 1,784 non-live passed on 3.12 **and** on 3.14; mypy 457 files; ruff clean; OKF conformant; schemas without drift; the TypeScript client generated and built; the 0.32.0 wheel installed fresh and answering `initialize`; the TS host tool called back over HTTP and stdio | v0.32.0 released |
+| 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | 1,799 non-live passed on 3.12 **and** on 3.14 (macOS); on CI: 1,818 on Linux with Landlock in force, 1,799 on Linux with bubblewrap, 1,799 on macOS; the crate's 12 confinement tests on the ubuntu-24.04 runner; four platform wheels built, the x86_64 one installed and watched confining; mypy 461 files; ruff clean; OKF conformant; the 0.33.0 wheel installed fresh and answering `initialize` | v0.33.0 released |
 
 ## Upcoming Phases
 
@@ -180,11 +188,11 @@ approval.
 
 ## Next Actions
 
-1. The GitHub release for `v0.32.0` after the merge and tag — it triggers the publish workflow (build, check, PyPI, the fresh-install smoke from the index)
+1. The GitHub release for `v0.33.0` after the merge and tag — it triggers the publish workflow (the kit and the helper's four wheels + sdist, PyPI, the fresh-install smoke asserting Landlock from the index)
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
 3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
 4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
-5. Next lane, the owner's order to confirm: Phase 41 — the OS layer (Epic 0010) before Phase 34, so Phase 34's `bundle` stands on 42's launcher: `momentum run derive phase-41-the-os-layer --epic cross-platform --deps "" --write`, then `/start-phase`
+5. The GitHub releases for `v0.32.1` and `v0.33.0` are the owner's (`gh release create …`) — the 0.33.0 one publishes the kit **and** the helper's wheels together and smoke-tests Landlock from the index
 6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
 
 ## Key Decisions Made

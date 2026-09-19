@@ -328,10 +328,11 @@ SandboxEnvironment.open(backend, root, mode=...)  # a box somebody else built, r
 #   six operations, every environment: read_file · write_file · delete_file · list_dir ·
 #                                      run_shell · run_python
 #   every profile from ONE derivation — runtime.environment.effects_of(isolation, mode, operation)
-#     `Isolation` is what is TRUE (writes confined, reads confined, network denied, proven) — set by
-#     a watched denial (D36) or an honest no, never by a wrapper's claim; the proof reads what a
-#     probe *printed* — a marker on stdout with a zero exit — never its stderr, because a 3.13+
-#     traceback echoes the probe's own source, marker included (BUG-057)
+#     `Isolation` is what is TRUE (writes confined, reads confined, network denied, proven, and
+#     `mechanism` — what was watched denying, by name) — set by a watched denial (D36) or an
+#     honest no, never by a wrapper's claim; the proof reads what a probe *printed* — a marker on
+#     stdout with a zero exit — never its stderr, because a 3.13+ traceback echoes the probe's
+#     own source, marker included (BUG-057)
 #     `Mode` is what is WANTED; a mode the isolation cannot make true is refused at construction
 #     (CannotEnforce) rather than quietly widened
 #   read-only:        writes = ∅;      write_file and delete_file are not offered at all
@@ -339,11 +340,20 @@ SandboxEnvironment.open(backend, root, mode=...)  # a box somebody else built, r
 #   full:             everything, said out loud — an ordinary host reaches the machine
 ```
 
-`LocalEnvironment` wraps every command in `sandbox-exec` (macOS) or bubblewrap (Linux) — Codex's
-model, consumed rather than rebuilt — and **proves it before it exists**: a write outside the root
+`LocalEnvironment` wraps every command in the operating system's own mechanism — `sandbox-exec`
+on macOS; on Linux the kit's `shadow-hdk-linux-sandbox` helper (Landlock + seccomp applied to
+itself before `exec`; `native/sandbox`, Epic 0010 D123/D133) with bubblewrap behind it — Codex's
+model, consumed rather than rebuilt, and **proves it before it exists**: a write outside the root
 must fail, a socket must fail, a write inside must succeed. What it declares is what the proof
-found. Measured 2026-09-11 on macOS 26: *Operation not permitted*, denied, runs. Where no OS
-sandbox exists, a confined mode refuses naming the fix; `full` always constructs.
+found. A machine's mechanisms are *candidates in the field's order* (`local_sandboxes()`: the
+helper when it is installed and the kernel has Landlock, then bubblewrap; seatbelt on macOS) and
+**the proof decides** which is in force — each is watched in turn, the first that passes is kept,
+one that confines nothing is passed over, and a refusal names each one tried; `Isolation.mechanism`
+carries the name onto the capability evidence (`landlock confines writes`). `SHADOW_HDK_SANDBOX`
+narrows the candidates to one. Measured 2026-09-11 on macOS 26: *Operation not permitted*, denied,
+runs; 2026-09-19 on Ubuntu 24.04 (CI, default AppArmor): the helper proven with Landlock in force,
+and bubblewrap proven the same way with the helper set aside. Where no mechanism exists, a
+confined mode refuses naming the fix; `full` always constructs.
 
 **A workspace is one or many roots** (D76). `Workspace`/`Root` are kernel data — a name and a
 path, the first the primary; VS Code's multi-root, Claude Code's `--add-dir`, Codex's
