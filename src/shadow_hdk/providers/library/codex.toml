@@ -101,6 +101,11 @@ output_tokens_at = "usage.output_tokens"
 # wants the fresh part subtracts.
 cache_read_tokens_at = "usage.cached_input_tokens"
 cache_write_tokens_at = "usage.cache_write_input_tokens"
+# The session is gone (D139). Measured 2026-09-20 on codex-cli 0.154.0 with `exec resume
+# <unknown> --json`: nothing on stdout at all, and on stderr
+#   Error: thread/resume: thread/resume failed: no rollout found for thread id <id> (code -32600)
+# — which the session reads off stderr (it drains the pipe; BUG-059).
+session_gone_matches = ["no rollout found for thread id"]
 
 mcp_config_arg = "-c"
 mcp_config_shape = "overrides"

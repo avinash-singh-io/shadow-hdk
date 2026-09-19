@@ -289,6 +289,10 @@ class Turn:
     reasons that are not failures and zero for failures that are. Measured — an expired session
     answers `is_error: true` inside a result whose own subtype still says `success`.
     """
+    session_gone: bool = False
+    """The provider said the session it was asked to resume is not there (D139) — `failed` is
+    then true too, and `text` is its own sentence. How a CLI says it is its file's
+    `session_gone_matches`; measured 2026-09-20 on Claude Code and Codex."""
 
 
 @dataclass(frozen=True)

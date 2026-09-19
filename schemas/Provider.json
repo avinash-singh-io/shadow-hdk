@@ -240,6 +240,14 @@
           "title": "Say On",
           "type": "array"
         },
+        "session_gone_matches": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Session Gone Matches",
+          "type": "array"
+        },
         "session_id_at": {
           "default": "",
           "title": "Session Id At",

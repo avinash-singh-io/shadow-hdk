@@ -224,6 +224,11 @@ class Dialect:
     cost_usd_at: str = ""
     input_tokens_at: str = ""
     output_tokens_at: str = ""
+    session_gone_matches: tuple[str, ...] = ()
+    """Substrings that, in a failed turn's text or on the CLI's stderr, mean the session it was
+    asked to resume is gone (D139). Measured 2026-09-20: Claude Code 2.1.278 answers a `result`
+    with `is_error: true` and `errors: ["No conversation found with session ID: …"]`; Codex
+    0.154.0 writes `no rollout found for thread id …` to stderr and nothing to stdout."""
     cache_read_tokens_at: str = ""
     cache_write_tokens_at: str = ""
     """Where the ending event says what the cache did (D141): `usage.cached_input_tokens` and

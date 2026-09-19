@@ -42,6 +42,10 @@ class TurnRecord:
     text: str = ""
     """What the agent said back — the turn's own answer, kept here so a host lists a thread
     without replaying every run."""
+    failure: Literal["", "session_gone"] = ""
+    """Why a `failed` turn failed, when the kit can say (D139): `session_gone` — the provider no
+    longer has the session the thread resumed on, so the thread's next move is a `fork`. Empty
+    for a failure the kit has no word for; the vocabulary grows by measured kinds only."""
 
 
 @dataclass(frozen=True)

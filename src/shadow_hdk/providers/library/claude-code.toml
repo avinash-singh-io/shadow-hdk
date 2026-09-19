@@ -160,6 +160,13 @@ output_tokens_at = "usage.output_tokens"
 # 391 tokens came back `input_tokens: 10` with the rest as a cache read (lane P, 2026-09-18).
 cache_read_tokens_at = "usage.cache_read_input_tokens"
 cache_write_tokens_at = "usage.cache_creation_input_tokens"
+# A failed turn's reason, and the one that means the session is gone (D139). Measured 2026-09-20
+# on claude 2.1.278 with `--resume <unknown>`: one stderr line, then
+#   {"type":"result","subtype":"error_during_execution","is_error":true,"num_turns":0,
+#    "session_id":"<id>",…,"errors":["No conversation found with session ID: <id>"]}
+# and exit 0. `errors` is a list; the session joins it into the turn's text.
+failed_text_at = "errors"
+session_gone_matches = ["No conversation found with session ID"]
 
 # D42's socket. The run's registry goes in through `--mcp-config`; `--strict-mcp-config` stops the
 # user's own global MCP configuration joining the run ungoverned; and its native file and shell

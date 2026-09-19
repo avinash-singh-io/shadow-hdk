@@ -122,6 +122,10 @@ def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
                 raise MalformedProvider(
                     f"{where}: each dialect.deltas entry needs on, kind and at"
                 ) from wrong
+        if "session_gone_matches" in spoken and not all(
+            isinstance(m, str) and m for m in spoken["session_gone_matches"]
+        ):
+            raise MalformedProvider(f"{where}: dialect.session_gone_matches is a list of strings")
         made["dialect"] = Dialect(**spoken)
     if "set_env" in made:
         try:

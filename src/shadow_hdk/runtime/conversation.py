@@ -134,6 +134,8 @@ class Turned:
     text: str
     spent: Spent
     pending: tuple[PendingQuestion, ...] = ()
+    failure: str = ""
+    """Why a failed turn failed, when the kit can say (D139): `session_gone`, or empty."""
 
     def as_record(self) -> TurnRecord:
         return TurnRecord(
@@ -143,6 +145,7 @@ class Turned:
             at=self.at,
             outcome=self.outcome,  # type: ignore[arg-type]
             text=self.text,
+            failure=self.failure,  # type: ignore[arg-type]
         )
 
 
@@ -629,6 +632,7 @@ class Conversation:
             self._open_questions = []
             self.turns_taken = number
             unreported: list[bool] = []
+            gone: list[bool] = []
 
             async def turn_component(inputs: Any) -> Observation:
                 context = current_run()
@@ -644,13 +648,22 @@ class Conversation:
                     # as it arrived (the jsonl session does); the whole is then a repeat. Only a
                     # provider that recorded nothing has this said for it (principle 6: once).
                     await context.reasoning(done.reasoning)
+                if done.usage is None:
+                    # A turn the provider said nothing about (D90): the count is a floor.
+                    unreported.append(True)
+                if done.failed:
+                    # **The provider said the turn did not work** — read from what it reported
+                    # (`Turn.failed`), so the record says `failed` rather than a `completed`
+                    # turn whose text happens to be an error (BUG-060). A gone session is the
+                    # one failure the kit has a word for (D139); the conversation reads it here
+                    # and the thread raises it typed once the stream has ended.
+                    if done.session_gone:
+                        gone.append(True)
+                    return Failed(done.text or "the provider said the turn failed")
                 output: dict[str, JsonValue] = {"text": done.text, "stop_reason": done.stop_reason}
                 if done.usage is not None:
                     # The step's cost, where the meter reads it (D20).
                     output["usage"] = json.loads(dump(done.usage, Usage))
-                else:
-                    # A turn the provider said nothing about (D90): the count is a floor.
-                    unreported.append(True)
                 return Completed(output)
 
             base = self._ports
@@ -696,6 +709,7 @@ class Conversation:
                             said = str(event.observation.output.get("text", ""))
                         elif isinstance(event.observation, Failed):
                             outcome = "failed"
+                            said = event.observation.error
                     if isinstance(event, RefusedEvent) and event.step == turn_id:
                         outcome = "refused"
                         said = event.reason
@@ -756,6 +770,7 @@ class Conversation:
                     text=said,
                     spent=self.spent(),
                     pending=kept,
+                    failure="session_gone" if gone and outcome == "failed" else "",
                 )
 
     @property

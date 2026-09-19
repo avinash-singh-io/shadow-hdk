@@ -77,6 +77,21 @@ class ThreadHeld(RuntimeError):
         self.holder = holder
 
 
+class SessionGone(RuntimeError):
+    """The provider no longer has the session this thread resumed on (D139): the turn is on the
+    record `failed` with `failure = "session_gone"`, and the thread's next move is a `fork` — a
+    fresh provider session with the transcript. Raised once the turn's stream has ended, so the
+    record is true whether or not anyone catches it."""
+
+    def __init__(self, thread_id: str, session_id: str, provider: str) -> None:
+        super().__init__(
+            f"thread {thread_id!r}: provider {provider!r} no longer has session {session_id!r}"
+        )
+        self.thread_id = thread_id
+        self.session_id = session_id
+        self.provider = provider
+
+
 class InMemoryThreads(ThreadStore):
     """A `ThreadStore` that lives as long as the process — tests and a host that keeps its own."""
 
@@ -483,6 +498,8 @@ class Thread:
                 )
                 await self._store.save(self._record)
                 await self._remember_session()
+        if last is not None and last.failure == "session_gone":
+            raise SessionGone(self.id, self._record.session_id or "", self._record.provider)
 
     async def _keep_pending(self, conversation: Conversation) -> None:
         """The running turn's open questions, on the record as they open and close (D80) — so a

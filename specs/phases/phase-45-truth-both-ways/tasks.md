@@ -13,9 +13,9 @@ status: in-progress
 - [x] Verify — 2026-09-20: 12 green; `tests/kernel tests/runtime tests/adapters/jsonl tests/adapters/langchain tests/wire tests/invariants tests/providers` 971 passed; mypy 464 files clean; ruff clean; schemas republished (Event, Item, ModelResponse, Provider) and the TS types regenerated without drift; mutation — the meter not counting the cache → 2 fail
 
 ## Group 2 — Why a turn really failed (ENH-024, D139; BUG-059)
-- [ ] RED: the measured Claude Code lines → `session_gone`; Codex's stderr line → `session_gone`; another failure → not; 1 MB of stderr → the turn still ends; `TurnRecord.failure`; `SessionGone` raised; the wire's kind with both ids; parity
-- [ ] `Turn.session_gone`; `Dialect.session_gone_matches` (+ `failed_text_at = "errors"` on Claude Code); the stderr reader; `TurnRecord.failure`; the conversation and thread; `SessionGone`; `error_data`, `ERROR_KINDS`, `_turn_json`; the TS client; BUG-059 filed and closed
-- [ ] Verify: green; mutations — matches ignored → 2 fail; `failure` unwritten → 1 fails
+- [x] RED — 2026-09-20: 7 failed on the absent `Turn.session_gone`, `Dialect.session_gone_matches`, the absent kind, and the flood test **timing out at 60 s** — BUG-059 reproduced before it was fixed; the runtime file could not import `SessionGone`
+- [x] `Turn.session_gone`; `Dialect.session_gone_matches` (+ `failed_text_at = "errors"` on Claude Code); the stderr reader; `TurnRecord.failure`; the conversation and thread; `SessionGone`; `error_data`, `ERROR_KINDS`, `_turn_json`; the TS client; BUG-059 filed and closed
+- [x] Verify — 2026-09-20: 10 green; `tests/adapters/jsonl tests/runtime tests/wire tests/serve tests/invariants tests/providers tests/kernel` 1,023 passed; mypy 467 files; ruff clean; schemas and TS regenerated, the client type-checks and builds; mutations — matches ignored → 2 fail; `failure` unwritten → 2 fail. BUG-060 found on the way (a provider's failed turn recorded `completed`) and closed with it
 
 ## Group 3 — A host's words per turn; a second CLI's behaviour (ENH-037, D140; ENH-028)
 - [ ] RED: the turn's words on that turn's judgements only; a rule scoped by them; reserved names; `resume(attributes=)`; the wire's two parameters; Codex argv with `-m` and `-c model_reasoning_effort="…"`; `unmapped_behaviour` shrinks; a malformed template

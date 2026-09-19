@@ -17,6 +17,7 @@ banner or a progress bar on stdout is ordinary and must not lose the turn around
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import math
 from collections.abc import Mapping
@@ -28,6 +29,9 @@ from shadow_hdk.kernel import AgentSession, Dialect, Provider, ToolSource, Turn,
 from shadow_hdk.runtime import current_run
 
 DEFAULT_TIMEOUT_S = 600.0
+STDERR_KEPT = 64 * 1024
+"""How much of the CLI's stderr is kept: the tail, so the sentence that explains a failure is
+there and a megabyte of progress bars is not."""
 
 
 def _cents(dollars: Any) -> int | None:
@@ -74,6 +78,10 @@ class JsonlSession(AgentSession):
         to resume (D76): the first process is started with the dialect's resume flag, so a
         provider reopened after a mode change keeps its memory of the conversation."""
         self.stderr: str = ""
+        """The tail of what the CLI wrote to stderr — the last `STDERR_KEPT` bytes — read as it
+        arrives so a chatty CLI never blocks on a full pipe (BUG-059), and where Codex says a
+        resumed session is gone (D139)."""
+        self._stderr_reader: asyncio.Task[None] | None = None
         self._unmapped = unmapped
 
     @property
@@ -101,12 +109,23 @@ class JsonlSession(AgentSession):
         # A session leader the runtime holds (D35, D53): closing the session ends the tree it
         # started — a coding CLI spawns compilers, language servers and test runners — and it
         # dies with this process, whatever ends it (BUG-019).
-        return await start_held(
+        process = await start_held(
             *self._argv(),
             cwd=str(self._workspace) if self._workspace else None,
             env=self._env,
             stdin=asyncio.subprocess.PIPE,
         )
+        # **A pipe nobody reads is a deadlock waiting for a chatty CLI** (BUG-059): stderr is
+        # drained as it arrives, its tail kept, whatever the CLI prints — a progress bar, a stack
+        # of warnings, or the one line that says the session is gone.
+        self.stderr = ""
+        if process.stderr is not None:
+            self._stderr_reader = asyncio.create_task(self._drain_stderr(process.stderr))
+        return process
+
+    async def _drain_stderr(self, stream: asyncio.StreamReader) -> None:
+        while chunk := await stream.read(4096):
+            self.stderr = (self.stderr + chunk.decode("utf-8", "replace"))[-STDERR_KEPT:]
 
     def _written(self, prompt: str) -> bytes:
         """How this CLI wants to be told. A fact about it, so it comes off the record."""
@@ -146,8 +165,18 @@ class JsonlSession(AgentSession):
 
         if not self._dialect.resident:
             await process.wait()
+            await self._stderr_drained()
             self._process = None
         return turn
+
+    async def _stderr_drained(self) -> None:
+        """Wait for the reader to see the pipe close, so what the CLI wrote last is on
+        `self.stderr` before anyone reads it."""
+        reader, self._stderr_reader = self._stderr_reader, None
+        if reader is not None:
+            with contextlib.suppress(Exception):
+                async with asyncio.timeout(2):
+                    await reader
 
     async def _read_until_done(self, process: asyncio.subprocess.Process) -> Turn:
         assert process.stdout is not None
@@ -196,10 +225,26 @@ class JsonlSession(AgentSession):
             if matches(event, kind, dialect.done_on, dialect.subtype_key):
                 return self._finished(event, said, thought_so_far)
         # The stream ended without the event that says a turn ended: the child died, or it does not
-        # announce completion. What it said is still what it said.
+        # announce completion. What it said is still what it said — and when it said nothing, what
+        # it wrote to stderr may be the reason (Codex says *no rollout found* there, D139).
+        await self._stderr_drained()
+        text = "".join(said)
+        failed = not text
+        if failed:
+            # The last line it wrote to stderr is the nearest thing to a reason.
+            text = (self.stderr.strip().splitlines() or [""])[-1]
         return Turn(
-            text="".join(said), failed=bool(said) is False, reasoning="".join(thought_so_far)
+            text=text,
+            failed=failed,
+            reasoning="".join(thought_so_far),
+            session_gone=failed and self._says_gone(text),
         )
+
+    def _says_gone(self, text: str) -> bool:
+        """Does the failure's text, or the CLI's stderr, say the resumed session is gone — by the
+        file's own words (D139)? Nothing is inferred from an exit code or a shape."""
+        matches = self._dialect.session_gone_matches
+        return any(m in text or m in self.stderr for m in matches)
 
     def _finished(self, event: Any, said: list[str], thought: list[str]) -> Turn:
         dialect = self._dialect
@@ -207,13 +252,13 @@ class JsonlSession(AgentSession):
         failed = bool(read_at(event, dialect.failed_at))
         text = final if isinstance(final, str) else "".join(said)
         if failed and not text:
-            why = read_at(event, dialect.failed_text_at)
-            text = why if isinstance(why, str) else ""
+            text = _sentence(read_at(event, dialect.failed_text_at))
         return Turn(
             text=text,
             reasoning="".join(thought),
             stop_reason=str(read_at(event, dialect.stop_reason_at) or ""),
             failed=failed,
+            session_gone=failed and self._says_gone(text),
             usage=Usage(
                 input_tokens=_as_int(read_at(event, dialect.input_tokens_at)),
                 output_tokens=_as_int(read_at(event, dialect.output_tokens_at)),
@@ -251,6 +296,7 @@ class JsonlSession(AgentSession):
         """Ending the session ends the tree it started (D35)."""
         process, self._process = self._process, None
         if process is None or process.returncode is not None:
+            await self._stderr_drained()
             return
         if process.stdin is not None and not process.stdin.is_closing():
             process.stdin.close()
@@ -282,3 +328,13 @@ def _as_int(value: Any) -> int | None:
 
 
 __all__ = ["JsonlSession"]
+
+
+def _sentence(said: Any) -> str:
+    """A failure's text as the dialect points at it: a string, or a list of them (Claude Code's
+    `result.errors`) joined — never a dict rendered by accident."""
+    if isinstance(said, str):
+        return said
+    if isinstance(said, list):
+        return "\n".join(str(item) for item in said if isinstance(item, str | int | float))
+    return ""

@@ -126,10 +126,13 @@ ERROR_KINDS: tuple[str, ...] = (
     "refused",
     "gone",
     "plan_refused",
+    "session_gone",
 )
 """What `error.data.kind` may say (D92) — the vocabulary a client switches on, beside the code
 and the sentence. `thread_held` carries `thread_id` and `holder`; `turn_running` carries
-`thread_id` and `turn_id`; the rest carry nothing more. `refused` is every other application
+`thread_id` and `turn_id`; `session_gone` (D139) carries `thread_id` and `session_id` — the
+provider no longer has the session the thread resumed on, and the turn is on the record `failed`
+with `failure = "session_gone"`; the rest carry nothing more. `refused` is every other application
 *no*; `gone` the other end leaving; `plan_refused` (D108) carries `mismatches` — each with
 `axis`, `step`, `required`, `found` — and `amendment`."""
 

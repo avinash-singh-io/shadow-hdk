@@ -878,6 +878,7 @@ def _turn_json(turn: Any) -> dict[str, Any]:
         "at": turn.at,
         "outcome": turn.outcome,
         "text": turn.text,
+        "failure": getattr(turn, "failure", ""),
     }
 
 

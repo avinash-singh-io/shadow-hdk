@@ -60,6 +60,10 @@ export interface TurnRecord {
   at: string;
   outcome: "running" | "completed" | "failed" | "refused" | "cancelled" | "parked";
   text: string;
+  /** Why a `failed` turn failed, when the kit can say (D139): `session_gone` — the provider no
+   *  longer has the session the thread resumed on; `thread.fork` is the next move. Absent on a
+   *  runtime older than 0.34. */
+  failure?: "" | "session_gone";
 }
 
 export type TurnLine =
@@ -190,7 +194,9 @@ export type ErrorKind =
   | "version_mismatch"
   | "unknown_method"
   | "refused"
-  | "gone";
+  | "gone"
+  | "plan_refused"
+  | "session_gone";
 
 /** The harness refused or failed a call: its code, its sentence, and a `kind` to switch on
  *  with the detail a page acts on — a held thread's `holder`, a running turn's `turn_id`. */

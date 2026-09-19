@@ -46,3 +46,11 @@ Affects-specs: architecture/runtime.md#the-thread
 Detail: `Usage.cache_read_tokens` and `cache_write_tokens` are `None` where a provider does not report them (10 §5 R2, as for the other fields); `Spent` counts them across turns and `unmetered` says a call reported no tokens at all. A product's "cached" figure is then a measurement or an honest unknown, never a zero that means "the cache did no work". The fields' names are the kit's; each dialect maps its own (`cached_input_tokens`/`cache_write_input_tokens` on Codex; `cache_read_input_tokens`/`cache_creation_input_tokens` on Claude Code; `input_token_details.cache_read`/`cache_creation` in LangChain).
 
 ---
+
+### [DISCOVERY] 2026-09-20 — G2: two defects under the failure path — BUG-059 and BUG-060
+Topics: session-gone, stderr, failure, turn-record, jsonl
+Affects-phases: phase-45-truth-both-ways
+Affects-specs: none
+Detail: Writing ENH-024's tests found that (1) the JSONL session never read the CLI's stderr pipe — the flood test hung for the full 60 s before the reader existed, and Codex's *session gone* had been unreadable — and (2) `Turn.failed` was set by every dialect and read by nothing: a provider's failed turn landed on the record as `completed` with the error sentence as its answer. Both closed in the same group: a stderr reader keeping the last 64 KB, and a failed `Turn` becoming a `Failed` observation so the outcome is `failed` and `failure` can name why. The thread-record test now covers the plain failure too.
+
+---

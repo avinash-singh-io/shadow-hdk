@@ -51,6 +51,7 @@ export type Resident = boolean
 export type ResumeArgs = string[]
 export type SayAt = string
 export type SayOn = string[]
+export type SessionGoneMatches = string[]
 export type SessionIdAt = string
 export type StopReasonAt = string
 export type SubtypeKey = string
@@ -166,6 +167,7 @@ resident?: Resident
 resume_args?: ResumeArgs
 say_at?: SayAt
 say_on?: SayOn
+session_gone_matches?: SessionGoneMatches
 session_id_at?: SessionIdAt
 stop_reason_at?: StopReasonAt
 subtype_key?: SubtypeKey
