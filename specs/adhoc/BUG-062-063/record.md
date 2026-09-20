@@ -7,7 +7,7 @@ type: Ad-hoc Record
 > **Created**: 2026-09-20
 > **Branch**: fix/BUG-062-063-fork-session-and-cache-tokens
 > **Backlog**: BUG-062, BUG-063
-> **Status**: in-progress
+> **Status**: at the gate
 
 Two defects lane P measured on `v0.34.0` with kit-only reproductions (their BUG-224/225), each a
 place where the kit's own decision (D139, D141) said one thing and the code did another. Both are
@@ -43,4 +43,20 @@ pending questions copied as before; `Turn`, `Usage`, `Spent` unchanged; the wire
 
 ## Verification Evidence
 
-_(filled at the gate)_
+Captured 2026-09-20 on the hotfix branch at the 0.34.1 bump (macOS 26; 3.14.6 and 3.12.13).
+
+```
+== uv run ruff check                       All checks passed!
+== uv run ruff format --check              528 files already formatted
+== uv run mypy                             Success: no issues found in 472 source files
+== uv run pytest (3.14, non-live, benchmark included)
+1851 passed, 20 skipped, 13 deselected, 85 warnings in 165.61s (0:02:45)
+== pytest 3.12
+1851 passed, 20 skipped, 13 deselected, 85 warnings in 167.29s (0:02:47)
+== momentum okf check .                    ✓ specs/ is an OKF v0.1 conformant bundle (216 markdown file(s))
+```
+
+RED before the fix: `tests/runtime/test_a_fork_is_a_fresh_session_with_the_transcript.py` — the
+fork carried `session_id == "s-1"` and the resume reopened it; `tests/runtime/test_the_meter_counts_cache_tokens.py`
+— `_usage_of` returned `cache_read_tokens=None` and `Spent.cache_read_tokens == 0` after two turns
+of 531. CI cannot run (GitHub billing, see status.md); the same gate ran locally on both Pythons.

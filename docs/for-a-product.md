@@ -74,6 +74,10 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
   `system`/`append_system`/`temperature` as unmapped; OpenCode maps none. `thread/start`,
   `thread/resume` and `thread/set_mode` return `unmapped_behaviour` — hide the control for that
   provider rather than show one that does nothing.
+- **Attribute names.** Reserved: `posture`, `component`, `inputs` (the step's), `thread`, `turn`,
+  `mode` (the conversation's). Anything else — `intent`, `run`, `workspace`, a tenant — is yours.
+  `resume(attributes=)` on *every* resume with your current words is the intended use: the
+  record then always carries what you know now, and the trail shows each change.
 - **A fact learnt after the thread opened reaches the judgement (0.34, D140).** `turn/start
   {attributes}` and `Thread.turn(attributes=)` are that turn's words — the workspace, the run in
   scope — merged over the record's for that turn's judgements and never written back;
@@ -207,6 +211,16 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   rollout found for thread id …` to stderr). Any other failure is a `failed` turn with an empty
   `failure`, as before — and a provider's failed turn *is* `failed` now: until 0.34 it was
   recorded `completed` with the error as its text (BUG-060).
+- **`fork` is a fresh provider session with the transcript** (0.34.1, BUG-062). `thread/fork`
+  after `session_gone` — or any fork or rollback — leaves `session_id` empty and says
+  `seeded_turns`; the first turn on the fork is told the kept turns ahead of its prompt, once, by
+  the kit, and then carries the new session's own id. Keep the lineage (`forked_from`) rather
+  than opening an unrelated thread; do not seed the first turn yourself.
+- **Where a failed turn's reason is.** On the *turn record*: `outcome == "failed"`, `text` the
+  provider's own sentence (Codex's `error.message`; Claude Code's `errors[]` joined), `failure`
+  the typed kind when there is one. The run's `ended` event says `reason: "completed"` for a
+  failed provider turn — the run of one step completed; its step's observation is `Failed` (D7:
+  a component's failure is data, the run is not broken) — so read the turn, not `ended.reason`.
 
 ## 9. Spend
 
@@ -220,6 +234,8 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   input in the cache, `input_tokens` the fresh part); a Codex turn `input_tokens=17393,
   cache_read_tokens=12032` (Codex counts the cached part into `input_tokens`; subtract for the
   fresh part). A LangChain model reports them from `input_token_details` where its provider does.
+  On 0.34.0 the counters reached `Usage` but not a thread's `Spent` (BUG-063, the step→meter
+  join); 0.34.1 carries them through.
 
 ## 10. Registration and composition
 
