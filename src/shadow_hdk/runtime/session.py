@@ -237,13 +237,15 @@ class LeaseMeter:
         cost_known: bool,
         tokens: tuple[int, int] = (0, 0),
         tokens_known: bool = True,
+        cache_tokens: tuple[int, int] = (0, 0),
     ) -> None:
         """Release a child's reservation and charge what it actually spent.
 
         Always paired with `carve`, and called by the drive when a child run ends — including when
         it ends badly, because a reservation held by a run that has stopped is money lost to
         nobody. `tokens` (D90) are what the child's calls counted; `tokens_known` is false when
-        one of them reported nothing.
+        one of them reported nothing; `cache_tokens` (D141) what its cache read and wrote — this
+        path, not `count_tokens`, is how a turn's calls reach a thread's meter (BUG-063).
         """
         self._carved_steps -= reserved.max_steps
         self._carved_cost -= reserved.max_cost_cents or 0
@@ -254,6 +256,8 @@ class LeaseMeter:
             self._cost_known = False
         self._input_tokens += tokens[0]
         self._output_tokens += tokens[1]
+        self._cache_read_tokens += cache_tokens[0]
+        self._cache_write_tokens += cache_tokens[1]
         if not tokens_known:
             self._tokens_known = False
 

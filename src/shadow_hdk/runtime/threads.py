@@ -331,7 +331,22 @@ class Thread:
         except BaseException:
             await thread._let_go_of_hold()
             raise
+        thread._seed_if_fresh()
         return thread
+
+    def _seed_if_fresh(self) -> None:
+        """A fork or a rollback is a fresh provider session (D139): its first turn is told the
+        kept turns ahead of the prompt — once, by the kit, because the record has them and the
+        provider does not. A record that has taken a turn since, or that carries its own session
+        id, is not seeded again."""
+        record = self._record
+        if (
+            record.seeded_turns <= 0
+            or record.session_id
+            or len(record.turns) != record.seeded_turns
+        ):
+            return
+        self.conversation.tell(_transcript(record.turns))
 
     def _own_lease(self, default: Lease) -> Lease:
         """The thread's own budget over the host's default (D84)."""
@@ -688,34 +703,46 @@ class Thread:
     # ------------------------------------------------------------------ fork and rollback
 
     async def fork(self) -> ThreadRecord:
-        """A new thread with this one's turns, saying where it came from."""
+        """A new thread with this one's turns, saying where it came from — **a fresh provider
+        session with the transcript** (D139's move after `session_gone`). The provider's own
+        session is not carried (BUG-062: it was, so a fork of a gone session was gone too); the
+        record says `seeded_turns`, and the first turn on it is told the kept turns."""
+        return await self._fork_of(self._record.turns)
+
+    async def rollback(self, *, to_turn: int) -> ThreadRecord:
+        """A fork of the first `to_turn` turns. The provider's own transcript cannot be rewound,
+        so the new thread is a fresh session seeded with the kept turns — by the kit, at its first
+        turn (until 0.34.1 the record said `seeded_turns` and nobody seeded)."""
+        return await self._fork_of(self._record.turns[: max(0, to_turn)])
+
+    async def _fork_of(self, kept: tuple[TurnRecord, ...]) -> ThreadRecord:
         clock = self.conversation.ports.clock
         forked = _replace(
             self._record,
             id=clock.new_id(),
             created_at=clock.now(),
             forked_from=self._record.id,
+            turns=kept,
+            seeded_turns=len(kept),
+            session_id="",
             archived=False,
         )
         await self._store.create(forked)
         return forked
 
-    async def rollback(self, *, to_turn: int) -> ThreadRecord:
-        """A fork of the first `to_turn` turns. The provider's own transcript is not rewound —
-        the new thread says how many turns it was seeded with, and a host seeds its first turn."""
-        clock = self.conversation.ports.clock
-        kept = self._record.turns[: max(0, to_turn)]
-        rolled = _replace(
-            self._record,
-            id=clock.new_id(),
-            created_at=clock.now(),
-            forked_from=self._record.id,
-            turns=kept,
-            seeded_turns=len(kept),
-            archived=False,
+
+def _transcript(turns: tuple[TurnRecord, ...]) -> str:
+    """The kept turns as the fresh session is told them: the person's words and the agent's, in
+    order, with a failed or refused turn's outcome said rather than hidden."""
+    lines = ["The conversation so far, before this session:"]
+    for turn in turns:
+        lines.append(f"Person: {turn.prompt}")
+        said = turn.text or f"(the turn ended {turn.outcome})"
+        lines.append(
+            f"Agent: {said}" if turn.outcome == "completed" else f"Agent ({turn.outcome}): {said}"
         )
-        await self._store.create(rolled)
-        return rolled
+    lines.append("Continue from here.")
+    return "\n".join(lines)
 
 
 def _unopened() -> Conversation:

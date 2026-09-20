@@ -518,6 +518,10 @@ def _usage_of(observation: Observation) -> Usage | None:
                 input_tokens=_int_or_none(usage.get("input_tokens")),
                 output_tokens=_int_or_none(usage.get("output_tokens")),
                 cost_cents=_int_or_none(usage.get("cost_cents")),
+                # Read back whole (BUG-063): the two cache counters were dropped here, so every
+                # piece of D141 was tested and `Spent` still said 0 for every thread turn.
+                cache_read_tokens=_int_or_none(usage.get("cache_read_tokens")),
+                cache_write_tokens=_int_or_none(usage.get("cache_write_tokens")),
             )
     return None
 
