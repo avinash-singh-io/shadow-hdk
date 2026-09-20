@@ -4,7 +4,7 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-20 — **v0.34.0** — Phase 45 **truth both ways** complete, after v0.33.0 (Phase 41) the same day
+> **Last Updated**: 2026-09-20 — **v0.34.1** (BUG-062/063, quick-task from lane P's measurements on 0.34.0) after **v0.34.0** — Phase 45 **truth both ways** — and v0.33.0 (Phase 41), all the same day
 > **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 34 → 37 (Epic
 > 0009). The artifact (42) is optional; Windows (43) is deferred until asked — WSL2 meanwhile.
 > **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
@@ -143,6 +143,7 @@ approval.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.34.1 | 2026-09-20 | quick-task | BUG-062 — a fork is a fresh provider session seeded with the transcript (D139's move after `session_gone` works; `rollback`'s `seeded_turns` is finally true); BUG-063 — a thread turn's cache tokens reach `Spent` (the step→meter join and `settle` carry them). Both measured by lane P on 0.34.0 with kit-only reproductions. No contract change. |
 | v0.32.1 | 2026-09-19 | quick-task | BUG-056 — a change that reopens the provider is refused during a turn, typed (`turn_running`); the turn lock held across the change |
 | v0.25.3 | 2026-09-13 | patch | BUG-034 the mode in `harness.toml`/`--mode`/`Harness(mode=)` is a mode id (`ask` included), refused by name at open; `requires` refuses an unknown environment name; the architecture specs synced to the tree |
 | v0.25.2 | 2026-09-12 | patch | D77 one rule, one implementation: `start_held` the one place a session leader is started (an invariant refuses the next copy); `LineBuffer` the one framing; a root's name a rule, not an `exists()` guess |

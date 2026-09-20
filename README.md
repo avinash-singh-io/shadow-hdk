@@ -380,7 +380,7 @@ uv run pytest
 
 ## Release status
 
-**v0.34.0 — Truth both ways** (Phase 45) is the candidate at the release gate: what a turn really
+**v0.34.1 — Truth both ways** (Phase 45, with two patches a product measured on 0.34.0 — a fork is a fresh session with the transcript; cache tokens reach `Spent`) is the candidate at the release gate: what a turn really
 cost (`Usage`/`Spent` cache tokens), why it really failed (a typed `session_gone` on the record
 and the wire), Codex `model`/`effort` honoured as data and measured, a host's words per turn
 (`turn/start {attributes}`), `ask` asking before a web read from the serving process, CI on

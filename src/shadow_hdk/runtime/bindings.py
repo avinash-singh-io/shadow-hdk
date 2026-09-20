@@ -327,6 +327,7 @@ class RunContext:
         cost_known: bool,
         tokens: tuple[int, int] = (0, 0),
         tokens_known: bool = True,
+        cache_tokens: tuple[int, int] = (0, 0),
     ) -> None:
         """Release that hold and charge what the child really spent."""
         self._session.meter.settle(
@@ -336,6 +337,7 @@ class RunContext:
             cost_known=cost_known,
             tokens=tokens,
             tokens_known=tokens_known,
+            cache_tokens=cache_tokens,
         )
 
     @property
