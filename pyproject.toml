@@ -6,7 +6,7 @@
 # packaging boundary (D78).
 [project]
 name = "shadow-hdk"
-version = "0.34.0"
+version = "0.34.1"
 description = "Shadow HDK — a Harness Development Kit: an effect-governed agent runtime, its components, and the wire."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ dependencies = [
     # The Linux confinement helper (Epic 0010, D123/D133): Landlock + seccomp applied before exec,
     # a bin-only platform wheel built from `native/sandbox`, in lockstep with this version. On the
     # two architectures it is built for; elsewhere on Linux the environment falls back to bwrap.
-    "shadow-hdk-linux-sandbox==0.34.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "shadow-hdk-linux-sandbox==0.34.1; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 
 [project.optional-dependencies]

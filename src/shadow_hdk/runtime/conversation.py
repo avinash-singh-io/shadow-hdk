@@ -709,6 +709,8 @@ class Conversation:
             tokens_in = 0
             tokens_out = 0
             tokens_known = True
+            cache_read = 0
+            cache_write = 0
             self._meter.unpause()
             try:
                 async for event in run(plan, ports, options=options):
@@ -746,6 +748,8 @@ class Conversation:
                             else:
                                 tokens_in += usage.input_tokens or 0
                                 tokens_out += usage.output_tokens or 0
+                                cache_read += usage.cache_read_tokens or 0
+                                cache_write += usage.cache_write_tokens or 0
                     yield event
             finally:
                 self._current = None
@@ -762,6 +766,7 @@ class Conversation:
                     cost_known=cost_known,
                     tokens=(tokens_in, tokens_out),
                     tokens_known=tokens_known and not unreported,
+                    cache_tokens=(cache_read, cache_write),
                 )
                 self._meter.pause()
                 self._idle_from_now()

@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.34.0"
-"""0.34.0 — truth both ways (Phase 45): `Usage`/`Spent` cache tokens (D141); `TurnRecord.failure`,
+EXPECTED = "0.34.1"
+"""0.34.1 — a patch (D9): a fork is a fresh provider session seeded with the transcript, as D139
+promised (BUG-062); a thread turn's cache tokens reach `Spent`, as D141 promised (BUG-063). No
+contract change — the fields and the methods existed; they now do what the record said.
+
+0.34.0 — truth both ways (Phase 45): `Usage`/`Spent` cache tokens (D141); `TurnRecord.failure`,
 `SessionGone` and the wire kind `session_gone` (D139); `turn(attributes=)` and
 `resume(attributes=)` on the thread and the wire (D140); Codex `model`/`effort` as data;
 `ask` asking before an uncontained reach (D138); `thread`/`turn`/`mode` reserved as attribute
