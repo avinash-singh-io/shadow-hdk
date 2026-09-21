@@ -97,7 +97,7 @@ summary is the passing one.
 ```
 Prepared 1 package in 2.84s
 Installed 1 package in 1ms
- + shadow-hdk-linux-sandbox==0.33.0 (from file:///Users/avinash/Workspace/Projects/shadow-hdk/native/sandbox)
+ + shadow-hdk-linux-sandbox==0.33.0 (from file:///Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/native/sandbox)
 ```
 
 ### `uv run ruff check` · `uv run ruff format --check` · `uv run mypy`

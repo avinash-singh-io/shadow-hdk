@@ -6,7 +6,7 @@
   "status": "skipped",
   "visualReview": "pending",
   "artifact": {
-    "path": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-adapter.architecture.html",
+    "path": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-adapter.architecture.html",
     "sha256": "36d4e0223020ba58c868d53c68b3f629d2cc829d5d0c01032a91e6f601b290cf",
     "bytes": 719234
   },
@@ -24,7 +24,7 @@
       "severity": "warning",
       "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
       "subject": {
-        "artifact": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-adapter.architecture.html"
+        "artifact": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-adapter.architecture.html"
       },
       "evidence": {
         "executable": null

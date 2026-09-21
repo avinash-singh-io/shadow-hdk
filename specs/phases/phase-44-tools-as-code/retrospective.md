@@ -160,7 +160,7 @@ exit=0
 
 ```
 $ npm run generate && npm run check && npm run build
-wrote 28 contracts under /Users/avinash/Workspace/Projects/shadow-hdk/clients/typescript/src/schemas and /Users/avinash/Workspace/Projects/shadow-hdk/clients/typescript/src/schemas.ts
+wrote 28 contracts under /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/clients/typescript/src/schemas and /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/clients/typescript/src/schemas.ts
 
 
 exit=0

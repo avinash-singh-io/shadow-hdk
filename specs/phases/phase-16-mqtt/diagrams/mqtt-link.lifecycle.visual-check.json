@@ -6,7 +6,7 @@
   "status": "skipped",
   "visualReview": "pending",
   "artifact": {
-    "path": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-link.lifecycle.html",
+    "path": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-link.lifecycle.html",
     "sha256": "6c54e46b7c6810a2f0fe40ec43d79d4079d8d616ff3c96407aaa7567fe976772",
     "bytes": 710894
   },
@@ -24,7 +24,7 @@
       "severity": "warning",
       "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
       "subject": {
-        "artifact": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-link.lifecycle.html"
+        "artifact": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-link.lifecycle.html"
       },
       "evidence": {
         "executable": null
