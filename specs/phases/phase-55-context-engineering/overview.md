@@ -6,6 +6,10 @@ deps: [phase-54-the-durable-run-request]
 
 # Phase 55 — context engineering
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 55 — context engineering](../../../../shadow/specs/phases/phase-55-context-engineering/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver the deferred context-engineering capability: bounded compaction, Code Mode integration and memory components.

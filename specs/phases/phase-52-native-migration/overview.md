@@ -7,6 +7,10 @@ deps: [phase-51-native-distribution]
 
 # Phase 52 — migration and native release acceptance
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 52 — migration and native release acceptance](../../../../shadow/specs/phases/phase-52-native-migration/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Prove supported behavior parity, persistence transition and rollback before making native execution the default.

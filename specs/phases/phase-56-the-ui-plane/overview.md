@@ -6,6 +6,10 @@ deps: [phase-54-the-durable-run-request]
 
 # Phase 56 — the ui plane
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 56 — the ui plane](../../../../shadow/specs/phases/phase-56-the-ui-plane/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver generic activity and declarative/generative-UI adapters with reusable host-side components.

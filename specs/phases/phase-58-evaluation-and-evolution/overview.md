@@ -6,6 +6,10 @@ deps: [phase-55-context-engineering]
 
 # Phase 58 — evaluation and governed evolution
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 58 — evaluation and governed evolution](../../../../shadow/specs/phases/phase-58-evaluation-and-evolution/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver fixed evaluators, replay/shadow comparisons and versioned improvement proposals with human-approved rollout and rollback.

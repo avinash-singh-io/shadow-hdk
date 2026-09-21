@@ -6,6 +6,10 @@ deps: [phase-54-the-durable-run-request]
 
 # Phase 57 — collaboration
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 57 — collaboration](../../../../shadow/specs/phases/phase-57-collaboration/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver peer capability discovery and remote delegation through protocol adapters.

@@ -7,6 +7,10 @@ deps: [phase-53-the-harness-as-data]
 
 # Phase 54 — the durable run request
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 54 — the durable run request](../../../../shadow/specs/phases/phase-54-the-durable-run-request/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver idempotent durable run requests with retry/cancel/catch-up policy and cron, queue and webhook reference adapters.

@@ -7,6 +7,10 @@ deps: [phase-52-native-migration, phase-36-plan-admission]
 
 # Phase 53 — the harness as data
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 53 — the harness as data](../../../../shadow/specs/phases/phase-53-the-harness-as-data/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver typed parameterized harness definitions, recursive composition, admission, check/explain/run and selected reproducible bundle/scaffold exports over the native runtime.

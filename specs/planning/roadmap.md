@@ -4,6 +4,10 @@ type: Roadmap
 
 # Roadmap — Shadow
 
+> **Transferred.** Phase 46–58 delivery is canonical in
+> [`shadow/specs/planning/roadmap.md`](../../../shadow/specs/planning/roadmap.md). This document is
+> retained as the planning provenance attached to the legacy implementation.
+>
 > **Start Date**: 2026-09-10
 
 ## Vision

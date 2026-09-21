@@ -13,6 +13,10 @@ policy_tdd: strict
 
 # Epic 0009 — the-harness-as-data
 
+> **Split ownership:** completed Phase 36 and its release evidence remain canonical here. Future
+> Phase 53–54 delivery is canonical in
+> [`shadow/specs/epics/0002-harness-as-data.md`](../../../shadow/specs/epics/0002-harness-as-data.md).
+>
 > **Current order, amended 2026-09-21:** completed Phase 36 stays unchanged; Phase **53**
 > (formerly 34) follows native acceptance in Phase 52; Phase **54** (formerly 37) follows 53.
 > [Epic 0010](0010-cross-platform.md) owns the native foundation and D142–D152. The

@@ -5,6 +5,10 @@ status: proposed
 
 # Shadow — repository organization proposal
 
+> **Decision executed.** Canonical repository strategy now lives in
+> [`shadow-ecosystem/strategy/repository-topology.md`](../../../shadow-ecosystem/strategy/repository-topology.md).
+> This proposal remains the historical input that preceded repository creation.
+>
 > Options updated 2026-09-21 after the owner requested an independent legacy maintenance track.
 > The umbrella name **Shadow** is agreed. Repository creation/rename, local moves and package
 > renames are **not yet approved**. This remains a proposal, not an execution directive.

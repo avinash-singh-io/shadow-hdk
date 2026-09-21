@@ -5,6 +5,10 @@ status: planned
 
 # Shadow — target native architecture
 
+> **Historical transfer source.** The canonical architecture now lives at
+> [`shadow/specs/architecture/native-foundation.md`](../../../shadow/specs/architecture/native-foundation.md).
+> Keep this copy for provenance; make future architectural changes in `shadow`.
+>
 > Recorded 2026-09-21 from the owner's architecture review. **Target, not current implementation.**
 > [Epic 0010](../epics/0010-cross-platform.md) owns the transition and decisions D142–D152.
 > The current engine is Python/LangGraph with a Rust Linux confinement helper. No native engine,

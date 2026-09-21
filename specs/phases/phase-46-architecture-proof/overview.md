@@ -7,6 +7,10 @@ deps: [phase-45-truth-both-ways]
 
 # Phase 46 — architecture proof and contract baseline
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 46 — architecture proof and contract baseline](../../../../shadow/specs/phases/phase-46-architecture-proof/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Characterize the supported Python/wire behavior; prove a small native execution and recovery slice, Python embedding and managed-sidecar lifecycle; compare selected Goose reuse candidates without an upstream fork.

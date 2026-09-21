@@ -7,6 +7,10 @@ deps: [phase-47-native-core-and-runtime]
 
 # Phase 50 — windows lifecycle and capabilities
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 50 — windows lifecycle and capabilities](../../../../shadow/specs/phases/phase-50-windows-lifecycle/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver native Windows process supervision and evidence-backed capability reporting for selected environments; preserve equivalent lifecycle semantics across operating systems.

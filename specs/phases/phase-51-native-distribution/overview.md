@@ -7,6 +7,10 @@ deps: [phase-49-sdks-and-embedding, phase-50-windows-lifecycle]
 
 # Phase 51 — native distribution
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 51 — native distribution](../../../../shadow/specs/phases/phase-51-native-distribution/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Package pinned native artifacts and SDK integration for macOS arm64/x86_64, Linux arm64/x86_64 and Windows x86_64, plus a server image.

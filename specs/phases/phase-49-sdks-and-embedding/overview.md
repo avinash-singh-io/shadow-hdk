@@ -7,6 +7,10 @@ deps: [phase-48-components-and-strategies]
 
 # Phase 49 — public apis and language integration
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 49 — public apis and language integration](../../../../shadow/specs/phases/phase-49-sdks-and-embedding/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Deliver Rust/Python embedding, Python/TypeScript authoring and managed-runtime clients, streaming, callbacks, lifecycle and wire compatibility.

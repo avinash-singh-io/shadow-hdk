@@ -4,21 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-21 — planning update only; latest recorded code version **v0.34.1**.
-> **Current Phase**: **none — implementation has not started.** Next: **Phase 46 — architecture
-> proof**, then the native foundation through 52 (amended Epic 0010), then 53 → 54 (Epic 0009).
-> The umbrella name is **Shadow**. [Target architecture and both diagrams](architecture/native-foundation.md),
-> [phase identity map](planning/phase-map.md), and [repository proposal](planning/shadow-repository.md).
+> **Last Updated**: 2026-09-21 — documentation ownership transferred; latest recorded code version
+> **v0.34.1**. **Current Phase**: none. This repository is the maintenance-supported
+> Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
+> with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
+> [native architecture](../../shadow/specs/architecture/native-foundation.md) and
+> [roadmap](../../shadow/specs/planning/roadmap.md) are canonical.
 > Completed phases keep their IDs; old planned 34/35/37–40/42/43 are retired through the map.
-> Repository, local directory, packages and imports have **not** been renamed.
+> This repository, its packages and imports have **not** been renamed.
 > **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
 > spending limit needs to be increased*) since 2026-09-19 21:23 UTC — CI on the release commit and
 > the publish workflow wait on billing.
-> **Epic 0009 — the harness as data** keeps completed Phase 36 and resumes as 53 → 54 after
-> native acceptance. **Epic 0010 — native execution foundation** keeps completed Phase 41 and
-> adds 46–52. D142–D152 supersede the helper-only/embedded-Python postponement as a target;
-> the running implementation remains Python/LangGraph. Historical release/CI facts below have
-> not been re-audited by this documentation change.
+> Historical copies of the future plan remain here for provenance and link continuity, but are not
+> edited as the delivery source. Research and repository strategy are canonical in
+> [`shadow-ecosystem`](../../shadow-ecosystem/README.md). The running implementation remains
+> Python/LangGraph. Historical release/CI facts below have not been re-audited by this change.
 >
 > 1,846 non-live tests; mypy strict over 471 files; one distribution, `shadow-hdk`, at
 > **0.34.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
@@ -169,10 +169,11 @@ the new engine becomes the default. Documentation approval has not started Phase
 | 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | 1,799 non-live passed on 3.12 **and** on 3.14 (macOS); on CI: 1,818 on Linux with Landlock in force, 1,799 on Linux with bubblewrap, 1,799 on macOS; the crate's 12 confinement tests on the ubuntu-24.04 runner; four platform wheels built, the x86_64 one installed and watched confining; mypy 461 files; ruff clean; OKF conformant; the 0.33.0 wheel installed fresh and answering `initialize` | v0.33.0 released |
 | 45 — truth both ways | `phase-45-truth-both-ways` | 1,846 passed on 3.14 **and** on 3.12; mypy 471 files; ruff clean; the TS types without drift; OKF conformant; CI green on `aca389d` (the same code; the release commit's run refused by GitHub billing); live: Phase 36's proof on Claude Code, Codex `-m`/`-c model_reasoning_effort`, cache tokens and `session_gone` on both CLIs | v0.34.0 released |
 
-## Upcoming Phases
+## Transferred Roadmap — Canonical in Shadow
 
-> `release: per-phase`, `push: per-phase`, `tdd: strict`. Dependencies live in planned phase
-> overviews; detailed plans/tasks are derived only at each phase's start. See the phase map.
+> These identities are retained for provenance. Their canonical overviews, dependencies and
+> eventual plans/tasks live in [`shadow`](../../shadow/specs/planning/roadmap.md); do not start or
+> update them in this repository.
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
@@ -204,12 +205,11 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 ## Next Actions
 
-**Current planning action:** review the recorded native-foundation specs; Phase 46 is the next
-implementation candidate, not started. Decide between a separate native repository and separate
-branches/worktrees while keeping the existing kit maintenance-supported; no repository mutation
-is authorized yet. Settle native phase ownership before starting. The numbered list
-below is the prior release-operations handoff (2026-09-20), retained for audit; its old phase order
-is superseded by the table above and its external CI/billing state needs a fresh check before use.
+**Current action:** use this repository only for urgent, generic maintenance of the released
+Python/LangGraph line. Start native Phase 46 only from the canonical `shadow` specifications after
+its ordinary brainstorm/start gates. The numbered list below is the prior release-operations
+handoff (2026-09-20), retained for audit; its external CI/billing state needs a fresh check before
+use.
 
 1. **GitHub billing** — fix it, then `gh run rerun 35470259560` (CI on the release commit) and the `v0.34.0` GitHub release (it triggers the publish workflow: the kit and the helper's wheels, PyPI, the smoke). Until then the tag can stand and `uv publish` from the laptop with the owner's token is the fallback
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket

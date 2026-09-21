@@ -7,6 +7,10 @@ deps: [phase-47-native-core-and-runtime]
 
 # Phase 48 — components and execution strategies
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 48 — components and execution strategies](../../../../shadow/specs/phases/phase-48-components-and-strategies/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Provide useful native model/tool capabilities, optional language-host components, agent-led/workflow-led/hybrid strategies and representative public-part presets.

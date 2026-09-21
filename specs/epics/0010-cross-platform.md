@@ -13,6 +13,10 @@ policy_tdd: strict
 
 # Epic 0010 — Shadow native execution foundation
 
+> **Split ownership:** completed Phase 41 and its release evidence remain canonical here. Future
+> Phase 46–52 delivery is canonical in
+> [`shadow/specs/epics/0001-native-foundation.md`](../../../shadow/specs/epics/0001-native-foundation.md).
+>
 > Amended 2026-09-21 after the owner's architecture review, Shadow naming decision and request to
 > renumber upcoming phases and preserve both diagrams. The stable epic ID/path is retained.
 > This is planning approval, **not permission to start implementation, merge or release**.

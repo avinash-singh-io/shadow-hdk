@@ -7,6 +7,10 @@ deps: [phase-46-architecture-proof]
 
 # Phase 47 — native core and durable execution
 
+> **Transferred:** the canonical delivery spec is
+> [Shadow Phase 47 — native core and durable execution](../../../../shadow/specs/phases/phase-47-native-core-and-runtime/overview.md).
+> This copy remains only for provenance and old-link continuity; do not plan or execute the phase here.
+
 ## Goal
 
 Implement pure Rust contracts and the shared executor: composition, leases, waiting/resume, child supervision, cancellation, current authority and versioned execution records.
