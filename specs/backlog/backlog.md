@@ -4,6 +4,10 @@ type: Backlog
 
 # Backlog
 
+> **Planning aliases, 2026-09-21:** upcoming phases were renumbered; see the
+> [phase identity map](../planning/phase-map.md). Dated findings and closed rows retain their
+> historical numbers. Current delivery for ENH-036 is Phase 51; ENH-033 follows Phase 53.
+
 > **Last Updated**: 2026-09-15 — Epic 0008 production-boundary intake
 
 ---

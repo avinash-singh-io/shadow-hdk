@@ -2,23 +2,57 @@
 type: Roadmap
 ---
 
-# Roadmap — shadow-hdk
+# Roadmap — Shadow
 
 > **Start Date**: 2026-09-10
 
 ## Vision
 
-**Shadow** is a generic harness system with two progressive surfaces over one architecture:
-**Shadow HDK**, the construction kit of contracts, primitives, components, patterns, runtime and
-adapters; and **Shadow Harness**, the ready-to-run reference assembly built entirely from those
-public HDK parts. A user may run the defaults, configure them, compose different parts, extend them,
-or replace every port without changing runtimes.
+**Shadow** is the umbrella framework for building and running agents, workflows and custom
+harnesses. Its development kit includes Core, Runtime, SDKs, components, patterns and adapters.
+A user may run ready-made assemblies, configure them, compose different parts, extend them or
+replace ports over the same execution foundation. HDK describes the capability, not a second brand.
 
 It spans one deterministic workflow with a few tools, model-assisted workflows, agent-owned loops,
 and dynamic multi-agent work acting on software or the physical world. It grows by data, adapters,
 patterns and host-owned components, never by runtime branches on a provider, product or use case.
 
-## Order
+## Current roadmap — 2026-09-21
+
+**Native foundation first.** [Epic 0010](../epics/0010-cross-platform.md) now owns the Rust
+execution transition. The [target architecture](../architecture/native-foundation.md) preserves
+the overall kit and agent/workflow diagrams. The implementation is still Python/LangGraph;
+recording the target does not start implementation. New capabilities stay behind native acceptance.
+
+| Phase | Name | Status | Deps | Spec |
+|---|---|---|---|---|
+| 46 | Architecture proof and contract baseline | planned | 45 | [overview](../phases/phase-46-architecture-proof/overview.md) |
+| 47 | Native Core and durable execution | planned | 46 | [overview](../phases/phase-47-native-core-and-runtime/overview.md) |
+| 48 | Components and execution strategies | planned | 47 | [overview](../phases/phase-48-components-and-strategies/overview.md) |
+| 49 | Public APIs and language integration | planned | 48 | [overview](../phases/phase-49-sdks-and-embedding/overview.md) |
+| 50 | Windows lifecycle and capabilities | planned | 47 | [overview](../phases/phase-50-windows-lifecycle/overview.md) |
+| 51 | Native distribution | planned | 49, 50 | [overview](../phases/phase-51-native-distribution/overview.md) |
+| 52 | Migration and native release acceptance | planned | 51 | [overview](../phases/phase-52-native-migration/overview.md) |
+| 53 | The harness as data | planned | 52, 36 | [overview](../phases/phase-53-the-harness-as-data/overview.md) |
+| 54 | The durable run request | planned | 53 | [overview](../phases/phase-54-the-durable-run-request/overview.md) |
+| 55 | Context engineering | planned | 54 | [overview](../phases/phase-55-context-engineering/overview.md) |
+| 56 | The UI plane | planned | 54 | [overview](../phases/phase-56-the-ui-plane/overview.md) |
+| 57 | Collaboration | planned | 54 | [overview](../phases/phase-57-collaboration/overview.md) |
+| 58 | Evaluation and governed evolution | planned | 55 | [overview](../phases/phase-58-evaluation-and-evolution/overview.md) |
+
+Only upcoming phases are renumbered. [Old-to-new map](phase-map.md): 43 → 50 (lifecycle),
+42 → 51, 34 → 53, 37 → 54, 35 → 55, 38 → 56, 39 → 57, 40 → 58. Completed IDs and release
+history are unchanged. Phase 50 does not claim all native Windows confinement is complete.
+The later-capability dependency on 54 expresses the owner's sequencing after Epic 0009.
+
+The [repository proposal](shadow-repository.md) now recommends keeping `shadow-hdk` maintained
+while building a new Shadow monorepo; branches/worktrees remain the lower-administration alternative.
+The owner has not yet selected the topology; settle phase ownership before implementation. No
+repository creation or remote/path/package rename is approved or performed here. Full Shadow applications
+remain lower priority. Per-phase specs are derived at start; the current overviews intentionally
+contain no speculative detailed task lists.
+
+### Ordering rules
 
 **Ordering is computed from each phase's `deps`, never from this list.** A phase runs when what it
 needs exists; where two are free at once, the one that closes a gap in the runtime's own story comes
@@ -32,7 +66,7 @@ Keeping it there is what stops this plan from being re-ordered by somebody else'
 what stops a capability from being called done because one caller happens not to need the rest of
 it.
 
-## Where this stands — 2026-09-18
+## Historical position — 2026-09-18
 
 **Epic 0009 — the harness as data — is planned.** Two days of first-principles brainstorming with
 the owner (`specs/research/2026-09-18-what-belongs-in-the-kit.md`) re-derived what dynamic
@@ -46,7 +80,7 @@ runtime pinned inside, and scaffolded for other languages over one runtime (D113
 Phase 37 gives the run a life beyond its process. Phases 35, 38, 39 and 40 keep their rows and
 follow. Fifteen decisions, D107–D121, are settled once in the epic record and derive each phase.
 
-## Where this stands — 2026-09-15
+## Historical position — 2026-09-15
 
 **Phases 0–30 are merged and released; Phase 31 is complete on the unreleased Epic 0008 stack.**
 The latest public version remains v0.29.1. The HDK is consumable through `run`,
@@ -154,7 +188,10 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 
 **Still with the owner:** ADR-1 and ADR-2, and landing Phase 20.
 
-## Timeline
+## Historical timeline — through 2026-09-20
+
+This section retains the earlier plan and release evidence. Its old planned phase numbers,
+ordering and implementation choices are superseded by the current roadmap and phase map above.
 
 | Phase | Name | Status | deps | Key Deliverables |
 |-------|------|--------|------|------------------|
@@ -204,7 +241,10 @@ a component, D56 minting proposes and keeping is the host's (phase 24).
 | 44 | Tools as code, from any language | **complete · v0.32.0** | 36 | `thread/start {host_components}` — a host's components by inversion on the thread door (D21); the TypeScript host-side `ComponentPort`, a `Transport`, the stdio sidecar; the D36 proof reads stdout (BUG-057), the suite on 3.14. ENH-030/031 pulled ahead of Phase 34 by Epic 0009's amendment |
 | 45 | Truth both ways | **complete · v0.34.0** | 44 | what a turn really cost (cache tokens, ENH-023, D141); why it really failed (a typed `session_gone`, ENH-024, D139); Codex `model`/`effort` as data, measured (ENH-028); a host's words per turn (ENH-037, D140); a reach from the serving process is an egress channel — the confined ceilings say contained, the door is a mode (ENH-038, D138); the 3.12–3.14 matrix (ENH-032); the vendor-name invariant; Phase 36's proof on Claude Code |
 
-## What comes next — the consumable line
+## Historical capability descriptions — the consumable line
+
+The text below preserves the earlier roadmap vocabulary. Upcoming work now uses phases 46–58;
+it is not a second execution order.
 
 **The harness is generic.** Nothing below is about coding. An *environment* is wherever effects
 land — a filesystem and a shell for one agent, a browser for another, the physical world for a
@@ -254,10 +294,11 @@ the timeline are phases, not retrospective pseudo-epics.
 | 0001 the bare harness | 0, 1, 2 | built; legacy record status to reconcile at closeout |
 | 0007 the environment | 15, 16 | built where buildable; OPC-UA and ROS 2 remain conditional adapters |
 | **0008 production boundary** | **31, 32, 33** | **complete; v0.30.0 released** |
-| **0009 the harness as data** | **36, 34, 37** | **planned 2026-09-18**; opened from `research/2026-09-18-what-belongs-in-the-kit.md`; D107–D121; released per phase |
-| **0010 cross-platform** | **41 (Linux confinement), 42 (the artifact, optional), 43 (Windows, deferred)** | **41 complete, v0.33.0 (2026-09-20)**; 42 and 43 wait on the owner's word; amended the same day — Linux first, the artifact optional, Windows deferred; opened from `research/2026-09-19-cross-platform-grounding.md`; D122–D137; the OS layer native per OS (A+), the engine's language reviewed under D129 with `research/2026-09-19-the-langgraph-ledger.md`; released per phase |
+| **0009 the harness as data** | **36 completed; 53, 54 planned** | amended 2026-09-21; follows native acceptance 52; D107–D121 as amended by D143/D145; per-phase gates |
+| **0010 Shadow native foundation** | **41 completed; 46–52 planned** | amended 2026-09-21; D142–D152 supersede the native-engine postponement and PyApp requirement; proof first, then migration; per-phase gates |
 
 ## Guiding Principles
+
 1. Ship working software in every phase; each phase leaves every package releasable
 2. `deps` order the phases; nothing else does, and no adopter's schedule does
 3. Defer scope, not quality — red tests first, contracts round-trip, the benchmark runs
@@ -268,7 +309,7 @@ the timeline are phases, not retrospective pseudo-epics.
 8. **A product's vocabulary is the product's.** The registry's name, the labels on activity, the wording of a question, the names of modes: data the host supplies with defaults, never a string a product would have to fork to change.
 9. **Simple by default, deep by choice.** A harness is a file and three lines; the same file drives `serve` for a host in another language; every port stays open for a product that composes by hand.
 10. **Data changes live; code changes restart.** Modes, behaviours, rules, skills, tools, providers, budgets, vocabulary are registries with a store source, changed by CRUD at runtime and read at the next step; only contracts, the loop, ports, adapters and transports are code, and only code needs a restart.
-11. **One Shadow, progressively disclosed.** Shadow Harness is the ready-made assembly; Shadow HDK is what it unfolds into. Run, configure, compose, extend or replace are depths of control over one system, not separate products.
+11. **One Shadow, progressively disclosed.** Ready-made harnesses and the development kit are depths of one umbrella framework, not separate brands. Run, configure, compose, extend or replace use the same public parts.
 12. **Execution style is orthogonal to workflow shape.** A static workflow may call models; an agent may emit a deterministic multi-phase workflow; a hybrid may bind both. The runtime executes one composition grammar and does not branch on those labels.
 13. **A dynamic plan is an untrusted proposal.** The model may propose tools, phases, workers and sub-agents. The host admits only a typed plan whose capabilities, authority, budget, depth and fan-out fit; the planner never grants itself authority.
 14. **Controlled is stronger than observed.** Recording that an external provider acted is useful evidence, not proof that Shadow authorized the act. A controlled irreversible effect has an act-time authorization and a receipt or explicit unknown outcome.

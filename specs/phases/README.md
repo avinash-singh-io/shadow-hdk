@@ -4,6 +4,15 @@ type: Guide
 
 # Phases Index
 
+## Upcoming phases
+
+The [current phase index](index.md#upcoming--native-foundation-and-onward) lists planned phases
+46–58. The [phase identity map](../planning/phase-map.md) preserves old aliases; completed phase
+IDs below are unchanged. Planned overviews contain outcomes and dependencies only. Detailed
+plan/tasks/history files are created when implementation starts.
+
+## Completed phases
+
 | Phase | Name | Status | Directory |
 |-------|------|--------|-----------|
 | 0 | The runtime | Complete | `phase-0-the-runtime` |

@@ -12,6 +12,9 @@ entry carries matching `Topics:`.
 
 | Topic | File | Section |
 |-------|------|---------|
+| shadow, native-foundation, rust, sdk, durability | specs/architecture/native-foundation.md; specs/epics/0010-cross-platform.md | Target architecture; Current decisions |
+| phase-renumbering, phase-identities | specs/planning/phase-map.md; specs/planning/roadmap.md; specs/status.md; specs/epics/0009-the-harness-as-data.md | Current phase map and dependencies |
+| repository, repository-organization, monorepo, naming, maintenance, migration | specs/planning/shadow-repository.md | Current recommendation; Transfer and ownership; Naming decisions |
 | runtime, resume, leases | specs/architecture/runtime.md | The drive; The governed step |
 | wire | specs/architecture/wire.md | Rules already fixed |
 | agent, transcript | specs/architecture/adapters.md | The agent adapter |

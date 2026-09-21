@@ -156,7 +156,26 @@ rather than remembered.
 | D140 | a turn's words are the turn's: `turn(attributes=)` merges for that turn's judgements and is never written back; `resume(attributes=)` replaces the record's | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
 | D141 | unknown, never zero, for cache tokens: `Usage.cache_read_tokens`/`cache_write_tokens` are `None` where unreported; `Spent` counts them | [`phases/phase-45-truth-both-ways/history.md`](/phases/phase-45-truth-both-ways/history.md) |
 
-## Also here
+## Native foundation amendment — 2026-09-21
+
+D119, D122, D123, D127–D131, D134 and D135 above retain historical summaries. Read the
+current decisions below and Epic 0010's supersession text for future implementation.
+
+| Decision | Summary | Source |
+|---|---|---|
+| D142 | Shadow is the umbrella; package/import/repository identifiers are separate compatibility decisions | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D143 | Rust shared execution before new capabilities; supersedes D128/D129's helper-only postponement | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D144 | pure Core, effectful Runtime, replaceable strategies over one governed execution boundary | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D145 | Rust/Python embedding and Python/TypeScript authoring/managed/remote SDKs; one engine; amends D119 | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D146 | explicit versioned atomic execution journal; SQLite default and Postgres parity; refines D130 | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D147 | optional component ecosystems, useful native-only baseline, component hosts distinct from sandboxes | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D148 | authority, consent, observation and versioned standards adapters remain separate contracts | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D149 | bounded Phase 46 proof selects reuse and binding technology; no upstream fork or private APIs by default | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D150 | explicit migration with old data, compatibility and rollback; native default only after Phase 52 | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D151 | pinned native per-platform artifacts replace PyApp; Windows lifecycle and isolation claims separated | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+| D152 | renumber only upcoming work from 46; preserve completed IDs, tags and history; native foundation first | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
+
+## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is
   needed. The numbered ADRs the roadmap refers to are the owner's and none is written yet.

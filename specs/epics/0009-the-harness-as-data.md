@@ -5,13 +5,24 @@ slug: the-harness-as-data
 status: planned
 owner: Avinash
 started: "2026-09-17T19:26:57.219Z"
-phases: [phase-36-plan-admission, phase-34-the-harness-as-data, phase-37-the-durable-run-request]
+phases: [phase-36-plan-admission, phase-53-the-harness-as-data, phase-54-the-durable-run-request]
 policy_release: per-phase
 policy_push: per-phase
 policy_tdd: strict
 ---
 
 # Epic 0009 — the-harness-as-data
+
+> **Current order, amended 2026-09-21:** completed Phase 36 stays unchanged; Phase **53**
+> (formerly 34) follows native acceptance in Phase 52; Phase **54** (formerly 37) follows 53.
+> [Epic 0010](0010-cross-platform.md) owns the native foundation and D142–D152. The
+> [target architecture](../architecture/native-foundation.md) preserves both discussion diagrams;
+> the [phase map](../planning/phase-map.md) resolves old references below.
+>
+> D119's one-runtime rule remains, but its prohibition on native execution elsewhere is superseded
+> by D143/D145: the implementation is Rust with supported bindings and clients, not separate engines.
+> D118's pinned distribution goal remains; Phase 51 replaces the old embedded-Python launcher.
+> The old decisions/criteria retain their historical phase names where not explicitly amended.
 
 ## Objective
 
@@ -44,17 +55,18 @@ An agent or a developer proposes a plan or a whole harness as data; the host adm
 | Phase | Builds | Depends on |
 |---|---|---|
 | 36 — plan admission | `PlanLimits` + `admit()` in the kernel; admission inside `children.spawn`; `plan_admitted` / `plan_refused` events and their fold; planning as a registered component; limits carried on the mode; run-after-planner as a pattern field; the amend handle; wire and TypeScript parity | 33 |
-| 34 — the harness as data | Declared parameters on a composition; `HarnessSpec` → blueprint → preset → runnable; a harness as a component; harness admission with the capability check; bundle export/import (`harness.toml` + files + composition JSON); `shadow-hdk run <blueprint>`, `explain`, `check`; the reference presets from public parts only; `shadow-hdk bundle --as wheel \| oci \| binary \| dir \| scaffold:<lang>` with the kit pinned inside; generated clients and port stubs per language; reproducible builds | 36 |
-| 37 — the durable run request | `RunRequest` with identity, idempotency key and retry/catch-up policy as data; create, renew, cancel; a run that is not a turn; recovery after process death on SQLite and Postgres; a trigger port with cron, queue and webhook reference adapters; timing consumed, never authority | 33, 34 |
+| 53 — the harness as data (formerly 34) | Declared parameters, typed harness definitions, recursive composition and admission; bundle export/import; run/explain/check; public-part presets and language scaffolds over the pinned native runtime. Derive concrete export scope once Phase 51 artifacts exist | 36, 52 |
+| 54 — the durable run request (formerly 37) | `RunRequest` with identity, idempotency key and retry/catch-up policy as data; create, renew, cancel; SQLite/Postgres recovery over the native execution foundation; cron, queue and webhook reference adapters; timing consumed, never authority | 53 |
 
-Order is computed from `deps`: 36 → 34 → 37. Each phase releases on its own (v0.31.0, v0.32.0, v0.33.0).
+Order is computed from overview `deps`: completed 36 and native acceptance 52 → 53 → 54.
+Each phase has its own release gate; no future version number is reserved by this plan.
 
 ## Non-goals
 
-- Context engineering (35), UI-plane adapters (38), peers (39) and governed evolution (40) — later roadmap capabilities
+- Context engineering (55), UI-plane adapters (56), peers (57) and governed evolution (58) — later roadmap capabilities
 - Any product concept: users, tenancy, domain schema, a message model, a UI, a marketplace or publishing service, billing
 - A scheduler *service*; the epic ships the request contract and reference trigger adapters, and consumes timing
-- A native runtime in another language, or a compile-to-X target (D119, D120)
+- Building the native foundation in this epic (Epic 0010 owns it), or a compile-to-X target (D120)
 - Exactly-once effects across an external system; planner strategies as code; a credential in any artifact
 
 ## Completion criteria
@@ -90,3 +102,4 @@ Order is computed from `deps`: 36 → 34 → 37. Each phase releases on its own 
 - 2026-09-18 (Phase 36 G2, proposed by the lane, pending the owner) — **D108/D121 amended:** admission refuses only what no step can see — structure and existence — and *names* the steps the policy will ask about or refuse (`PlanAdmitted.asks`, `.refusals`); each step is still judged at its own invocation through the existing live/park paths. Raising the plan's question at admission collided with D57's park and asked twice for a one-step plan; refusing a plan for one refusable step broke BUG-012's promise. D121's "one question for the plan" is a host presentation over the named asks, not a runtime park.
 - 2026-09-18 (Phase 36, proposed by the lane, pending the owner) — **ENH-020 folded into Phase 36 as Group 6** rather than a v0.30.1 quick-task: the honest fix is a public contract addition (the opener names unmapped behaviour; `Thread` and the wire surface it), and Rule 14 makes a contract change a phase.
 - 2026-09-19 (Phase 44, the owner's order) — **ENH-030 and ENH-031 land in Phase 44, ahead of Phase 34.** The thread door's inversion for a host's components and the TypeScript host-side `ComponentPort` with a stdio sidecar are two of D119's language surfaces; a product needed them first. Phase 34 keeps the scaffold per language, the bundle and the remaining surfaces; the pinned sidecar binary is Epic 0010 Phase 42's, not this phase's.
+- 2026-09-21 — **Native foundation first, upcoming IDs retired.** The owner's order moves remaining work behind Epic 0010's Phase 52 acceptance. Planned 34 becomes 53, 37 becomes 54; completed 36 stays 36. Native execution durability belongs to 47, request scheduling and trigger policy to 54. D119 is amended by D143/D145. Earlier decisions and amendments remain evidence, not an instruction to implement retired phase numbers; no product-specific dependency is introduced.

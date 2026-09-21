@@ -4,20 +4,21 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-20 — **v0.34.1** (BUG-062/063, quick-task from lane P's measurements on 0.34.0) after **v0.34.0** — Phase 45 **truth both ways** — and v0.33.0 (Phase 41), all the same day
-> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 34 → 37 (Epic
-> 0009). The artifact (42) is optional; Windows (43) is deferred until asked — WSL2 meanwhile.
+> **Last Updated**: 2026-09-21 — planning update only; latest recorded code version **v0.34.1**.
+> **Current Phase**: **none — implementation has not started.** Next: **Phase 46 — architecture
+> proof**, then the native foundation through 52 (amended Epic 0010), then 53 → 54 (Epic 0009).
+> The umbrella name is **Shadow**. [Target architecture and both diagrams](architecture/native-foundation.md),
+> [phase identity map](planning/phase-map.md), and [repository proposal](planning/shadow-repository.md).
+> Completed phases keep their IDs; old planned 34/35/37–40/42/43 are retired through the map.
+> Repository, local directory, packages and imports have **not** been renamed.
 > **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
 > spending limit needs to be increased*) since 2026-09-19 21:23 UTC — CI on the release commit and
 > the publish workflow wait on billing.
-> **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
-> settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
-> are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
-> **Epic 0010 — cross-platform — is planned** (`specs/epics/0010-cross-platform.md`, D122–D137,
-> 2026-09-19): the OS layer native per OS as small Rust helpers with the proof in Python (A+),
-> one artifact per OS, three CI runners; Phases 41 → 42 ‖ 43; the engine's language a dated
-> decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
-> the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
+> **Epic 0009 — the harness as data** keeps completed Phase 36 and resumes as 53 → 54 after
+> native acceptance. **Epic 0010 — native execution foundation** keeps completed Phase 41 and
+> adds 46–52. D142–D152 supersede the helper-only/embedded-Python postponement as a target;
+> the running implementation remains Python/LangGraph. Historical release/CI facts below have
+> not been re-audited by this documentation change.
 >
 > 1,846 non-live tests; mypy strict over 471 files; one distribution, `shadow-hdk`, at
 > **0.34.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
@@ -77,17 +78,12 @@ type: Status
 
 ## Summary
 
-shadow-hdk is the generic agentic system designed in
-`intent-ecosystem/vision/09-the-agentic-system.md`: a runtime that runs an agent over an open set of
-components under a governance policy and hands what it produces to whoever is listening. It governs
-effects, not names; the agent's plan is data compiled to a LangGraph graph; the runtime acts through
-components and records through the sink. One distribution — kernel, runtime, wire, providers, serve, adapters — one import
-name, six ports. Any system that implements the six ports is its intended user, and this repository
-plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
-merged and released; Phases 31–33 are complete on the unreleased epic stack**: 1,688 non-live tests,
-mypy strict over 441 files, one v0.30.0 candidate. Epic 0008 now waits only for protected release
-approval.
+Shadow is a generic framework for building and running agents, workflows and custom harnesses.
+The current `shadow-hdk` distribution executes with Python/LangGraph and a Rust Linux helper.
+The target is one Rust execution foundation with progressive controls, SDKs and optional component
+ecosystems; no product owns its vocabulary or policy. The port set is open. Native behavior,
+distribution, binding and resource claims must pass Epic 0010's proof and migration gates before
+the new engine becomes the default. Documentation approval has not started Phase 46.
 
 ## Completed Phases
 
@@ -175,14 +171,24 @@ approval.
 
 ## Upcoming Phases
 
-> Epic 0009 runs under `release: per-phase`, `push: per-phase`, `tdd: strict`. Order is computed
-> from each phase's `deps`. Phases 35, 38, 39 and 40 stay on the roadmap after it.
+> `release: per-phase`, `push: per-phase`, `tdd: strict`. Dependencies live in planned phase
+> overviews; detailed plans/tasks are derived only at each phase's start. See the phase map.
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
-| 36 — plan admission | 33 | a proposed plan is admitted or refused as a whole — limits, existence, effects — before anything compiles; planning reaches a resident CLI; a plan may outlive its planner; a running composition can be amended on the record |
-| 34 — the harness as data | 36 | a harness is a typed, parameterised, versioned artifact that unfolds to a runnable one, is itself a component, and ships as a self-contained distribution or a language scaffold over one runtime |
-| 37 — the durable run request | 33, 34 | a run is requested idempotently, survives its process, is retried and cancelled by policy, and is created by cron, queue or webhook adapters that own timing and never authority |
+| 46 — architecture proof | 45 | evidence-backed behavior baseline, recovery slice, reuse/binding decisions and resource budgets |
+| 47 — native Core and runtime | 46 | shared Rust execution, authority and durable recovery |
+| 48 — components and strategies | 47 | native usefulness, optional hosts and agent/workflow/hybrid strategies |
+| 49 — SDKs and embedding | 48 | Rust/Python embedding; Python/TypeScript authoring and managed/remote clients |
+| 50 — Windows lifecycle | 47 | native process ownership and honest supported/refused capabilities |
+| 51 — native distribution | 49, 50 | pinned platform artifacts, SDK packaging and install/run evidence |
+| 52 — native migration | 51 | compatibility, persisted-data handling, rollback and native acceptance |
+| 53 — harness as data | 52, 36 | parameterized composable harness definitions and bundles |
+| 54 — durable run request | 53 | idempotent requests, scheduling and trigger adapters |
+| 55 — context engineering | 54 | context/memory capability after the foundation and reuse work |
+| 56 — UI plane | 54 | activity and generative-UI adapters, not full applications |
+| 57 — collaboration | 54 | peer discovery and remote delegation |
+| 58 — evaluation and evolution | 55 | fixed evaluators and human-approved improvement rollout |
 
 ## Blockers
 
@@ -197,6 +203,13 @@ approval.
 | _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: ENH-005–008 (P2–P3) — see the backlog |
 
 ## Next Actions
+
+**Current planning action:** review the recorded native-foundation specs; Phase 46 is the next
+implementation candidate, not started. Decide between a separate native repository and separate
+branches/worktrees while keeping the existing kit maintenance-supported; no repository mutation
+is authorized yet. Settle native phase ownership before starting. The numbered list
+below is the prior release-operations handoff (2026-09-20), retained for audit; its old phase order
+is superseded by the table above and its external CI/billing state needs a fresh check before use.
 
 1. **GitHub billing** — fix it, then `gh run rerun 35470259560` (CI on the release commit) and the `v0.34.0` GitHub release (it triggers the publish workflow: the kit and the helper's wheels, PyPI, the smoke). Until then the tag can stand and `uv publish` from the laptop with the owner's token is the fallback
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket

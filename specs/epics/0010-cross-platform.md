@@ -5,13 +5,147 @@ slug: cross-platform
 status: planned
 owner: avinash-singh-io
 started: "2026-09-19T11:53:47.163Z"
-phases: [phase-41-linux-confinement, phase-42-the-artifact, phase-43-windows]
+phases: [phase-41-linux-confinement, phase-46-architecture-proof, phase-47-native-core-and-runtime, phase-48-components-and-strategies, phase-49-sdks-and-embedding, phase-50-windows-lifecycle, phase-51-native-distribution, phase-52-native-migration]
 policy_release: per-phase
 policy_push: per-phase
 policy_tdd: strict
 ---
 
-# Epic 0010 — cross-platform
+# Epic 0010 — Shadow native execution foundation
+
+> Amended 2026-09-21 after the owner's architecture review, Shadow naming decision and request to
+> renumber upcoming phases and preserve both diagrams. The stable epic ID/path is retained.
+> This is planning approval, **not permission to start implementation, merge or release**.
+
+## Current objective
+
+Deliver one reusable Rust execution foundation for **Shadow**, the umbrella framework for
+agents, workflows and custom harnesses. Support a useful native-only baseline, Rust/Python
+embedding, Python/TypeScript managed-sidecar and remote consumption, explicit optional language
+dependencies and macOS/Linux/Windows distribution. Preserve supported current behavior through
+an evidence-backed migration. Ready-made applications remain lower priority.
+
+The [target architecture](../architecture/native-foundation.md) preserves both the overall-kit
+and agent/workflow execution diagrams. [Goose grounding](../research/2026-09-21-shadow-goose-architecture.md)
+records inspected evidence and unresolved reuse questions. [Phase map](../planning/phase-map.md)
+is the historical alias map. Repository topology is a [proposal](../planning/shadow-repository.md),
+not an action authorized by this epic.
+
+## Current decisions
+
+These rows govern future derivation. Earlier decisions below remain historical evidence where
+superseded; completed Phase 41 is unchanged.
+
+| # | Decision | Rationale |
+|---|---|---|
+| D142 | **Shadow is the umbrella.** Core, Runtime, SDKs, components and presets are parts; HDK describes the kit, not a separate brand. Keep current package/import/repository identifiers until separately migrated | clear positioning without breaking consumers for a branding change |
+| D143 | **Rust is the target shared engine, before new capabilities.** Supersedes D128/D129's prohibition and dated delay; expands D122 beyond the Python-only ecosystem assumption | distribution, resource use and one execution implementation are the owner's priorities; Phase 46 proves the risky assumptions first |
+| D144 | **Pure Core, effectful Runtime, replaceable strategies.** The runtime executes admitted compositions, not only conversations; agents/workflows/hybrids use the same governed boundary | preserves genericity, dependency inversion and host authority |
+| D145 | **Rust/Python embedding; Python/TypeScript authoring, managed-sidecar and remote clients.** Other languages use the wire initially; no TypeScript in-process binding launch promise. Generated types plus ergonomic helpers, not N engines. Amends D119 | adoption requires lifecycle helpers, while native binding support is a separate tested commitment |
+| D146 | **Specify the native execution journal explicitly.** Versioned records, atomic concurrency ownership, pending steps/children/input and effect receipts; checkpoints are derived aids. SQLite default, Postgres parity. Refines D130: byte-oriented RunStore alone is insufficient | crash-safe recovery requires more than persisted conversation or arbitrary checkpoint bytes |
+| D147 | **Optional component ecosystems with explicit dependencies.** A useful Rust-only baseline; bounded/reused optional hosts; a component host is not a sandbox | selecting Python/Node libraries must not impose them on every installation or overstate isolation |
+| D148 | **Authority and standards remain separate contracts.** Preserve current-authority controlled execution and observed limitations; approval is consent, telemetry is not the journal, standards are versioned adapters | prevents wrapping an external system from falsely granting control or protocol parity |
+| D149 | **Phase 46 decides implementation reuse and binding technology from a bounded proof.** Compare selected Goose pieces against Shadow fixtures; no private APIs/upstream fork by default; own public contracts and consume suitable dependencies | avoids both speculative wholesale adoption and rewriting available infrastructure; evidence may reject a candidate |
+| D150 | **Explicit migration, no silent switch.** Keep stable Python execution usable; identify engine/store versions; preserve old data, provide drain/compatibility and rollback. Native default only at Phase 52 acceptance | changing language must not discard parked runs or quietly remove supported interfaces |
+| D151 | **Pinned native artifacts replace D127's PyApp requirement.** First targets: macOS arm64/x86_64, Linux arm64/x86_64, Windows x86_64; no mandatory Python/Node or interpreter fetch. D123 helper-only restriction no longer limits the target. D131 keeps key isolation/signing but Python-specific entitlements are not universal. D134's lifecycle becomes Phase 50; unproven confinement refuses. D135 reuse remains, PyApp is not required | distribution and dependency costs must be proven from delivered artifacts; signing is not a guarantee of SmartScreen reputation |
+| D152 | **Renumber upcoming work only, from 46.** Retire old planned IDs through the phase map; preserve completed phase identities, tags and history. Pause new capabilities until native acceptance | clear forward ordering without rewriting project history |
+
+## Current phases and dependencies
+
+| Phase | Contribution | Deps |
+|---|---|---|
+| 41 — Linux confinement | Completed foundation and evidence, unchanged | — |
+| 46 — Architecture proof | Behavioral baseline, native recovery slice, reuse/binding decisions, resource budgets | 45 |
+| 47 — Native Core and runtime | Pure contracts, admitted execution, supervision, authority and durable recovery | 46 |
+| 48 — Components and strategies | Native usefulness, optional hosts, agents/workflows/hybrids, supported provider paths | 47 |
+| 49 — SDKs and embedding | Public Rust/Python integration; Python/TypeScript authoring, managed runtime and wire | 48 |
+| 50 — Windows lifecycle | Native process ownership and evidence-backed supported/refused capabilities; former 43's lifecycle scope | 47 |
+| 51 — Native distribution | Per-platform artifacts, SDK packaging, server image and measured install/run proofs; replaces 42 | 49, 50 |
+| 52 — Migration acceptance | Compatibility, old persisted data, rollback and native-default readiness | 51 |
+
+Canonical dependencies live in each phase's overview. Derive detailed plans/tasks when a phase
+starts, not now. Native implementation remains a single-repository epic. An approved transition
+between legacy and native repositories may need a separate cross-repository coordination record.
+
+## Phase 46 decision gate
+
+Use a small executable slice, not two full competing engines. Freeze scripted workloads and
+characterize existing supported behavior, including repeated park/resume, admission's named step
+asks/refusals, nested children, authority revision, callbacks and old-store compatibility.
+Prove recovery across process death, no action after authority narrows, and Python binding plus
+sidecar cancellation/shutdown. Evaluate selected Goose library pieces for these same boundaries,
+dependency weight and public API stability. Record rejected candidates and why.
+
+Measure startup, peak RSS, idle CPU, representative overhead and artifact dependencies against the
+current Python baseline on named hardware/OS profiles. Separate model inference from runtime
+cost. End the phase with binding/reuse choices, supported platform floors, a fixed benchmark
+corpus and numeric budgets for the port. No RAM/CPU improvement is claimed before measurement.
+If a foundational requirement fails or material scope changes, return to the owner; do not
+silently weaken the contract or continue indefinitely. Future phase derivation uses this evidence.
+
+## Current non-goals
+
+- A new product repository, remote rename, local checkout move, or package/import rename now.
+- Detailed future-phase task lists or implementation triggered by documenting this epic.
+- New capability work before native acceptance; reusable harness definitions and scheduling
+  follow in Epic 0009 as Phases 53 and 54.
+- Full desktop/web applications, a marketplace, local model inference engine or research product.
+- Mandatory Python/Node workers, identical optional libraries in all languages, mobile/MCU support.
+- A blanket guarantee of native Windows confinement, exactly-once external effects, or automatic
+  conversion of arbitrary LangGraph checkpoint objects.
+- Native TypeScript embedding, an upstream Goose fork, or a second authoritative scheduler by default.
+
+## Current completion criteria
+
+- [ ] The supported composition/agent behavior suite passes across Rust, Python and TypeScript surfaces.
+- [ ] Structural/existence-invalid plans invoke nothing; an action refused at its boundary never executes; current admission behavior is preserved or deliberately amended with evidence.
+- [ ] Child authority and budgets only narrow; revocation after approval prevents the controlled act.
+- [ ] Repeated park/resume, cancellation, process-tree cleanup and process-death recovery pass.
+- [ ] Atomic execution ownership prevents two recoverers claiming the same work; receipts prevent replaying a completed effect; unknown outcomes require reconciliation.
+- [ ] SQLite and Postgres pass the durable contract, including restart, contention and migration fixtures.
+- [ ] A native-only artifact completes a representative scripted and configured-model run without Python/Node; optional host requirements are diagnosed before their work starts.
+- [ ] Every supported OS/architecture artifact is installed and exercised on a real matching runner; Windows unsupported isolation is explicitly refused; Linux arm64 execution evidence is included.
+- [ ] Artifact checksums and applicable signatures/notarization are verified. Missing certificates/runners are named release blockers, not skipped successes; SmartScreen reputation is not promised by signing.
+- [ ] Startup/RSS/CPU/overhead meet Phase 46's frozen budgets on its named profiles; model inference and optional workers are separately accounted for.
+- [ ] Current supported APIs are covered or explicitly migrated with owner-approved exceptions; old persisted data stays intact and old-run handling/rollback is exercised.
+- [ ] Examples use public APIs and demonstrate all three execution styles, host tools, human input and recovery; no real irreversible effect is run twice to compare engines.
+
+## Current run policy
+
+`release: per-phase`, `push: per-phase`, `tdd: strict`. Keep native previews explicitly opt-in;
+no automatic stable-default switch. Verify at every phase, with protected merge/release approvals
+unchanged. Phase numbers are not version promises. Implementation starts only when requested.
+
+**Repository topology decision pending:** the owner subsequently asked for independent legacy
+maintenance while native work proceeds. The current recommendation is a new Shadow monorepo plus
+maintenance-supported `shadow-hdk`; branch/worktree isolation is also viable. See the repository
+proposal. No creation/rename is authorized. These specs are the planning source until native
+phase ownership is explicitly assigned; if transferred, leave pointers here rather than running
+the same phases in both repositories. The legacy product release track must remain usable.
+
+## Amendment history — 2026-09-21
+
+### [DECISION] 2026-09-21 — Shadow native foundation and forward phase identities
+Topics: shadow, native-foundation, rust, sdk, durability, phase-renumbering
+Affects-phases: phase-46-architecture-proof through phase-58-evaluation-and-evolution
+Affects-specs: specs/architecture/native-foundation.md; specs/planning/roadmap.md; specs/planning/phase-map.md; specs/epics/0009-the-harness-as-data.md
+Detail: The owner accepted the layered direction and asked to record it, rename the umbrella Shadow, preserve both diagrams and renumber upcoming work. D142–D152 supersede the helper-only postponement and embedded-Python target while retaining completed evidence. Repository rename remains a proposal; implementation has not started.
+
+---
+
+### [NOTE] 2026-09-21 — Independent legacy delivery and repository options
+Topics: repository-organization, maintenance, native-foundation, migration
+Affects-phases: phase-46-architecture-proof through phase-52-native-migration
+Affects-specs: specs/planning/shadow-repository.md; specs/architecture/native-foundation.md; specs/status.md
+Detail: The owner asked to keep urgent Intent Studio needs independently releasable during the rewrite and suggested a separate repository or branch. The revised recommendation is maintenance-supported `shadow-hdk` plus a new Shadow monorepo; branches/worktrees remain viable. Repository creation, topology selection and native phase ownership remain pending, with one publisher per package identity and no duplicate active phase ownership.
+
+---
+
+## Historical plan — 2026-09-19
+
+The sections below preserve the original approved plan and amendments. For **future** work,
+the current sections above take precedence. Old planned phase references resolve through the
+phase map; claims about competitors here are historical rationale, not newly verified findings.
 
 ## Objective
 
