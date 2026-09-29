@@ -29,10 +29,25 @@ from shadow_hdk.runtime.children import PlanNotAdmitted
 
 REFUSED_NOT_RUNNING = "no turn is running, so there is nothing to call into"
 PARKED_REASON = (
-    "not now: the person will be asked about {name} later, and the call is kept — it runs once "
-    "they approve, and you will be told what came of it at your next turn. Say what you "
-    "proposed and why, then stop."
+    "{name} is waiting for the person to approve it. The call is kept and has not run; if it is "
+    "approved it runs, and its result arrives with the next turn."
 )
+"""What an agent is told about a call the person has not answered yet (BUG-228).
+
+**A fact about the call, addressed to nobody.** This is an observation, and an observation is data
+about the world — so it carries no second person and no instruction. The sentence that stood here
+ended *"Say what you proposed and why, then stop."*, and a key-backed model read the whole of it
+back to the person as its answer. Steering an agent is the mode's behaviour, which travels on the
+instruction channel; a tool result is not a place to hide one.
+"""
+
+PARKED_TURN = "The turn stopped at {name}, which is waiting for the person to approve it."
+"""How a turn that ended at a park describes itself, for a host with nothing else to show.
+
+A host should speak in its own words — `Turn.stop_reason` is `parked`, which is the signal to key
+on — and this exists so that a host which does show the text shows neither an instruction written
+for a model nor the model's own parting words dressed up as an answer.
+"""
 
 
 class Offer(Protocol):
@@ -201,6 +216,7 @@ class InProcessOffer(Routing):
 
 __all__ = [
     "PARKED_REASON",
+    "PARKED_TURN",
     "REFUSED_NOT_RUNNING",
     "InProcessOffer",
     "Offer",
