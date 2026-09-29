@@ -110,6 +110,33 @@ A Computer that may die should use `on_question="park"`: the request returns, th
 the record, and the lease is not burning while nobody answers — the clock runs only in a turn
 (D90). Re-offering the Run on lease expiry is unnecessary.
 
+### A key-backed model's park is settled the same way, and needs no session
+
+**Settling does not go through the provider.** `settle(handle, answer)` wakes the run that parked
+from the **checkpointer** and the act resumes at the step it stopped on; the provider is never
+consulted. That is why the shape does not depend on what is behind the thread: a key-backed model
+has no session to reopen — the record is its memory (D98) — and it does not need one.
+
+So a host may open a thread for one turn, let it park, **close it**, and settle it from another
+process an hour later. `tests/runtime/test_a_key_backed_models_park_settles_after_a_restart.py` is
+that, end to end, on sqlite: a `ModelAgent` parks, the thread closes, a fresh `Thread.resume(id)`
+finds the question with its handle, `settle` runs the act once, and the model is told at its next
+turn what became of the call it made. A resident thread per conversation works for the same reason;
+it is a choice about process lifetime, not about whether approvals work.
+
+Two things a host must get right, and one is easy to miss:
+
+- **Pass `approvals=` and a durable `checkpointer=`.** With no `Questions` handle, a mode that asks
+  is answered by a refusal that says nobody was there — consent nobody gave is not consent — so a
+  host that forgets it sees silent refusals rather than parks, and nothing lands on `pending`. With
+  an in-memory checkpointer the question survives on the record and the run to resume does not.
+- **A parked turn says so in `stop_reason`, and says nothing to the person.**
+  `Turn.stop_reason == "parked"` is the signal. Since 0.34.2 the turn's own text is the kit's
+  plainest description of why it stopped, and the note the *agent* receives is a fact with no
+  second person and no instruction in it (BUG-228 — a model read the previous wording, which
+  ended "Say what you proposed and why, then stop.", back to the person as its answer). Speak in
+  your own words regardless: neither sentence is written for a person to read.
+
 ## 4. Delegation
 
 - **`runtime/children.py` is the runtime's mechanism; the agent reaches it through two doors the
@@ -216,6 +243,25 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   `seeded_turns`; the first turn on the fork is told the kept turns ahead of its prompt, once, by
   the kit, and then carries the new session's own id. Keep the lineage (`forked_from`) rather
   than opening an unrelated thread; do not seed the first turn yourself.
+- **A resident CLI keeps running between turns unless you say otherwise** (D94). `idle_seconds`
+  takes a number on `Thread.open`, `Thread.resume`, `Conversation.open` and `[provider]
+  idle_seconds` in `harness.toml` — in process and served alike, the same switch. **The default is
+  never**: nothing closes an idle provider session, so one process per open conversation is exactly
+  what a product gets until it sets a number. After that long without a turn the session is closed
+  and reopened on its id at the next turn, which is why the number is a comfort/latency trade and
+  not a correctness one. Set it to something on the order of a person's coffee break; a thread's
+  own `close()` is still the thing that ends the process group.
+- **A governed CLI's sessions land in the person's own history, and the kit does not move them.**
+  The kit starts the vendor's binary as the person, which is what makes a subscription work at all,
+  so its transcripts go where that binary puts them (`~/.claude/projects/<folder>/`) and its
+  sessions show in the person's own client. The kit already strips what it must to run nested
+  (`CLAUDECODE`), loads no settings source, and turns auto-memory off (ENH-012), because a run's
+  instructions should be the mode's behaviour — but none of that relocates the transcript. A
+  product that wants them elsewhere can set an environment variable on the provider itself
+  (`Provider.set_env`, or a provider file of its own — no kit change), and should expect to
+  measure it: `--bare` was measured and rejected for exactly this reason, because it never reads
+  the keychain and so drops the subscription login with the settings. Treat "move the config
+  directory" as the same hazard until somebody has watched a signed-in subscription survive it.
 - **Where a failed turn's reason is.** On the *turn record*: `outcome == "failed"`, `text` the
   provider's own sentence (Codex's `error.message`; Claude Code's `errors[]` joined), `failure`
   the typed kind when there is one. The run's `ended` event says `reason: "completed"` for a

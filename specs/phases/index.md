@@ -1,5 +1,26 @@
 # Phases
 
+## Upcoming — native foundation and onward
+
+* [46 — Architecture proof and contract baseline](/phases/phase-46-architecture-proof/overview.md) - planned, not started
+* [47 — Native Core and durable execution](/phases/phase-47-native-core-and-runtime/overview.md) - planned, not started
+* [48 — Components and execution strategies](/phases/phase-48-components-and-strategies/overview.md) - planned, not started
+* [49 — Public APIs and language integration](/phases/phase-49-sdks-and-embedding/overview.md) - planned, not started
+* [50 — Windows lifecycle and capabilities](/phases/phase-50-windows-lifecycle/overview.md) - planned, not started
+* [51 — Native distribution](/phases/phase-51-native-distribution/overview.md) - planned, not started
+* [52 — Migration and native release acceptance](/phases/phase-52-native-migration/overview.md) - planned, not started
+* [53 — The harness as data](/phases/phase-53-the-harness-as-data/overview.md) - planned, not started
+* [54 — The durable run request](/phases/phase-54-the-durable-run-request/overview.md) - planned, not started
+* [55 — Context engineering](/phases/phase-55-context-engineering/overview.md) - planned, not started
+* [56 — The UI plane](/phases/phase-56-the-ui-plane/overview.md) - planned, not started
+* [57 — Collaboration](/phases/phase-57-collaboration/overview.md) - planned, not started
+* [58 — Evaluation and governed evolution](/phases/phase-58-evaluation-and-evolution/overview.md) - planned, not started
+
+See [phase identities](/planning/phase-map.md) for old planned IDs. These overviews carry
+outcomes and dependencies; plans/tasks/history are derived at phase start.
+
+## Completed — identities unchanged
+
 * [phase-0-the-runtime](/phases/phase-0-the-runtime/overview.md) - complete
 * [phase-1-real-adapters](/phases/phase-1-real-adapters/overview.md) - complete
 * [phase-10-effect-rules](/phases/phase-10-effect-rules/overview.md) - complete

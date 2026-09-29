@@ -6,7 +6,7 @@
   "status": "skipped",
   "visualReview": "pending",
   "artifact": {
-    "path": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-messages.dataflow.html",
+    "path": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-messages.dataflow.html",
     "sha256": "36e070dc9c5007facde59644ac334aea3f815e14e91e73e2381d13ae3df3fcde",
     "bytes": 717869
   },
@@ -24,7 +24,7 @@
       "severity": "warning",
       "message": "Chrome or Chromium is unavailable. Set ARCHIFY_CHROME to its executable path.",
       "subject": {
-        "artifact": "/Users/avinash/Workspace/Projects/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-messages.dataflow.html"
+        "artifact": "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/specs/phases/phase-16-mqtt/diagrams/mqtt-messages.dataflow.html"
       },
       "evidence": {
         "executable": null

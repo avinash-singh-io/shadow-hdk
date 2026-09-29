@@ -18,8 +18,16 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.34.1"
-"""0.34.1 — a patch (D9): a fork is a fresh provider session seeded with the transcript, as D139
+EXPECTED = "0.34.2"
+"""0.34.2 — a patch (D9): a relay path with a space in it is no longer split into a command and
+its arguments, on any transport, so a governed CLI inside an application bundle has its tools
+(BUG-226); the ACP transport carries the registry's port and token to the relay it launches
+(BUG-227); a parked call is reported as a fact about the call rather than as an instruction a
+model can read back to the person (BUG-228). No contract change — `ToolSource` is the same three
+fields and every port is unchanged; what changed is what the adapters do with an address and what
+words a park carries.
+
+0.34.1 — a patch (D9): a fork is a fresh provider session seeded with the transcript, as D139
 promised (BUG-062); a thread turn's cache tokens reach `Spent`, as D141 promised (BUG-063). No
 contract change — the fields and the methods existed; they now do what the record said.
 

@@ -20,7 +20,7 @@ from shadow_hdk.kernel.ports import (
     Usage,
 )
 from shadow_hdk.runtime import Parked, current_run
-from shadow_hdk.runtime.offer import PARKED_REASON
+from shadow_hdk.runtime.offer import PARKED_TURN
 
 
 class ModelAgent:
@@ -134,9 +134,15 @@ class _ModelSession:
                 about=(observation.component, observation.inputs),
             )
             if isinstance(answer, Parked):
+                # **The turn ends here, and the host speaks** (BUG-228). `stop_reason` is
+                # `parked`: that is what a host keys on. The text is the kit's plainest
+                # description of why the turn stopped — never the note written for the agent
+                # (which addressed it in the second person, and which one model read back to
+                # the person as its answer), and never the model's last words, which would
+                # present something said on the way to a call as an answer to the person.
                 observation = loop.finished(
                     "parked",
-                    text=PARKED_REASON.format(name=observation.component or "tool"),
+                    text=PARKED_TURN.format(name=observation.component or "tool"),
                 )
             else:
                 observation = await loop.resume(answer)

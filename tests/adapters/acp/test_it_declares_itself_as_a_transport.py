@@ -42,7 +42,7 @@ async def test_opening_gives_something_that_satisfies_the_agent_port(tmp_path: P
 async def test_what_it_opens_carries_the_tools_and_the_workspace(tmp_path: Path) -> None:
     """D42 end to end at the seam: the registry the caller built reaches the child's session."""
     provider = Provider(id="claude-code", kind="agent", bin="claude", transport="acp")
-    ours = ToolSource(kind="mcp", address="shadow-hdk-registry --stdio")
+    ours = ToolSource(kind="mcp", address="/usr/local/bin/shadow-hdk-registry")
 
     opened = await open_agent(provider, binary=Path("/bin/echo"), env={}, workspace=tmp_path)
     session = await opened.open(tools=(ours,), workspace=str(tmp_path))

@@ -91,7 +91,7 @@ Exit codes read from each tool's own summary line.
 
 ```
 Installed 1 package in 0.99ms
- + shadow-hdk-linux-sandbox==0.34.0 (from file:///Users/avinash/Workspace/Projects/shadow-hdk/native/sandbox)
+ + shadow-hdk-linux-sandbox==0.34.0 (from file:///Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/native/sandbox)
 ```
 
 ### `uv run ruff check` · `uv run ruff format --check` · `uv run mypy`
