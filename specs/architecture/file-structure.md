@@ -4,6 +4,10 @@ type: Architecture
 
 # File structure — where everything lives
 
+> This is the **current implementation layout**, not a mandate for the native target. The
+> [Shadow monorepo proposal](../planning/shadow-repository.md) describes a future layout;
+> no source directories, package names or imports have been moved by that proposal.
+
 One distribution, `shadow-hdk`, one import name, `shadow_hdk`; the specialised SDKs are extras
 (D78). Phase numbers say when a part arrived; the tree is the one on disk, and an invariant refuses
 a document that names a path that is not there.

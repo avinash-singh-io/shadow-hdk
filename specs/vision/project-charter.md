@@ -4,12 +4,16 @@ type: Vision
 
 # Project Charter
 
-> **Project**: shadow-hdk
+> **Product**: Shadow (current repository/distribution: `shadow-hdk`)
 > **Created**: 2026-09-10
+
+> **2026-09-21 target:** [native architecture](../architecture/native-foundation.md), including
+> both discussion diagrams; [Epic 0010](../epics/0010-cross-platform.md), D142–D152. The current
+> engine is still Python/LangGraph; native implementation and repository rename have not occurred.
 
 ## Problem Statement
 
-Every agent framework couples its loop to a product — the product's schema, its idea of a tool, its
+Agent integrations often couple their loop to a product — its schema, its idea of a tool, its
 notion of "done". Intent Studio's own loop did the same, and the cost was a runtime that could not be
 replaced, could not be shaped per situation, and could not be used by anyone else. Teams that need a
 governed agent — one that can be narrowed, watched, replayed and trusted with effects on the world —
@@ -17,23 +21,25 @@ have to build the governance themselves, every time, inside the loop.
 
 ## Solution
 
-**Shadow** is one generic harness system with two progressive surfaces. **Shadow HDK** is the
-construction kit: contracts, primitives, components, patterns, runtime, governance, persistence
-ports and adapters. **Shadow Harness** is the ready-to-run reference assembly made entirely from
-those public parts. A user may run it as supplied, configure it, compose different pieces, extend
-it, or replace every port without crossing into a second runtime.
+**Shadow** is the umbrella framework for building and running agents, workflows and custom
+harnesses. Its development kit contains contracts, primitives, components, patterns, runtime,
+governance, persistence ports and adapters. Ready-made reference assemblies use those public
+parts. A user may run the defaults, configure them, compose different pieces, extend them or
+replace ports without adopting a second execution engine. HDK describes the capability rather
+than a separate product identity.
 
 The runtime executes a composition over an open set of components under host-owned governance and
 hands the record and live activity to whoever is listening. It governs *effects*, never component
 names, so the set is open while the proof that a mode only narrows stays finite. A person or agent
 may author a workflow as data; the same composition grammar represents deterministic workflows,
-model-assisted workflows, agent-owned loops and hybrids. LangGraph executes the compiled graph;
-Shadow judges every step and keeps authority, budgets, consent and irreversible effects under the
-host. Patterns, modes, components, providers, skills and adapters are data or plug-ins; the runtime
+model-assisted workflows, agent-owned loops and hybrids. Today LangGraph executes the compiled
+graph; the target shared executor is Rust. Shadow judges every step and keeps authority, budgets,
+consent and irreversible effects under the host. Patterns, modes, components, providers, skills and adapters are data or plug-ins; the runtime
 does not change when they do.
 
-The design is `intent-ecosystem/vision/09-the-agentic-system.md`; this repository is that document
-made executable.
+The founding design is `intent-ecosystem/vision/09-the-agentic-system.md`. This repository's
+numbered decisions and native-foundation amendment govern the new implementation direction;
+historical context does not silently override an approved architectural revision.
 
 ## Stakeholders
 

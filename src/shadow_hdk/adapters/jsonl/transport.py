@@ -45,10 +45,14 @@ def mcp_config_for(tools: tuple[ToolSource, ...]) -> str:
                 "and a provider launched without its tools looks exactly like one that chose "
                 "not to use any"
             )
-        command, *arguments = source.address.split()
+        # **An address is a command, never a command line** (BUG-226). Splitting it on
+        # whitespace turned `/Applications/Intent Studio.app/…/shadow-hdk-registry` into the
+        # command `/Applications/Intent` with the rest as its arguments, and the CLI — launched
+        # with its own built-ins off — got no tools at all. Nothing here splits; a launch that
+        # needs arguments needs somewhere of its own to put them, not a string to be re-parsed.
         servers[f"shadow-hdk-{index}" if index else "shadow-hdk"] = {
-            "command": command,
-            "args": arguments,
+            "command": source.address,
+            "args": [],
             "env": dict(source.env),
         }
     return json.dumps({"mcpServers": servers})

@@ -4,6 +4,19 @@ type: Guide
 
 # Six views of shadow-hdk
 
+## Target architecture — 2026-09-21
+
+The two diagrams from the owner's native-architecture discussion are preserved as editable Mermaid
+in [Shadow — target native architecture](../native-foundation.md):
+
+- [Overall development-kit architecture](../native-foundation.md#overall-architecture).
+- [Agent and workflow execution](../native-foundation.md#agent-and-workflow-execution).
+
+They describe the target, not the implemented Python engine. The six existing HTML views below
+remain historical/implementation references and are not silently regenerated as native diagrams.
+
+## Existing implementation views
+
 **Each page explains itself.** Every diagram carries a one-line subtitle, five numbered chapters
 that walk it a box at a time, and cards naming what each box is and what the drawing means. Open
 one and read it; there is no companion document to fetch.

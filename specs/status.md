@@ -4,20 +4,22 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-20 — **v0.34.1** (BUG-062/063, quick-task from lane P's measurements on 0.34.0) after **v0.34.0** — Phase 45 **truth both ways** — and v0.33.0 (Phase 41), all the same day
-> **Current Phase**: **none — between phases.** Next, in the owner's order: Phase 34 → 37 (Epic
-> 0009). The artifact (42) is optional; Windows (43) is deferred until asked — WSL2 meanwhile.
+> **Last Updated**: 2026-09-30 — v0.34.2 at the gate (BUG-226/227/228 from lane P's walk of the
+> installed app); documentation ownership transferred; latest recorded code version
+> **v0.34.2**. **Current Phase**: none. This repository is the maintenance-supported
+> Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
+> with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
+> [native architecture](../../shadow/specs/architecture/native-foundation.md) and
+> [roadmap](../../shadow/specs/planning/roadmap.md) are canonical.
+> Completed phases keep their IDs; old planned 34/35/37–40/42/43 are retired through the map.
+> This repository, its packages and imports have **not** been renamed.
 > **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
 > spending limit needs to be increased*) since 2026-09-19 21:23 UTC — CI on the release commit and
 > the publish workflow wait on billing.
-> **Epic 0009 — the harness as data** (`specs/epics/0009-the-harness-as-data.md`, D107–D121
-> settled once) runs Phases 36 → 34 → 37, released per phase; its first phase and its pre-work
-> are merged, opened from `specs/research/2026-09-18-what-belongs-in-the-kit.md`.
-> **Epic 0010 — cross-platform — is planned** (`specs/epics/0010-cross-platform.md`, D122–D137,
-> 2026-09-19): the OS layer native per OS as small Rust helpers with the proof in Python (A+),
-> one artifact per OS, three CI runners; Phases 41 → 42 ‖ 43; the engine's language a dated
-> decision under D129. Grounded in `specs/research/2026-09-19-cross-platform-grounding.md`;
-> the ledger for D129 is `specs/research/2026-09-19-the-langgraph-ledger.md`.
+> Historical copies of the future plan remain here for provenance and link continuity, but are not
+> edited as the delivery source. Research and repository strategy are canonical in
+> [`shadow-ecosystem`](../../shadow-ecosystem/README.md). The running implementation remains
+> Python/LangGraph. Historical release/CI facts below have not been re-audited by this change.
 >
 > 1,846 non-live tests; mypy strict over 471 files; one distribution, `shadow-hdk`, at
 > **0.34.0** (protocol 3, unchanged), and beside it the Linux helper `shadow-hdk-linux-sandbox` at the same number.
@@ -77,17 +79,12 @@ type: Status
 
 ## Summary
 
-shadow-hdk is the generic agentic system designed in
-`intent-ecosystem/vision/09-the-agentic-system.md`: a runtime that runs an agent over an open set of
-components under a governance policy and hands what it produces to whoever is listening. It governs
-effects, not names; the agent's plan is data compiled to a LangGraph graph; the runtime acts through
-components and records through the sink. One distribution — kernel, runtime, wire, providers, serve, adapters — one import
-name, six ports. Any system that implements the six ports is its intended user, and this repository
-plans for none of them in particular — which adopter reaches which capability when is a fact about
-that adopter, and it lives in the shared roadmap rather than here. **Thirty phases are built,
-merged and released; Phases 31–33 are complete on the unreleased epic stack**: 1,688 non-live tests,
-mypy strict over 441 files, one v0.30.0 candidate. Epic 0008 now waits only for protected release
-approval.
+Shadow is a generic framework for building and running agents, workflows and custom harnesses.
+The current `shadow-hdk` distribution executes with Python/LangGraph and a Rust Linux helper.
+The target is one Rust execution foundation with progressive controls, SDKs and optional component
+ecosystems; no product owns its vocabulary or policy. The port set is open. Native behavior,
+distribution, binding and resource claims must pass Epic 0010's proof and migration gates before
+the new engine becomes the default. Documentation approval has not started Phase 46.
 
 ## Completed Phases
 
@@ -143,6 +140,7 @@ approval.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.34.2 | 2026-09-30 | quick-task | BUG-226 — an address is a command, never a command line: nothing splits `ToolSource.address` on any transport, so a kit installed inside an application bundle (`/Applications/Intent Studio.app/…`) hands its CLI a relay that starts, where before the CLI was launched as `/Applications/Intent` and ran with no tools at all; the relay is resolved beside the running interpreter before `PATH`. BUG-227 — the ACP transport carries the registry's port and token to the relay it launches, which it had been dropping (`env=[]`), so a governed OpenCode had no tools for a second, independent reason. BUG-228 — a parked call is reported as a fact about the call, not an instruction a model can read back to the person, and a parked turn's own text is no longer that agent-facing note. All three measured by lane P on an installed 0.6.10; a kit-only reproduction for the first. No contract change. |
 | v0.34.1 | 2026-09-20 | quick-task | BUG-062 — a fork is a fresh provider session seeded with the transcript (D139's move after `session_gone` works; `rollback`'s `seeded_turns` is finally true); BUG-063 — a thread turn's cache tokens reach `Spent` (the step→meter join and `settle` carry them). Both measured by lane P on 0.34.0 with kit-only reproductions. No contract change. |
 | v0.32.1 | 2026-09-19 | quick-task | BUG-056 — a change that reopens the provider is refused during a turn, typed (`turn_running`); the turn lock held across the change |
 | v0.25.3 | 2026-09-13 | patch | BUG-034 the mode in `harness.toml`/`--mode`/`Harness(mode=)` is a mode id (`ask` included), refused by name at open; `requires` refuses an unknown environment name; the architecture specs synced to the tree |
@@ -173,16 +171,27 @@ approval.
 | 41 — Linux confinement (Epic 0010) | `phase-41-linux-confinement` | 1,799 non-live passed on 3.12 **and** on 3.14 (macOS); on CI: 1,818 on Linux with Landlock in force, 1,799 on Linux with bubblewrap, 1,799 on macOS; the crate's 12 confinement tests on the ubuntu-24.04 runner; four platform wheels built, the x86_64 one installed and watched confining; mypy 461 files; ruff clean; OKF conformant; the 0.33.0 wheel installed fresh and answering `initialize` | v0.33.0 released |
 | 45 — truth both ways | `phase-45-truth-both-ways` | 1,846 passed on 3.14 **and** on 3.12; mypy 471 files; ruff clean; the TS types without drift; OKF conformant; CI green on `aca389d` (the same code; the release commit's run refused by GitHub billing); live: Phase 36's proof on Claude Code, Codex `-m`/`-c model_reasoning_effort`, cache tokens and `session_gone` on both CLIs | v0.34.0 released |
 
-## Upcoming Phases
+## Transferred Roadmap — Canonical in Shadow
 
-> Epic 0009 runs under `release: per-phase`, `push: per-phase`, `tdd: strict`. Order is computed
-> from each phase's `deps`. Phases 35, 38, 39 and 40 stay on the roadmap after it.
+> These identities are retained for provenance. Their canonical overviews, dependencies and
+> eventual plans/tasks live in [`shadow`](../../shadow/specs/planning/roadmap.md); do not start or
+> update them in this repository.
 
 | Phase | Depends on | Makes true |
 |------|------------|------------|
-| 36 — plan admission | 33 | a proposed plan is admitted or refused as a whole — limits, existence, effects — before anything compiles; planning reaches a resident CLI; a plan may outlive its planner; a running composition can be amended on the record |
-| 34 — the harness as data | 36 | a harness is a typed, parameterised, versioned artifact that unfolds to a runnable one, is itself a component, and ships as a self-contained distribution or a language scaffold over one runtime |
-| 37 — the durable run request | 33, 34 | a run is requested idempotently, survives its process, is retried and cancelled by policy, and is created by cron, queue or webhook adapters that own timing and never authority |
+| 46 — architecture proof | 45 | evidence-backed behavior baseline, recovery slice, reuse/binding decisions and resource budgets |
+| 47 — native Core and runtime | 46 | shared Rust execution, authority and durable recovery |
+| 48 — components and strategies | 47 | native usefulness, optional hosts and agent/workflow/hybrid strategies |
+| 49 — SDKs and embedding | 48 | Rust/Python embedding; Python/TypeScript authoring and managed/remote clients |
+| 50 — Windows lifecycle | 47 | native process ownership and honest supported/refused capabilities |
+| 51 — native distribution | 49, 50 | pinned platform artifacts, SDK packaging and install/run evidence |
+| 52 — native migration | 51 | compatibility, persisted-data handling, rollback and native acceptance |
+| 53 — harness as data | 52, 36 | parameterized composable harness definitions and bundles |
+| 54 — durable run request | 53 | idempotent requests, scheduling and trigger adapters |
+| 55 — context engineering | 54 | context/memory capability after the foundation and reuse work |
+| 56 — UI plane | 54 | activity and generative-UI adapters, not full applications |
+| 57 — collaboration | 54 | peer discovery and remote delegation |
+| 58 — evaluation and evolution | 55 | fixed evaluators and human-approved improvement rollout |
 
 ## Blockers
 
@@ -197,6 +206,12 @@ approval.
 | _(none)_ | | The audit's P0s (BUG-004–007, TD-009) closed in Phases 17–18; open now: ENH-005–008 (P2–P3) — see the backlog |
 
 ## Next Actions
+
+**Current action:** use this repository only for urgent, generic maintenance of the released
+Python/LangGraph line. Start native Phase 46 only from the canonical `shadow` specifications after
+its ordinary brainstorm/start gates. The numbered list below is the prior release-operations
+handoff (2026-09-20), retained for audit; its external CI/billing state needs a fresh check before
+use.
 
 1. **GitHub billing** — fix it, then `gh run rerun 35470259560` (CI on the release commit) and the `v0.34.0` GitHub release (it triggers the publish workflow: the kit and the helper's wheels, PyPI, the smoke). Until then the tag can stand and `uv publish` from the laptop with the owner's token is the fallback
 2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket

@@ -4,9 +4,13 @@ type: Architecture
 
 # The shape in one page
 
+> **Implementation view:** this page describes the Python/LangGraph system. The approved native
+> direction and both discussion diagrams are preserved in [Shadow — target native architecture](native-foundation.md).
+> Epic 0010 records the superseding decisions; target architecture is not a claim of shipped Rust support.
+
 > The design is `intent-ecosystem/vision/09-the-agentic-system.md`. This directory is that document
 > made buildable: what the packages are, what the classes are, what the functions do, and how it is
-> tested. Where the two disagree, `09` wins until an ADR says otherwise.
+> tested. D142–D152 now amend the future native direction; this page remains the implementation view.
 
 ## Three packages, arrows pointing one way
 
