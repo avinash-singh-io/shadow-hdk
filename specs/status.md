@@ -4,8 +4,9 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-21 — documentation ownership transferred; latest recorded code version
-> **v0.34.1**. **Current Phase**: none. This repository is the maintenance-supported
+> **Last Updated**: 2026-09-30 — v0.34.2 at the gate (BUG-226/227/228 from lane P's walk of the
+> installed app); documentation ownership transferred; latest recorded code version
+> **v0.34.2**. **Current Phase**: none. This repository is the maintenance-supported
 > Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
 > with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
 > [native architecture](../../shadow/specs/architecture/native-foundation.md) and
@@ -139,6 +140,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| v0.34.2 | 2026-09-30 | quick-task | BUG-226 — an address is a command, never a command line: nothing splits `ToolSource.address` on any transport, so a kit installed inside an application bundle (`/Applications/Intent Studio.app/…`) hands its CLI a relay that starts, where before the CLI was launched as `/Applications/Intent` and ran with no tools at all; the relay is resolved beside the running interpreter before `PATH`. BUG-227 — the ACP transport carries the registry's port and token to the relay it launches, which it had been dropping (`env=[]`), so a governed OpenCode had no tools for a second, independent reason. BUG-228 — a parked call is reported as a fact about the call, not an instruction a model can read back to the person, and a parked turn's own text is no longer that agent-facing note. All three measured by lane P on an installed 0.6.10; a kit-only reproduction for the first. No contract change. |
 | v0.34.1 | 2026-09-20 | quick-task | BUG-062 — a fork is a fresh provider session seeded with the transcript (D139's move after `session_gone` works; `rollback`'s `seeded_turns` is finally true); BUG-063 — a thread turn's cache tokens reach `Spent` (the step→meter join and `settle` carry them). Both measured by lane P on 0.34.0 with kit-only reproductions. No contract change. |
 | v0.32.1 | 2026-09-19 | quick-task | BUG-056 — a change that reopens the provider is refused during a turn, typed (`turn_running`); the turn lock held across the change |
 | v0.25.3 | 2026-09-13 | patch | BUG-034 the mode in `harness.toml`/`--mode`/`Harness(mode=)` is a mode id (`ask` included), refused by name at open; `requires` refuses an unknown environment name; the architecture specs synced to the tree |
