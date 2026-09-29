@@ -4,8 +4,8 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-30 — v0.34.2 at the gate (BUG-226/227/228 from lane P's walk of the
-> installed app); documentation ownership transferred; latest recorded code version
+> **Last Updated**: 2026-09-30 — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
+> installed app; tagged and on `main`, the gate run locally — GitHub Actions still refusing jobs); documentation ownership transferred; latest recorded code version
 > **v0.34.2**. **Current Phase**: none. This repository is the maintenance-supported
 > Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
 > with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
