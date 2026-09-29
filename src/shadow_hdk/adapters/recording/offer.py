@@ -10,8 +10,10 @@ and the token in its environment (D42, D44, D52).
 from __future__ import annotations
 
 import shutil
+import sys
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from pydantic import JsonValue
 
@@ -29,16 +31,34 @@ RELAY = "shadow-hdk-registry"
 """The console script a CLI launches when it thinks it is starting an MCP server."""
 
 
+def _where_the_relay_is() -> str:
+    """The kit's own console script, by its whole path.
+
+    **Beside the running interpreter first** (BUG-226): a console script is installed next to the
+    interpreter of the environment it was installed into, so this is the kit's own copy by
+    construction. A `PATH` lookup answers for whatever environment the *host process* was started
+    with, which inside a packaged application is a different one — and inside an application
+    bundle the answer contains a space.
+
+    `PATH` stays as the fallback for a kit imported from a source tree, and the bare name as the
+    last resort, so a child that can find it on its own still can.
+    """
+    beside = Path(sys.executable).parent / RELAY
+    if beside.exists():
+        return str(beside)
+    return shutil.which(RELAY) or RELAY
+
+
 def relay_source(port: int, token: str) -> ToolSource:
     """Where the provider's tools are — ours, behind the relay, with the token (D52).
 
     The relay must be on the path the *child* will search, not merely on ours: it is launched by
-    the CLI, in the environment we hand the CLI.
+    the CLI, in the environment we hand the CLI. So it is named by its whole path, and that path
+    is never split by whoever spells it for a CLI (BUG-226).
     """
-    found = shutil.which(RELAY)
     return ToolSource(
         kind="mcp",
-        address=found or RELAY,
+        address=_where_the_relay_is(),
         env=((PORT_VARIABLE, str(port)), (TOKEN_VARIABLE, token)),
     )
 

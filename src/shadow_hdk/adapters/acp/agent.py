@@ -17,7 +17,6 @@ Three things it owns, each because Phase 2 measured that somebody had to:
 from __future__ import annotations
 
 import asyncio
-import shlex
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -63,10 +62,18 @@ def mcp_servers_from(tools: Sequence[ToolSource]) -> list[Any]:
     for source in tools:
         match source.kind:
             case "mcp":
-                command, *arguments = shlex.split(source.address)
+                # The address is the command, whole (BUG-226) — a path with a space in it is a
+                # path, not two words — and the port and the token travel with it (BUG-227):
+                # they exist only on the `ToolSource`, so a relay launched without them starts
+                # and has nothing to relay to.
                 made.append(
                     schema.McpServerStdio(
-                        name="shadow-hdk", command=command, args=list(arguments), env=[]
+                        name="shadow-hdk",
+                        command=source.address,
+                        args=[],
+                        env=[
+                            schema.EnvVariable(name=name, value=value) for name, value in source.env
+                        ],
                     )
                 )
             case "mcp-http":
