@@ -7,7 +7,7 @@ type: Ad-hoc Record
 > **Created**: 2026-09-30
 > **Branch**: fix/BUG-226-228-the-relay-reaches-the-child
 > **Backlog**: BUG-226, BUG-227, BUG-228
-> **Status**: at the gate
+> **Status**: shipped — v0.34.2, tagged 2026-09-30
 
 Three defects from lane P's walk of the **installed** Intent Studio 0.6.10 (bundling 0.34.1) on
 macOS, plus one found in the kit while proving the first. Two of them have the same outcome — a
