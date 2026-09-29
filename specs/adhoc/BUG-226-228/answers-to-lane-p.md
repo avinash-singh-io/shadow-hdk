@@ -195,10 +195,17 @@ between steps is ours and so is the one place it could be true. ENH-046 (P2).
 ### 10. A root's own instruction files — **deliberately off, and the other half is missing.**
 ENH-047 (P2).
 
-Your measurement is already done, on 2026-09-12 under ENH-012: with a sentinel `CLAUDE.md` in the
+Your measurement was done under ENH-012 on 2026-09-12: with a sentinel `CLAUDE.md` in the
 workspace the model quoted it, and with `--setting-sources ""` the sentinel was gone. So **no, a
-governed Claude Code does not read them**, and that is deliberate — a run's instructions should be
+governed Claude Code did not read them**, and that is deliberate — a run's instructions should be
 the mode's behaviour, not a file someone left in a folder for a different tool. That default stays.
+
+**One caveat on that measurement, and it is yours to weigh.** It was taken against claude
+**2.1.235**; you are on **2.1.284**. `--setting-sources ""` is the CLI's own documented switch and
+we have no reason to think it moved, but that is a long gap to assume across — and BUG-031 is the
+precedent, where a later CLI shipped a new built-in (`Monitor`) that the deny list written for an
+earlier one did not name. If you want it re-measured against the version you actually ship, say so
+and we will run the sentinel test on 2.1.284 rather than infer it.
 
 But you have found the real gap: **the kit never offers them either.** A team convention written
 where the field writes it reaches no provider, and a key-backed model never had them at all. The
