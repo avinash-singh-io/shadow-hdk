@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.35.0"
-"""0.35.0 — the read-class file tools (ENH-041): `glob`, `grep` and `read_file(offset, limit)`
+EXPECTED = "0.36.0"
+"""0.36.0 — a change names a region (ENH-042 in part, ENH-048): `edit_file(path, edits[])`
+replaces regions of a file, all of them or none, refusing an `old` that is absent or that appears
+more than once; `move_file(from, to)` refuses a destination that already exists. Two registrations
+appear in every environment's registry — additions in the published shape, so a **minor** (D9) and
+a *Pins* row; protocol 3 unchanged, no kernel change, and both derive as `write` so every mode
+judges them exactly as it judges `write_file`.
+
+0.35.0 — the read-class file tools (ENH-041): `glob`, `grep` and `read_file(offset, limit)`
 on every environment. Three registrations appear in every environment's registry and `read_file`
 grows two optional arguments and a typed refusal for a range past the end — additions in the
 published shape, so a **minor** (D9) and a *Pins* row; protocol 3 unchanged. `read_file` without a
