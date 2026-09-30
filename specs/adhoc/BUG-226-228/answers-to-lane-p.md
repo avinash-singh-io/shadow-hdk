@@ -295,10 +295,24 @@ already names (Phase 55, canonical in `shadow`).
 6. If you measure `CLAUDE_CONFIG_DIR` against a signed-in subscription, send the result and we will
    ship it as a default.
 
-**On the gate, honestly.** CI is green for both releases — macOS, Landlock, bubblewrap and Python
-3.12/3.13/3.14 (runs `36683781588`, `36684850419`). But no *local* full-suite run of ENH-041 was
-clean: four distinct timing-sensitive tests failed across the runs, two on a loaded laptop and two
-on CI runners, each green on a re-run of the same commit and none of them reachable from the
-change. We filed that as TD-015 rather than shrugging at it — a suite whose red runs mean nothing
-is a suite with no gate — but you should know the shape of the evidence rather than just the word
-"green". Records: `specs/adhoc/BUG-226-228/record.md` and `specs/adhoc/ENH-041/record.md`.
+**On the gate, honestly.** CI is green for all three releases — macOS, Landlock, bubblewrap and
+Python 3.12/3.13/3.14 — and each was verified after publishing by installing from PyPI into a
+clean environment and exercising the new operations there, not only in the test suite.
+
+You should know the shape of that evidence rather than just the word "green". While we were
+building this, **five distinct tests failed on code that could not have caused any of them** — on
+a laptop under load and on CI runners alike, each green on a re-run of the same commit. Two of our
+own releases therefore went out with a gate we had to reason about rather than simply read. We
+have since fixed the cause rather than living with it (TD-015): tests now wait for the condition
+they need instead of for a fixed number of seconds, and the wall-clock latency budget runs where
+the measurement is worth trusting instead of in every local run.
+
+One more, in the same spirit, because it touches something you depend on: the Linux helper's
+wheels were **not reproducible** — the same commit built twice gave different bytes, which we only
+discovered by re-running a publish. That wheel is the confinement mechanism, and a binary nobody
+can rebuild and compare is a binary taken on trust. It is fixed and CI now proves it on every run
+(TD-016). The practical consequence for you is small but worth knowing: **0.36.0's helper wheel is
+the last one that cannot be reproduced**; every release after it can.
+
+Records, if you want the detail: `specs/adhoc/BUG-226-228/record.md`, `specs/adhoc/ENH-041/record.md`,
+`specs/adhoc/ENH-042-a-change-names-a-region/record.md`, `specs/adhoc/TD-015-TD-016/record.md`.
