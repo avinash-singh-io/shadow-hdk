@@ -458,14 +458,14 @@ class Environment(ComponentPort):
                 "empty list would be a whole-file rewrite under another name"
             )
         content = await self._read(path)
-        changed = content
+        edited = content
         for index, edit in enumerate(edits, start=1):
             if not isinstance(edit, dict):
                 return Refused(f"edit {index} is not an object with `old` and `new`")
             old, new = edit.get("old"), edit.get("new")
             if not isinstance(old, str) or not isinstance(new, str):
                 return Refused(f"edit {index} needs `old` and `new`, both strings")
-            found = changed.count(old)
+            found = edited.count(old)
             if found == 0:
                 return Refused(
                     f"edit {index}: {old!r} is not in {path} — nothing was written. The file may "
@@ -477,9 +477,20 @@ class Environment(ComponentPort):
                     "change is not said — nothing was written. Name more of the surrounding "
                     "text so it matches once."
                 )
-            changed = changed.replace(old, new, 1)
-        written = await self._write(path, changed)
-        return _completed({"path": path, "edits": len(edits), "bytes": written})
+            edited = edited.replace(old, new, 1)
+        written = await self._write(path, edited)
+        return _completed(
+            {
+                "path": path,
+                "edits": len(edits),
+                "bytes": written,
+                # The same block a `write_file` carries (ENH-044). `old` and `new` are already on
+                # this call's inputs, so a host could assemble the change itself — but only for an
+                # edit, and a files-changed panel that reads one shape for four operations and a
+                # different one for the fifth is a panel with a bug waiting in it.
+                "change": changed(path, content, edited),
+            }
+        )
 
     async def _relocate(self, source: str, destination: str) -> Observation:
         """Move a file, refusing to overwrite (ENH-042).
@@ -498,6 +509,26 @@ class Environment(ComponentPort):
             )
         await self._move(source, destination)
         return _completed({"from": source, "to": destination})
+
+    async def _prior(self, path: str) -> tuple[str, bool, bool]:
+        """What is at `path` before a write touches it: `(text, existed, readable)`.
+
+        **This never raises** (D155). Capturing what changed is record-keeping, and a write that
+        failed because the record-keeping failed would be the tail wagging the dog — the act the
+        mode admitted and the person approved must still happen. A prior state that cannot be read
+        as text (a binary file, a denied read) comes back marked rather than thrown, and the change
+        says so instead of claiming the file was empty.
+
+        A path the environment will not touch is *also* swallowed here, and safely: this runs
+        before the write, so `_write` raises `OutsideTheRoot` a moment later and the act is refused
+        by the handler that has always refused it. Nothing is written on the strength of this.
+        """
+        try:
+            return await self._read(path), True, True
+        except FileNotFoundError:
+            return "", False, True
+        except Exception:
+            return "", True, False
 
     async def _there(self, path: str) -> bool:
         """Whether something is already at `path`, asked through `_list` so every environment
@@ -650,10 +681,25 @@ class Environment(ComponentPort):
                 case "write_file":
                     if self.mode == "read-only":
                         return Refused("this environment is read-only; a write is not offered")
-                    written = await self._write(
-                        str(arguments.get("path", "")), str(arguments.get("content", ""))
+                    path, content = (
+                        str(arguments.get("path", "")),
+                        str(arguments.get("content", "")),
                     )
-                    return _completed({"path": str(arguments.get("path", "")), "bytes": written})
+                    before, existed, readable = await self._prior(path)
+                    written = await self._write(path, content)
+                    return _completed(
+                        {
+                            "path": path,
+                            "bytes": written,
+                            "change": changed(
+                                path,
+                                before,
+                                content,
+                                created=not existed,
+                                before_unreadable=not readable,
+                            ),
+                        }
+                    )
                 case "edit_file":
                     if self.mode == "read-only":
                         return Refused("this environment is read-only; an edit is not offered")
@@ -667,8 +713,23 @@ class Environment(ComponentPort):
                 case "delete_file":
                     if self.mode == "read-only":
                         return Refused("this environment is read-only; a delete is not offered")
-                    await self._delete(str(arguments.get("path", "")))
-                    return _completed({"deleted": str(arguments.get("path", ""))})
+                    gone = str(arguments.get("path", ""))
+                    # The one act whose own inputs say nothing about what it destroyed: a path,
+                    # and the content on no record anywhere (ENH-044, lane P's item 7).
+                    before, _, readable = await self._prior(gone)
+                    await self._delete(gone)
+                    return _completed(
+                        {
+                            "deleted": gone,
+                            "change": changed(
+                                gone,
+                                before,
+                                "",
+                                deleted=True,
+                                before_unreadable=not readable,
+                            ),
+                        }
+                    )
                 case "run_shell":
                     command = arguments.get("command")
                     if not isinstance(command, str):
@@ -763,6 +824,21 @@ GLOB_LIMIT = 1000
 GREP_LIMIT = 200
 """How many matches a `grep` returns before it says it stopped."""
 
+CHANGE_DIFF_BYTES = 4_096
+"""How much of a change's diff travels on the record (D154, ENH-044).
+
+**One constant, named once.** A cap written into three call sites is three caps, and the first one
+somebody tunes is the one they can find. A host that needs the whole change reads the file; what
+this carries is enough to render a files-changed panel and an approval preview, which is what it
+was asked for.
+
+Why a **diff** rather than the before and after content: lane P settled the shape — content to a
+cap, `truncated` past it, and no per-file version history, because git keeps that for a repository.
+Before-and-after cut at this size shows nothing at all of a small change to a large file; a diff of
+the same change shows all of it. The line counts beside it are computed from the *whole* diff, so
+they stay exact when the text is cut.
+"""
+
 _WALK_CEILING = 50_000
 """A walk this big is a workspace nobody meant to search whole; stop rather than hang."""
 
@@ -831,7 +907,53 @@ def _completed(output: JsonValue) -> Observation:
     return Completed(output)
 
 
+def changed(
+    path: str,
+    before: str,
+    after: str,
+    *,
+    created: bool = False,
+    deleted: bool = False,
+    before_unreadable: bool = False,
+    cap: int = CHANGE_DIFF_BYTES,
+) -> dict[str, JsonValue]:
+    """What a write-class act did to one file, bounded (D154, ENH-044).
+
+    Pure over two strings, so it is testable without a filesystem and identical for every
+    environment — a local root, a sandbox and a remote one all say the same thing about a change.
+
+    `added` and `removed` are counted over the **whole** diff before it is cut, so a host reading
+    `truncated` still learns the true size of what happened. They are `None` only when the prior
+    state could not be read at all, because a count nobody measured must not read as zero — the
+    rule `EffectProfile` set with `ASSUME_WORST` and `Usage` kept for cache tokens (D141).
+    """
+    import difflib
+
+    lines = list(
+        difflib.unified_diff(
+            before.splitlines(keepends=True),
+            after.splitlines(keepends=True),
+            fromfile=f"a/{path}",
+            tofile=f"b/{path}",
+        )
+    )
+    added = sum(1 for line in lines if line.startswith("+") and not line.startswith("+++"))
+    removed = sum(1 for line in lines if line.startswith("-") and not line.startswith("---"))
+    diff = "".join(lines)
+    over = len(diff) > cap
+    return {
+        "diff": diff[:cap] if over else diff,
+        "truncated": over,
+        "added": None if before_unreadable else added,
+        "removed": None if before_unreadable else removed,
+        "created": created,
+        "deleted": deleted,
+        "before_unreadable": before_unreadable,
+    }
+
+
 __all__ = [
+    "CHANGE_DIFF_BYTES",
     "GLOB_LIMIT",
     "GREP_LIMIT",
     "MODES",
@@ -847,6 +969,7 @@ __all__ = [
     "OutsideTheRoot",
     "effects_of",
     "capabilities_of",
+    "changed",
     "requires",
 ]
 

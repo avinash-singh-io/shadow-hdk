@@ -165,7 +165,8 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | not started | 0/? |
+| 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | complete, unmerged | 5/5 groups |
+| 60 — the write-class completes (Epic 0011) | `phase-60-the-write-class-completes` | not started | 0/? |
 
 ## Epic Release Checkpoints
 

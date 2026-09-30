@@ -135,9 +135,13 @@ async def test_a_relative_root_is_resolved_before_the_proof(
     )
     assert env.isolation.proven
     assert env.roots[0].path == str((tmp_path / "finance").resolve())
-    assert await env.invoke("write_file", {"path": "sales/x.txt", "content": "x"}) == Completed(
-        {"path": "sales/x.txt", "bytes": 1}
-    )
+    # What this test is about is the *root*, so it asserts on the path and the bytes rather than
+    # on the whole result: since ENH-044 a write also carries the change it made.
+    wrote = await env.invoke("write_file", {"path": "sales/x.txt", "content": "x"})
+    assert isinstance(wrote, Completed) and isinstance(wrote.output, dict)
+    assert wrote.output["path"] == "sales/x.txt"
+    assert wrote.output["bytes"] == 1
+    assert (tmp_path / "sales" / "x.txt").read_text() == "x", "and it landed under the right root"
 
 
 async def test_another_roots_name_wins_and_the_primarys_name_is_not_an_address(
