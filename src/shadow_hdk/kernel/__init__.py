@@ -123,6 +123,7 @@ from shadow_hdk.kernel.ports import (
     Refuse,
     RunStore,
     SinkPort,
+    Snapshot,
     Store,
     ThreadStore,
     ToolCall,
@@ -130,6 +131,7 @@ from shadow_hdk.kernel.ports import (
     Turn,
     TurnChunk,
     Usage,
+    WorkspaceHistoryPort,
 )
 from shadow_hdk.kernel.providers import (
     Behaviour,
@@ -263,6 +265,8 @@ __all__ = [
     "ScopeSet",
     "Sequence",
     "SinkPort",
+    "Snapshot",
+    "WorkspaceHistoryPort",
     "Held",
     "Spawned",
     "UsageReported",

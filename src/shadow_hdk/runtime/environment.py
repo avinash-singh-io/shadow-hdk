@@ -55,7 +55,7 @@ from shadow_hdk.kernel.components import (
 )
 from shadow_hdk.kernel.effects import EffectProfile, ScopeSet
 from shadow_hdk.kernel.observations import Failed, Observation, Refused
-from shadow_hdk.kernel.ports import ComponentPort
+from shadow_hdk.kernel.ports import ComponentPort, WorkspaceHistoryPort
 from shadow_hdk.kernel.workspace import Root, Workspace
 
 Mode = Literal["read-only", "workspace-write", "full"]
@@ -269,6 +269,30 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
         ["path", "edits"],
     ),
     (
+        "checkpoint",
+        "write",
+        "Capture the workspace as it is now, so it can be put back with `restore`. Returns a "
+        "snapshot name. Holds what version control would track; ignored files are not captured.",
+        {"label": {"type": "string", "description": "What to call it, for a person reading back."}},
+        [],
+    ),
+    (
+        "restore",
+        "delete",
+        "Put the workspace back to a snapshot: content as it was, files created since removed, "
+        "files deleted since brought back. Ignored files are left exactly as they are. **This "
+        "overwrites work that is on no snapshot.**",
+        {"snapshot": {"type": "string", "description": "A name `checkpoint` gave you."}},
+        ["snapshot"],
+    ),
+    (
+        "list_checkpoints",
+        "list",
+        "The snapshots taken of this workspace, newest first.",
+        {},
+        [],
+    ),
+    (
         "run_background",
         "run",
         "Start a long-running command and return immediately with a job name — a dev server, a "
@@ -437,6 +461,11 @@ class Environment(ComponentPort):
         self._at = at
         self._requirements = requirements
         self._jobs: dict[str, _Job] = {}
+        self.history: WorkspaceHistoryPort | None = None
+        """How this workspace is captured and put back (D161), or `None` where it cannot be.
+        A product reaches this **directly** for its own per-turn checkpoints: that is the
+        host's own act, not the agent's, and judging it would make an automatic checkpoint
+        a question nobody wants asked (D162)."""
         """Background jobs this environment owns (D157). `close()` ends every one."""
 
     @property
@@ -653,6 +682,50 @@ class Environment(ComponentPort):
         for job in list(self._jobs.values()):
             job.end()
         self._jobs.clear()
+
+    # ------------------------------------------------------- undo (D161-D163)
+
+    def _no_history(self) -> Observation:
+        """The refuse-not-crash default this project requires of every port (project-rules)."""
+        return Refused(
+            "this environment has no history, so nothing can be captured or put back here — "
+            "a git work tree has one, and a product may supply a WorkspaceHistoryPort of its own"
+        )
+
+    async def _checkpoint(self, label: str) -> Observation:
+        if self.history is None:
+            return self._no_history()
+        try:
+            taken = await self.history.snapshot(label)
+        except Exception as cannot:
+            return Refused(f"nothing was captured: {cannot}")
+        return _completed({"snapshot": taken, "label": label})
+
+    async def _restore(self, snapshot: str) -> Observation:
+        """Put the workspace back — **itself an act** (D163), judged before it runs like any
+        other, because an undo that bypassed governance would be a hole."""
+        if self.history is None:
+            return self._no_history()
+        if not snapshot:
+            return Refused("a restore needs `snapshot`, a name `checkpoint` gave you")
+        try:
+            await self.history.restore(snapshot)
+        except Exception as cannot:
+            # Refused, not Failed: a name that is not one of ours reads to a model as *not that
+            # one*, where a failure reads as *the kit broke* and invites a retry.
+            return Refused(f"nothing was restored: {cannot}")
+        return _completed({"restored": snapshot})
+
+    async def _checkpoints(self) -> Observation:
+        if self.history is None:
+            return self._no_history()
+        try:
+            found = await self.history.snapshots()
+        except Exception as cannot:
+            return Refused(f"the snapshots could not be listed: {cannot}")
+        return _completed(
+            {"snapshots": [{"id": s.id, "label": s.label, "at": s.at} for s in found]}
+        )
 
     async def _prior(self, path: str) -> tuple[str, bool, bool]:
         """What is at `path` before a write touches it: `(text, existed, readable)`.
@@ -878,6 +951,18 @@ class Environment(ComponentPort):
                             ),
                         }
                     )
+                case "checkpoint":
+                    if self.mode == "read-only":
+                        return Refused(
+                            "this environment is read-only; a checkpoint writes and is not offered"
+                        )
+                    return await self._checkpoint(str(arguments.get("label", "") or ""))
+                case "restore":
+                    if self.mode == "read-only":
+                        return Refused("this environment is read-only; a restore is not offered")
+                    return await self._restore(str(arguments.get("snapshot", "") or ""))
+                case "list_checkpoints":
+                    return await self._checkpoints()
                 case "run_background":
                     if self.mode == "read-only":
                         return Refused(
