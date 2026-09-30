@@ -66,10 +66,10 @@ jobs:
       # run in this repository's history failed on precisely that and nothing else.
       - name: tests, with the runtime's coverage floor
         run: >
-          uv run pytest -q --ignore=tests/runtime/test_benchmark.py
+          uv run pytest -q
           --cov=shadow_hdk.runtime --cov-report=term-missing --cov-fail-under=90
       - name: the latency budget, measured and printed
-        run: uv run pytest tests/runtime/test_benchmark.py -q -s
+        run: uv run pytest -m benchmark -q -s
 
   # The fallback, proven the same way (Epic 0010, D133): the helper set aside by name, bubblewrap
   # installed, and the AppArmor restriction Ubuntu 24.04 ships lifted — the sysctl a machine
@@ -90,7 +90,7 @@ jobs:
       - run: uv sync --all-extras
       - name: bubblewrap is the mechanism in force, the helper set aside
         run: uv run python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'bubblewrap', s; print(s)"
-      - run: uv run pytest -q --ignore=tests/runtime/test_benchmark.py
+      - run: uv run pytest -q
 
   # macOS on seatbelt: the same suite, the same proof, the other operating system the kit claims
   # (D126). No Postgres service here — its contract suites skip and say so; the TypeScript proofs
@@ -112,7 +112,7 @@ jobs:
       - run: uv sync --all-extras
       - name: seatbelt is the mechanism in force
         run: uv run python -c "from shadow_hdk.adapters.environment import local_sandbox; s = local_sandbox(); assert s is not None and s.name == 'seatbelt', s; print(s)"
-      - run: uv run pytest -q --ignore=tests/runtime/test_benchmark.py
+      - run: uv run pytest -q
 
   # The helper's platform wheels, built on every push so a release never finds out the matrix
   # broke (one definition, `helper-wheels.yml`, shared with `publish`).

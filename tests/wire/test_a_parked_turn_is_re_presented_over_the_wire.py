@@ -32,6 +32,7 @@ from shadow_hdk.runtime.testing import (
 from shadow_hdk.runtime.threads import Thread
 from shadow_hdk.serve.stores import Stores, stores_for
 from shadow_hdk.wire.sides import loopback
+from tests.waiting import pending_on
 
 pytestmark = pytest.mark.anyio
 
@@ -177,7 +178,11 @@ async def _park_then_die(where: Path, image: Path) -> str:
             )
             try:
                 await asyncio.wait_for(asked.wait(), 30)
-                await asyncio.sleep(0.05)
+                # The record's save is a separate write from the question reaching the client,
+                # so imaging the store the moment the notification lands races it. A loaded
+                # bubblewrap runner lost that race and the resumed turn read `cancelled` rather
+                # than `parked` (TD-015).
+                await pending_on(host.stores.threads, thread_id)
                 shutil.copytree(where, image)
             finally:
                 turning.cancel()

@@ -139,12 +139,21 @@ testpaths = ["tests"]
 xfail_strict = true
 # Live-provider tests cost money, so they are deselected by default and opted into with
 # `uv run pytest -m live`. A normal run — and CI — calls nobody.
-addopts = "-m 'not live'"
+#
+# The latency budget (D11) is deselected for a different reason (TD-015): it asserts on wall-clock
+# time, so a loaded machine fails it while the code is fine — and a red run that means "your laptop
+# is busy" teaches you to stop reading red runs. **It is still a gate**: CI runs `-m benchmark` as
+# its own step on a quiet runner and a regression past the budget fails there, which is what Rule
+# 13 asks for. Locally: `uv run pytest -m benchmark`.
+addopts = "-m 'not live and not benchmark'"
 # **No test may hang.** This suite drives subprocesses — MCP servers, sandboxes, ACP agents — and
 # several of them exist to prove that something *stops*. A hang is a worse failure than a red test:
 # it stalls CI and it teaches you to stop reading the output. Sixty seconds is far above anything
 # healthy here (the whole suite runs in under twenty) and far below "nobody noticed".
 timeout = 60
-markers = ["live: calls a real provider; costs money; opt in with -m live"]
+markers = [
+    "live: calls a real provider; costs money; opt in with -m live",
+    "benchmark: asserts on wall-clock time; opt in with -m benchmark; CI runs it on a quiet runner",
+]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

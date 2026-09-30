@@ -24,6 +24,18 @@ jobs:
             libc: musllinux_1_2
           - target: aarch64
             libc: musllinux_1_2
+    # **Reproducible on purpose** (TD-016). This wheel *is* the confinement mechanism, and a binary
+    # nobody can rebuild and compare is a binary taken on trust. Two settings do the work:
+    # `SOURCE_DATE_EPOCH` fixes the zip's timestamps (otherwise every build differs by the clock),
+    # and `--remap-path-prefix` keeps the runner's absolute build directory out of the binary.
+    # `codegen-units=1` removes the last source of ordering noise, at some build time.
+    #
+    # Found the hard way: re-running the publish for an already-released 0.35.0 reported
+    # `Local file and index file do not match … Local: sha256=f5feb9d1…, Remote: sha256=ce9cc713…`
+    # for the same commit, same container.
+    env:
+      SOURCE_DATE_EPOCH: "1700000000"
+      RUSTFLAGS: "--remap-path-prefix=/home/runner/work/shadow-hdk/shadow-hdk=/src -C codegen-units=1"
     steps:
       - uses: actions/checkout@v4
       - uses: PyO3/maturin-action@v1
@@ -33,6 +45,10 @@ jobs:
           manylinux: ${{ matrix.libc }}
           command: build
           args: --release --out dist
+          # The build happens inside the manylinux container, and the job's env does not cross
+          # into it on its own — without this the determinism settings above apply to the runner
+          # and not to the compiler that actually produces the binary.
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
       - name: one wheel, tagged for the platform and no Python version
         run: |
           ls native/sandbox/dist
@@ -42,6 +58,45 @@ jobs:
         with:
           name: helper-${{ matrix.target }}-${{ matrix.libc }}
           path: native/sandbox/dist/*.whl
+
+  # The claim above, checked rather than asserted: build the same commit twice and compare. One
+  # target is enough to catch non-determinism — it is a property of the toolchain and the flags,
+  # not of the architecture — and one is what the build time is worth.
+  reproducible:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_DATE_EPOCH: "1700000000"
+      RUSTFLAGS: "--remap-path-prefix=/home/runner/work/shadow-hdk/shadow-hdk=/src -C codegen-units=1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native/sandbox
+          target: x86_64
+          manylinux: manylinux_2_17
+          command: build
+          args: --release --out first
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native/sandbox
+          target: x86_64
+          manylinux: manylinux_2_17
+          command: build
+          args: --release --out second
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
+      - name: the same commit twice is the same bytes
+        run: |
+          one=$(sha256sum native/sandbox/first/*.whl | cut -d' ' -f1)
+          two=$(sha256sum native/sandbox/second/*.whl | cut -d' ' -f1)
+          echo "first  $one"
+          echo "second $two"
+          if [ "$one" != "$two" ]; then
+            echo "::error::the helper's wheel is not reproducible — the same commit built twice"
+            echo "::error::gave different bytes, so nobody can check a published wheel against"
+            echo "::error::its source. This wheel is the confinement mechanism (TD-016)."
+            exit 1
+          fi
 
   sdist:
     runs-on: ubuntu-latest
