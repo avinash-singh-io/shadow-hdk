@@ -27,6 +27,7 @@ second environment never has to import the first, and rule 4 stays a property ra
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -225,9 +226,50 @@ def effects_of(isolation: Isolation, mode: Mode, operation: Operation) -> Effect
 
 _PATH: dict[str, JsonValue] = {"type": "string", "description": "A path inside the environment."}
 
+_LIMIT: dict[str, JsonValue] = {
+    "type": "integer",
+    "description": "At most this many results. A trimmed result says so.",
+}
+
 OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], ...] = (
-    ("read_file", "read", "Read a text file.", {"path": _PATH}, ["path"]),
+    (
+        "read_file",
+        "read",
+        "Read a text file, or a range of its lines with `offset` (the first line, counting from "
+        "1) and `limit` (how many).",
+        {
+            "path": _PATH,
+            "offset": {"type": "integer", "description": "First line to read, counting from 1."},
+            "limit": {"type": "integer", "description": "How many lines to read."},
+        },
+        ["path"],
+    ),
     ("list_dir", "list", "List a directory. Directories end in a slash.", {"path": _PATH}, []),
+    (
+        "glob",
+        "list",
+        "Find files by a path pattern — `*` within one segment, `**` across segments, `?` one "
+        "character. Files only; paths come back relative to the workspace root.",
+        {
+            "pattern": {"type": "string", "description": "A glob, e.g. `**/*.py`."},
+            "path": {"type": "string", "description": "Where to start. Default: the root."},
+            "limit": _LIMIT,
+        },
+        ["pattern"],
+    ),
+    (
+        "grep",
+        "read",
+        "Search file contents for a regular expression. Each match gives its path, its line "
+        "number and the line.",
+        {
+            "pattern": {"type": "string", "description": "A regular expression."},
+            "path": {"type": "string", "description": "Where to start. Default: the root."},
+            "glob": {"type": "string", "description": "Only search files matching this glob."},
+            "limit": _LIMIT,
+        },
+        ["pattern"],
+    ),
     (
         "write_file",
         "write",
@@ -251,14 +293,22 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
         ["source"],
     ),
 )
-"""The six operations every environment offers, whatever it is made of."""
+"""The operations every environment offers, whatever it is made of.
+
+`glob` and `grep` derive from `list` and `read` (ENH-041), so they are **read-class**: their
+profiles carry no writes and the shipped `ask` mode does not stop a person for them. That is the
+point of them — a search that asks permission is a search nobody runs, and without one every
+search was a `run_shell`, which `ask` rightly does stop."""
 
 
 class Environment(ComponentPort):
-    """The shape every environment has: five operations, one derivation, one mode.
+    """The shape every environment has: the operations, one derivation, one mode.
 
     A subclass supplies the mechanism — `_read`, `_write`, `_list`, `_run` — and its `Isolation`.
-    This class supplies everything else: the registrations with their derived profiles, the mode
+    Search is **not** among them: `glob` and `grep` are built here on `_list` and `_read`, so every
+    environment gains them at once and none has to implement anything (an adapter with something
+    faster may override `_glob`/`_grep`; none has to). This class supplies everything else: the
+    registrations with their derived profiles, the mode
     check at construction, and the refusal of a write in `read-only` **before** governance is
     asked, because a mode is the environment's own promise and not one it outsources.
     """
@@ -352,6 +402,80 @@ class Environment(ComponentPort):
         self.mode = wanted_mode
         self.isolation = isolation
 
+    # ------------------------------------------------------- search, over the primitives
+
+    async def _walk(self, start: str) -> list[str]:
+        """Every file under `start`, as paths relative to the root, sorted.
+
+        Built on `_list` alone, so **no environment has to implement anything** for search to
+        work — a sandbox, a remote root and a local directory all gain it at once. An adapter
+        that can do better (a real `find`, an index) can override `_glob` and `_grep`; none has
+        to. `_list` failing on one directory skips that directory rather than the walk: a tree
+        with one unreadable corner still searches.
+        """
+        base = "" if start in ("", ".") else start.strip("/")
+        found: list[str] = []
+        pending = [base]
+        seen: set[str] = set()
+        while pending:
+            here = pending.pop()
+            if here in seen or len(found) > _WALK_CEILING:
+                continue
+            seen.add(here)
+            try:
+                entries = await self._list(here or ".")
+            except Exception:
+                continue  # an unreadable directory is not a failed search
+            for entry in entries:
+                joined = f"{here}/{entry}" if here else entry
+                if entry.endswith("/"):
+                    pending.append(joined.rstrip("/"))
+                else:
+                    found.append(joined)
+        return sorted(found)
+
+    async def _glob(self, pattern: str, start: str, limit: int) -> Observation:
+        if not pattern:
+            return Refused("a glob needs a pattern; `**/*.py` finds every Python file")
+        base = "" if start in ("", ".") else start.strip("/")
+        matcher = _glob_matcher(pattern)
+        # Matched **relative to where the search started**, returned relative to the root: the
+        # pattern is about the shape of the tree under `path`, and a path is one vocabulary.
+        hits = [
+            found
+            for found in await self._walk(start)
+            if matcher.match(found[len(base) + 1 :] if base else found)
+        ]
+        if len(hits) > limit:
+            trimmed: list[JsonValue] = list(hits[:limit])
+            return _completed({"paths": trimmed, "truncated": True, "found": len(hits)})
+        return _completed(list(hits))
+
+    async def _grep(self, pattern: str, start: str, only: JsonValue, limit: int) -> Observation:
+        if not pattern:
+            return Refused("a grep needs a pattern; it is a regular expression")
+        try:
+            wanted = re.compile(pattern)
+        except re.error as bad:
+            return Refused(f"{pattern!r} is not a regular expression: {bad}")
+        base = "" if start in ("", ".") else start.strip("/")
+        narrowing = _glob_matcher(str(only)) if isinstance(only, str) and only else None
+        matches: list[JsonValue] = []
+        for found in await self._walk(start):
+            relative = found[len(base) + 1 :] if base else found
+            if narrowing is not None and not narrowing.match(relative):
+                continue
+            try:
+                content = await self._read(found)
+            except Exception:
+                continue  # binary, or gone since the walk: skip the file, keep the search
+            for number, line in enumerate(content.splitlines(), start=1):
+                if wanted.search(line):
+                    matches.append({"path": found, "line": number, "text": line})
+                    if len(matches) >= limit:
+                        return _completed({"matches": matches, "truncated": True})
+        return _completed(matches)
+
     # ------------------------------------------------------------------ the port
 
     async def registrations(self) -> Sequence[Registration]:
@@ -383,7 +507,21 @@ class Environment(ComponentPort):
         try:
             match registration:
                 case "read_file":
-                    return _completed(await self._read(str(arguments.get("path", ""))))
+                    whole = await self._read(str(arguments.get("path", "")))
+                    return _ranged(whole, arguments.get("offset"), arguments.get("limit"))
+                case "glob":
+                    return await self._glob(
+                        str(arguments.get("pattern", "")),
+                        str(arguments.get("path", "") or "."),
+                        _as_limit(arguments.get("limit"), GLOB_LIMIT),
+                    )
+                case "grep":
+                    return await self._grep(
+                        str(arguments.get("pattern", "")),
+                        str(arguments.get("path", "") or "."),
+                        arguments.get("glob"),
+                        _as_limit(arguments.get("limit"), GREP_LIMIT),
+                    )
                 case "list_dir":
                     listed: list[JsonValue] = list(
                         await self._list(str(arguments.get("path", "") or "."))
@@ -489,6 +627,74 @@ class OutsideTheRoot(Exception):
     """A path the environment will not touch, and why."""
 
 
+GLOB_LIMIT = 1000
+"""How many paths a `glob` returns before it says it stopped."""
+
+GREP_LIMIT = 200
+"""How many matches a `grep` returns before it says it stopped."""
+
+_WALK_CEILING = 50_000
+"""A walk this big is a workspace nobody meant to search whole; stop rather than hang."""
+
+
+def _as_limit(given: JsonValue, fallback: int) -> int:
+    """A caller's limit, or the default. A nonsense one is the default rather than a refusal:
+    a search is not the place to argue about an argument."""
+    if isinstance(given, bool) or not isinstance(given, int) or given < 1:
+        return fallback
+    return min(given, fallback)
+
+
+def _glob_matcher(pattern: str) -> re.Pattern[str]:
+    """A glob as a regular expression, with `**` crossing separators and `*` not.
+
+    `fnmatch` is no good here: its `*` matches `/` too, so `src/*.py` would find
+    `src/deep/c.py`. The distinction between "in this directory" and "anywhere below" is the
+    whole of what a caller means by `*` versus `**`.
+    """
+    out = ["(?s:"]
+    i = 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif pattern.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    out.append(r")\Z")
+    return re.compile("".join(out))
+
+
+def _ranged(whole: str, offset: JsonValue, limit: JsonValue) -> Observation:
+    """A file, or the lines a caller asked for (ENH-041).
+
+    Neither given, this is `read_file` exactly as it always was: the whole file, a plain string.
+    A range past the end is **refused, naming the line count** — an empty string would read to a
+    model as a file with nothing in it, and it would stop looking.
+    """
+    if offset is None and limit is None:
+        return _completed(whole)
+    lines = whole.splitlines(keepends=True)
+    first = offset if isinstance(offset, int) and not isinstance(offset, bool) else 1
+    if first < 1:
+        return Refused(f"offset {first} is not a line number; lines count from 1")
+    if first > len(lines):
+        return Refused(f"offset {first} is past the end of the file, which has {len(lines)} lines")
+    how_many = limit if isinstance(limit, int) and not isinstance(limit, bool) else 0
+    start = first - 1
+    chosen = lines[start:] if how_many < 1 else lines[start : start + how_many]
+    return _completed("".join(chosen))
+
+
 def _completed(output: JsonValue) -> Observation:
     from shadow_hdk.kernel.observations import Completed
 
@@ -496,6 +702,8 @@ def _completed(output: JsonValue) -> Observation:
 
 
 __all__ = [
+    "GLOB_LIMIT",
+    "GREP_LIMIT",
     "MODES",
     "mode_named",
     "resolved",
