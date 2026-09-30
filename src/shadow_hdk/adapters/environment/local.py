@@ -394,6 +394,14 @@ class LocalEnvironment(Environment):
     async def _delete(self, path: str) -> None:
         self.inside(path).unlink()
 
+    async def _move(self, source: str, destination: str) -> None:
+        """A rename, not a copy: atomic within a filesystem, and it carries bytes this surface's
+        text round-trip could not. The destination is already known not to exist — `_relocate`
+        refuses before reaching here — so replacing cannot destroy anything."""
+        target = self.inside(destination)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        self.inside(source).replace(target)
+
     async def _list(self, path: str) -> list[str]:
         where = self.inside(path)
         return sorted(f"{p.name}/" if p.is_dir() else p.name for p in where.iterdir())
