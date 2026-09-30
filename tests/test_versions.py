@@ -18,8 +18,14 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.34.2"
-"""0.34.2 — a patch (D9): a relay path with a space in it is no longer split into a command and
+EXPECTED = "0.35.0"
+"""0.35.0 — the read-class file tools (ENH-041): `glob`, `grep` and `read_file(offset, limit)`
+on every environment. Three registrations appear in every environment's registry and `read_file`
+grows two optional arguments and a typed refusal for a range past the end — additions in the
+published shape, so a **minor** (D9) and a *Pins* row; protocol 3 unchanged. `read_file` without a
+range is byte-for-byte what it was. The Linux helper moves with it (lockstep) though unchanged.
+
+0.34.2 — a patch (D9): a relay path with a space in it is no longer split into a command and
 its arguments, on any transport, so a governed CLI inside an application bundle has its tools
 (BUG-226); the ACP transport carries the registry's port and token to the relay it launches
 (BUG-227); a parked call is reported as a fact about the call rather than as an instruction a
