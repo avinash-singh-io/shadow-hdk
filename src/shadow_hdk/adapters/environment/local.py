@@ -55,7 +55,8 @@ from shadow_hdk.runtime.environment import (
     requires,
     resolved,
 )
-from shadow_hdk.runtime.leash import run_leashed
+from shadow_hdk.runtime.leash import leashed_env, run_leashed
+from shadow_hdk.runtime.processes import start_held
 
 PROBE_TIMEOUT_S = 20.0
 
@@ -415,6 +416,22 @@ class LocalEnvironment(Environment):
             output_limit=self._output_limit,
             on_output=output_activity(),
         )
+
+    async def _start_job(self, argv: list[str]) -> Any:
+        """A background job, inside the same box as a foreground command (D157).
+
+        Wrapped by the sandbox exactly as `_run` wraps, because a job that escaped confinement by
+        being long-lived would be a hole a mode never admitted. Held as a session leader through
+        the one door `start_held` is (D35/D53), so `end_the_group` ends its whole tree — `npm run
+        dev` is a shell *and* a node, and killing only the shell is BUG-019's shape.
+
+        No timeout: outliving the step is the point. What bounds it is the environment's life.
+        """
+        wrapped = self._box.wrap(argv, root=self.workspace, mode=self.mode) if self._box else argv
+        return await start_held(*wrapped, cwd=self.root, env=leashed_env(self.root))
+
+    def _output_cap(self) -> int:
+        return self._output_limit
 
 
 def _any(value: Any) -> Any:  # pragma: no cover — typing helper

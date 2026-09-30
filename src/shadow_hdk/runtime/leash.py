@@ -108,6 +108,19 @@ def _limit_memory(pid: int, megabytes: int) -> None:
         resource.prlimit(pid, resource.RLIMIT_AS, (limit, limit))
 
 
+def leashed_env(cwd: Path) -> dict[str, str]:
+    """The environment a command the harness starts is given: only `KEPT_ENV`, and a `TMPDIR`
+    inside the root.
+
+    Extracted so a **background** job is given exactly what a foreground one is (D157). A job with
+    a wider environment than the step-bound command beside it would be a hole opened by nothing
+    but a lifetime.
+    """
+    kept = {name: os.environ[name] for name in KEPT_ENV if name in os.environ}
+    kept["TMPDIR"] = str(cwd)
+    return kept
+
+
 async def run_leashed(
     argv: list[str],
     *,
@@ -121,8 +134,7 @@ async def run_leashed(
 
     `on_output` hears each chunk of stdout or stderr as it arrives (D63) — the result is still the
     whole, capped as before; this is the live half beside it."""
-    environment = {name: os.environ[name] for name in KEPT_ENV if name in os.environ}
-    environment["TMPDIR"] = str(cwd)
+    environment = leashed_env(cwd)
     try:
         # A session leader the runtime holds (D35, D53): the whole tree ends at once, and with us.
         process = await start_held(*argv, cwd=cwd, env=environment)
@@ -163,7 +175,7 @@ async def run_leashed(
     )
 
 
-__all__ = ["KEPT_ENV", "MEMORY_LIMIT_ENFORCED", "cap", "run_leashed"]
+__all__ = ["leashed_env", "KEPT_ENV", "MEMORY_LIMIT_ENFORCED", "cap", "run_leashed"]
 
 # ------------------------------------------------------------------ held open
 
