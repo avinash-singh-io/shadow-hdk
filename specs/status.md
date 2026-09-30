@@ -13,9 +13,11 @@ type: Status
 > [roadmap](../../shadow/specs/planning/roadmap.md) are canonical.
 > Completed phases keep their IDs; old planned 34/35/37–40/42/43 are retired through the map.
 > This repository, its packages and imports have **not** been renamed.
-> **GitHub Actions is refusing jobs on this account** (*recent account payments have failed or your
-> spending limit needs to be increased*) since 2026-09-19 21:23 UTC — CI on the release commit and
-> the publish workflow wait on billing.
+> **GitHub Actions runs again** — confirmed green on 2026-09-30 on `main`, `staging` and the
+> `v0.34.2` tag, after refusing jobs since 2026-09-19 21:23 UTC for billing. The kit's 0.34.2 wheel
+> and sdist were published from the laptop while it was refused; the Linux helper's five files were
+> not, so `shadow-hdk-linux-sandbox` is still at 0.34.1 and **0.34.2 does not resolve on Linux**
+> until the publish workflow is re-run (made re-runnable with `--check-url`, 2026-09-30).
 > Historical copies of the future plan remain here for provenance and link continuity, but are not
 > edited as the delivery source. Research and repository strategy are canonical in
 > [`shadow-ecosystem`](../../shadow-ecosystem/README.md). The running implementation remains
