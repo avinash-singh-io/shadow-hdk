@@ -77,10 +77,16 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
           TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
+          # `--check-url` so a re-run is not a failure. The seven files are published as one
+          # set, but they are not always *new* as one set: 0.34.2's kit wheel and sdist went up
+          # from a laptop while Actions was refused for billing, and the helper's five could
+          # not. Without this, the re-run that finishes such a release dies on the two files
+          # that are already there and never reaches the five that are not.
           if [ "$INDEX" = "pypi" ]; then
-            uv publish --token "$PYPI_TOKEN" dist/*
+            uv publish --check-url https://pypi.org/simple/ --token "$PYPI_TOKEN" dist/*
           else
-            uv publish --publish-url https://test.pypi.org/legacy/ --token "$TEST_PYPI_TOKEN" dist/*
+            uv publish --publish-url https://test.pypi.org/legacy/ \
+              --check-url https://test.pypi.org/simple/ --token "$TEST_PYPI_TOKEN" dist/*
           fi
 
   smoke:
