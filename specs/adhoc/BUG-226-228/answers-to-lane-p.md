@@ -11,12 +11,13 @@ Against `intent-ecosystem/handoffs/harness-from-the-desktop-walk-2026-09-30.md`,
 
 | | |
 |---|---|
-| **`shadow-hdk==0.35.0`** | the pin to take. Everything below is in it. |
+| **`shadow-hdk==0.36.0`** | the pin to take. Everything below is in it. |
 | 0.34.2 | the P0 and the parked wording (a patch — no contract moved) |
-| 0.35.0 | ENH-041, the read-class file tools (a minor — additions, a *Pins* row; protocol 3 unchanged) |
+| 0.35.0 | ENH-041, the read-class file tools (a minor — additions, a *Pins* row) |
+| 0.36.0 | `edit_file` and `move_file` — the edit half of item 4 (a minor — additions, a *Pins* row) |
 
-Both are published complete on PyPI — **both distributions, all seven files each**. The Linux
-helper is at 0.35.0 too, so `shadow-hdk==0.35.0` resolves on `manylinux2014` x86_64 **and** aarch64,
+All three are published complete on PyPI — **both distributions, all seven files each**. The Linux
+helper moves in lockstep, so `shadow-hdk==0.36.0` resolves on `manylinux2014` x86_64 **and** aarch64,
 which we verified from outside CI rather than assuming. Your production Linux is covered.
 
 *(If you already pinned 0.34.2 in the hours after we published it: it was briefly unresolvable on
@@ -151,13 +152,31 @@ Two behaviours to build on rather than guess at:
 stop a person for a search.** That was the actual cost of the gap: not that searching was
 impossible, but that it went through `run_shell`, which `ask` rightly does stop.
 
-**ENH-042 — the write-class half — is still open and still a phase.** An exact-string edit, a
-multi-file patch, a background shell with status and kill. The difficulty there is the record, not
-the edit: an edit needs a typed refusal when `old` is absent or ambiguous, and a patch has to be
-atomic across files or the record lies about what happened. No date: this repository is in
-maintenance, and future work starts at Phase 46 in the sibling `shadow` repository. If whole-file
-rewrites are costing you real money or real dropped content, say so and we will weigh carrying a
-narrow slice of it here the way we did ENH-041.
+### And the edit half went too — 0.36.0
+
+You said whole-file rewrites "risk dropping content", and that was the part worth not waiting on.
+
+- **`edit_file(path, edits[])`** — a list of `{old, new}` applied in order, **all of them or none**.
+- **`move_file(from, to)`** — refuses a destination that already exists. Nothing moved a file
+  before; `mv` through `run_shell` is a `run` effect, so it was irreversible *and* it asked.
+
+**The refusals are the design, so build on them.** An `old` that is absent is refused because your
+model's picture of the file is out of date — it should read again, not retry. An `old` that appears
+more than once is refused naming the count, because taking the first is how an agent edits the
+wrong line and reports success. Both refuse **before anything is written**, so a failed edit leaves
+the file that was there. There is no `replace_all`: replacing every occurrence is a different act
+and one a caller should have to say out loud.
+
+**You do not need `previews_from` for edits.** `old` and `new` are the call's own inputs, so they
+arrive on your approval card through `ApprovalRequested.inputs` *before* anyone approves, and on the
+record through `Invoked.inputs` after. No disk read, no race with the agent. That was the thing we
+got wrong in our own plan first — we were about to build a before/after capture that edits never
+needed. (ENH-044 stays open for *whole-file* writes and deletes, where the inputs genuinely do not
+say what was there.)
+
+**What is still open in item 4:** a cross-file patch, and a background shell with status and kill.
+Both stay unscheduled — this repository is maintenance and the successor is `shadow`. Tell us if
+either is actually costing you, the way you told us about the edit.
 
 ---
 
@@ -262,16 +281,17 @@ already names (Phase 55, canonical in `shadow`).
 
 ## What you need to do
 
-1. **Pin `shadow-hdk==0.35.0`** for 0.6.11. Additions only; the *Pins* row is the minor bump, and
+1. **Pin `shadow-hdk==0.36.0`** for 0.6.11. Additions only; the *Pins* row is the minor bump, and
    nothing you call today changes shape.
 2. **Check `approvals=` is passed** before rearchitecting anything for item 3 — read §3 above. It
    matches the symptom you described exactly, and it is a one-line check.
 3. **Set `idle_seconds`** if one process per conversation is costing you. The default is never.
-4. **Point your guidance at `glob` and `grep`** rather than `run_shell` for search, and at
-   `read_file(offset, limit)` for anything large. That is where the `ask`-mode interruptions go
-   away.
-5. **Say whether ENH-042 is costing you real dropped content**, not just tokens — that changes
-   whether we carry a slice of it here or leave it for the native line.
+4. **Point your guidance at the new operations**: `glob`/`grep` rather than `run_shell` for
+   search, `read_file(offset, limit)` for anything large, `edit_file` rather than `write_file` for
+   a change, and `move_file` rather than `mv`. That is where both the `ask`-mode interruptions and
+   the dropped-content risk go away.
+5. **Say whether the cross-file patch or the background shell is costing you**, the way you told
+   us about the edit — that is what decides whether either is carried here or left to `shadow`.
 6. If you measure `CLAUDE_CONFIG_DIR` against a signed-in subscription, send the result and we will
    ship it as a default.
 
