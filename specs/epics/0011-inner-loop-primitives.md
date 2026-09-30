@@ -2,7 +2,7 @@
 type: Epic
 id: "0011"
 slug: inner-loop-primitives
-status: proposed
+status: active
 owner: avinash-singh-io
 phases: [phase-59-a-change-on-the-record, phase-60-the-write-class-completes, phase-61-undo-and-an-agents-own-workspace, phase-62-what-a-run-carries, phase-63-visible-and-steerable]
 policy_release: per-phase
@@ -11,7 +11,9 @@ policy_tdd: strict
 
 # Epic 0011 — the inner loop as primitives
 
-> **Status: proposed. This document is planning, not permission to implement, merge or release.**
+> **Status: active.** Approved by the owner 2026-10-01 to implement in full, in one
+> autonomous sequence. Landing on `main`/`staging` and tagging a release remain gated on the
+> owner's approval (Rule 6); the hooks enforce it.
 >
 > **Scope is one repository.** Everything below is built in `shadow-hdk` (this repo). Nothing in
 > [`shadow`](../../../shadow/specs/status.md), `shadow-ecosystem`, or any product repository is
@@ -33,7 +35,7 @@ This epic deliberately reverses that for a bounded set of work, because:
 3. Every ask in lane P's 2026-10-01 handoff is a **primitive or a component**, not a product
    concept. The boundary rule is unchanged and untested by any of them.
 
-**The governing decision to record at start (D153, draft):** capability work asked for by a shipping
+**The governing decision, recorded as D153 (2026-10-01):** capability work asked for by a shipping
 product is carried in `shadow-hdk` while `shadow` is pre-usable, under a named epic, with phases
 numbered from 59 so no transferred ID (46–58) is reused. It is a bridge, not a change of direction:
 `shadow` remains the destination and nothing here is an argument for keeping the Python
