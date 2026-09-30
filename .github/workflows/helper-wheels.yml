@@ -45,6 +45,10 @@ jobs:
           manylinux: ${{ matrix.libc }}
           command: build
           args: --release --out dist
+          # The build happens inside the manylinux container, and the job's env does not cross
+          # into it on its own — without this the determinism settings above apply to the runner
+          # and not to the compiler that actually produces the binary.
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
       - name: one wheel, tagged for the platform and no Python version
         run: |
           ls native/sandbox/dist
@@ -72,6 +76,7 @@ jobs:
           manylinux: manylinux_2_17
           command: build
           args: --release --out first
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
       - uses: PyO3/maturin-action@v1
         with:
           working-directory: native/sandbox
@@ -79,6 +84,7 @@ jobs:
           manylinux: manylinux_2_17
           command: build
           args: --release --out second
+          docker-options: -e SOURCE_DATE_EPOCH -e RUSTFLAGS
       - name: the same commit twice is the same bytes
         run: |
           one=$(sha256sum native/sandbox/first/*.whl | cut -d' ' -f1)
