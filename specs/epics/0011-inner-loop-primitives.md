@@ -35,11 +35,11 @@ This epic deliberately reverses that for a bounded set of work, because:
 3. Every ask in lane P's 2026-10-01 handoff is a **primitive or a component**, not a product
    concept. The boundary rule is unchanged and untested by any of them.
 
-**The governing decision, recorded as D153 (2026-10-01):** capability work asked for by a shipping
-product is carried in `shadow-hdk` while `shadow` is pre-usable, under a named epic, with phases
-numbered from 59 so no transferred ID (46–58) is reused. It is a bridge, not a change of direction:
-`shadow` remains the destination and nothing here is an argument for keeping the Python
-implementation. Each phase states what migrates and what is throwaway.
+## Decisions
+
+| # | Decision | Rationale |
+|---|---|---|
+| D153 | **Capability work for a shipping product lands here while `shadow` is pre-usable.** A named epic, phases numbered from 59 so no transferred ID (46–58) is reused, each phase stating what migrates and what is throwaway. A bridge, not a change of direction: `shadow` remains the destination, D142–D152 stand, and nothing here is an argument for keeping the Python implementation | the product ships on 0.36.0 today and its first gate is blocked; the native harness is two to three weeks from usable; every ask is a primitive or a component, so none of it is work the boundary would refuse |
 
 **Non-goals.** No native work. No architectural direction changes. No new door, transport or
 protocol version. No product concept enters the kit — no plugin format, no plugin loader, no folder
