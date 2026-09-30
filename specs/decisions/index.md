@@ -223,6 +223,14 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D169 | reading a root's `AGENTS.md`/`CLAUDE.md` is a reader a product composes — not a default, not an agent tool | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
 | D170 | `effort` and `temperature` are named unmapped for a key-backed model, because `ModelRequest` has nowhere to put them | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
 
+## Epic 0011 Phase 63 — visible and steerable — 2026-10-01
+
+| Decision | Summary | Source |
+|---|---|---|
+| D171 | the agent's plan is a registered component with no effects, admitted by every mode; the mechanism is the kit's and the content the product's | [`phases/phase-63-visible-and-steerable/overview.md`](/phases/phase-63-visible-and-steerable/overview.md) |
+| D172 | a plan item's `status` is an open string, not an enumeration — the cut `Provider.transport` makes | [`phases/phase-63-visible-and-steerable/overview.md`](/phases/phase-63-visible-and-steerable/overview.md) |
+| D173 | a steer is delivered between steps as a message, and `steer` still answers `bool` honestly | [`phases/phase-63-visible-and-steerable/overview.md`](/phases/phase-63-visible-and-steerable/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is

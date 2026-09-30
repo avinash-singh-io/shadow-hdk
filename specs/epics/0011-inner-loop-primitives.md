@@ -2,7 +2,7 @@
 type: Epic
 id: "0011"
 slug: inner-loop-primitives
-status: active
+status: complete
 owner: avinash-singh-io
 phases: [phase-59-a-change-on-the-record, phase-60-the-write-class-completes, phase-61-undo-and-an-agents-own-workspace, phase-62-what-a-run-carries, phase-63-visible-and-steerable]
 policy_release: per-phase
@@ -11,9 +11,15 @@ policy_tdd: strict
 
 # Epic 0011 — the inner loop as primitives
 
-> **Status: active.** Approved by the owner 2026-10-01 to implement in full, in one
-> autonomous sequence. Landing on `main`/`staging` and tagging a release remain gated on the
-> owner's approval (Rule 6); the hooks enforce it.
+> **Status: complete through phase 63, unmerged.** Q1 and phases 59–63 are built, gated and
+> pushed as branches. **Landing on `main`/`staging` and tagging a release remain gated on the
+> owner's approval** (Rule 6) and the hooks enforce it, so nothing here has been released.
+>
+> What shipped, and what it cost: the suite went **1897 → 2021**, 63 mutations were verified to
+> bite, and six of those mutations found assertions weaker than they looked. Two defects nobody
+> had reported were opened and closed — ENH-051 (a product's instructions never reached Codex)
+> and **BUG-229** (a key-backed model never received them *and* the thread reported them
+> honoured). Asks 10 and 12 remain unscheduled, for the reasons below.
 >
 > **Scope is one repository.** Everything below is built in `shadow-hdk` (this repo). Nothing in
 > [`shadow`](../../../shadow/specs/status.md), `shadow-ecosystem`, or any product repository is
@@ -185,12 +191,12 @@ here is **contract additions** — a minor bump under D9 and a *Pins* row — wi
 
 | Phase | Version | Contract |
 |---|---|---|
-| Q1 | 0.36.1 or 0.37.0 | patch if no contract moves; minor if the dialect record gains a field |
-| 59 | 0.38.0 | additions; ADR only if `detail` proves dishonest |
-| 60 | 0.39.0 | additions (new operations) |
-| 61 | 0.40.0 | additions + **a new port** → ADR, refuse-not-crash default |
-| 62 | 0.41.0 | additions |
-| 63 | 0.42.0 | additions |
+| Q1 | **0.37.0** ✅ | a `Dialect` field, so a minor; `Provider.json` and the TS client regenerated |
+| 59 | **0.38.0** ✅ | additions; no ADR needed — the change rides the observation's own output |
+| 60 | **0.39.0** ✅ | additions: `apply_patch`, `run_background`, `job_output`, `kill_job` |
+| 61 | **0.40.0** ✅ | additions + a new port (`WorkspaceHistoryPort`), D161–D165 recorded |
+| 62 | **0.41.0** ✅ | additions + BUG-229 fixed; no published schema moved |
+| 63 | **0.42.0** ✅ | additions: `update_plan`, and `steer` for a key-backed model |
 
 ## Gate, per phase, before anything claims done
 
@@ -222,3 +228,33 @@ a green unit suite does not prove instructions arrived.
 - **Ask 11 may be dropped.** It is optional and lane P said it will use `DirectorySkills` if it
   already parses `SKILL.md`, which it does not.
 - **What migrates to `shadow` is stated per phase and not yet written**, because no phase has run.
+
+## Outcome, 2026-10-01
+
+| ask | where it landed |
+|---|---|
+| 1 — the diff on the record (ENH-044) | phase 59, 0.38.0 |
+| 2 — patch and background shell (ENH-042) | phase 60, 0.39.0 |
+| 3 — checkpoints and undo (ENH-043) | phase 61, 0.40.0 |
+| 4 — everything a run needs, as data | **answered** (mostly already built) + Q1 (0.37.0) + BUG-229 in phase 62 |
+| 5 — context fragments, ENH-047, the sentinel | phase 62, 0.41.0 — measured on claude-code 2.1.284 |
+| 6 — a run's creations come back | phase 59, 0.38.0 (a subtraction: `KeepingSink` made opt-in) |
+| 7 — an isolated environment per agent | phase 61, 0.40.0 (host-side worktrees) |
+| 8 — the live plan (ENH-045) | phase 63, 0.42.0 |
+| 9 — steer for key-backed models (ENH-046) | phase 63, 0.42.0 |
+| 10 — credential injection | **not scheduled** — needs the owner's decision on where the vault and egress proxy live |
+| 11 — `SKILL.md` parsing | phase 62, 0.41.0 |
+| 12 — Phase 54 triggers | **not scheduled** — parked on lane P's initiative 0055 |
+
+### What this epic taught, worth carrying to `shadow`
+
+- **A green unit suite proves bytes reached a pipe.** Twice a live measurement found what no unit
+  test could: Q1's whole point (does a model obey framed in-turn instructions) and phase 62's
+  one-gate bug, where fragments never reached Claude Code because every unit test used a dialect
+  that folds.
+- **The mutation pass is not a formality.** Six of 63 mutations found assertions that could not
+  fail — a safety claim that was only a docstring (phase 60's confinement), a guard whose deletion
+  still passed (61), a test refused for the wrong reason (61), an ordering that passed by luck (61),
+  and a refusal tested at the wrong layer (63).
+- **Two of lane P's twelve were answers, not builds**, and finding that out before writing code was
+  the highest-value hour of the epic.
