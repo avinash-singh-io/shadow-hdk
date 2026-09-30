@@ -52,6 +52,26 @@ class EnvVar:
 
 
 @dataclass(frozen=True)
+class Fragment:
+    """One named, attributable piece of what a run carries into a model (D166, Epic 0011 phase 62).
+
+    A mode's instructions, a root's `AGENTS.md`, a product's house style, a team convention — all
+    one shape, because four mechanisms for four kinds of context would give four ways to be wrong,
+    and a model that has learnt to read one block has learnt to read all of them.
+
+    **Named and attributable on purpose.** Lane P asked for context that is "named, attributable,
+    refusable, not an unmarked prefix", and the reason is what an unmarked prefix does to a model:
+    it reads as the person talking, so it gets argued with instead of followed — or worse, a file
+    somebody left in a folder reads with the same authority as the mode. `name` says what this is;
+    `source` says where it came from, so a model (and a person reading the record) can weigh it.
+    """
+
+    name: str
+    text: str
+    source: str = ""
+
+
+@dataclass(frozen=True)
 class Behaviour:
     """Who the model should be for a mode (D64): a role, a model, an effort, a temperature, and
     which of the run's tools it is offered. Data, mapped to a CLI's flags by
@@ -67,6 +87,12 @@ class Behaviour:
     effort: str = ""
     temperature: float | None = None
     tools_offered: tuple[str, ...] = ()
+    fragments: tuple[Fragment, ...] = ()
+    """Named context this run carries besides the instructions (D166). Empty changes nothing.
+
+    A product's own fragments go here; so does a root's `AGENTS.md` where a plugin asked for it
+    (D169). They are delivered to a CLI and to a key-backed model by the same derivation, which is
+    what makes "identically for both" a property rather than an intention (D167)."""
 
 
 @dataclass(frozen=True)
@@ -361,43 +387,107 @@ def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[
     return unmapped
 
 
+def carried_by(behaviour: Behaviour | None, *, instructions: bool = True) -> tuple[Fragment, ...]:
+    """Everything a behaviour carries, as fragments, in the order a model should read it (D166).
+
+    `instructions=False` leaves out `system`/`append_system` — for a CLI whose own flag already
+    delivers them, where carrying them again would send the role twice and be billed twice.
+    """
+    if behaviour is None:
+        return ()
+    found: list[Fragment] = []
+    if instructions:
+        for name in INSTRUCTION_FIELDS:
+            text = str(getattr(behaviour, name, "") or "")
+            if text:
+                found.append(Fragment(name="instructions", text=text, source="the mode"))
+    found.extend(behaviour.fragments)
+    return tuple(found)
+
+
+def framed(fragments: tuple[Fragment, ...]) -> str:
+    """Fragments as one block of text a model can tell apart from a person's words (D167).
+
+    **The one assembler**, used for a CLI's turn and a key-backed model's system message alike.
+    Before this there were two paths and they had already diverged: Q1 folded instructions into a
+    CLI's prompt while a key-backed model got nothing at all (BUG-229). One derivation is what
+    makes "identically for both" checkable.
+
+    Empty in, empty out — a run carrying nothing adds no framing, so a prompt with no fragments is
+    byte-for-byte the prompt it always was.
+    """
+    if not fragments:
+        return ""
+    blocks: list[str] = []
+    for one in fragments:
+        opened = f'<context name="{one.name}"'
+        if one.source:
+            opened += f' source="{one.source}"'
+        blocks.append(f"{opened}>\n{one.text}\n</context>")
+    return "\n\n".join(blocks)
+
+
+def unmapped_for_a_model(behaviour: Behaviour | None) -> tuple[str, ...]:
+    """What a key-backed model cannot honour, named (BUG-229, D170).
+
+    `ModelRequest` carries `messages`, `tools` and `model`. So instructions and fragments are
+    delivered (through the system message), `model` is delivered, and `effort` and `temperature`
+    have **nowhere to go** — inventing a field for them would be a kernel change, and claiming they
+    were honoured is the lie this exists to stop.
+
+    `tools_offered` is not named: the registry narrows what a model is shown, so it is honoured
+    elsewhere, exactly as it is for a CLI.
+    """
+    if behaviour is None:
+        return ()
+    return tuple(
+        name
+        for name in ("effort", "temperature")
+        if getattr(behaviour, name, None) not in (None, "", ())
+    )
+
+
 def instructions_for_prompt(provider: Provider, behaviour: Behaviour | None) -> str:
-    """The instructions this CLI must be handed in its turn, framed — or `""` for every CLI that
-    needs nothing handed to it that way (Epic 0011 Q1).
+    """What this CLI must be handed in its turn, framed — or `""` where it needs nothing.
 
-    Pure, and beside `unmapped_behaviour` on purpose: the two answer the same question from opposite
-    ends, so a field delivered here is a field that one must stop naming. Every opener reads this
-    one derivation rather than each deciding for itself.
+    **Two gates, not one, and conflating them was a real bug.** They are different questions:
 
-    **Framed, not prefixed.** An unmarked prefix reads to a model as the person talking, which is
-    how a mode's instructions get argued with instead of followed. One block that says what it is,
-    is the least this can honestly do. Phase 62 replaces it with named context fragments carrying
-    attribution and refusability; this is deliberately the smaller thing until then.
+    * *Instructions* (`system`, `append_system`) travel in the turn only where the CLI takes them
+      that way (`instructions_in_prompt`) **and** no `behaviour_args` flag already delivers them.
+      Per field, because a CLI taking `--system-prompt` and no append flag still needs the second.
+      A field a flag carries is left out: a role sent twice is paid for twice.
+    * *Fragments* travel **always**. No CLI has a flag for a product's named context, so the turn is
+      the only way in — for every provider, whether or not it has a system-prompt flag of its own.
 
-    A field the dialect maps a flag for is skipped: it is already delivered, and sending a role
-    twice is paid for twice.
+    Written first as one gate, which meant Claude Code — which has the flag, so
+    `instructions_in_prompt` is false — received **no fragments at all**. Every unit test passed,
+    because they all used a dialect that folds. A live measurement found it: the model answered by
+    summarising its own system prompt, with our fragment nowhere in it.
     """
     if behaviour is None:
         return ""
     dialect = provider.dialect or Dialect()
-    if not dialect.instructions_in_prompt:
-        return ""
     by_flag = {a.field for a in dialect.behaviour_args}
-    said = [
-        text
-        for name in INSTRUCTION_FIELDS
-        if name not in by_flag and (text := str(getattr(behaviour, name, "") or ""))
-    ]
-    if not said:
-        return ""
-    return "<instructions>\n" + "\n\n".join(said) + "\n</instructions>"
+    carried: list[Fragment] = []
+    if dialect.instructions_in_prompt:
+        carried.extend(
+            Fragment(name="instructions", text=text, source="the mode")
+            for name in INSTRUCTION_FIELDS
+            if name not in by_flag and (text := str(getattr(behaviour, name, "") or ""))
+        )
+    carried.extend(behaviour.fragments)
+    return framed(tuple(carried))
 
 
 __all__ = [
     "Delta",
     "Dialect",
     "EnvVar",
+    "Fragment",
     "INSTRUCTION_FIELDS",
+    "carried_by",
+    "unmapped_for_a_model",
+    "framed",
     "Provider",
     "ProviderKind",
     "ProviderStatus",
