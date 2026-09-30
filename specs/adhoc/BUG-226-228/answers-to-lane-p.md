@@ -5,8 +5,25 @@ type: Handoff
 # For lane P, from lane H — the desktop walk answered (2026-09-30)
 
 Against `intent-ecosystem/handoffs/harness-from-the-desktop-walk-2026-09-30.md`, items 1–5
-(`88dd4d8`) and 6–10 (`f709b19`). Shipped in **shadow-hdk 0.34.2**, a patch: no contract moved, so
-there is no *Pins* row and nothing for you to change beyond the pin itself.
+(`88dd4d8`) and 6–10 (`f709b19`). Every item is answered; four defects and one enhancement shipped.
+
+## Pin this
+
+| | |
+|---|---|
+| **`shadow-hdk==0.35.0`** | the pin to take. Everything below is in it. |
+| 0.34.2 | the P0 and the parked wording (a patch — no contract moved) |
+| 0.35.0 | ENH-041, the read-class file tools (a minor — additions, a *Pins* row; protocol 3 unchanged) |
+
+Both are published complete on PyPI — **both distributions, all seven files each**. The Linux
+helper is at 0.35.0 too, so `shadow-hdk==0.35.0` resolves on `manylinux2014` x86_64 **and** aarch64,
+which we verified from outside CI rather than assuming. Your production Linux is covered.
+
+*(If you already pinned 0.34.2 in the hours after we published it: it was briefly unresolvable on
+Linux, because its kit wheel went up from a laptop while GitHub Actions was down for billing and
+the helper could not follow. That is fixed — 0.34.2 and 0.35.0 are both complete — and the workflow
+now passes `--check-url` so a half-published release finishes on a re-run instead of dying on the
+files already there.)*
 
 **In the order you asked for.**
 
@@ -108,12 +125,39 @@ CLI on its own, and today it is. Filed as two, because they are not the same dif
   needs a typed refusal when `old` is absent or ambiguous, and a multi-file patch has to be atomic
   across files or the record lies about what happened.
 
-**Timing, honestly.** This is a phase, not a patch, and this repository is in maintenance — future
-work starts at Phase 46 in the sibling `shadow` repository, and Phases 46–52 are the native
-foundation. So: no date from me today. What I can commit to is that ENH-041 is small enough to
-carry as a quick-task against this line if it is blocking you — say the word and it goes next.
-ENH-042 waits for a phase. Tell us which of the two actually costs you more and we will sequence on
-that rather than on our guess.
+**ENH-041 is done and in 0.35.0** — you named it first, so it went next, as a quick-task. What you
+get:
+
+- **`glob(pattern, path?, limit?)`** — `**` crosses separators, `*` does not; files only, sorted,
+  paths relative to the workspace root while the pattern matches relative to `path`.
+- **`grep(pattern, path?, glob?, limit?)`** — a regular expression over contents; each match is
+  `{"path", "line", "text"}` with a 1-based line number; `glob` narrows the files; a file that
+  cannot be read is skipped, not fatal; a bad pattern is refused naming it.
+- **`read_file(path, offset?, limit?)`** — `offset` is the first line counting from 1, `limit` is
+  how many. Without them it is byte-for-byte the whole-file string it always was, so nothing you
+  have today changes.
+
+Two behaviours to build on rather than guess at:
+
+- **A cap is announced.** Under the limit you get a plain list; over it you get an object instead —
+  `{"paths": …, "truncated": true, "found": N}` for `glob`, `{"matches": …, "truncated": true}` for
+  `grep`. A model reads "there are more" rather than inferring "there are none". Defaults 1000 and
+  200.
+- **A range past the end is refused, naming the line count.** An empty string reads to a model as
+  an empty file and it stops looking.
+
+**And the reason it is the half worth having first:** `glob` derives from `list`, `grep` from
+`read`, so their profiles carry no writes, no reach, no cost — **the shipped `ask` mode does not
+stop a person for a search.** That was the actual cost of the gap: not that searching was
+impossible, but that it went through `run_shell`, which `ask` rightly does stop.
+
+**ENH-042 — the write-class half — is still open and still a phase.** An exact-string edit, a
+multi-file patch, a background shell with status and kill. The difficulty there is the record, not
+the edit: an edit needs a typed refusal when `old` is absent or ambiguous, and a patch has to be
+atomic across files or the record lies about what happened. No date: this repository is in
+maintenance, and future work starts at Phase 46 in the sibling `shadow` repository. If whole-file
+rewrites are costing you real money or real dropped content, say so and we will weigh carrying a
+narrow slice of it here the way we did ENH-041.
 
 ---
 
@@ -218,14 +262,23 @@ already names (Phase 55, canonical in `shadow`).
 
 ## What you need to do
 
-1. **Pin `shadow-hdk==0.34.2`** for 0.6.11. No contract change, so nothing else moves.
-2. **Check `approvals=` is passed** before rearchitecting anything for item 3 — read §3 above.
-3. **Set `idle_seconds`** if one process per conversation is costing you.
-4. **Tell us which of ENH-041 / ENH-042 costs you more**, so we sequence on your evidence rather
-   than our guess. ENH-041 can go next as a quick-task if it is blocking.
-5. If you measure `CLAUDE_CONFIG_DIR` against a signed-in subscription, send the result.
+1. **Pin `shadow-hdk==0.35.0`** for 0.6.11. Additions only; the *Pins* row is the minor bump, and
+   nothing you call today changes shape.
+2. **Check `approvals=` is passed** before rearchitecting anything for item 3 — read §3 above. It
+   matches the symptom you described exactly, and it is a one-line check.
+3. **Set `idle_seconds`** if one process per conversation is costing you. The default is never.
+4. **Point your guidance at `glob` and `grep`** rather than `run_shell` for search, and at
+   `read_file(offset, limit)` for anything large. That is where the `ask`-mode interruptions go
+   away.
+5. **Say whether ENH-042 is costing you real dropped content**, not just tokens — that changes
+   whether we carry a slice of it here or leave it for the native line.
+6. If you measure `CLAUDE_CONFIG_DIR` against a signed-in subscription, send the result and we will
+   ship it as a default.
 
-**Caveat on the release:** GitHub Actions has been refusing jobs on this account since 2026-09-19
-(billing), so 0.34.2's gate ran locally — ruff, strict mypy over 475 files, and 1,871 tests green on
-both 3.14 and 3.12 — and not on CI. The evidence is in
-`specs/adhoc/BUG-226-228/record.md`.
+**On the gate, honestly.** CI is green for both releases — macOS, Landlock, bubblewrap and Python
+3.12/3.13/3.14 (runs `36683781588`, `36684850419`). But no *local* full-suite run of ENH-041 was
+clean: four distinct timing-sensitive tests failed across the runs, two on a loaded laptop and two
+on CI runners, each green on a re-run of the same commit and none of them reachable from the
+change. We filed that as TD-015 rather than shrugging at it — a suite whose red runs mean nothing
+is a suite with no gate — but you should know the shape of the evidence rather than just the word
+"green". Records: `specs/adhoc/BUG-226-228/record.md` and `specs/adhoc/ENH-041/record.md`.
