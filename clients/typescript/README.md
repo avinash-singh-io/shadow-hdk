@@ -85,7 +85,7 @@ import { tool } from "shadow-hdk-client";
 
 const client = await spawnHarness({
   command: "uvx",
-  args: ["--from", "shadow-hdk==0.35.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
+  args: ["--from", "shadow-hdk==0.36.0", "shadow-hdk", "serve", "harness.toml", "--stdio"],
 });
 client.components.serve([tool("greet", { description: "Greet.", effects: {} }, async ({ name }) => ({ greeting: `hello, ${name}` }))]);
 const started = await client.thread.start({ host_components: true });

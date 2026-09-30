@@ -246,6 +246,40 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
     ),
     ("list_dir", "list", "List a directory. Directories end in a slash.", {"path": _PATH}, []),
     (
+        "edit_file",
+        "write",
+        "Change regions of a text file. Each edit replaces `old` with `new`, in order. An `old` "
+        "that is absent, or that appears more than once, is refused and **nothing is written** — "
+        "name more of the surrounding text so it matches exactly once.",
+        {
+            "path": _PATH,
+            "edits": {
+                "type": "array",
+                "description": "The changes, applied in order. All of them land, or none do.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "old": {"type": "string", "description": "Text to find, matching once."},
+                        "new": {"type": "string", "description": "What replaces it."},
+                    },
+                    "required": ["old", "new"],
+                },
+            },
+        },
+        ["path", "edits"],
+    ),
+    (
+        "move_file",
+        "write",
+        "Move or rename a file. A destination that already exists is refused rather than "
+        "overwritten.",
+        {
+            "from": {"type": "string", "description": "The path to move."},
+            "to": {"type": "string", "description": "Where it goes. Directories are created."},
+        },
+        ["from", "to"],
+    ),
+    (
         "glob",
         "list",
         "Find files by a path pattern — `*` within one segment, `**` across segments, `?` one "
@@ -402,6 +436,92 @@ class Environment(ComponentPort):
         self.mode = wanted_mode
         self.isolation = isolation
 
+    # ------------------------------------------------- changing part of a file, not all of it
+
+    async def _edit(self, path: str, edits: JsonValue) -> Observation:
+        """Replace regions of one file, all of them or none (ENH-042).
+
+        **Why the refusals are the design.** An `old` that is absent means the model is working
+        from a picture of the file that is out of date, and applying the rest of the batch would
+        act on that picture. An `old` that appears twice means it did not say which one it meant,
+        and taking the first is how an agent edits the wrong line and reports success. Both are
+        refused *before* anything is written, so the file a failed edit leaves behind is the file
+        that was there — the one state both the model and the record already describe.
+
+        The diff needs no machinery: `old` and `new` are this call's own inputs, so they reach the
+        record through `Invoked` and the approval card through `ApprovalRequested` (D80) without
+        anyone reading the disk.
+        """
+        if not isinstance(edits, list) or not edits:
+            return Refused(
+                "an edit names the regions to change: `edits` is a list of {old, new}, and an "
+                "empty list would be a whole-file rewrite under another name"
+            )
+        content = await self._read(path)
+        changed = content
+        for index, edit in enumerate(edits, start=1):
+            if not isinstance(edit, dict):
+                return Refused(f"edit {index} is not an object with `old` and `new`")
+            old, new = edit.get("old"), edit.get("new")
+            if not isinstance(old, str) or not isinstance(new, str):
+                return Refused(f"edit {index} needs `old` and `new`, both strings")
+            found = changed.count(old)
+            if found == 0:
+                return Refused(
+                    f"edit {index}: {old!r} is not in {path} — nothing was written. The file may "
+                    "not be what you last read; read it again."
+                )
+            if found > 1:
+                return Refused(
+                    f"edit {index}: {old!r} appears {found} times in {path}, so which one to "
+                    "change is not said — nothing was written. Name more of the surrounding "
+                    "text so it matches once."
+                )
+            changed = changed.replace(old, new, 1)
+        written = await self._write(path, changed)
+        return _completed({"path": path, "edits": len(edits), "bytes": written})
+
+    async def _relocate(self, source: str, destination: str) -> Observation:
+        """Move a file, refusing to overwrite (ENH-042).
+
+        **The refusal is what keeps a move `write`-class.** Nothing is destroyed, so the act is
+        reversible by moving it back — which is exactly what `reversible` claims of a write. A
+        move that clobbered would be a `delete` wearing a write's profile, and the content it
+        destroyed would be on no record anywhere.
+        """
+        if not source or not destination:
+            return Refused("a move needs `from` and `to`")
+        if await self._there(destination):
+            return Refused(
+                f"{destination} already exists and a move does not overwrite — nothing was "
+                "moved. Move to another name, or delete that one first."
+            )
+        await self._move(source, destination)
+        return _completed({"from": source, "to": destination})
+
+    async def _there(self, path: str) -> bool:
+        """Whether something is already at `path`, asked through `_list` so every environment
+        answers it without implementing anything."""
+        parent, _, name = path.strip("/").rpartition("/")
+        try:
+            entries = await self._list(parent or ".")
+        except Exception:
+            return False
+        return name in entries or f"{name}/" in entries
+
+    async def _move(self, source: str, destination: str) -> None:
+        """Relocate, on the primitives every environment already has.
+
+        The destination is written **before** the source is removed, so a failure part-way leaves
+        the original rather than nothing. This round-trips the content through text, which is what
+        this whole surface does (`_read` returns `str`), so it inherits the same limit as
+        `read_file`. An adapter that can rename in place should override this — `LocalEnvironment`
+        does, which also makes the move atomic.
+        """
+        content = await self._read(source)
+        await self._write(destination, content)
+        await self._delete(source)
+
     # ------------------------------------------------------- search, over the primitives
 
     async def _walk(self, start: str) -> list[str]:
@@ -534,6 +654,16 @@ class Environment(ComponentPort):
                         str(arguments.get("path", "")), str(arguments.get("content", ""))
                     )
                     return _completed({"path": str(arguments.get("path", "")), "bytes": written})
+                case "edit_file":
+                    if self.mode == "read-only":
+                        return Refused("this environment is read-only; an edit is not offered")
+                    return await self._edit(str(arguments.get("path", "")), arguments.get("edits"))
+                case "move_file":
+                    if self.mode == "read-only":
+                        return Refused("this environment is read-only; a move is not offered")
+                    return await self._relocate(
+                        str(arguments.get("from", "")), str(arguments.get("to", ""))
+                    )
                 case "delete_file":
                     if self.mode == "read-only":
                         return Refused("this environment is read-only; a delete is not offered")
