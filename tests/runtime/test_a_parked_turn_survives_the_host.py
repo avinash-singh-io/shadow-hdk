@@ -48,6 +48,7 @@ from shadow_hdk.runtime.testing import (
 )
 from shadow_hdk.runtime.threads import Thread
 from shadow_hdk.serve.stores import stores_for
+from tests.waiting import pending_on, until
 
 pytestmark = pytest.mark.anyio
 
@@ -149,7 +150,9 @@ async def _park_a_turn_then_die(where: Path, image: Path) -> tuple[str, str]:
         assert asked.component == "write_file"
         assert asked.inputs == {"path": "a.txt", "content": "x"}
         # The record, as it is on disk while the person has not answered: what a crash leaves.
-        await asyncio.sleep(0.05)  # the record's save after the question is a separate write
+        # The save is a separate write from the question being asked, so imaging the store the
+        # moment the approval arrives races it (TD-015).
+        await pending_on(stores.threads, thread.id)
         shutil.copytree(where, image)
     finally:
         turn.cancel()
@@ -310,7 +313,7 @@ async def test_a_question_answered_live_is_on_the_record_only_while_it_is_open(
 
         turn = asyncio.create_task(turning())
         asked = await asyncio.wait_for(approvals.next(), 30)
-        await asyncio.sleep(0.05)
+        await pending_on(stores.threads, thread.id)
         assert [q.handle for q in thread.pending] == [asked.handle], "open: on the record"
         kept = await stores.threads.get(thread.id)
         assert kept is not None and [q.handle for q in kept.pending] == [asked.handle]
@@ -361,7 +364,10 @@ async def test_a_question_answered_mid_turn_is_off_the_record_before_the_next_op
         first = await asyncio.wait_for(approvals.next(), 30)
         approvals.answer(first.handle, Approve())
         second = await asyncio.wait_for(approvals.next(), 30)
-        await asyncio.sleep(0.05)
+        await until(
+            lambda: _only(stores.threads, thread.id, second.handle),
+            what="the first question settled and only the second pending",
+        )
         kept = await stores.threads.get(thread.id)
         assert kept is not None
         assert [q.handle for q in kept.pending] == [second.handle], "the first is settled"
@@ -375,6 +381,12 @@ async def test_a_question_answered_mid_turn_is_off_the_record_before_the_next_op
             await turn
         await thread.close()
         await stores.aclose()
+
+
+async def _only(store: Any, thread_id: str, handle: str) -> bool:
+    """One question pending, and it is that one — the first answered, the second open."""
+    record = await store.get(thread_id)
+    return record is not None and [q.handle for q in record.pending] == [handle]
 
 
 async def _drain(events: AsyncIterator[Any]) -> None:

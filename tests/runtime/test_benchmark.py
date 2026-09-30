@@ -35,10 +35,26 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 from shadow_hdk.kernel import Ceiling, Composition, FanOut, Floor, Invoke, Lease, Sequence
 from shadow_hdk.runtime import RunOptions, run
 from shadow_hdk.runtime.testing import FixedClock, make_registration
 from tests.runtime.conftest import ports_over
+
+pytestmark = pytest.mark.benchmark
+"""Deselected from an ordinary run, and a gate all the same (TD-015).
+
+Everything below asserts on **wall-clock time**, so a loaded machine fails it while the code is
+perfectly fine — which is not a hypothetical here: the note on `ROUNDS` records this test failing
+for the wrong reason twice before, and it did so twice more on 2026-09-30 at load average 26. A red
+run that means *your laptop is busy* teaches you to stop reading red runs, and that costs more than
+the budget protects.
+
+So it runs where the measurement is worth trusting: **CI, as its own step, on a quiet runner**,
+where a regression past D11's budget is a real failure — which is what Rule 13 asks for. Locally:
+`uv run pytest -m benchmark`.
+"""
 
 REG = make_registration("noop")
 STEPS = 100
