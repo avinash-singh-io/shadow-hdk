@@ -130,6 +130,22 @@ class Dialect:
     """How a turn is written to the child. `text` is the words on stdin; a CLI wanting an envelope
     names its own. A fact about that CLI, not about this runtime."""
 
+    instructions_in_prompt: bool = False
+    """Whether this CLI can be told who to be **in the turn**, when it maps no flag for it
+    (Epic 0011 Q1).
+
+    The other half of D64. `behaviour_args` says which fields a CLI takes as flags; every field it
+    does not take was named on `unmapped_behaviour` and then dropped, which for `codex exec` meant a
+    product's `system` prompt reached Claude Code and not Codex. A CLI with no `--system-prompt` can
+    still be handed one as framed text at the top of its first turn, and whether that is true of a
+    given CLI is a fact about it — so it is a field here rather than a branch above.
+
+    **Default false, like every other default in this record.** A CLI nobody has measured is not
+    handed a prompt shape somebody guessed at; folding into the turn changes what the model reads,
+    and inventing that is the cost this record refuses everywhere else. A CLI that *does* map a flag
+    for a field is never also folded — it would send the same role twice and be billed twice.
+    """
+
     type_key: str = "type"
     """Which key on each line says what kind of event it is."""
 
@@ -313,15 +329,28 @@ class Provider:
         return self.name or self.id
 
 
+INSTRUCTION_FIELDS = ("system", "append_system")
+"""The behaviour fields a turn's own text can carry. `model` and `effort` are launch decisions and
+`temperature` is a sampling parameter — asking for those in prose is asking, not setting."""
+
+
 def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[str]:
-    """Behaviour fields this provider has no flag for, that the behaviour set. Named, not dropped
+    """Behaviour fields this provider has no way to take, that the behaviour set. Named, not dropped
     (D64, ENH-020) — a host learns its mode asked for something this CLI cannot do. Pure over
     the record and the behaviour, so every opener reads the same answer: the JSONL opener from
-    the record's `behaviour_args`, ACP from a record that maps none."""
+    the record's `behaviour_args`, ACP from a record that maps none.
+
+    **A flag is not the only way to be told.** A dialect that takes instructions in the turn
+    (`instructions_in_prompt`) delivers `system` and `append_system`, so naming them here would be
+    a lie — and a lie a host acts on, because lane P hides the controls this field reports. Epic
+    0011 Q1. `temperature` is still named for such a CLI: a turn's text cannot set one.
+    """
     if behaviour is None:
         return []
     dialect = provider.dialect or Dialect()
     mapped = {a.field for a in dialect.behaviour_args} | {"tools_offered"}
+    if dialect.instructions_in_prompt:
+        mapped |= set(INSTRUCTION_FIELDS)
     unmapped: list[str] = []
     for name in ("system", "append_system", "model", "effort", "temperature"):
         if name in mapped:
@@ -332,12 +361,46 @@ def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[
     return unmapped
 
 
+def instructions_for_prompt(provider: Provider, behaviour: Behaviour | None) -> str:
+    """The instructions this CLI must be handed in its turn, framed — or `""` for every CLI that
+    needs nothing handed to it that way (Epic 0011 Q1).
+
+    Pure, and beside `unmapped_behaviour` on purpose: the two answer the same question from opposite
+    ends, so a field delivered here is a field that one must stop naming. Every opener reads this
+    one derivation rather than each deciding for itself.
+
+    **Framed, not prefixed.** An unmarked prefix reads to a model as the person talking, which is
+    how a mode's instructions get argued with instead of followed. One block that says what it is,
+    is the least this can honestly do. Phase 62 replaces it with named context fragments carrying
+    attribution and refusability; this is deliberately the smaller thing until then.
+
+    A field the dialect maps a flag for is skipped: it is already delivered, and sending a role
+    twice is paid for twice.
+    """
+    if behaviour is None:
+        return ""
+    dialect = provider.dialect or Dialect()
+    if not dialect.instructions_in_prompt:
+        return ""
+    by_flag = {a.field for a in dialect.behaviour_args}
+    said = [
+        text
+        for name in INSTRUCTION_FIELDS
+        if name not in by_flag and (text := str(getattr(behaviour, name, "") or ""))
+    ]
+    if not said:
+        return ""
+    return "<instructions>\n" + "\n\n".join(said) + "\n</instructions>"
+
+
 __all__ = [
     "Delta",
     "Dialect",
     "EnvVar",
+    "INSTRUCTION_FIELDS",
     "Provider",
     "ProviderKind",
     "ProviderStatus",
+    "instructions_for_prompt",
     "unmapped_behaviour",
 ]

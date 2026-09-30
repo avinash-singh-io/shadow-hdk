@@ -114,11 +114,17 @@ mcp_strict_args = []
 disallow_arg = ""
 disallow = []
 
+# `codex exec` has no system-prompt flag, so a mode's instructions are handed to it in the turn
+# instead (Epic 0011 Q1) — framed, and on the first turn only, since the CLI's own resume carries
+# them after that. Before this they were named on `unmapped_behaviour` and then dropped, which meant
+# a product's role reached Claude Code and not Codex.
+instructions_in_prompt = true
+
 # A mode's behaviour becomes these flags (D64, ENH-028), measured 2026-09-20 from
 # `codex exec --help` on codex-cli 0.154.0: `-m, --model <MODEL>` is a flag of its own; reasoning
 # effort is a config override — `-c model_reasoning_effort="<low|medium|high>"` — so its mapping
-# carries a `template` saying how the value is spelled after `-c`. `system`, `append_system` and
-# `temperature` have no flag here and are named on the thread's `unmapped_behaviour`.
+# carries a `template` saying how the value is spelled after `-c`. `temperature` still has no way
+# in and is still named on the thread's `unmapped_behaviour`: a turn's text cannot set one.
 [[dialect.behaviour_args]]
 field = "model"
 flag = "-m"

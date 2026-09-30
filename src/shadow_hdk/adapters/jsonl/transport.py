@@ -168,6 +168,7 @@ class JsonlProvider(AgentPort):
             tools=tools,
             resume=resume,
             unmapped=tuple(unmapped_behaviour(self._provider, behaviour)),
+            behaviour=behaviour,
         )
 
 

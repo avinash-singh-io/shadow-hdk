@@ -26,6 +26,7 @@ from typing import Any
 
 from shadow_hdk.adapters.jsonl.paths import read_at, texts_at
 from shadow_hdk.kernel import AgentSession, Dialect, Provider, ToolSource, Turn, Usage
+from shadow_hdk.kernel.providers import Behaviour, instructions_for_prompt
 from shadow_hdk.runtime import current_run
 
 DEFAULT_TIMEOUT_S = 600.0
@@ -64,6 +65,7 @@ class JsonlSession(AgentSession):
         timeout_s: float = DEFAULT_TIMEOUT_S,
         resume: str | None = None,
         unmapped: tuple[str, ...] = (),
+        behaviour: Behaviour | None = None,
     ) -> None:
         self._provider = provider
         self._dialect = provider.dialect or Dialect()
@@ -83,6 +85,11 @@ class JsonlSession(AgentSession):
         resumed session is gone (D139)."""
         self._stderr_reader: asyncio.Task[None] | None = None
         self._unmapped = unmapped
+        self._owed_instructions = instructions_for_prompt(provider, behaviour)
+        """What this CLI must be told in its turn because it maps no flag for it (Epic 0011 Q1),
+        framed by the kernel's one derivation. Spent on the first turn and then empty: a resident
+        CLI keeps them in its own memory, and a non-resident one gets them back through its resume,
+        so repeating them every turn would be paid for on every turn."""
 
     @property
     def session_id(self) -> str | None:
@@ -127,6 +134,14 @@ class JsonlSession(AgentSession):
         while chunk := await stream.read(4096):
             self.stderr = (self.stderr + chunk.decode("utf-8", "replace"))[-STDERR_KEPT:]
 
+    def _told(self, prompt: str) -> str:
+        """The turn's words, with the instructions this CLI has no flag for above them on the
+        first turn only (Epic 0011 Q1). Nothing owed — every CLI with its own flag, and every
+        turn after the first — returns the prompt unchanged, byte for byte."""
+        if not self._owed_instructions:
+            return prompt
+        return f"{self._owed_instructions}\n\n{prompt}"
+
     def _written(self, prompt: str) -> bytes:
         """How this CLI wants to be told. A fact about it, so it comes off the record."""
         if self._dialect.prompt_shape == "stream-json-user":
@@ -149,8 +164,9 @@ class JsonlSession(AgentSession):
         process = self._process
         assert process.stdin is not None and process.stdout is not None
 
-        process.stdin.write(self._written(prompt))
+        process.stdin.write(self._written(self._told(prompt)))
         await process.stdin.drain()
+        self._owed_instructions = ""  # written, so never owed again (Epic 0011 Q1)
         if not self._dialect.resident:
             process.stdin.close()
 
