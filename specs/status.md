@@ -13,11 +13,14 @@ type: Status
 > [roadmap](../../shadow/specs/planning/roadmap.md) are canonical.
 > Completed phases keep their IDs; old planned 34/35/37–40/42/43 are retired through the map.
 > This repository, its packages and imports have **not** been renamed.
-> **GitHub Actions runs again** — confirmed green on 2026-09-30 on `main`, `staging` and the
-> `v0.34.2` tag, after refusing jobs since 2026-09-19 21:23 UTC for billing. The kit's 0.34.2 wheel
-> and sdist were published from the laptop while it was refused; the Linux helper's five files were
-> not, so `shadow-hdk-linux-sandbox` is still at 0.34.1 and **0.34.2 does not resolve on Linux**
-> until the publish workflow is re-run (made re-runnable with `--check-url`, 2026-09-30).
+> **GitHub Actions runs again**, and **0.34.2 is published complete** — both distributions, all
+> seven files. Actions refused jobs from 2026-09-19 21:23 UTC for billing; the kit's wheel and sdist
+> went up from the laptop meanwhile, and the Linux helper's five could not, so 0.34.2 did not
+> resolve on Linux for a few hours. The publish workflow — made re-runnable with `--check-url`, so
+> the already-published two are skipped rather than failing the run — finished it on 2026-09-30
+> (run `36680496191`, every job green including the helper's confinement leg and the fresh-install
+> smoke). Verified from outside CI: `shadow-hdk==0.34.2` resolves on `manylinux2014` x86_64 **and**
+> aarch64, pulling `shadow-hdk-linux-sandbox==0.34.2`.
 > Historical copies of the future plan remain here for provenance and link continuity, but are not
 > edited as the delivery source. Research and repository strategy are canonical in
 > [`shadow-ecosystem`](../../shadow-ecosystem/README.md). The running implementation remains
