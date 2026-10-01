@@ -70,9 +70,15 @@ pytest exit=0
 ```
 
 Phase 61 left it at 1986; this phase adds 25. An earlier run of this gate reported **1 failed** — the
-TD-017 backlog row named `docs/migrations/0.42.md`, which arrives with its own release, and the
-document invariant refuses a path a document names that is not in the tree. Reworded; the run above
-is the clean one.
+TD-017 backlog row named a migration note that arrives with a later release, and the document
+invariant refuses a path a document names that is not in the tree. Reworded; the run above is the
+clean one.
+
+Then this retrospective made the identical mistake one paragraph later, by quoting that path while
+describing the fix — and because it was written *after* the gate ran and never re-gated, nothing
+caught it locally. CI did, on every job, at the v0.41.0 tag. The note is named without its path
+here, and the lesson is in TD-017: a document is part of the tree the gate checks, so writing one
+after the gate means the gate has not run.
 
 ### Mutation checks — nineteen, all biting
 
