@@ -332,6 +332,9 @@ class Conversation:
         modes adapter, so a host hands in its own. `None` means the conversation has no
         behaviours to apply and `set_mode` only flips the policy the governance selects by."""
         self._behaviour: Any = None
+        self._before_turns: tuple[Any, ...] = ()
+        """A key-backed session's transcript, kept across a provider reopen (D181, BUG-232) — the
+        counterpart of `session_id` for a provider that has none."""
         self._options: dict[str, JsonValue] = {}
         self._current: Cancellation | None = None
         """The running turn's handle to stop it (D15), while one runs."""
@@ -483,7 +486,33 @@ class Conversation:
         # session, by name, so a double or an adapter that predates the field reports nothing.
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
+        self._give_the_transcript_back(session)
         return session
+
+    def _remember_transcript(self) -> None:
+        """A key-backed session's transcript, off the session (D181, BUG-232).
+
+        **The counterpart of `_remember_session`.** A CLI's continuity across a reopen is its own
+        session id, which `--resume` restores; a key-backed model has no such thing, and its
+        continuity *is* the messages. So the conversation keeps them over a reopen exactly as it
+        keeps a session id, and hands them back below.
+
+        Read off the session by name, so a CLI adapter or a test double that has no such attribute
+        is unaffected — a port grown this way breaks no adapter (D14).
+        """
+        found = getattr(self._session, "before", None) if self._session is not None else None
+        if found:
+            self._before_turns = tuple(found)
+
+    def _give_the_transcript_back(self, session: AgentSession) -> None:
+        """What was said before this session existed, onto the session that replaced it (D181).
+
+        Set on the session rather than passed to `open()`: an opener that does not take the keyword
+        is every CLI adapter in the tree, and growing the port by argument is how phase 64 broke
+        twenty-two doubles.
+        """
+        if self._before_turns and hasattr(session, "before"):
+            session.before = self._before_turns
 
     def _remember_session(self) -> bool:
         """The provider's own session id, off the session (D76). `True` when it changed."""
@@ -497,6 +526,7 @@ class Conversation:
         if self._session is None:
             return
         self._remember_session()
+        self._remember_transcript()
         await self._session.close()
         self._session = await self._open_provider()
 

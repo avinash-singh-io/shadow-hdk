@@ -75,3 +75,35 @@ the kit's own adapter is the one that has to be accurate. Phase 62 reported it h
 unconditionally while the only real adapter discarded it (BUG-231).
 
 ---
+### [DECISION] 2026-10-02 — a key-backed model's continuity is its transcript, as a CLI's is its session id
+Topics: conversation, transcript, model-agent, reopen, compaction
+Affects-phases: none
+Affects-specs: none
+Detail: D181 landed as structured messages rather than as seeded text. The loop is built fresh every
+turn, so the transcript lives on the `_ModelSession` that outlives it — everything after the system
+message, so the role is rebuilt per turn and a `set_mode` is never shadowed by a stale one. A
+provider reopen (which `set_mode` does) would have dropped it, so `Conversation` keeps it over a
+reopen exactly as it keeps `session_id`, through a duck-typed `_remember_transcript` /
+`_give_the_transcript_back` pair — set on the session rather than passed to `open()`, because every
+CLI adapter's opener would refuse the keyword and that is how phase 64 broke twenty-two doubles.
+
+One latent bug came with it and was caught by a surviving mutation: `_compact` kept `messages[:2]`
+with the comment *the role and the brief — `work()` puts them first and in that order*. With a
+transcript between them that slice is the role and the **oldest carried message**, so the request the
+model was answering would have been summarised away while a stale one was kept. The brief's position
+is recorded now, and survives a park.
+
+---
+
+### [DISCOVERY] 2026-10-02 — a resumed key-backed thread still forgets, and ENH-052 filed
+Topics: conversation, transcript, resume, budget
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md
+Detail: Two things this group deliberately did not close. A thread resumed in a **new process** has
+no carried transcript and `_seed_if_fresh` only seeds a fork (`seeded_turns > 0`), so it starts
+empty — that belongs with BUG-234's resume work in G5, where the record is already being changed, and
+is handled there rather than twice. And the carried transcript is **unbounded**: ENH-052 records the
+interaction with a token budget and compaction, which are the audit's H33/H34 and outside Wave 1.
+Filed at the moment the risk was introduced, and named in the comment that introduces it.
+
+---

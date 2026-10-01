@@ -13,6 +13,7 @@ from shadow_hdk.kernel import Behaviour, EffectProfile
 from shadow_hdk.kernel.observations import ApprovalRequest, Completed, Failed
 from shadow_hdk.kernel.ports import (
     AgentSession,
+    Message,
     ModelPort,
     ToolSource,
     Turn,
@@ -95,6 +96,16 @@ class _ModelSession:
         self._active: asyncio.Task[Any] | None = None
         self._interrupted = False
         self._loop: Any = None
+        self.before: tuple[Message, ...] = ()
+        """This thread's earlier turns, carried from one turn to the next (D181, BUG-232).
+
+        It lives here rather than on the loop because **the loop is built fresh for every turn** and
+        the session is what outlives them. Everything after the system message, so the role is
+        rebuilt per turn and a `set_mode` is not shadowed by a stale one.
+
+        Unbounded on purpose, for now: this is what every chat API does and what a product expects
+        of a thread. Fitting a transcript to a model's window is a budget and a compaction, which
+        are separate asks — ENH-052 records the interaction."""
         self.unmapped: tuple[str, ...] = unmapped_for_a_model(
             behaviour, selects_model=_selects_model(agent.model)
         )
@@ -145,6 +156,7 @@ class _ModelSession:
             # BUG-229: stored here since Phase 30 and read by nothing, so a mode's instructions
             # were dropped and the thread reported them honoured.
             behaviour=self.behaviour,
+            before=self.before,
         )
         # Held while the turn runs so `steer` has something to deliver into (ENH-046).
         self._loop = loop
@@ -153,6 +165,11 @@ class _ModelSession:
         finally:
             loop._turning = False  # noqa: SLF001 — two halves of this adapter
             self._loop = None
+            # Everything but the role, so the next turn reads what this one said (D181, BUG-232).
+            # Kept even on a failed or interrupted turn: a model that was asked something and
+            # answered badly was still asked it, and a transcript with the awkward parts removed is
+            # not the conversation that happened.
+            self.before = tuple(loop.messages[1:])
         while isinstance(observation, ApprovalRequest):
             answer = await context.request_approval(
                 observation.question,

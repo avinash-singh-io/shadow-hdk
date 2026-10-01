@@ -21,9 +21,9 @@ phase: phase-65-the-claims-are-true
 
 ## G3 — a key-backed conversation remembers its turns (D181) · BUG-232
 
-- [ ] G3.1 the transcript seeding is one derivation, used by the ordinary path and by fork alike
-- [ ] G3.2 a second turn contains the first, asserted against what the model was asked
-- [ ] G3.3 a first turn is unchanged
+- [x] G3.1 the transcript lives on the session that outlives the per-turn loop, and is carried over a provider reopen the way a session id is
+- [x] G3.2 a second turn contains the first, and a third both — asserted against what the model was asked, in order
+- [x] G3.3 a first turn is exactly the role and the prompt; one system message however many turns; a mode switch replaces the role and keeps the words
 
 ## G4 — a person's thinking time is not the provider's ceiling (D182) · BUG-233
 

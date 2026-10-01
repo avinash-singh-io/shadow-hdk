@@ -144,6 +144,7 @@ class _Turnwise:
         *,
         model: ModelPort | None = None,
         behaviour: Behaviour | None = None,
+        before: tuple[Message, ...] = (),
     ) -> None:
         self.agent = agent
         self.pattern = agent.pattern
@@ -157,6 +158,14 @@ class _Turnwise:
         self._turning = True
         """A model owned by an AgentPort adapter; absent means the run's ordinary ModelPort."""
         self.messages: list[Message] = []
+        self._before: tuple[Message, ...] = tuple(before)
+        """What this thread said in its earlier turns (D181, BUG-232). A key-backed loop is built
+        fresh for every turn, so the transcript has to arrive from the session that outlives it —
+        before this it did not arrive at all, and turn three could not see turns one and two."""
+        self._brief_at = 0
+        """Where this turn's own request sits once `work()` has laid the messages out. Compaction
+        keeps the role and the brief and drops the middle, and with a transcript in between those
+        two are no longer at indices 0 and 1."""
         self.held: dict[str, str] = {}
         """Results too large for the model's context; kept for the run, paged by `recall` (D47)."""
         self.spent = Usage(0, 0, 0)
@@ -185,7 +194,15 @@ class _Turnwise:
                         f"{', '.join(sorted(missing))}, which this deployment does not offer"
                     ),
                 )
-        self.messages = [Message("system", self._role(skill)), Message("user", brief)]
+        # **Role, then what was said, then what is being asked** (D181). The role is rebuilt every
+        # turn rather than carried, because a `set_mode` may have changed who the model is and a
+        # model handed three stale roles is being told three different things about itself.
+        self.messages = [
+            Message("system", self._role(skill)),
+            *self._before,
+            Message("user", brief),
+        ]
+        self._brief_at = len(self.messages) - 1
         # **Picking up where it parked** (D57, BUG-020). A tool call the policy asked about parked
         # this step with the transcript kept; the host has answered. The transcript comes back,
         # the answer goes into the held child, and the turn the model was on continues — it is not
@@ -509,8 +526,13 @@ class _Turnwise:
                 ),
             )
         )
-        # The role and the brief — `work()` puts them first and in that order.
-        kept = self.messages[:2]
+        # The role and this turn's own brief. `work()` used to put them at 0 and 1; with the
+        # thread's earlier turns between them (D181) the brief has moved, so its position is
+        # recorded rather than assumed — slicing `[:2]` would now summarise away the request and
+        # keep the oldest carried message instead.
+        kept = [self.messages[0]]
+        if 0 < self._brief_at < len(self.messages):
+            kept.append(self.messages[self._brief_at])
         self.messages = [
             *kept,
             Message("assistant", f"Summary of what happened before this point: {summary}"),
@@ -727,6 +749,7 @@ class _Turnwise:
             "nudged": self.nudged,
             "proposed": self.proposed,
             "turns": self.turns,
+            "brief_at": self._brief_at,
         }
 
     def _restore(self, kept: dict[str, Any]) -> None:
@@ -739,6 +762,7 @@ class _Turnwise:
         self.nudged = bool(kept.get("nudged", False))
         self.proposed = int(kept.get("proposed", 0))
         self.turns = int(kept.get("turns", 0))
+        self._brief_at = int(kept.get("brief_at", 1))
 
     async def _wake(self, handle: str, answer: Any) -> list[Event]:
         """The held child woken with the host's answer — or, if the person amended the plan
