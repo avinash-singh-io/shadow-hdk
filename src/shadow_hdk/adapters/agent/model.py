@@ -19,6 +19,7 @@ from shadow_hdk.kernel.ports import (
     TurnChunk,
     Usage,
 )
+from shadow_hdk.kernel.providers import unmapped_for_a_model
 from shadow_hdk.runtime import Parked, current_run
 from shadow_hdk.runtime.offer import PARKED_TURN
 
@@ -93,6 +94,14 @@ class _ModelSession:
         self.closed = False
         self._active: asyncio.Task[Any] | None = None
         self._interrupted = False
+        self.unmapped: tuple[str, ...] = unmapped_for_a_model(behaviour)
+        """What this mode asked for that a `ModelRequest` has nowhere to put (BUG-229, D170).
+
+        Read off the session by name in `Conversation` (ENH-020), exactly as a CLI's is. Before
+        this a `_ModelSession` had no such attribute, so `getattr(session, "unmapped", ())`
+        answered `()` — and a host read that as *your mode was honoured in full* while the
+        instructions were being dropped. Empty was the one answer this must never give by
+        accident."""
 
     async def turn(self, prompt: str) -> Turn:
         if self.closed:
@@ -125,6 +134,9 @@ class _ModelSession:
             self.agent._loop,  # noqa: SLF001 — two halves of this adapter
             context,
             model=self.agent.model,
+            # BUG-229: stored here since Phase 30 and read by nothing, so a mode's instructions
+            # were dropped and the thread reported them honoured.
+            behaviour=self.behaviour,
         )
         observation = await loop.work(prompt)
         while isinstance(observation, ApprovalRequest):

@@ -18,8 +18,26 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.40.0"
-"""0.40.0 — undo, and an agent's own workspace (ENH-043; Epic 0011 phase 61, D161-D165):
+EXPECTED = "0.41.0"
+"""0.41.0 — what a run carries into any provider (BUG-229, ENH-047, lane P's asks 4/5/11;
+Epic 0011 phase 62, D166-D170). **A fix first:** a key-backed model never received a mode's
+`system` — `ModelSession` stored the behaviour and nothing read it — and `thread.unmapped_behaviour`
+came back **empty**, which a host reads as honoured in full. Now the instructions reach the system
+message, `Behaviour.model` reaches `ModelRequest.model`, and `effort`/`temperature` are named
+because a `ModelRequest` has nowhere to put them (D170). Beside it one vocabulary for everything a
+run carries — a named, attributable `Fragment` (D166), Q1's bare `<instructions>` now one of them —
+assembled by one derivation for a CLI and a key-backed model alike (D167), with a mode's words
+layered on the pattern's role rather than replacing it (D168). Fragments travel to **every**
+provider, including one with its own system-prompt flag: written first as one gate with
+`instructions_in_prompt`, which meant Claude Code received none, and found by a live measurement
+rather than by any unit test. `root_instructions` offers a root's `AGENTS.md`/`CLAUDE.md` as
+fragments a product composes (D169) — the ENH-012 default that a governed CLI does not read them
+stays, and was **re-measured on claude-code 2.1.284** as lane P asked, both that it still holds and
+that an offered fragment is followed. `markdown_skills` reads a folder of `SKILL.md` as a
+`SkillSource`, skipping a malformed one rather than losing the rest. Contract additions, so a
+**minor** (D9) and a *Pins* row; protocol 3 unchanged, and no published schema moved.
+
+0.40.0 — undo, and an agent's own workspace (ENH-043; Epic 0011 phase 61, D161-D165):
 a new **port**, `WorkspaceHistoryPort` (`snapshot`/`restore`/`snapshots`), with the shipped
 `GitHistory` adapter attached wherever a local root has a `.git` — a linked worktree included,
 where it is a file rather than a directory. A port because cheap-on-a-work-tree and
