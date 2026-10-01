@@ -192,6 +192,15 @@ where capability work lands while `shadow` is pre-usable.
 | D155 | capturing the change never fails the write; an unreadable prior state is marked | [`phases/phase-59-a-change-on-the-record/overview.md`](/phases/phase-59-a-change-on-the-record/overview.md) |
 | D156 | the kit keeps a run's proposals only when nobody else is listening — `keep_proposals=None` keeps only where the host passed no sink | [`phases/phase-59-a-change-on-the-record/overview.md`](/phases/phase-59-a-change-on-the-record/overview.md) |
 
+## Epic 0011 Phase 60 — the write-class completes — 2026-10-01
+
+| Decision | Summary | Source |
+|---|---|---|
+| D157 | the environment owns a background job and `close()` ends every one — D35 kept one level up, the reasoning BUG-019 used for provider sessions | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
+| D158 | a patch is a list of `{path, edits}` reusing `edit_file`'s vocabulary, not a diff format the kit parses | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
+| D159 | atomic means every file is validated before any file is written | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
+| D160 | status and output arrive together: three background operations, not four | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is
