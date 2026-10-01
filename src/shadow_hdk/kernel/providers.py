@@ -87,6 +87,15 @@ class Behaviour:
     effort: str = ""
     temperature: float | None = None
     tools_offered: tuple[str, ...] = ()
+
+    silence_seconds: float | None = None
+    """How long this mode lets a CLI say **nothing** before its turn is given up (D182, BUG-233).
+
+    A field the kit honours itself rather than one a CLI is handed, like `tools_offered` — no
+    provider has a flag for our patience. `None` is the adapter's default. It is a ceiling on the
+    *gap between frames*, not on the turn: a run that keeps streaming is working, however long it
+    takes, and before phase 65 a fixed ten minutes of total turn time failed real work.
+    """
     fragments: tuple[Fragment, ...] = ()
     """Named context this run carries besides the instructions (D166). Empty changes nothing.
 

@@ -27,9 +27,9 @@ phase: phase-65-the-claims-are-true
 
 ## G4 — a person's thinking time is not the provider's ceiling (D182) · BUG-233
 
-- [ ] G4.1 the ceiling is a mode's to set, with a default that is not ten minutes
-- [ ] G4.2 a turn parked on a person does not count that time
-- [ ] G4.3 a provider that genuinely goes silent still fails, saying so
+- [x] G4.1 the ceiling measures the provider's **silence**, not the turn; a mode sets it through `Behaviour.silence_seconds`; the default is 1800s of silence, not 600s of work
+- [x] G4.2 time the kit spends answering the provider's own call — a person's approval included — is given back to its patience
+- [x] G4.3 a hung provider still fails, and the words say *said nothing for Ns* rather than *did not finish*
 
 ## G5 — a resolved agent survives a mode switch and a resume (D183) · BUG-234
 

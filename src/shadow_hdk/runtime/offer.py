@@ -13,7 +13,8 @@ a socket. Loop logic belongs to the loop.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Mapping
+import time
+from collections.abc import AsyncIterator, Callable, Mapping
 from contextlib import asynccontextmanager
 from typing import Any, Protocol, runtime_checkable
 
@@ -103,6 +104,10 @@ class Routing:
         self._withheld = frozenset(withhold)
         self._narrowing: tuple[str, ...] = ()
         self._context: RunContext | None = None
+        self.answering: Callable[[float], None] | None = None
+        """Told how long each call took, where somebody is listening (D182, BUG-233). The thread
+        wires it to the provider session's own `waited_for_us`, so time the kit spends answering a
+        provider's call — a person's approval included — is given back to its patience."""
 
     @property
     def context(self) -> RunContext | None:
@@ -148,12 +153,32 @@ class Routing:
     async def call(
         self, name: str, arguments: Mapping[str, JsonValue] | None = None
     ) -> Observation:
-        """Route the agent's call through the attached run, and hand back what came out."""
+        """Route the agent's call through the attached run, and hand back what came out.
+
+        How long that took is reported to `answering`, because **the caller is silent for all of
+        it and it is not the caller's silence** (D182, BUG-233): the call is judged, recorded, and
+        where the policy says so put to the person, who may take twenty minutes. A provider's
+        patience ceiling must not be spent on the kit doing work on its behalf.
+        """
         context = self._context
         if context is None:
             return Refused(REFUSED_NOT_RUNNING)
         if not self.shows(name):
             return Refused(f"no component named {name!r}")
+        began = time.monotonic()
+        try:
+            return await self._routed(name, arguments, context)
+        finally:
+            told = self.answering
+            if told is not None:
+                told(time.monotonic() - began)
+
+    async def _routed(
+        self,
+        name: str,
+        arguments: Mapping[str, JsonValue] | None,
+        context: RunContext,
+    ) -> Observation:
         self.calls += 1
         # `__` and not `:` — LangGraph reserves the colon for checkpoint namespaces, so a step id
         # carrying one fails at graph construction.

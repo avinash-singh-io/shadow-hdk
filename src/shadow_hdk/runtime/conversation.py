@@ -487,7 +487,23 @@ class Conversation:
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
         self._give_the_transcript_back(session)
+        self._let_the_provider_wait_for_us(session)
         return session
+
+    def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
+        """Wire the offer's *how long that call took* to the session's patience (D182, BUG-233).
+
+        A CLI that calls a tool is silent until we answer, and answering may mean asking a person
+        who takes twenty minutes (D58). Before this, that time was charged to the provider and the
+        turn failed saying *the provider did not finish* — about a person who had not answered yet.
+
+        Both ends are read by name: a session with no `waited_for_us` (every key-backed one, which
+        has no pipe to go quiet on) and an offer with no `answering` are both left alone.
+        """
+        giving_back = getattr(session, "waited_for_us", None)
+        if giving_back is None or not hasattr(self.registry, "answering"):
+            return
+        self.registry.answering = giving_back
 
     def _remember_transcript(self) -> None:
         """A key-backed session's transcript, off the session (D181, BUG-232).

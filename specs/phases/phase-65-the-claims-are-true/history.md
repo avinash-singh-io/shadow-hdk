@@ -107,3 +107,26 @@ interaction with a token budget and compaction, which are the audit's H33/H34 an
 Filed at the moment the risk was introduced, and named in the comment that introduces it.
 
 ---
+### [DECISION] 2026-10-02 — the ceiling measures silence, not work
+Topics: timeout, patience, jsonl, approvals, behaviour
+Affects-phases: none
+Affects-specs: none
+Detail: D182 landed as a change of *what is measured* rather than a bigger number. One
+`asyncio.timeout(600)` wrapped the whole wait, so a turn was failed for taking long — and a turn is
+not a failure for being long. What a ceiling is for is a hung process, and a hang is silence, so the
+deadline is rearmed on every frame the CLI writes: a provider that keeps streaming is never given up
+on, however long the run takes, and one that stops is given up on after `silence_s`. The default
+moved to 1800s **because the number now means something else** — leaving 600 would have invited the
+next reader to assume nothing had changed. A mode sets its own through
+`Behaviour.silence_seconds`, which is where `tools_offered` already lives: a field the kit honours
+itself, because no CLI has a flag for our patience.
+
+The second half was a person's time. `Routing.call` now reports how long it took, and the
+conversation wires that to the session's `waited_for_us`, which pushes the deadline out — because a
+CLI waiting for a tool call is waiting for **us**, and that call may be put to a person who takes
+twenty minutes (D58). Both ends are read by name, so a key-backed session (no pipe to go quiet on)
+and a host's own `Offer` are left alone. A surviving mutation showed the `hasattr` guard untested; it
+guards a `__slots__` offer, which now has a test, because without the guard a thread opened on one
+fails at open.
+
+---
