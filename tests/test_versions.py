@@ -18,8 +18,25 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.39.0"
-"""0.39.0 — the write-class toolset completes (ENH-042 closed; Epic 0011 phase 60,
+EXPECTED = "0.40.0"
+"""0.40.0 — undo, and an agent's own workspace (ENH-043; Epic 0011 phase 61, D161-D165):
+a new **port**, `WorkspaceHistoryPort` (`snapshot`/`restore`/`snapshots`), with the shipped
+`GitHistory` adapter attached wherever a local root has a `.git` — a linked worktree included,
+where it is a file rather than a directory. A port because cheap-on-a-work-tree and
+expensive-otherwise is what a port is for (D161), and an environment without one refuses rather
+than crashing. Three operations for the agent — `checkpoint` (`write`), `restore` (`delete`, so
+irreversible and `ask` stops a person before an undo, D163) and `list_checkpoints` (`list`) —
+while a product's own per-turn checkpoint goes through the port directly, because when to snapshot
+is policy and not the kit's (D162). A snapshot holds what git would track, so ignored files are
+neither captured nor removed (D164), and **none of it touches the product's git state** — a
+scratch index into a parentless commit under `refs/shadow-hdk/snapshots/*`, never HEAD, a branch,
+the index or the stash (D165). Snapshot ids sort, because a commit's date is second-resolution and
+checkpointing every turn ties. Beside it a host-side `open_worktree`/`close_worktree`/`worktrees`
+giving each agent its own checkout on a `shadow-hdk/<name>` branch it can open a pull request from;
+a developer's own worktrees are unreachable from it. A port addition, so a **minor** (D9) and a
+*Pins* row; protocol 3 unchanged.
+
+0.39.0 — the write-class toolset completes (ENH-042 closed; Epic 0011 phase 60,
 D157-D160): `apply_patch(files[])` changes regions across many files as **one** act — every edit
 in every file validated before any file is written (D159), so a refused patch leaves the workspace
 exactly as it was; the same file named twice is refused rather than applied twice. Its vocabulary

@@ -201,6 +201,18 @@ where capability work lands while `shadow` is pre-usable.
 | D159 | atomic means every file is validated before any file is written | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
 | D160 | status and output arrive together: three background operations, not four | [`phases/phase-60-the-write-class-completes/overview.md`](/phases/phase-60-the-write-class-completes/overview.md) |
 
+## Epic 0011 Phase 61 — undo and an agent's own workspace — 2026-10-01
+
+A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decisions it carries.
+
+| Decision | Summary | Source |
+|---|---|---|
+| D161 | a new `WorkspaceHistoryPort` (`snapshot`/`restore`/`snapshots`) with a refuse-not-crash default; git-backed where a root is a work tree | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
+| D162 | when to snapshot is the product's policy; the kit offers `checkpoint`/`restore` and snapshots nothing automatically | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
+| D163 | a restore derives `delete`-class — irreversible, and `ask` stops a person before an undo | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
+| D164 | a snapshot holds what git would track; ignored files are neither captured nor removed | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
+| D165 | the kit never touches the product's git state — not HEAD, a branch, the index or the stash; snapshots live under `refs/shadow-hdk/snapshots/*` | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is

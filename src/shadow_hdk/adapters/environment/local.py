@@ -44,6 +44,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from shadow_hdk.adapters.environment.history import GitHistory
 from shadow_hdk.kernel.capabilities import EnvironmentRequirements
 from shadow_hdk.kernel.observations import Observation
 from shadow_hdk.kernel.workspace import Workspace
@@ -335,6 +336,10 @@ class LocalEnvironment(Environment):
         self._box = box
         self._timeout_s = timeout_s
         self._output_limit = output_limit
+        # Cheap where a root is a work tree and absent where it is not (D161), decided by
+        # asking the filesystem rather than by running git: a `.git` that is a directory is a
+        # repository, one that is a file is a linked worktree, and both have a history.
+        self.history = GitHistory(self.root) if (self.root / ".git").exists() else None
 
     @classmethod
     async def open(

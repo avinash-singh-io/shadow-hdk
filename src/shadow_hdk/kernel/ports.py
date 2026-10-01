@@ -249,6 +249,44 @@ class EffectJournalPort(Protocol):
     async def append(self, entry: EffectEntry, *, expected_length: int) -> None: ...
 
 
+@dataclass(frozen=True)
+class Snapshot:
+    """One captured state of a workspace, and what it was called when it was taken."""
+
+    id: str
+    label: str = ""
+    at: str = ""
+    """Whatever the taking side's clock said, as text — the kernel has no clock."""
+
+
+@runtime_checkable
+class WorkspaceHistoryPort(Protocol):
+    """Capturing a workspace's state, and putting it back (D161, ENH-043).
+
+    The kit checkpoints the **run** and the **record** and touches the filesystem not at all, so a
+    thread rolled back to turn 3 faces a workspace still carrying turn 7's files. This is the
+    missing half.
+
+    **Why a port and not one mechanism.** Snapshotting is cheap where a root is a git work tree and
+    expensive where it is not, which is exactly the shape a port exists for: a product on a
+    repository gets the shipped git adapter, and one on a remote or contained root writes its own.
+    The kit ships the git one because that is the case lane P has.
+
+    **When to snapshot is not here** (D162). Taking a checkpoint before a turn is a *policy*, and
+    the boundary rule puts policy on the other side of a port — the kit cannot know whether a turn
+    deserves one. `checkpoint` and `restore` are offered as acts; a product or an agent decides.
+
+    An implementation that cannot do this **refuses and does not crash**, like every port default
+    here: nothing may raise past `run()`.
+    """
+
+    async def snapshot(self, label: str = "") -> str: ...
+
+    async def restore(self, snapshot: str) -> None: ...
+
+    async def snapshots(self) -> Sequence[Snapshot]: ...
+
+
 # ---------------------------------------------------------------- agents
 
 
