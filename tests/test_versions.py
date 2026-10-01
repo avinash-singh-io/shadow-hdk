@@ -18,8 +18,22 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.38.0"
-"""0.38.0 — a change is legible on the record (ENH-044; Epic 0011 phase 59, D154-D156):
+EXPECTED = "0.39.0"
+"""0.39.0 — the write-class toolset completes (ENH-042 closed; Epic 0011 phase 60,
+D157-D160): `apply_patch(files[])` changes regions across many files as **one** act — every edit
+in every file validated before any file is written (D159), so a refused patch leaves the workspace
+exactly as it was; the same file named twice is refused rather than applied twice. Its vocabulary
+is `edit_file`'s `{old, new}` and literally its validation function (D158), not a diff format the
+kit parses. Beside it a background shell in three operations, not four (D160): `run_background`,
+`job_output` — status and new-since-last-read output together, `exit_code` null while running —
+and `kill_job`, which ends the whole tree. **The environment owns a job and `close()` ends every
+one** (D157): D35's rule that nothing outlives its owner, kept one level up, which is the move
+BUG-019 forced for provider sessions. A job is wrapped by the same sandbox and given the same
+narrow environment as a foreground command; both properties are tested, having been found untested
+by a mutation pass. Four registrations appear in every environment's registry — additions in the
+published shape, so a **minor** (D9) and a *Pins* row; protocol 3 unchanged, no kernel change.
+
+0.38.0 — a change is legible on the record (ENH-044; Epic 0011 phase 59, D154-D156):
 `write_file`, `edit_file` and `delete_file` carry a `change` on their result — a unified diff
 bounded at `CHANGE_DIFF_BYTES`, `truncated` when cut, exact `added`/`removed` counted over the
 whole diff before cutting, and `created`/`deleted`/`before_unreadable` markers. So a host shows
