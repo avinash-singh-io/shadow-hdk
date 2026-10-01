@@ -144,6 +144,11 @@ class _Turnwise:
         self.ctx = context
         self.model = model
         self.behaviour = behaviour
+        self._steers: list[str] = []
+        """Words that arrived while this turn was running (ENH-046, D173), delivered before the
+        next model call. Not injected into a request already in flight: that request cannot be
+        changed, and pretending otherwise would make `steer`'s `bool` a lie."""
+        self._turning = True
         """A model owned by an AgentPort adapter; absent means the run's ordinary ModelPort."""
         self.messages: list[Message] = []
         self.held: dict[str, str] = {}
@@ -204,11 +209,30 @@ class _Turnwise:
             return parked_again
         return await self._continue()
 
+    def steer(self, text: str) -> bool:
+        """Queue words for the next step of this turn (ENH-046, D173).
+
+        **This is the one place a key-backed `steer` could be true**, and why `ModelAgent.steer`
+        answered `False` for so long: the loop between steps is the kit's own, so there is a moment
+        to deliver into. A resident CLI has the same property through its open stdin (D63); a
+        one-shot dialect has neither and honestly answers `False`.
+        """
+        if not text or not self._turning:
+            return False
+        self._steers.append(text)
+        return True
+
+    def _fold_in_steers(self) -> None:
+        """Whatever arrived since the last step, as the person's own words, before the next call."""
+        while self._steers:
+            self.messages.append(Message("user", self._steers.pop(0)))
+
     async def _continue(self) -> Observation:
         for turn in range(self.turns, self.pattern.max_turns):
             if (await self.ctx.remaining_now()).ceiling.max_steps <= 0:
                 return self.finished("lease_exhausted")
             self.turns = turn + 1
+            self._fold_in_steers()
             # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
             # meta-tool (BUG-001), and that is our refusal, not a provider's failure.
             # The mode's model, where it asked for one (BUG-229): `ModelRequest` has the field,

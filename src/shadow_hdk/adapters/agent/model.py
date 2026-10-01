@@ -94,6 +94,7 @@ class _ModelSession:
         self.closed = False
         self._active: asyncio.Task[Any] | None = None
         self._interrupted = False
+        self._loop: Any = None
         self.unmapped: tuple[str, ...] = unmapped_for_a_model(behaviour)
         """What this mode asked for that a `ModelRequest` has nowhere to put (BUG-229, D170).
 
@@ -138,7 +139,13 @@ class _ModelSession:
             # were dropped and the thread reported them honoured.
             behaviour=self.behaviour,
         )
-        observation = await loop.work(prompt)
+        # Held while the turn runs so `steer` has something to deliver into (ENH-046).
+        self._loop = loop
+        try:
+            observation = await loop.work(prompt)
+        finally:
+            loop._turning = False  # noqa: SLF001 — two halves of this adapter
+            self._loop = None
         while isinstance(observation, ApprovalRequest):
             answer = await context.request_approval(
                 observation.question,
@@ -187,7 +194,17 @@ class _ModelSession:
         yield TurnChunk(text=done.text, usage=done.usage, done=True)
 
     async def steer(self, text: str) -> bool:
-        return False
+        """Words folded into the turn that is running (ENH-046, D173).
+
+        `False` where there is nothing to steer — no turn running, or one that has already ended —
+        which is the same honest answer a one-shot CLI gives. The contract is unchanged; what
+        changed is that it can now be `True`.
+        """
+        loop = self._loop
+        if loop is None:
+            return False
+        taken: bool = loop.steer(text)
+        return taken
 
     async def interrupt(self) -> bool:
         active = self._active
