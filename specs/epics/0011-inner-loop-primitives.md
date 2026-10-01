@@ -17,7 +17,8 @@ policy_tdd: strict
 >
 > What shipped, and what it cost: the suite went **1897 → 2021**, 63 mutations were verified to
 > bite, and six of those mutations found assertions weaker than they looked. Two defects nobody
-> had reported were opened and closed — ENH-051 (a product's instructions never reached Codex)
+> had reported were opened and closed — ENH-051 (a product's instructions never reached Codex,
+> shipped inside 0.38.0 rather than as a version of its own)
 > and **BUG-229** (a key-backed model never received them *and* the thread reported them
 > honoured). Asks 10 and 12 remain unscheduled, for the reasons below.
 >
@@ -191,7 +192,7 @@ here is **contract additions** — a minor bump under D9 and a *Pins* row — wi
 
 | Phase | Version | Contract |
 |---|---|---|
-| Q1 | **0.37.0** ✅ | a `Dialect` field, so a minor; `Provider.json` and the TS client regenerated |
+| Q1 | **folded into 0.38.0** ✅ | a quick-task ahead of the phase; no version of its own was cut, and 0.38.0's note carries it |
 | 59 | **0.38.0** ✅ | additions; no ADR needed — the change rides the observation's own output |
 | 60 | **0.39.0** ✅ | additions: `apply_patch`, `run_background`, `job_output`, `kill_job` |
 | 61 | **0.40.0** ✅ | additions + a new port (`WorkspaceHistoryPort`), D161–D165 recorded |
@@ -236,7 +237,7 @@ a green unit suite does not prove instructions arrived.
 | 1 — the diff on the record (ENH-044) | phase 59, 0.38.0 |
 | 2 — patch and background shell (ENH-042) | phase 60, 0.39.0 |
 | 3 — checkpoints and undo (ENH-043) | phase 61, 0.40.0 |
-| 4 — everything a run needs, as data | **answered** (mostly already built) + Q1 (0.37.0) + BUG-229 in phase 62 |
+| 4 — everything a run needs, as data | **answered** (mostly already built) + Q1 (in 0.38.0) + BUG-229 in phase 62 |
 | 5 — context fragments, ENH-047, the sentinel | phase 62, 0.41.0 — measured on claude-code 2.1.284 |
 | 6 — a run's creations come back | phase 59, 0.38.0 (a subtraction: `KeepingSink` made opt-in) |
 | 7 — an isolated environment per agent | phase 61, 0.40.0 (host-side worktrees) |

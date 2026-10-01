@@ -13,7 +13,7 @@ and say why.
 
 | | |
 |---|---|
-| **`shadow-hdk==0.42.0`** | the pin to take once it is released. Everything below is in it. |
+| **`shadow-hdk==0.42.0`** | the pin to take. Everything below is in it. |
 | 0.36.0 | what you have now — still correct, and nothing in it changed shape |
 | Epic 0011 | the twelve, carried **here** rather than in `shadow` — the owner's decision, recorded as D153 |
 
@@ -196,8 +196,7 @@ are the two that need your decisions, and they say so.
 
 | | ask | release |
 |---|---|---|
-| ✅ | **4** — instructions reach a CLI with no flag | 0.37.0 |
-| ✅ | **1** — the diff on the record; **6** — proposals reach you, not our store | 0.38.0 |
+| ✅ | **4** — instructions reach a CLI with no flag; **1** — the diff on the record; **6** — proposals reach you, not our store | 0.38.0 |
 | ✅ | **2** — `apply_patch` and a background shell | 0.39.0 |
 | ✅ | **3** — undo; **7** — a worktree per agent | 0.40.0 |
 | ✅ | **5** — context fragments, `AGENTS.md`, the sentinel; **11** — `SKILL.md`; **4** — the rest | 0.41.0 |
@@ -211,7 +210,8 @@ the rest are additions you can adopt at your own pace.
 ## Two things we found that you had not reported, and one of them is on you to check
 
 **Your Build agent has been running without its instructions on Codex.** That is the gap this reply
-already described, and it is fixed in 0.37.0.
+already described, and it is fixed in **0.38.0**. There is no 0.37.0 — Q1 was a quick-task ahead
+of the phase and ships inside the next release.
 
 **And a key-backed model was never getting them either — while the kit told you it was.** This one is
 worse and we did not know it. `ModelSession` stored the behaviour and *nothing read it*, so a mode's
@@ -246,7 +246,8 @@ Two things that pass a green suite and should not have:
 governed Claude Code still does **not** read a folder's `CLAUDE.md`, and the same convention passed as
 a `Fragment` **is** followed. Both live tests in the tree, each printing the version it measured.
 
-**One thing we could not measure.** 0.37.0's Codex leg is unmeasured end to end: `codex-cli 0.154.0`
+**One thing we could not measure.** The Codex leg of ENH-051 is unmeasured end to end: `codex-cli
+0.154.0`
 is signed in on this machine but the ChatGPT account refuses every model we tried (`gpt-6.1-sol`,
 `gpt-5-codex`, `gpt-5`, `gpt-5.1-codex-max`, `o3` — all *not supported when using Codex with a ChatGPT
 account*). The mechanism is proven live on Claude Code with its own flag removed, and the argv is unit
