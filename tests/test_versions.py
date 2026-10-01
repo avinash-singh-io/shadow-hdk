@@ -18,8 +18,20 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.42.0"
-"""0.42.0 — the loop is visible and steerable (ENH-045, ENH-046; Epic 0011 phase 63,
+EXPECTED = "0.43.0"
+"""0.43.0 — an agent is data, like everything else (phase 64, D174-D177): the last asymmetry in
+the plugin boundary. Skills, modes, rules, batteries, providers and component switches all read
+from the product's store; an agent read only from a packaged file, had no listing, and `ServeHost`
+hardcoded `single`, so every thread a host opened ran the same loop. Now `store_patterns` over an
+`agents` collection (D174), version-gated and skipping a malformed row rather than losing the rest;
+`ModeSpec.agent` names which agent runs a mode with `thread/start {agent}` overriding it (D175), so
+switching goes through the governed `set_mode`; an unknown name is refused naming what exists,
+never a silent `single` (D176); `agents/list` completes the listing symmetry and `thread/start`
+answers with the agent it resolved to, for a snapshot a product caches by hash (D177). Additions
+only — a mode naming no agent still gets `single`, pinned by a test — so a **minor** (D9) and a
+*Pins* row; protocol 3 unchanged.
+
+0.42.0 — the loop is visible and steerable (ENH-045, ENH-046; Epic 0011 phase 63,
 D171-D173): `update_plan` as a registered component declaring **no effects at all**, so every mode
 admits the agent's own narration — an agent that had to ask permission to say what it intends would
 stop saying it (D171). An item's `status` is an open string, the cut `Provider.transport` makes

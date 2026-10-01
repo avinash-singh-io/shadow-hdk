@@ -231,6 +231,15 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D172 | a plan item's `status` is an open string, not an enumeration — the cut `Provider.transport` makes | [`phases/phase-63-visible-and-steerable/overview.md`](/phases/phase-63-visible-and-steerable/overview.md) |
 | D173 | a steer is delivered between steps as a message, and `steer` still answers `bool` honestly | [`phases/phase-63-visible-and-steerable/overview.md`](/phases/phase-63-visible-and-steerable/overview.md) |
 
+## Epic 0011 Phase 64 — an agent is data — 2026-10-01
+
+| Decision | Summary | Source |
+|---|---|---|
+| D174 | an agent is a store row like a skill is: `StorePatterns` over an `agents` collection, reloaded when its version moves | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
+| D175 | a mode names its agent (`ModeSpec.pattern`), with `thread/start {agent}` as the per-thread override — so switching agent goes through the governed `set_mode` door | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
+| D176 | an unknown agent name is refused at open, naming it — never a silent fallback to `single` | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
+| D177 | the resolved agent is readable on the thread, so a product can build a resolved snapshot it can cache by hash | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is

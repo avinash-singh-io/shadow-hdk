@@ -6,7 +6,7 @@
 # packaging boundary (D78).
 [project]
 name = "shadow-hdk"
-version = "0.42.0"
+version = "0.43.0"
 description = "Shadow HDK — a Harness Development Kit: an effect-governed agent runtime, its components, and the wire."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ dependencies = [
     # The Linux confinement helper (Epic 0010, D123/D133): Landlock + seccomp applied before exec,
     # a bin-only platform wheel built from `native/sandbox`, in lockstep with this version. On the
     # two architectures it is built for; elsewhere on Linux the environment falls back to bwrap.
-    "shadow-hdk-linux-sandbox==0.42.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "shadow-hdk-linux-sandbox==0.43.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 
 [project.optional-dependencies]
@@ -115,9 +115,12 @@ shadow-hdk-linux-sandbox = { workspace = true }
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
-# Prose, not source. The specs carry illustrative Python in fenced blocks — ruff 0.16 formats those,
-# and a design document is not the formatter's business. momentum's own scaffold is vendored.
-extend-exclude = ["specs", ".claude", ".agent", ".githooks", ".momentum"]
+# Prose, not source. The specs and the migration notes carry illustrative Python in fenced blocks —
+# ruff 0.16 formats those, and a design document is not the formatter's business. `docs` joined the
+# list for the same reason after the fences there cost three landings and a merge conflict in one
+# epic (TD-017): a note is written for a reader, so an aligned trailing comment is the point of it,
+# and collapsing one is the formatter overreaching into prose. momentum's own scaffold is vendored.
+extend-exclude = ["specs", "docs", ".claude", ".agent", ".githooks", ".momentum"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "TID252"]

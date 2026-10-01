@@ -29,6 +29,11 @@ from shadow_hdk.adapters.agent import (
     single,
     store_skills,
 )
+from shadow_hdk.adapters.agent.patterns import (
+    PatternRegistry,
+    agent_recorded,
+    store_patterns,
+)
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.adapters.modes import (
@@ -332,6 +337,16 @@ class ServeHost:
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}
         self._batteries_seeded = False
+        self._handed_agent = agent
+        """An agent the host composed itself. It wins over anything a mode names (D175): a host
+        that built its own provider keeps it, and naming an agent must not silently replace it."""
+        self._model = model
+        """Kept, rather than wrapped once in a `ModelAgent`, so the loop can be chosen **per
+        thread** from the mode (D175). Before this the pattern was fixed at host construction and
+        every thread this host ever opened ran `single`."""
+        self.patterns = PatternRegistry((store_patterns(self.store),))
+        """The agents a run may be given: the shipped library, and the product's `agents` rows
+        (D174). Later shadows earlier, so a product may override a shipped name."""
         self._agent = agent or (
             ModelAgent(model=model, pattern=single) if model is not None else None
         )
@@ -436,10 +451,26 @@ class ServeHost:
         self.batteries_opened = ()
         await self.stores.aclose()
 
+    async def _agent_for_mode(self, mode_id: str) -> str:
+        """The agent this mode names (D175), or empty. A mode nobody registered names nothing —
+        the mode registry refuses an unknown id in its own time, and this must not pre-empt it
+        with a different error."""
+        for spec in await self.modes.all():
+            if spec.id == mode_id:
+                return spec.agent
+        return ""
+
     async def _provider_candidate(
-        self, want: str | None
+        self, want: str | None, chosen: AgentPort | None = None
     ) -> tuple[AgentPort | None, Available | None, ProviderCapabilities, str]:
-        """Resolve and probe, but do not open the provider's execution process yet."""
+        """Resolve and probe, but do not open the provider's execution process yet.
+
+        `chosen` is the agent this run asked for by name (D175) — built per thread, so one host
+        serves four agents. It wins over the host's own only when the host did not hand one in,
+        which `_agent_named` already decides.
+        """
+        if chosen is not None:
+            return (chosen, None, self._handed_capabilities, self.provider or "handed in")
         if self._agent is not None:
             return (
                 self._agent,
@@ -450,6 +481,18 @@ class ServeHost:
         available = await ready(want or self.settings.want)
         called = f"{available.provider.called} {available.version or ''}".strip()
         return None, available, available.capabilities, called
+
+    async def _agent_named(self, wanted: str) -> AgentPort | None:
+        """A key-backed agent on the pattern this run asked for (D175, D176).
+
+        `None` where this host has no model — a CLI provider owns its own loop, so an agent name
+        is not a thing the kit can honour there and the caller falls through to the provider.
+        An unknown name raises `NoSuchAgent` **before** anything is opened or asked.
+        """
+        if self._handed_agent is not None or self._model is None:
+            return None
+        pattern = await self.patterns.named(wanted) if wanted else single
+        return ModelAgent(model=self._model, pattern=pattern)
 
     async def _open_candidate(
         self,
@@ -546,6 +589,7 @@ class ServeHost:
         requirements: Any = None,
         plan_limits: Any = None,
         peer_components: Sequence[Any] = (),
+        agent: str = "",
     ) -> Thread:
         # One root or many (D76): `roots` as the wire carries them — `[{name, path}, …]` — or
         # `root`, or the settings' default. Every root is made if it is not there.
@@ -558,7 +602,18 @@ class ServeHost:
         policy_mode = mode or self.settings.mode
         environment_mode = await self._environment_for(policy_mode)
         execution = self._requirements(requirements)
-        handed, available, provider_capabilities, called = await self._provider_candidate(want)
+        # Which agent runs this (D175): the thread's own name wins over the mode's, and an
+        # unknown one is refused here — before an environment is opened or a model is asked
+        # (D176), so a refusal costs nothing and leaves nothing behind.
+        wanted = agent or await self._agent_for_mode(policy_mode)
+        chosen = await self._agent_named(wanted)
+        # Which agent this run actually resolved to (D177), for the snapshot a product caches by
+        # hash. Empty where no agent applies — a CLI provider owns its own loop, and saying
+        # `single` there would be a claim about something the kit did not choose.
+        resolved_agent = agent_recorded(wanted, chosen=chosen is not None)
+        handed, available, provider_capabilities, called = await self._provider_candidate(
+            want, chosen
+        )
         environment = await LocalEnvironment.open(
             where,
             mode=environment_mode,
@@ -570,7 +625,7 @@ class ServeHost:
         )
         try:
             selection = select_execution(provider_capabilities, environment.capabilities, execution)
-            agent = await self._open_candidate(handed, available, where)
+            provider_agent = await self._open_candidate(handed, available, where)
         except BaseException:
             await environment.close()
             raise
@@ -592,7 +647,7 @@ class ServeHost:
             provider_revision=called,
         )
         thread = await Thread.open(
-            agent=agent,
+            agent=provider_agent,
             ports=self._handed(ports, observer, peer_components),
             store=self.threads,
             root=where,
@@ -616,6 +671,10 @@ class ServeHost:
         )
         self._selections[thread.id] = selection
         thread.execution = selection
+        # Read off the thread by name on the wire, the way `unmapped` is read off a session
+        # (ENH-020's idiom), so a host or a double that predates the field reports nothing
+        # rather than failing.
+        thread.agent = resolved_agent
         self.provider = called
         return thread
 

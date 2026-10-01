@@ -40,6 +40,7 @@ from shadow_hdk.wire.protocol import (
     ACTIVITY,
     ADMIN_SESSIONS,
     ADMIN_THREADS,
+    AGENTS_LIST,
     APPROVAL_REQUEST,
     APPROVALS_ANSWER,
     APPROVALS_PENDING,
@@ -105,6 +106,7 @@ class ThreadHost(Protocol):
         requirements: Any = None,
         plan_limits: Any = None,
         peer_components: Any = (),
+        agent: str = "",
     ) -> Thread: ...
 
     async def resume(
@@ -228,6 +230,7 @@ class ThreadMethods:
             (CAPABILITIES_CHECK, self._capabilities_check),
             (TOOLS_LIST, self._tools_list),
             (SKILLS_LIST, self._skills_list),
+            (AGENTS_LIST, self._agents_list),
             (ADMIN_SESSIONS, self._admin_sessions),
             (ADMIN_THREADS, self._admin_threads),
         ):
@@ -269,6 +272,10 @@ class ThreadMethods:
             roots=params.get("roots") or None,
             # Passed only when given (D82), so a host written before identity was on the thread
             # is still called the way it always was.
+            # Which agent runs this thread (D175): the mode names one and this overrides it for
+            # one thread. Passed **only when asked**, so a `ThreadHost` written before the field
+            # existed is not broken by its arrival — the rule D14 set when `stream` was added.
+            **({"agent": str(params["agent"])} if params.get("agent") else {}),
             **({"principal": str(params["principal"])} if params.get("principal") else {}),
             **({"attributes": params["attributes"]} if params.get("attributes") else {}),
             **({"budget": params["budget"]} if params.get("budget") is not None else {}),
@@ -294,6 +301,9 @@ class ThreadMethods:
             **_workspace_json(thread),
             "provider": thread.record.provider,
             "mode": thread.record.mode,
+            # Which agent this run resolved to (D177) — empty where none applies, because a CLI
+            # provider owns its own loop and naming one would be a claim the kit cannot make.
+            "agent": getattr(thread, "agent", ""),
             "plan_limits": _plan_limits_json(thread.plan_limits),
             "modes": await self._modes(host, thread),
             **_identity_json(thread),
@@ -627,6 +637,21 @@ class ThreadMethods:
         host = self._host_or_raise()
         thread = self._thread(params) if params.get("thread_id") else None
         return {"modes": await self._modes(host, thread)}
+
+    async def _agents_list(self, params: dict[str, Any]) -> dict[str, Any]:
+        """The agents a run may be given (D174), sorted — the shipped library and the product's
+        own `agents` rows, with the product's shadowing a shipped name. A host that carries no
+        registry answers an empty list rather than failing: the listing is a convenience, and a
+        composition without one is not broken."""
+        host = self._host_or_raise()
+        registry = getattr(host, "patterns", None)
+        if registry is None:
+            return {"agents": []}
+        return {
+            "agents": [
+                {"name": name, "description": line} for name, line in await registry.listing()
+            ]
+        }
 
     async def _rules_list(self, params: dict[str, Any]) -> dict[str, Any]:
         """Every rule — or, with a `thread_id`, the ones in that thread's scope (D82)."""
