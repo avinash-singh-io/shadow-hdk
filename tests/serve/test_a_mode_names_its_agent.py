@@ -211,3 +211,52 @@ async def test_an_agent_handed_to_the_host_is_still_honoured(tmp_path: Path) -> 
     said = model.system_said()
     assert "HANDED-ROLE" in said, said
     assert single.system[:40] not in said
+
+
+# ------------------------------------------------ and the thread says which one it resolved to
+
+
+async def test_a_thread_records_the_agent_it_resolved_to(tmp_path: Path) -> None:
+    """D177. Lane P carries a resolved snapshot — agent, instructions, skills, version, hash — so
+    a person's machine can cache by hash. They cannot build one if the kit will not say which
+    agent a run resolved to.
+
+    Asserted here, at the host, rather than over the wire: a wire test whose assertion fails hangs
+    in this harness (TD-019), so the mutation pass cannot use one.
+    """
+    model = Listening()
+    host = await a_host(tmp_path, model, [a_mode("reviewing", agent="reviewer")], [A_REVIEWER])
+
+    thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+    try:
+        assert thread.agent == "reviewer"
+    finally:
+        await thread.close()
+
+
+async def test_a_thread_naming_nothing_records_single_rather_than_empty(tmp_path: Path) -> None:
+    """Empty would read as *we do not know*; `single` is what actually ran."""
+    model = Listening()
+    host = await a_host(tmp_path, model, [a_mode("plain")], [A_REVIEWER])
+
+    thread = await host.open(root=str(tmp_path), mode="plain", want=None, name="tools")
+    try:
+        assert thread.agent == "single"
+    finally:
+        await thread.close()
+
+
+async def test_a_threads_override_is_what_is_recorded(tmp_path: Path) -> None:
+    builder = {"name": "builder", "system": "BUILDER-ROLE: you write the change."}
+    model = Listening()
+    host = await a_host(
+        tmp_path, model, [a_mode("reviewing", agent="reviewer")], [A_REVIEWER, builder]
+    )
+
+    thread = await host.open(
+        root=str(tmp_path), mode="reviewing", want=None, name="tools", agent="builder"
+    )
+    try:
+        assert thread.agent == "builder"
+    finally:
+        await thread.close()

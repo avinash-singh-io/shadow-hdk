@@ -68,6 +68,20 @@ class StorePatterns:
         return self._patterns
 
 
+def agent_recorded(wanted: str, *, chosen: bool) -> str:
+    """Which agent a run resolved to, for the record a product caches by hash (D177).
+
+    `wanted` is the name the thread or its mode asked for; `chosen` says whether the kit actually
+    selected a loop. Empty when it did not — a CLI provider owns its own loop, and naming one
+    there would be a claim the kit cannot make. An unnamed run records `single`, not empty,
+    because empty reads as *we do not know* and `single` is what actually ran.
+
+    A function rather than an expression inside `ServeHost.open` so it can be checked without
+    standing up a host — which in this suite means without opening a real sandbox (TD-019).
+    """
+    return (wanted or single.name) if chosen else ""
+
+
 def store_patterns(store: Any, collection: str = "agents") -> StorePatterns:
     return StorePatterns(store, collection)
 
@@ -125,6 +139,7 @@ class PatternRegistry:
 
 __all__ = [
     "SINGLE_ROLE",
+    "agent_recorded",
     "NoSuchAgent",
     "PatternRegistry",
     "StorePatterns",

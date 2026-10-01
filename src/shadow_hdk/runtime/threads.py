@@ -173,6 +173,11 @@ class Thread:
         self._hold_seconds = hold_seconds
         self._renewing: asyncio.Task[None] | None = None
         self.execution: ExecutionSelection | None = None
+        self.agent: str = ""
+        """Which agent this run resolved to (D177), set by whoever composed it — empty where no
+        agent applies, because a CLI provider owns its own loop. Here beside `execution` for the
+        same reason: it is a fact about the composition that a host reads back, not something the
+        runtime decides."""
         """The capability pair accepted by a composing host, when it supplied one."""
 
     # ------------------------------------------------------------------ opening and closing

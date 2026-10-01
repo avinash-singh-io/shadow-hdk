@@ -280,3 +280,28 @@ def test_a_mode_document_naming_no_agent_leaves_it_empty() -> None:
     spec = mode_from_document({"id": "plain", "policy": "workspace-write"}, source="store")
 
     assert spec.agent == ""
+
+
+# ------------------------------------------------ what a run records about the agent it ran (D177)
+
+
+def test_a_named_agent_is_what_is_recorded() -> None:
+    from shadow_hdk.adapters.agent.patterns import agent_recorded
+
+    assert agent_recorded("reviewer", chosen=True) == "reviewer"
+
+
+def test_an_unnamed_run_records_single_rather_than_empty() -> None:
+    """Empty reads as *we do not know*; `single` is what actually ran."""
+    from shadow_hdk.adapters.agent.patterns import agent_recorded
+
+    assert agent_recorded("", chosen=True) == "single"
+
+
+def test_a_run_the_kit_chose_no_loop_for_records_nothing() -> None:
+    """A CLI provider owns its own loop, so naming one would be a claim the kit cannot make —
+    and `single` here would be a lie about something it did not choose."""
+    from shadow_hdk.adapters.agent.patterns import agent_recorded
+
+    assert agent_recorded("", chosen=False) == ""
+    assert agent_recorded("reviewer", chosen=False) == "", "even when a name was asked for"

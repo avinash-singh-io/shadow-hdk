@@ -29,7 +29,11 @@ from shadow_hdk.adapters.agent import (
     single,
     store_skills,
 )
-from shadow_hdk.adapters.agent.patterns import PatternRegistry, store_patterns
+from shadow_hdk.adapters.agent.patterns import (
+    PatternRegistry,
+    agent_recorded,
+    store_patterns,
+)
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
 from shadow_hdk.adapters.environment import LocalEnvironment
 from shadow_hdk.adapters.modes import (
@@ -603,6 +607,10 @@ class ServeHost:
         # (D176), so a refusal costs nothing and leaves nothing behind.
         wanted = agent or await self._agent_for_mode(policy_mode)
         chosen = await self._agent_named(wanted)
+        # Which agent this run actually resolved to (D177), for the snapshot a product caches by
+        # hash. Empty where no agent applies — a CLI provider owns its own loop, and saying
+        # `single` there would be a claim about something the kit did not choose.
+        resolved_agent = agent_recorded(wanted, chosen=chosen is not None)
         handed, available, provider_capabilities, called = await self._provider_candidate(
             want, chosen
         )
@@ -663,6 +671,10 @@ class ServeHost:
         )
         self._selections[thread.id] = selection
         thread.execution = selection
+        # Read off the thread by name on the wire, the way `unmapped` is read off a session
+        # (ENH-020's idiom), so a host or a double that predates the field reports nothing
+        # rather than failing.
+        thread.agent = resolved_agent
         self.provider = called
         return thread
 

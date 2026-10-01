@@ -30,7 +30,8 @@ type: Tasks
       never described**, which is why lane P asked for a capability they already had
 
 ## G5 — close out
-- [ ] `docs/migrations/0.43.md`
+- [ ] the 0.43 migration note (named without its path — the document invariant refuses a path a
+      document names that is not yet in the tree; TD-017)
 - [ ] 0.43.0, the Linux helper in lockstep
 - [ ] full gate; schemas + TS client regenerated if a contract moved
 - [ ] `specs/status.md` own row
