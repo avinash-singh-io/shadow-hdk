@@ -48,7 +48,7 @@ class FakeStore:
 
 A_REVIEWER = {
     "name": "reviewer",
-    "system": "You review a change and say what is wrong with it.",
+    "system": "REVIEWER-ROLE: you review a change and say what is wrong with it.",
     "max_turns": 6,
 }
 
@@ -62,7 +62,7 @@ async def test_an_agent_in_the_store_is_offered(tmp_path: Any) -> None:
     found = await source.patterns()
 
     assert [p.name for p in found] == ["reviewer"]
-    assert found[0].system.startswith("You review a change")
+    assert found[0].system.startswith("REVIEWER-ROLE")
     assert found[0].max_turns == 6
 
 
@@ -180,3 +180,103 @@ async def test_a_store_agent_may_shadow_a_shipped_one_by_name(tmp_path: Any) -> 
 
 def test_the_collection_is_named_agents_by_default() -> None:
     assert StorePatterns(FakeStore())._collection == "agents"  # noqa: SLF001 — the default is the contract
+
+
+# ------------------------------------------------ the registry, which resolves a name to a loop
+
+
+async def test_the_registry_offers_the_shipped_library_and_the_products_own(tmp_path: Any) -> None:
+    from shadow_hdk.adapters.agent.patterns import PatternRegistry
+
+    registry = PatternRegistry((store_patterns(FakeStore({"reviewer": A_REVIEWER})),))
+
+    names = [p.name for p in await registry.all()]
+
+    assert "single" in names, "the shipped library is still there"
+    assert "reviewer" in names, "and the product's own beside it"
+
+
+async def test_a_products_agent_shadows_a_shipped_one_of_the_same_name(tmp_path: Any) -> None:
+    """Later shadows earlier, as the skill registry does (D54) — later is closer to the run.
+
+    Paired against the shipped value on purpose. Asserting only that the override wins cannot tell
+    *shadowing* from *the shipped library being absent*, and a mutation that dropped the shipped
+    library entirely passed the first version of this test.
+    """
+    from shadow_hdk.adapters.agent.patterns import PatternRegistry
+
+    assert shipped()["single"].system != "OURS", "the shipped one is a different pattern"
+
+    registry = PatternRegistry(
+        (store_patterns(FakeStore({"single": {"name": "single", "system": "OURS"}})),)
+    )
+
+    found = await registry.named("single")
+    everything = {p.name for p in await registry.all()}
+
+    assert found.system == "OURS", "the product's own did not win"
+    assert "plan-and-execute" in everything, "and the shipped library is still there beside it"
+
+
+async def test_an_unknown_name_is_refused_and_says_what_there_is(tmp_path: Any) -> None:
+    """D176, at the unit the refusal lives in. A silent fallback hands a product a run that looks
+    right and is not."""
+    from shadow_hdk.adapters.agent.patterns import NoSuchAgent, PatternRegistry
+
+    registry = PatternRegistry((store_patterns(FakeStore({"reviewer": A_REVIEWER})),))
+
+    with pytest.raises(NoSuchAgent) as refused:
+        await registry.named("reviewr")
+
+    assert "reviewr" in str(refused.value), refused.value
+    assert "reviewer" in str(refused.value), "it must name what is available"
+
+
+async def test_find_answers_none_rather_than_raising(tmp_path: Any) -> None:
+    """`find` is the asking form and `named` the demanding one; a caller that wants to branch on
+    absence should not have to catch."""
+    from shadow_hdk.adapters.agent.patterns import PatternRegistry
+
+    registry = PatternRegistry((store_patterns(FakeStore()),))
+
+    assert await registry.find("nobody") is None
+    assert (await registry.find("single")) is not None
+
+
+async def test_the_listing_gives_a_name_and_one_line(tmp_path: Any) -> None:
+    """What a product shows a person choosing an agent."""
+    from shadow_hdk.adapters.agent.patterns import PatternRegistry
+
+    registry = PatternRegistry(
+        (store_patterns(FakeStore({"reviewer": A_REVIEWER})),), include_shipped=False
+    )
+
+    listing = await registry.listing()
+
+    assert listing == (
+        ("reviewer", "REVIEWER-ROLE: you review a change and say what is wrong with it."),
+    ), listing
+
+
+# ------------------------------------------------------ and a mode names one (D175)
+
+
+def test_a_mode_document_names_its_agent() -> None:
+    """The row a product writes: `agent` beside `policy`. Without this the name never leaves the
+    document and a mode silently runs `single` — which is the whole gap this phase closes."""
+    from shadow_hdk.adapters.modes.registry import mode_from_document
+
+    spec = mode_from_document(
+        {"id": "reviewing", "policy": "workspace-write", "agent": "reviewer"}, source="store"
+    )
+
+    assert spec.agent == "reviewer"
+
+
+def test_a_mode_document_naming_no_agent_leaves_it_empty() -> None:
+    """Empty is `single`, which is what every mode was before this phase."""
+    from shadow_hdk.adapters.modes.registry import mode_from_document
+
+    spec = mode_from_document({"id": "plain", "policy": "workspace-write"}, source="store")
+
+    assert spec.agent == ""

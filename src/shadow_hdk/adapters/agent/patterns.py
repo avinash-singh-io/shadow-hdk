@@ -72,4 +72,62 @@ def store_patterns(store: Any, collection: str = "agents") -> StorePatterns:
     return StorePatterns(store, collection)
 
 
-__all__ = ["SINGLE_ROLE", "StorePatterns", "single", "store_patterns"]
+class NoSuchAgent(Exception):
+    """A run named an agent nobody registered, and says which — never a silent `single` (D176).
+
+    Falling back to a default would hand a product a run that looks right and is not. The same cut
+    `Dialect` makes for an unknown transport and `ModeRegistry` for an unknown mode id.
+    """
+
+
+class PatternRegistry:
+    """The agents a run may be given: the shipped library, and the product's own.
+
+    **Later shadows earlier**, as the skill registry does (D54) — a product's `single` wins over
+    the shipped one, because later is closer to the run. Nothing here grants anything: choosing a
+    loop is the mode's or the thread's, and `find` only answers what exists.
+    """
+
+    def __init__(self, sources: Sequence[Any] = (), *, include_shipped: bool = True) -> None:
+        self._sources = tuple(sources)
+        self._shipped = include_shipped
+
+    async def all(self) -> tuple[Pattern, ...]:
+        by_name: dict[str, Pattern] = {}
+        if self._shipped:
+            by_name.update(shipped())
+        for source in self._sources:
+            for pattern in await source.patterns():
+                by_name[pattern.name] = pattern
+        return tuple(by_name[name] for name in sorted(by_name))
+
+    async def find(self, name: str) -> Pattern | None:
+        for pattern in await self.all():
+            if pattern.name == name:
+                return pattern
+        return None
+
+    async def named(self, name: str) -> Pattern:
+        """The agent by that name, or `NoSuchAgent` saying what there is (D176)."""
+        found = await self.find(name)
+        if found is not None:
+            return found
+        have = ", ".join(p.name for p in await self.all()) or "none"
+        raise NoSuchAgent(f"no agent called {name!r} is registered here; there is: {have}")
+
+    async def listing(self) -> tuple[tuple[str, str], ...]:
+        """Name and one line, for a product showing a person what it may run."""
+        return tuple(
+            (p.name, p.system.strip().splitlines()[0] if p.system.strip() else "")
+            for p in await self.all()
+        )
+
+
+__all__ = [
+    "SINGLE_ROLE",
+    "NoSuchAgent",
+    "PatternRegistry",
+    "StorePatterns",
+    "single",
+    "store_patterns",
+]

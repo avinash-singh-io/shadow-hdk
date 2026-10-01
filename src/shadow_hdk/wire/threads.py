@@ -105,6 +105,7 @@ class ThreadHost(Protocol):
         requirements: Any = None,
         plan_limits: Any = None,
         peer_components: Any = (),
+        agent: str = "",
     ) -> Thread: ...
 
     async def resume(
@@ -269,6 +270,10 @@ class ThreadMethods:
             roots=params.get("roots") or None,
             # Passed only when given (D82), so a host written before identity was on the thread
             # is still called the way it always was.
+            # Which agent runs this thread (D175): the mode names one and this overrides it for
+            # one thread. Passed **only when asked**, so a `ThreadHost` written before the field
+            # existed is not broken by its arrival — the rule D14 set when `stream` was added.
+            **({"agent": str(params["agent"])} if params.get("agent") else {}),
             **({"principal": str(params["principal"])} if params.get("principal") else {}),
             **({"attributes": params["attributes"]} if params.get("attributes") else {}),
             **({"budget": params["budget"]} if params.get("budget") is not None else {}),

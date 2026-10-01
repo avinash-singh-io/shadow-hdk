@@ -46,6 +46,13 @@ class ModeSpec:
     plan: PlanLimits | None = None
     """How much plan this mode admits (D109): depth, fan-out, steps — met with the host's at every
     turn, so a mode switch changes what the next plan may be, live. `None` defers to the host."""
+    agent: str = ""
+    """Which agent runs this mode (D175) — the name of a `Pattern`, from the product's `agents`
+    collection or the shipped library. Empty is `single`, which is what every mode was before.
+
+    On the mode rather than somewhere new because a mode already says who the model should be and
+    what it may do; which loop runs it is the same kind of fact. It also means switching agent goes
+    through `set_mode`, a door that exists and is governed, instead of an ungoverned new one."""
 
     @classmethod
     def of(
@@ -60,6 +67,7 @@ class ModeSpec:
         environment: str = "",
         scope: str = "",
         plan: PlanLimits | None = None,
+        agent: str = "",
     ) -> ModeSpec:
         return cls(
             id=mode_id,
@@ -71,6 +79,7 @@ class ModeSpec:
             environment=environment,
             scope=scope,
             plan=plan,
+            agent=agent,
         )
 
 
@@ -242,6 +251,10 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
         environment=environment,
         scope=str(document.get("scope", "") or ""),
         plan=plan,
+        # Which agent runs it (D175). A name, resolved against the product's `agents`
+        # collection and the shipped library when the thread opens — not here, because a
+        # mode document is parsed before any store is consulted.
+        agent=str(document.get("agent", "") or ""),
     )
 
 
