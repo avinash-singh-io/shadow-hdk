@@ -4,9 +4,11 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-10-01 — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
+> **Last Updated**: 2026-10-01 — **Epic 0011 complete: v0.38.0 through v0.42.0 released and published** (both distributions, all seven files each, verified from outside CI). Ten of lane P's twelve asks of 2026-10-01 shipped; asks 10 and 12 unscheduled with stated reasons. The suite went 1897 → 2021 with 63 mutations verified. Two defects nobody had reported were opened and closed: ENH-051 (instructions never reached Codex) and BUG-229 (a key-backed model never received them *and* the thread reported them honoured). Latest recorded code version **v0.42.0**. **Current Phase**: none — Epic 0011 is closed and future work remains `shadow`'s (D142–D152); D153 names why this epic was carried here. Everything below predates the epic and has not been re-audited by it.
+>
+> *(Historical header, from before Epic 0011:)* — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
 > installed app; tagged and on `main`, the gate run locally — GitHub Actions still refusing jobs); documentation ownership transferred; latest recorded code version
-> **v0.34.2**. **Current Phase**: Epic 0011 (**D153**), phases 59–63 — lane P's twelve asks of 2026-10-01, carried here because the product ships on 0.36.0 today and `shadow` is two to three weeks from usable. A bounded bridge, not a change of direction: `shadow` remains the destination and D142–D152 stand. This repository is the maintenance-supported
+> **v0.34.2**. This repository is the maintenance-supported
 > Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
 > with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
 > [native architecture](../../shadow/specs/architecture/native-foundation.md) and
@@ -165,16 +167,18 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | complete, unmerged | 5/5 groups |
-| 60 — the write-class completes (Epic 0011) | `phase-60-the-write-class-completes` | complete, unmerged | 4/4 groups |
-| 61 — undo and an agent's own workspace (Epic 0011) | `phase-61-undo-and-an-agents-own-workspace` | complete, unmerged | 4/4 groups |
-| 62 — what a run carries (Epic 0011) | `phase-62-what-a-run-carries` | complete, unmerged | 5/5 groups |
-| 63 — visible and steerable (Epic 0011) | `phase-63-visible-and-steerable` | complete, unmerged | 3/3 groups |
+
+> None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 
 ## Epic Release Checkpoints
 
 | Phase | Branch | Evidence | Release |
 |-------|--------|----------|---------|
+| 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | ruff clean, format 542 files, mypy strict 483 files, 1936 passed / 20 skipped; sixteen mutations biting; ENH-051 measured live on claude-code 2.1.284 with `--system-prompt` removed from its record, and the Codex leg **unmeasured** because a ChatGPT-account codex refused every model tried | **v0.38.0** released |
+| 60 — the write-class completes (Epic 0011) | `phase-60-the-write-class-completes` | ruff clean, format 545 files, mypy strict 485 files, 1957 passed / 20 skipped; eleven mutations biting, two of which found that the background path's sandbox wrap and narrow environment were untested claims in a docstring | **v0.39.0** released |
+| 61 — undo and an agent's own workspace (Epic 0011) | `phase-61-undo-and-an-agents-own-workspace` | ruff clean, format 551 files, mypy strict 490 files, 1986 passed / 20 skipped; eighteen mutations biting, two needing their assertion tightened before they would | **v0.40.0** released |
+| 62 — what a run carries (Epic 0011) | `phase-62-what-a-run-carries` | ruff clean, format 556 files, mypy strict 494 files, 2011 passed / 20 skipped; nineteen mutations biting; the ENH-012 sentinel re-measured on claude-code 2.1.284 both ways. **The first v0.41.0 tag went red on every CI job** — a retrospective named a migration note absent from its own tree — and was corrected before release, nothing having been published | **v0.41.0** released |
+| 63 — visible and steerable (Epic 0011) | `phase-63-visible-and-steerable` | ruff clean, format 559 files, mypy strict 496 files, 2021 passed / 20 skipped; six mutations biting, one finding a refusal tested at the wrong layer; CI green on all 13 jobs at `ad79948` | **v0.42.0** released |
 | 31 — a host knows what it can trust | `phase-31-a-host-knows-what-it-can-trust` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 released |
 | 32 — one agent surface | `phase-32-one-agent-surface` | incorporated in combined 1,688-pass v0.30.0 gate | v0.30.0 released |
 | 33 — authority at the act | `phase-33-authority-at-the-act` | combined gate, artifacts, schemas and client green | v0.30.0 released |
