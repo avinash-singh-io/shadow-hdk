@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import JsonValue
 
@@ -79,6 +79,21 @@ class Offer(Protocol):
         ...
 
 
+@runtime_checkable
+class Narrowing(Protocol):
+    """An offer that can be narrowed to a subset of the run's tools (D178).
+
+    **Deliberately not part of `Offer`.** A host may have written its own offer against that port,
+    and growing a port must break no adapter (D14) — so a thread asks whether the offer it holds can
+    be narrowed and leaves it alone if it cannot. Every offer in this tree can.
+    """
+
+    @property
+    def narrowing(self) -> tuple[str, ...]: ...
+
+    def narrow_to(self, names: tuple[str, ...]) -> None: ...
+
+
 class Routing:
     """The routing itself: one counter, one name, one attached run at a time."""
 
@@ -86,6 +101,7 @@ class Routing:
         self.name = name
         self.calls = 0
         self._withheld = frozenset(withhold)
+        self._narrowing: tuple[str, ...] = ()
         self._context: RunContext | None = None
 
     @property
@@ -95,6 +111,33 @@ class Routing:
     @property
     def withheld(self) -> frozenset[str]:
         return self._withheld
+
+    @property
+    def narrowing(self) -> tuple[str, ...]:
+        """The mode's `tools_offered`, as the thread last set it (D178). Empty means *all of the
+        run's* — which is every mode written before phase 65."""
+        return self._narrowing
+
+    def narrow_to(self, names: tuple[str, ...]) -> None:
+        """Narrow what is listed and what is callable to these names, or clear it with `()`.
+
+        **Settable rather than a construction argument**, which is how `withhold` differs: a mode
+        may change mid-thread through `set_mode`, and the narrowing travels on the mode. The thread
+        sets it and then tells a resident agent to list again (BUG-032's path).
+        """
+        self._narrowing = tuple(names)
+
+    def shows(self, name: str) -> bool:
+        """Whether this name is the agent's to see and to call: not withheld by the parent, and
+        within the mode's narrowing if there is one.
+
+        One predicate for the listing and for the call, because a CLI lists once and calls later —
+        so a narrowing enforced only on the listing would be reachable by a caller holding a stale
+        one, which is not a narrowing at all.
+        """
+        if name in self._withheld:
+            return False
+        return not self._narrowing or name in self._narrowing
 
     def attach(self, context: RunContext) -> None:
         self._context = context
@@ -109,7 +152,7 @@ class Routing:
         context = self._context
         if context is None:
             return Refused(REFUSED_NOT_RUNNING)
-        if name in self._withheld:
+        if not self.shows(name):
             return Refused(f"no component named {name!r}")
         self.calls += 1
         # `__` and not `:` — LangGraph reserves the colon for checkpoint namespaces, so a step id
@@ -219,6 +262,7 @@ __all__ = [
     "PARKED_TURN",
     "REFUSED_NOT_RUNNING",
     "InProcessOffer",
+    "Narrowing",
     "Offer",
     "Routing",
     "outcome_of",

@@ -74,7 +74,7 @@ from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
-from shadow_hdk.runtime.offer import InProcessOffer, Offer
+from shadow_hdk.runtime.offer import InProcessOffer, Narrowing, Offer
 from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
@@ -410,6 +410,7 @@ class Conversation:
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
             conversation._mode_plan = getattr(spec, "plan", None)
+        conversation._narrow_the_registry()
         await conversation._start()
         conversation._idle_from_now()
         return conversation
@@ -1041,12 +1042,35 @@ class Conversation:
             # The provider is reopened on its own session (D76): the catalogue it holds is the
             # old mode's, and a resident CLI was measured to keep it after `list_changed`
             # (BUG-032) — a fresh process re-lists, and `--resume` keeps its memory.
+            self._narrow_the_registry()
             await self._reopen_provider()
             # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
             await self.registry.changed()
         return Changed(
             mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
         )
+
+    def _narrow_the_registry(self) -> None:
+        """Tell the offer what this mode's `tools_offered` allows (D178, BUG-230).
+
+        **The CLI half of the narrowing.** A key-backed loop is handed a catalogue, so it can be
+        narrowed where it is built; Claude Code and Codex are handed nothing and **ask** — they list
+        the registry over MCP — so for them the narrowing has to live on the thing that answers the
+        listing. Same kernel derivation either way (`narrowed`/`unanswered`), because two catalogues
+        that drifted is how this field came to be parsed, reported as honoured, and ignored.
+
+        Set at open and again at every `set_mode`, which is why it is settable rather than a
+        construction argument the way `withhold` is. `set_mode` then calls `registry.changed()` as
+        it already did, so a resident agent holding the old mode's listing asks for a new one.
+
+        An offer that cannot be narrowed is left alone: a host may have written its own against the
+        `Offer` port, and growing a port must break no adapter (D14).
+        """
+        offer = self.registry
+        if not isinstance(offer, Narrowing):
+            return
+        behaviour = self._behaviour
+        offer.narrow_to(tuple(getattr(behaviour, "tools_offered", ()) or ()))
 
     async def set_option(self, key: str, value: JsonValue) -> None:
         """A per-conversation governance option, read at the next step's `Context` (ACP's

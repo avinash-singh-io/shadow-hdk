@@ -30,3 +30,33 @@ TD-020 records the one Wave 1 item that cannot be closed here — Codex's fold i
 this laptop's account.
 
 ---
+### [ARCH_CHANGE] 2026-10-02 — the narrowing lives in two catalogues, by one derivation
+Topics: tools-offered, narrowing, offer, registry, catalogue
+Affects-phases: none
+Affects-specs: none
+Detail: BUG-230 could have been closed in `AgentSession.catalogue` alone, and that would have left
+the claim false for every provider a product actually runs: Claude Code and Codex are handed no
+catalogue — they **list the registry over MCP** and decide for themselves. So the kernel gains one
+pure derivation (`narrowed`/`unanswered`) and it is applied twice: in the in-process catalogue, and
+on the offer that answers a CLI's listing, through a settable `narrow_to` that the conversation sets
+at open and again at every `set_mode`. Settable rather than a construction argument the way
+`withhold` is, because the narrowing travels on the mode and a mode changes mid-thread. `Narrowing`
+is a separate `runtime_checkable` Protocol rather than a method on `Offer`, so a host that wrote its
+own offer against that port still satisfies it (D14).
+
+---
+
+### [DISCOVERY] 2026-10-02 — the `tools_offered` union in `unmapped_behaviour` was dead code
+Topics: honesty, mutation-testing, tools-offered
+Affects-phases: none
+Affects-specs: none
+Detail: `unmapped_behaviour` unioned `"tools_offered"` into its `mapped` set, which read as *this is
+delivered elsewhere*. A mutation deleting the union **survived**: the function walks five field names
+and `tools_offered` is not one of them, so the union could never change an answer. The lie was not
+merely false, it was inert — and the test that first covered it passed vacuously. Both were fixed:
+the dead union is gone, and the test now pairs a narrowing with a `temperature` the CLI genuinely
+cannot take, so exactly one name comes back and it is the other one. Two further equivalent mutants
+(redundant empty-offered guards) were resolved by deleting the guards rather than by inventing tests
+that could not distinguish them.
+
+---

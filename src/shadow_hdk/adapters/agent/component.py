@@ -62,7 +62,13 @@ from shadow_hdk.kernel.ports import (
     ToolCall,
     Usage,
 )
-from shadow_hdk.kernel.providers import Behaviour, carried_by, framed
+from shadow_hdk.kernel.providers import (
+    Behaviour,
+    carried_by,
+    framed,
+    narrowed,
+    unanswered,
+)
 from shadow_hdk.runtime import RunContext, current_run
 from shadow_hdk.runtime.children import PlanNotAdmitted
 
@@ -325,12 +331,17 @@ class _Turnwise:
         return "\n\n".join(p for p in parts if p)
 
     async def catalogue(self) -> tuple[Interface, ...]:
-        """What the model sees: the policy's answer, this role's names, and the pattern's verbs.
+        """What the model sees: the policy's answer, this role's names, the mode's narrowing, and
+        the pattern's verbs.
 
         A registered tool named like a meta-tool is refused here, before the model is asked
         (BUG-001): every call whose name is in `BY_NAME` is routed to the meta handler, enabled by
         the pattern or not, so such a tool would be shadowed silently. A deployment's naming is not
         the model's to work around, and a rename on the fly would lie about the registration's id.
+
+        The mode's `tools_offered` narrows what is left, **last** (D178) — so it can only take
+        away, never widen past the policy or the role. The verbs are not narrowed: they are the
+        model's own, and a loop that cannot say `done` does not finish.
         """
         visible = [
             registration
@@ -356,6 +367,7 @@ class _Turnwise:
             if self.pattern.shows(registration.component.interface.name)
             and self._within_the_ceiling(registration)
         ]
+        tools = self._narrowed(tools)
         # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
         # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
         # **And `describe` is offered whenever thinning is in effect**, whether the pattern enabled
@@ -366,6 +378,34 @@ class _Turnwise:
         if self.pattern.offload_over is not None:
             verbs.add(RECALL)  # a handle the model cannot follow is worse than the flood
         return thin(tools, self.pattern) + tuple(BY_NAME[name] for name in sorted(verbs))
+
+    def _narrowed(self, tools: list[Interface]) -> list[Interface]:
+        """The mode's `tools_offered`, applied to what the policy and the role left (D178, BUG-230).
+
+        Until phase 65 the field parsed and narrowed nothing while two honesty fields reported it
+        honoured. The derivation is the kernel's — `narrowed`/`unanswered` — and it is the same one
+        the registry uses for the list it serves a CLI, because there are two catalogues and two
+        that drifted is how the claim came to be false.
+
+        A name nothing answers to is **refused, naming it and saying what there is** (D179), by the
+        same cut as the meta-tool collision above: it is raised here, before any model is asked, and
+        it is raised rather than silently ignored because a narrowing that matches nothing narrows
+        nothing, so the typo would leave a turn looking right and running wide.
+
+        No early return for *no behaviour* or *no narrowing*: both derivations already answer
+        correctly for those, so a guard here was an equivalent mutant — a branch no test could
+        distinguish, found by one that deleted it and survived.
+        """
+        behaviour = self.behaviour
+        names = tuple(interface.name for interface in tools)
+        missing = unanswered(names, behaviour)
+        if missing:
+            raise ValueError(
+                f"the mode offers {', '.join(repr(n) for n in missing)}, which this run has no "
+                f"component for; it offers {', '.join(repr(n) for n in sorted(names))}"
+            )
+        kept = set(narrowed(names, behaviour))
+        return [interface for interface in tools if interface.name in kept]
 
     def _within_the_ceiling(self, registration: Registration) -> bool:
         """Whether this role could ever be permitted to use it (BUG-012).

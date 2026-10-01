@@ -7,11 +7,11 @@ phase: phase-65-the-claims-are-true
 
 ## G1 — `tools_offered` narrows, and an unknown name refuses (D178, D179) · BUG-230
 
-- [ ] G1.1 the narrowing is a pure function over names, so it is mutation-checkable without a host
-- [ ] G1.2 `catalogue()` narrows by it, after the pattern and the ceiling
-- [ ] G1.3 a name no registration answers to is refused, naming it and saying what there is
-- [ ] G1.4 `unmapped_behaviour` and `unmapped_for_a_model` stop claiming it where it is not honoured
-- [ ] G1.5 a mode naming nothing is offered everything — asserted, not assumed
+- [x] G1.1 the narrowing is a pure function over names, so it is mutation-checkable without a host
+- [x] G1.2 `catalogue()` narrows by it, after the pattern and the ceiling — **and so does the list the registry serves a CLI**, which is where a CLI's catalogue actually comes from
+- [x] G1.3 a name no registration answers to is refused, naming it and saying what there is
+- [x] G1.4 both honesty fields are true now — and the `| {"tools_offered"}` union in `unmapped_behaviour` turned out to be **dead code**, found by a surviving mutation
+- [x] G1.5 a mode naming nothing is offered everything — asserted, not assumed
 
 ## G2 — a key-backed model honours the mode's `model` (D180) · BUG-231
 
@@ -41,6 +41,6 @@ phase: phase-65-the-claims-are-true
 ## G6 — the skips, the note, the version, the gate · TD-020
 
 - [ ] G6.1 each skipped live test says what account it needs and what it would prove
-- [ ] G6.2 `docs/migrations/0.44.md`
+- [ ] G6.2 the release's migration note, under `docs/migrations/`
 - [ ] G6.3 version, changelog, status, history, retrospective with verification evidence
 - [ ] G6.4 the full gate green, with the output read
