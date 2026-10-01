@@ -10,9 +10,8 @@ the fold is a fact about that CLI and lives in its record. Framed rather than pr
 the model can tell a mode's instructions from a person's words; first turn only, because a session
 carries them after that — a resident CLI in its own memory, a non-resident one through its resume.
 
-The framing here is deliberately minimal and this test pins it. Phase 62 replaces it with named
-context fragments carrying attribution; until then, one block that says what it is beats an
-unmarked prefix.
+The framing is a named, attributable `<context>` fragment (D166, phase 62) — Q1 shipped a bare
+`<instructions>` block and phase 62 generalised it, which was the plan recorded at the time.
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ import pytest
 from shadow_hdk.adapters.jsonl.session import JsonlSession
 from shadow_hdk.adapters.jsonl.transport import JsonlProvider
 from shadow_hdk.kernel import Dialect, Provider
-from shadow_hdk.kernel.providers import Behaviour, BehaviourArg, unmapped_behaviour
+from shadow_hdk.kernel.providers import Behaviour, BehaviourArg, Fragment, unmapped_behaviour
 from shadow_hdk.providers import shipped
 
 pytestmark = pytest.mark.anyio
@@ -109,8 +108,10 @@ async def test_the_instructions_are_framed_rather_than_prefixed_unmarked(tmp_pat
     await _one_turn(tmp_path, FOLDS, Behaviour(system="be brief"), "how many lines?")
 
     told = heard(tmp_path)
-    assert "<instructions>\nbe brief\n</instructions>" in told
-    assert told.index("</instructions>") < told.index("how many lines?"), "instructions first"
+    # Phase 62 replaced Q1's bare `<instructions>` with a named, attributable fragment (D166) —
+    # planned here from the start, and this is that replacement pinned.
+    assert '<context name="instructions" source="the mode">\nbe brief\n</context>' in told
+    assert told.index("</context>") < told.index("how many lines?"), "context first"
 
 
 async def test_append_system_travels_too_and_in_the_behaviours_order(tmp_path: Path) -> None:
@@ -237,3 +238,39 @@ async def test_the_shipped_claude_code_record_still_uses_its_flag(tmp_path: Path
 
     assert dialect.instructions_in_prompt is False, "a CLI with the flag does not need the fold"
     assert "system" in {a.field for a in dialect.behaviour_args}
+
+
+# ------------------------------------------------------ fragments are not instructions
+
+
+async def test_a_cli_with_a_system_flag_still_receives_a_products_fragments(
+    tmp_path: Path,
+) -> None:
+    """**Found by a live measurement, not by a unit test.** `instructions_in_prompt` and "carries
+    fragments" were one gate, so Claude Code — which has `--system-prompt`, and therefore does not
+    fold — received no fragments at all. Every unit test here passed, because every one used a
+    dialect that folds.
+
+    No CLI has a flag for a product's named context, so the turn is the only way in for a fragment,
+    whatever the CLI does about instructions.
+    """
+    has_the_flag = Dialect(
+        resident=False,
+        prompt_shape="text",
+        behaviour_args=(BehaviourArg(field="system", flag="--system-prompt"),),
+        done_on=("turn.completed",),
+    )
+    await _one_turn(
+        tmp_path,
+        has_the_flag,
+        Behaviour(
+            system="be brief",
+            fragments=(Fragment(name="house-style", text="tabs, never spaces", source="a plugin"),),
+        ),
+        "go",
+    )
+
+    told = heard(tmp_path)
+    assert "tabs, never spaces" in told, "a fragment never reached a CLI that has its own flag"
+    assert "house-style" in told, "and it must still be named"
+    assert "be brief" not in told, "while the flag keeps delivering the instructions"

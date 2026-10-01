@@ -62,6 +62,7 @@ from shadow_hdk.kernel.ports import (
     ToolCall,
     Usage,
 )
+from shadow_hdk.kernel.providers import Behaviour, carried_by, framed
 from shadow_hdk.runtime import RunContext, current_run
 from shadow_hdk.runtime.children import PlanNotAdmitted
 
@@ -136,11 +137,13 @@ class _Turnwise:
         context: RunContext,
         *,
         model: ModelPort | None = None,
+        behaviour: Behaviour | None = None,
     ) -> None:
         self.agent = agent
         self.pattern = agent.pattern
         self.ctx = context
         self.model = model
+        self.behaviour = behaviour
         """A model owned by an AgentPort adapter; absent means the run's ordinary ModelPort."""
         self.messages: list[Message] = []
         self.held: dict[str, str] = {}
@@ -208,7 +211,12 @@ class _Turnwise:
             self.turns = turn + 1
             # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
             # meta-tool (BUG-001), and that is our refusal, not a provider's failure.
-            request = ModelRequest(tuple(self.messages), await self.catalogue())
+            # The mode's model, where it asked for one (BUG-229): `ModelRequest` has the field,
+            # so a key-backed model that ignored it was dropping something honourable.
+            wanted = self.behaviour.model if self.behaviour is not None else ""
+            request = ModelRequest(
+                tuple(self.messages), await self.catalogue(), model=wanted or None
+            )
             model = self.model or self.ctx.ports.model
             if model is None:
                 return self.finished(
@@ -268,14 +276,29 @@ class _Turnwise:
     # ------------------------------------------------------------------ the moves
 
     def _role(self, skill: Skill | None) -> str:
-        """The pattern says how this role works; the skill says what this piece of work is.
+        """The pattern says how this role works; the skill says what this piece of work is; the
+        mode says who to be and what to carry (BUG-229, D166–D168).
 
         One system message rather than two: several providers accept only one, and a procedure
         split from the role it runs under reads to the model as two voices disagreeing.
+
+        **The pattern's role leads and is never replaced** (D168). It carries the loop's own
+        mechanics — how to call a tool, when to stop — so a mode's `system` that replaced it would
+        remove the instructions that make the loop work. A CLI is the other case, and keeps
+        `--system-prompt`'s replacing semantics, because there the CLI owns its loop.
+
+        The mode's words arrive as **framed, named fragments** through the one assembler the CLI
+        path uses, so a key-backed model and a governed CLI read the same shapes (D167). Before
+        BUG-229 this method never saw a behaviour at all: a mode's instructions were stored on the
+        session and dropped.
         """
-        if skill is None:
-            return self.pattern.system
-        return f"{self.pattern.system}\n\n{skill.prompt}"
+        parts = [self.pattern.system]
+        if skill is not None:
+            parts.append(skill.prompt)
+        carried = framed(carried_by(self.behaviour))
+        if carried:
+            parts.append(carried)
+        return "\n\n".join(p for p in parts if p)
 
     async def catalogue(self) -> tuple[Interface, ...]:
         """What the model sees: the policy's answer, this role's names, and the pattern's verbs.

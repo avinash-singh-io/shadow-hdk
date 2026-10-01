@@ -213,6 +213,16 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D164 | a snapshot holds what git would track; ignored files are neither captured nor removed | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
 | D165 | the kit never touches the product's git state — not HEAD, a branch, the index or the stash; snapshots live under `refs/shadow-hdk/snapshots/*` | [`phases/phase-61-undo-and-an-agents-own-workspace/overview.md`](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) |
 
+## Epic 0011 Phase 62 — what a run carries — 2026-10-01
+
+| Decision | Summary | Source |
+|---|---|---|
+| D166 | one vocabulary for everything a run carries: a named `Fragment` (`name`, `text`, `source`); Q1's `<instructions>` becomes one | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
+| D167 | one assembler, in the kernel, for a CLI and a key-backed model alike | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
+| D168 | a mode's `system` is layered on the pattern's for a key-backed model, never replacing it | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
+| D169 | reading a root's `AGENTS.md`/`CLAUDE.md` is a reader a product composes — not a default, not an agent tool | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
+| D170 | `effort` and `temperature` are named unmapped for a key-backed model, because `ModelRequest` has nowhere to put them | [`phases/phase-62-what-a-run-carries/overview.md`](/phases/phase-62-what-a-run-carries/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is

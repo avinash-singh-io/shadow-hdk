@@ -168,7 +168,8 @@ the new engine becomes the default. Documentation approval has not started Phase
 | 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | complete, unmerged | 5/5 groups |
 | 60 — the write-class completes (Epic 0011) | `phase-60-the-write-class-completes` | complete, unmerged | 4/4 groups |
 | 61 — undo and an agent's own workspace (Epic 0011) | `phase-61-undo-and-an-agents-own-workspace` | complete, unmerged | 4/4 groups |
-| 62 — what a run carries (Epic 0011) | `phase-62-what-a-run-carries` | not started | 0/? |
+| 62 — what a run carries (Epic 0011) | `phase-62-what-a-run-carries` | complete, unmerged | 5/5 groups |
+| 63 — visible and steerable (Epic 0011) | `phase-63-visible-and-steerable` | not started | 0/? |
 
 ## Epic Release Checkpoints
 
