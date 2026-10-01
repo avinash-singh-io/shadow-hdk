@@ -66,6 +66,7 @@ from shadow_hdk.kernel.ports import (
     ComponentPort,
     Context,
 )
+from shadow_hdk.kernel.threads import agent_now
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.kernel.workspace import Root, Workspace
 from shadow_hdk.runtime.approvals import Parked
@@ -332,6 +333,15 @@ class Conversation:
         modes adapter, so a host hands in its own. `None` means the conversation has no
         behaviours to apply and `set_mode` only flips the policy the governance selects by."""
         self._behaviour: Any = None
+        self._choose_agent: Any = None
+        """How this conversation asks for an agent again when its mode changes (D183, BUG-234): a
+        callable from the name a mode asks for to an `(AgentPort | None, resolved name)` pair.
+        Resolving a name to a loop is the host's business — the runtime is not learning about
+        patterns — and `None` means nobody is offering, which is every composition that does not
+        select agents."""
+        self.agent: str = ""
+        """Which agent this conversation resolved to (D177), as its mode last said. The thread puts
+        it on the record, so a resume restores it."""
         self._before_turns: tuple[Any, ...] = ()
         """A key-backed session's transcript, kept across a provider reopen (D181, BUG-232) — the
         counterpart of `session_id` for a provider that has none."""
@@ -375,6 +385,7 @@ class Conversation:
         spent: Spent | None = None,
         idle_seconds: float | None = None,
         plan_limits: PlanLimits | None = None,
+        choose_agent: Any = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
@@ -410,6 +421,7 @@ class Conversation:
             idle_seconds=idle_seconds,
             plan_limits=plan_limits,
         )
+        conversation._choose_agent = choose_agent
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
             conversation._mode_plan = getattr(spec, "plan", None)
@@ -1048,7 +1060,7 @@ class Conversation:
             await self._reopen_provider()  # and one that does not (BUG-032) is reopened, resumed
         return await self.announce(lambda **k: WorkspaceChanged(roots=grown.roots, **k))
 
-    async def set_mode(self, mode_id: str) -> Changed | None:
+    async def set_mode(self, mode_id: str, *, override: str = "") -> Changed | None:
         """Change the run's mode mid-conversation (D64; ACP's `session/set_mode`).
 
         The policy the governance selects by changes at the next step; if the mode carries a
@@ -1085,6 +1097,7 @@ class Conversation:
             if spec is not None:
                 self._behaviour = behaviour
                 self._mode_plan = getattr(spec, "plan", None)
+                await self._choose_the_modes_agent(spec, override)
             # The provider is reopened on its own session (D76): the catalogue it holds is the
             # old mode's, and a resident CLI was measured to keep it after `list_changed`
             # (BUG-032) — a fresh process re-lists, and `--resume` keeps its memory.
@@ -1095,6 +1108,32 @@ class Conversation:
         return Changed(
             mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
         )
+
+    async def _choose_the_modes_agent(self, spec: Any, override: str) -> None:
+        """Ask for this mode's agent, and run it from the next turn (D183, BUG-234).
+
+        Phase 64 put an agent on a mode (D175) and then let `set_mode` replace the policy, the
+        environment and the behaviour while leaving the agent exactly as it was — so a product that
+        switched from a Reviewer mode to a Builder mode kept the Reviewer, and the capability was
+        real only for a thread that was never switched.
+
+        The thread's own `override` goes on winning (`agent_now`): `thread/start {agent}` is an
+        override *for this thread*, and one that evaporated at the first switch would be the same
+        defect in a new place.
+
+        **An unknown name on the new mode is refused here**, by raising out of `set_mode` — the D176
+        cut, at the one other door that selects an agent. Nothing has changed when it raises except
+        the mode id and the behaviour, and the caller is told which name was wrong.
+
+        The provider is reopened by the caller immediately after, which is what actually puts the
+        new loop in front of the next turn.
+        """
+        if self._choose_agent is None:
+            return
+        port, resolved = await self._choose_agent(agent_now(override, getattr(spec, "agent", "")))
+        if port is not None:
+            self._agent = port
+        self.agent = resolved
 
     def _narrow_the_registry(self) -> None:
         """Tell the offer what this mode's `tools_offered` allows (D178, BUG-230).

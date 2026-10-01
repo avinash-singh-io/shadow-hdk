@@ -107,6 +107,21 @@ class ThreadRecord:
     seeded_turns: int = 0
     session_id: str = ""
     """The provider's own session id, when it has one — what a resume hands back to it."""
+    agent: str = ""
+    """Which agent this thread is running (D183), so a resume restores it rather than falling
+    through to the host's default. Written as `agent_recorded` resolved it (D177): `single` where
+    nothing was named and a loop was chosen, empty where no loop was the kit's to choose — a CLI
+    provider owns its own, and naming one there would be a claim the kit cannot make.
+
+    Phase 64 made an agent selectable and readable and put it nowhere durable, so a resumed Reviewer
+    thread came back as `single` (BUG-234)."""
+    agent_override: str = ""
+    """The agent this thread was opened with over its mode's, if any (`thread/start {agent}`, D175).
+
+    Kept beside `agent` because the two answer different questions: `agent` is what is running,
+    this is *why*. Without it a resumed thread could not tell an override from a mode's own choice,
+    so a `set_mode` after a restart would quietly follow the new mode while the same switch before
+    the restart kept the override — the same inconsistency BUG-234 was, one door further along."""
     roots: tuple[Root, ...] = ()
     """The workspace (D76): one or many roots, the first the primary. Empty means the one root
     `root` names — a record written before roots were kept."""
@@ -137,8 +152,43 @@ class ThreadRecord:
     it before it reads the rest."""
 
 
+def agent_now(override: str, mode_agent: str) -> str:
+    """Which agent a thread runs once its mode has changed (D183, BUG-234).
+
+    **The thread's own override wins, and goes on winning.** `thread/start {agent}` is an override
+    *for this thread* (D175); one that evaporated at the first `set_mode` would be the same class of
+    defect as a mode's agent never being read — a selection that is real until the product uses the
+    door it was told to use.
+
+    Empty where neither names one, which `agent_recorded` then reads as `single`: this answers *what
+    was asked for*, and nothing was.
+
+    Phase 64 shipped `set_mode` without this, so switching from a Reviewer mode to a Builder mode
+    kept the Reviewer.
+    """
+    return override or mode_agent
+
+
+def agent_to_resume(recorded: str) -> str:
+    """Which agent a resumed thread runs: the one its record says it was running (D183, BUG-234).
+
+    `ThreadRecord` had no such field before phase 65, so a resumed thread fell through to the host's
+    default — a Reviewer thread came back as `single`, and `thread.agent` then reported `single`
+    truthfully about a run that was supposed to be a Reviewer.
+
+    The record's own answer is honoured rather than the mode's current one: it says what *this
+    thread* was running, and a mode row edited since is a different question. `single` on the
+    record is
+    honoured too, not second-guessed — `agent_recorded` writes it precisely so that absence and the
+    default can be told apart (D177).
+    """
+    return recorded
+
+
 __all__ = [
     "RECORD_VERSION",
+    "agent_now",
+    "agent_to_resume",
     "PendingQuestion",
     "Spent",
     "ThreadId",

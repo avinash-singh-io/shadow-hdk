@@ -130,3 +130,27 @@ guards a `__slots__` offer, which now has a test, because without the guard a th
 fails at open.
 
 ---
+### [DECISION] 2026-10-02 — the agent is on the record, and the runtime is handed a chooser
+Topics: agents, modes, resume, set-mode, layering
+Affects-phases: none
+Affects-specs: none
+Detail: D183 landed in three pieces. `ThreadRecord.agent` carries which agent a thread runs, and
+`Thread.agent` became a property over it, so an attribute and a column cannot disagree. `set_mode`
+asks for the mode's agent again through a `choose_agent` callable the host hands in — resolving a name
+to a loop is `ServeHost`'s business and the runtime is not learning about patterns to do it — and an
+unknown name on the new mode refuses by raising, the D176 cut at the second door that selects one.
+`ServeHost.resume` resolves from `record.agent` rather than falling through to its own default.
+
+Two things the mutation pass found. A test asserting the override survives a switch was **vacuous**:
+it switched into a mode naming the same agent as the override, so dropping the override entirely
+passed. And once that was fixed, the initial value of `_agent_override` was still unreachable — which
+exposed a real gap rather than a dead line: a *resumed* thread had no override at all, so a `set_mode`
+after a restart followed the new mode while the same switch before it kept the override.
+`ThreadRecord.agent_override` closes that, and `_agent_override` is a property over the record too.
+
+The invariants earned their keep twice: `test_the_runtime_imports_no_adapter` caught `agent_now`
+being imported into `runtime/conversation.py`, so both pure decisions moved to `kernel/threads.py`
+and the adapter re-exports them; and the wire-parity invariant caught `Thread.agent` becoming public
+surface that neither crossed nor said why.
+
+---

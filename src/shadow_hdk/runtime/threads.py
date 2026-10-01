@@ -173,14 +173,29 @@ class Thread:
         self._hold_seconds = hold_seconds
         self._renewing: asyncio.Task[None] | None = None
         self.execution: ExecutionSelection | None = None
-        self.agent: str = ""
-        """Which agent this run resolved to (D177), set by whoever composed it — empty where no
-        agent applies, because a CLI provider owns its own loop. Here beside `execution` for the
-        same reason: it is a fact about the composition that a host reads back, not something the
-        runtime decides."""
+
         """The capability pair accepted by a composing host, when it supplied one."""
 
     # ------------------------------------------------------------------ opening and closing
+
+    @property
+    def _agent_override(self) -> str:
+        """The name this thread was opened with over its mode's, if any (D175) — **off the record**,
+        so it goes on winning after a `set_mode` rather than evaporating at the first switch, and
+        goes on winning after a resume rather than only before one (D183, BUG-234).
+
+        A property rather than a field set by each opener: two openers each assigning it made the
+        declared default unreachable, which a surviving mutation on that default showed. The record
+        is the one answer.
+        """
+        return self._record.agent_override
+
+    @property
+    def agent(self) -> str:
+        """Which agent this run resolved to (D177) — **off the record**, so a resume restores it
+        (D183, BUG-234) and there is one answer rather than an attribute and a column that can
+        disagree. Empty where no agent applies, because a CLI provider owns its own loop."""
+        return self._record.agent
 
     @classmethod
     async def open(
@@ -209,8 +224,18 @@ class Thread:
         idle_seconds: float | None = None,
         requirements: ExecutionRequirements | None = None,
         plan_limits: PlanLimits | None = None,
+        agent_named: str = "",
+        agent_override: str = "",
+        choose_agent: Any = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
+
+        `agent_named` is which agent this run resolved to (D177) and goes **on the record**, so a
+        resume restores it. `agent_override` is the name this thread was opened with over its
+        mode's, kept so it goes on winning across a `set_mode`. `choose_agent` is how the thread
+        asks for an agent again when its mode changes (D183) — a callable from a name to an
+        `(AgentPort | None, resolved name)` pair, because resolving a name to a loop is the host's
+        business and the runtime is not learning about patterns to do it.
 
         `budget` (D84) is this thread's own ceiling over `lease`, the host's default; what the
         thread spends is on its record after every turn, and a resume starts from it.
@@ -241,6 +266,8 @@ class Thread:
             attributes=given,
             budget=budget,
             requirements=requirements or ExecutionRequirements(),
+            agent=agent_named,
+            agent_override=agent_override,
             version=RECORD_VERSION,
         )
         thread = cls(record, _unopened(), store=store, holder=holder, hold_seconds=hold_seconds)
@@ -249,6 +276,7 @@ class Thread:
             thread.conversation = await Conversation.open(
                 agent=agent,
                 ports=ports,
+                choose_agent=choose_agent,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,
@@ -288,6 +316,7 @@ class Thread:
         idle_seconds: float | None = None,
         plan_limits: PlanLimits | None = None,
         attributes: Mapping[str, JsonValue] | None = None,
+        choose_agent: Any = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
@@ -316,6 +345,7 @@ class Thread:
             thread.conversation = await Conversation.open(
                 agent=agent,
                 ports=ports,
+                choose_agent=choose_agent,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,
@@ -684,10 +714,18 @@ class Thread:
     async def set_mode(self, mode_id: str) -> list[Event]:
         """Change the run's mode mid-thread (D64): the policy, the environment it needs (D76),
         the provider's behaviour — and the record (`ModeChanged`)."""
-        changed = await self.conversation.set_mode(mode_id)
+        changed = await self.conversation.set_mode(mode_id, override=self._agent_override)
         if changed is None:
             return []
-        self._record = _replace(self._record, mode=changed.mode, environment=changed.environment)
+        # Which agent the new mode runs, on the record (D183, BUG-234). Phase 64 switched the
+        # policy, the environment and the behaviour and left the agent as it was, so a product
+        # switching from a Reviewer mode to a Builder mode kept the Reviewer.
+        self._record = _replace(
+            self._record,
+            mode=changed.mode,
+            environment=changed.environment,
+            agent=self.conversation.agent or self._record.agent,
+        )
         await self._store.save(self._record)
         return await self.conversation.announce_mode(changed.mode)
 

@@ -147,6 +147,9 @@ HANDLES_NOT_CROSSING: dict[str, str] = {
     "`thread/resume`, `thread/set_mode` and `thread/add_root`",
     "Thread.unmapped_behaviour": "crosses as `unmapped_behaviour` in the results of "
     "`thread/start`, `thread/resume`, `thread/set_mode` and `thread/add_root` (ENH-020)",
+    "Thread.agent": "crosses as `agent` in the result of `thread/start` (D177), and is on the "
+    "record `thread/resume` and `thread/list` return, which is what makes a resume restore it "
+    "(D183); a property over the record rather than an operation of its own",
     "Thread.ports": "the host's composition, runtime-side by definition (D67): what a wire host "
     "reaches of it is `tools/list`, `modes/list`, `rules/list` and the store",
     "Thread.registry": "the offer served to the provider on the runtime's side; a wire host "

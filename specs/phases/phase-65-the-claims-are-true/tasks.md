@@ -33,10 +33,10 @@ phase: phase-65-the-claims-are-true
 
 ## G5 — a resolved agent survives a mode switch and a resume (D183) · BUG-234
 
-- [ ] G5.1 the resolved agent is on `ThreadRecord`
-- [ ] G5.2 `set_mode` re-resolves it; an unknown name on the new mode refuses
-- [ ] G5.3 a resumed thread runs the agent it was running
-- [ ] G5.4 a host-handed agent still wins, and a thread override survives a switch
+- [x] G5.1 the resolved agent is on `ThreadRecord`, and `Thread.agent` reads off the record so there is one answer
+- [x] G5.2 `set_mode` re-resolves it through a chooser the host hands in; an unknown name on the new mode refuses, naming it
+- [x] G5.3 a resumed thread runs the agent its record says it was running
+- [x] G5.4 a host-handed agent still wins; a thread's override survives a switch **and** a resume — `agent_override` is on the record too, found by a surviving mutation
 
 ## G6 — the skips, the note, the version, the gate · TD-020
 
