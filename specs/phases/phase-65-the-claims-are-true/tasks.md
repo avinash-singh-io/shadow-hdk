@@ -40,7 +40,10 @@ phase: phase-65-the-claims-are-true
 
 ## G6 — the skips, the note, the version, the gate · TD-020
 
-- [ ] G6.1 each skipped live test says what account it needs and what it would prove
-- [ ] G6.2 the release's migration note, under `docs/migrations/`
-- [ ] G6.3 version, changelog, status, history, retrospective with verification evidence
-- [ ] G6.4 the full gate green, with the output read
+- [x] G6.1 the two Codex skips name the account needed, what the measurement would prove, and TD-020 — and the two Claude Code legs were run live and passed
+- [x] G6.2 `docs/migrations/0.44.md`
+- [x] G6.3 version 0.44.0 in all four places, changelog, status headline (which still said 0.42.0 — lane P was right), the five backlog rows closed, history, retrospective
+- [x] G6.4 ruff, format, mypy strict and pytest all green, each exit code read directly from a file rather than through a pipe
+
+
+All six groups complete. `/sync-docs` then `/complete-phase` next (Rule 9).

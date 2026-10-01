@@ -4,7 +4,25 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-10-01 — **Epic 0011 complete: v0.38.0 through v0.42.0 released and published** (both distributions, all seven files each, verified from outside CI). Ten of lane P's twelve asks of 2026-10-01 shipped; asks 10 and 12 unscheduled with stated reasons. The suite went 1897 → 2021 with 63 mutations verified. Two defects nobody had reported were opened and closed: ENH-051 (instructions never reached Codex) and BUG-229 (a key-backed model never received them *and* the thread reported them honoured). Latest recorded code version **v0.42.0**. **Current Phase**: none — Epic 0011 is closed and future work remains `shadow`'s (D142–D152); D153 names why this epic was carried here. Everything below predates the epic and has not been re-audited by it.
+> **Last Updated**: 2026-10-02 — **phase 65 complete on its branch: the claims are true.** Lane P's
+> audit of 2026-10-02 lists forty items; its A-group is claims this kit already made and did not keep.
+> Five were confirmed against the source before the phase opened, and **three originate in our own
+> phases 62 and 64**: `tools_offered` narrowed nothing while two fields reported it honoured
+> (BUG-230); a key-backed model discarded the mode's `model` (BUG-231); a key-backed thread forgot its
+> turns with nothing saying so (BUG-232); a fixed 600s ceiling failed long turns and counted a
+> person's thinking time (BUG-233); and 0.43.0's agent selection survived neither `set_mode` nor a
+> resume (BUG-234). All five closed in **v0.44.0**. Wave 1 only, by the owner's decision of
+> 2026-10-02 — every other audit item is named in the phase overview's *Out*, on the ground that new
+> capability belongs to the native line. Suite 2058 → 2143, mypy strict 507 files. ENH-052 and TD-020
+> filed.
+>
+> Before it, **Epic 0011: v0.38.0 through v0.43.0 released and published** (both distributions, all
+> seven files each, verified from outside CI). Eleven of lane P's twelve asks of 2026-10-01 shipped;
+> ask 10 unscheduled with a stated reason. Two defects nobody had reported were opened and closed:
+> ENH-051 (instructions never reached Codex) and BUG-229 (a key-backed model never received them *and*
+> the thread reported them honoured). Latest recorded code version **v0.44.0**. **Current Phase**: 65,
+> on `phase-65-the-claims-are-true`, awaiting the landing gate. Everything below predates Epic 0011
+> and has not been re-audited by it.
 >
 > *(Historical header, from before Epic 0011:)* — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
 > installed app; tagged and on `main`, the gate run locally — GitHub Actions still refusing jobs); documentation ownership transferred; latest recorded code version
@@ -168,7 +186,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | complete, unmerged | 5/5 groups |
-| 65 — the claims are true | `phase-65-the-claims-are-true` | in-progress | 0/6 groups |
+| 65 — the claims are true | `phase-65-the-claims-are-true` | complete on branch | 6/6 groups |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

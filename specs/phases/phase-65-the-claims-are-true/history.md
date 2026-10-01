@@ -154,3 +154,18 @@ and the adapter re-exports them; and the wire-parity invariant caught `Thread.ag
 surface that neither crossed nor said why.
 
 ---
+### [NOTE] 2026-10-02 — the skips say what they need, and the live legs were run
+Topics: codex, measurement, skips, release
+Affects-phases: none
+Affects-specs: docs/migrations/0.44.md
+Detail: TD-020's two live tests now skip with a message naming the account required (any ChatGPT or
+OpenAI account on which Codex accepts a model), what the measurement would prove, and the debt's own
+id — a silent skip is how an unmeasured claim stays unmeasured. The two Claude Code legs were run
+live for this release and passed: with `--system-prompt` removed from its record the fold is the only
+way in, and the paired negative shows the sentinel is not something the model says anyway.
+
+Also corrected here: `specs/status.md` still headlined v0.42.0 while 0.43.0 had been tagged, merged
+and published. Lane P's audit flagged exactly that (its H9) and was right; its companion claim that
+0.43.0 is untagged and unpublished is now stale, and the reply says so.
+
+---
