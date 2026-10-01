@@ -18,8 +18,19 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.41.0"
-"""0.41.0 — what a run carries into any provider (BUG-229, ENH-047, lane P's asks 4/5/11;
+EXPECTED = "0.42.0"
+"""0.42.0 — the loop is visible and steerable (ENH-045, ENH-046; Epic 0011 phase 63,
+D171-D173): `update_plan` as a registered component declaring **no effects at all**, so every mode
+admits the agent's own narration — an agent that had to ask permission to say what it intends would
+stop saying it (D171). An item's `status` is an open string, the cut `Provider.transport` makes
+(D172). Nothing extra carries the revisions: `Invoked.inputs` already does, which is why this is a
+component and not a runtime concept. And `ModelAgent.steer` can now answer `True`: a steer is
+queued and delivered as the person's words before the next model call (D173), because the loop
+between steps is the kit's own and a request in flight cannot be changed. `False` still where there
+is nothing to steer, and a one-shot dialect stays `False`. Contract additions, so a **minor** (D9)
+and a *Pins* row; protocol 3 unchanged.
+
+0.41.0 — what a run carries into any provider (BUG-229, ENH-047, lane P's asks 4/5/11;
 Epic 0011 phase 62, D166-D170). **A fix first:** a key-backed model never received a mode's
 `system` — `ModelSession` stored the behaviour and nothing read it — and `thread.unmapped_behaviour`
 came back **empty**, which a host reads as honoured in full. Now the instructions reach the system

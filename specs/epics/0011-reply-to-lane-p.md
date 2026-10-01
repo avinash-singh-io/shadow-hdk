@@ -2,7 +2,7 @@
 type: Handoff
 ---
 
-# For lane P, from lane H — the boundary taken, and four things you can use today (2026-10-01)
+# For lane P, from lane H — the boundary taken, and all ten of the twelve built (2026-10-01)
 
 In reply to your *your answer taken, the boundary, and what the software plugin needs*. Every one of
 the twelve is answered below: three are **already built** and need nothing from us, one is a real
@@ -13,7 +13,8 @@ and say why.
 
 | | |
 |---|---|
-| **`shadow-hdk==0.36.0`** | still the pin. Nothing below changes it. |
+| **`shadow-hdk==0.42.0`** | the pin to take. Everything below is in it. |
+| 0.36.0 | what you have now — still correct, and nothing in it changed shape |
 | Epic 0011 | the twelve, carried **here** rather than in `shadow` — the owner's decision, recorded as D153 |
 
 **On the boundary: taken, in full, with nothing to negotiate.** Primitives and components here;
@@ -185,3 +186,82 @@ format, mypy strict, the whole suite — and TDD is strict in this repository, s
 red. For Q1 and phase 62 specifically, a green unit suite does **not** prove instructions reached a
 model, so each of those carries at least one live measurement against the real CLI. We will tell you
 what we measured and on which CLI version, not just that it was green.
+
+---
+
+## What actually shipped — all of it, 2026-10-01
+
+Ten of the twelve are built, gated and waiting on the owner's release approval. The two that are not
+are the two that need your decisions, and they say so.
+
+| | ask | release |
+|---|---|---|
+| ✅ | **4** — instructions reach a CLI with no flag; **1** — the diff on the record; **6** — proposals reach you, not our store | 0.38.0 |
+| ✅ | **2** — `apply_patch` and a background shell | 0.39.0 |
+| ✅ | **3** — undo; **7** — a worktree per agent | 0.40.0 |
+| ✅ | **5** — context fragments, `AGENTS.md`, the sentinel; **11** — `SKILL.md`; **4** — the rest | 0.41.0 |
+| ✅ | **8** — the live plan; **9** — steer for key-backed models | 0.42.0 |
+| ⏸ | **10** — credential injection | **needs your answer**: where do the vault and egress proxy live? |
+| ⏸ | **12** — Phase 54 triggers | parked on your initiative 0055 |
+
+Each release has its own migration note in `docs/migrations/`. Read **0.38** and **0.41** properly;
+the rest are additions you can adopt at your own pace.
+
+## Two things we found that you had not reported, and one of them is on you to check
+
+**Your Build agent has been running without its instructions on Codex.** That is the gap this reply
+already described, and it is fixed in **0.38.0**. There is no 0.37.0 — Q1 was a quick-task ahead
+of the phase and ships inside the next release.
+
+**And a key-backed model was never getting them either — while the kit told you it was.** This one is
+worse and we did not know it. `ModelSession` stored the behaviour and *nothing read it*, so a mode's
+`system`, `append_system`, `model`, `effort` and `temperature` all vanished. Then
+`thread.unmapped_behaviour` came back **empty**, because a key-backed session had no `unmapped`
+attribute at all — and empty reads as *your mode was honoured in full*. Codex at least named what it
+dropped; this dropped in silence and reported the opposite. Filed as **BUG-229**, P1, fixed in 0.41.0.
+
+**What to check on your side:** any mode you have run against a key-backed model has been running
+without its `system`. If an agent behaved differently on a key than on a subscription CLI, this is
+why — and it is worth knowing before you pin 0.42.0 rather than after.
+
+## On the evidence, in the same spirit as last time
+
+The gate is green for all six releases: ruff, ruff format, mypy strict over 496 files, and **2021
+tests** (1897 before this work). TDD is strict here, so every group started red, and **63 mutations
+were verified to bite** — each assertion changed so it should fail, confirmed failing, reverted.
+
+Two things that pass a green suite and should not have:
+
+- **Six of those 63 mutations found assertions that could not fail.** A safety claim that was only a
+  docstring — nothing tested that a background job is sandbox-confined, and removing the wrap broke
+  no test. A guard whose deletion still passed. A test refused for the wrong reason. An ordering that
+  passed by luck. A refusal tested at the wrong layer. All six are closed and the tests now fail when
+  they should.
+- **Two bugs were found by live measurement, not by any unit test.** Q1's whole premise (does a model
+  obey framed instructions handed to it in a turn?) needed a real model to answer. And in 0.41.0,
+  fragments were gated behind the wrong flag, so Claude Code received **none of them** — fourteen unit
+  tests passed because every one used a dialect that folds. The live sentinel caught it.
+
+**The sentinel you asked for, measured on claude-code 2.1.284**, not inferred from 2.1.235: a
+governed Claude Code still does **not** read a folder's `CLAUDE.md`, and the same convention passed as
+a `Fragment` **is** followed. Both live tests in the tree, each printing the version it measured.
+
+**One thing we could not measure.** The Codex leg of ENH-051 is unmeasured end to end: `codex-cli
+0.154.0`
+is signed in on this machine but the ChatGPT account refuses every model we tried (`gpt-6.1-sol`,
+`gpt-5-codex`, `gpt-5`, `gpt-5.1-codex-max`, `o3` — all *not supported when using Codex with a ChatGPT
+account*). The mechanism is proven live on Claude Code with its own flag removed, and the argv is unit
+tested, but the Codex lane itself is not. Two skipped tests in
+`tests/test_instructions_reach_a_live_model.py` are exactly the measurement to run, and one turn on
+your account closes it.
+
+## Still what we need from you
+
+1. **Say where the vault and egress proxy live** and ask 10 gets scoped.
+2. **Confirm ask 11 was worth it** — `markdown_skills` shipped; tell us if you would rather have had
+   something else with that time.
+3. **Lane H's board row is stale.** This epic is one repository by the owner's instruction and the
+   board is in another, so we are not writing it.
+4. **`docs/for-a-product.md` is now six releases behind** (ENH-026, P3). It still describes 0.34.2.
+   Tell us if you rely on it and we will bring it to 0.42.0; otherwise the migration notes are
+   current and it is not.
