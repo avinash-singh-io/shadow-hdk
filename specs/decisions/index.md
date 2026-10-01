@@ -239,6 +239,12 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D175 | a mode names its agent (`ModeSpec.pattern`), with `thread/start {agent}` as the per-thread override — so switching agent goes through the governed `set_mode` door | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
 | D176 | an unknown agent name is refused at open, naming it — never a silent fallback to `single` | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
 | D177 | the resolved agent is readable on the thread, so a product can build a resolved snapshot it can cache by hash | [`phases/phase-64-an-agent-is-data/overview.md`](/phases/phase-64-an-agent-is-data/overview.md) |
+| D178 | `Behaviour.tools_offered` narrows the catalogue a model is shown, after the pattern and the ceiling — so it can only ever take away | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D179 | a name in `tools_offered` that no registration answers to is refused at open, naming it — the D176 cut again | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D180 | `ModelPort` gains no field: `request.model` is honoured by the adapter that can re-bind, and named in `unmapped_for_a_model` where it cannot | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D181 | a key-backed conversation remembers its turns — the transcript is the thread's, not the turn's, by the same seeding fork already does | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D182 | time spent waiting for a person is not the provider's time: the ceiling is the provider's own silence, it is a mode's to set, and a parked turn's clock stops | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D183 | the resolved agent is on the record, so `set_mode` re-resolves it and a resume restores it | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
 
 ## Other references
 
