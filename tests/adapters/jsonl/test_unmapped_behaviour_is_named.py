@@ -31,14 +31,16 @@ pytestmark = pytest.mark.anyio
 # ---------------------------------------------------------------- the session says
 
 
-async def test_a_codex_session_names_the_fields_its_record_maps_no_flag_for(tmp_path: Path) -> None:
+async def test_a_codex_session_names_only_what_it_truly_cannot_take(tmp_path: Path) -> None:
     provider = JsonlProvider(shipped()["codex"], binary=Path("/nonexistent/codex"), env={})
     session = await provider.open(
         workspace=str(tmp_path),
         behaviour=Behaviour(system="be brief", model="o3", effort="high"),
     )
-    # Since 0.34 (ENH-028) Codex's file maps `model` and `effort`; `system` still has no flag.
-    assert session.unmapped == ("system",), "named, in the behaviour's order"
+    # Since 0.34 (ENH-028) Codex's file maps `model` and `effort`. `system` still has no flag,
+    # but since Epic 0011 Q1 it is handed to the CLI in the turn, so it is delivered rather than
+    # named — this session has nothing it could not take.
+    assert session.unmapped == ()
 
 
 async def test_a_claude_code_session_maps_them_all(tmp_path: Path) -> None:
@@ -108,3 +110,14 @@ async def test_the_thread_carries_what_the_provider_could_not_take_and_updates_o
         assert list(thread.unmapped_behaviour) == ["system", "model"]
     finally:
         await thread.close()
+
+
+async def test_a_codex_session_still_names_a_temperature_it_cannot_honour(tmp_path: Path) -> None:
+    """The pair that keeps the one above honest: if `unmapped` were simply emptied, this fails."""
+    provider = JsonlProvider(shipped()["codex"], binary=Path("/nonexistent/codex"), env={})
+
+    session = await provider.open(
+        workspace=str(tmp_path), behaviour=Behaviour(system="be brief", temperature=0.2)
+    )
+
+    assert session.unmapped == ("temperature",)

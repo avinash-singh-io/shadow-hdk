@@ -18,8 +18,25 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.36.0"
-"""0.36.0 — a change names a region (ENH-042 in part, ENH-048): `edit_file(path, edits[])`
+EXPECTED = "0.38.0"
+"""0.38.0 — a change is legible on the record (ENH-044; Epic 0011 phase 59, D154-D156):
+`write_file`, `edit_file` and `delete_file` carry a `change` on their result — a unified diff
+bounded at `CHANGE_DIFF_BYTES`, `truncated` when cut, exact `added`/`removed` counted over the
+whole diff before cutting, and `created`/`deleted`/`before_unreadable` markers. So a host shows
+what an agent changed without reading the environment's root, which raced the agent and could not
+work at all for a contained or remote environment. Additions in the published shape, so a
+**minor** (D9) and a *Pins* row; protocol 3 unchanged, and no kernel change — the change rides
+the observation's own output rather than a new event field. `move_file` deliberately carries no
+change: it has no content delta and `from`/`to` are the whole story.
+
+One named behaviour change beside it (D156, lane P's ask 6): a `ServeHost` handed a `sink=` no
+longer keeps a run's proposals as rows in the kit's own store. `KeepingSink`'s rule is that
+whoever holds the sink decides, so keeping regardless was the kit taking the product's decision;
+with no sink it still keeps, because that is the only way a minted skill survives a restart
+(ENH-011). `keep_proposals=True|False` forces either. Nothing narrows to `kind == "skill"` any
+more, so a proposed memory or instruction reaches a host's sink too.
+
+0.36.0 — a change names a region (ENH-042 in part, ENH-048): `edit_file(path, edits[])`
 replaces regions of a file, all of them or none, refusing an `old` that is absent or that appears
 more than once; `move_file(from, to)` refuses a destination that already exists. Two registrations
 appear in every environment's registry — additions in the published shape, so a **minor** (D9) and

@@ -175,6 +175,23 @@ current decisions below and Epic 0010's supersession text for future implementat
 | D151 | pinned native per-platform artifacts replace PyApp; Windows lifecycle and isolation claims separated | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
 | D152 | renumber only upcoming work from 46; preserve completed IDs, tags and history; native foundation first | [`epics/0010-cross-platform.md`](/epics/0010-cross-platform.md) |
 
+## Epic 0011 — capability work on the Python implementation — 2026-10-01
+
+The native transition (D142–D152) stands. D153 does not amend it; it names a bounded exception to
+where capability work lands while `shadow` is pre-usable.
+
+| Decision | Summary | Source |
+|---|---|---|
+| D153 | capability work asked for by a shipping product is carried in `shadow-hdk` while `shadow` is pre-usable: a named epic, phases numbered from 59 so no transferred ID (46–58) is reused, each phase stating what migrates and what is throwaway; a bridge, not a change of direction | [`epics/0011-inner-loop-primitives.md`](/epics/0011-inner-loop-primitives.md) |
+
+## Epic 0011 Phase 59 — a change on the record — 2026-10-01
+
+| Decision | Summary | Source |
+|---|---|---|
+| D154 | a change is carried as a bounded unified diff with exact line counts beside it, not as before-and-after content | [`phases/phase-59-a-change-on-the-record/overview.md`](/phases/phase-59-a-change-on-the-record/overview.md) |
+| D155 | capturing the change never fails the write; an unreadable prior state is marked | [`phases/phase-59-a-change-on-the-record/overview.md`](/phases/phase-59-a-change-on-the-record/overview.md) |
+| D156 | the kit keeps a run's proposals only when nobody else is listening — `keep_proposals=None` keeps only where the host passed no sink | [`phases/phase-59-a-change-on-the-record/overview.md`](/phases/phase-59-a-change-on-the-record/overview.md) |
+
 ## Other references
 
 * [`0000-template.md`](/decisions/0000-template.md) — the shape a longer record takes when one is
