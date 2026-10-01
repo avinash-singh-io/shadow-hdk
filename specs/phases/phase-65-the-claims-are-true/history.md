@@ -60,3 +60,18 @@ cannot take, so exactly one name comes back and it is the other one. Two further
 that could not distinguish them.
 
 ---
+### [DECISION] 2026-10-02 — `model` is the port's answer, not a constant
+Topics: model-port, honesty, langchain, selects-model
+Affects-phases: none
+Affects-specs: none
+Detail: D180 held: no kernel change, because `ModelRequest.model` was always there — what was
+missing is an adapter that reads it. `LangChainModel` now builds a chat model for the asked-for spec
+and caches one per spec, with the host's own keyword arguments carried over so a second spec on an
+OpenAI-compatible endpoint still gets its `base_url` and key. The `over()` seam genuinely cannot be
+re-specified, so it reports `selects_model` false and the run names `model` as unhonoured —
+`unmapped_for_a_model` gained a `selects_model` argument and `_ModelSession` asks the port instead of
+assuming. The default is **true**: `model` is a request field, so a port is expected to read it, and
+the kit's own adapter is the one that has to be accurate. Phase 62 reported it honoured
+unconditionally while the only real adapter discarded it (BUG-231).
+
+---

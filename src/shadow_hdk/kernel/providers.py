@@ -477,13 +477,23 @@ def framed(fragments: tuple[Fragment, ...]) -> str:
     return "\n\n".join(blocks)
 
 
-def unmapped_for_a_model(behaviour: Behaviour | None) -> tuple[str, ...]:
+def unmapped_for_a_model(
+    behaviour: Behaviour | None, *, selects_model: bool = True
+) -> tuple[str, ...]:
     """What a key-backed model cannot honour, named (BUG-229, D170).
 
     `ModelRequest` carries `messages`, `tools` and `model`. So instructions and fragments are
-    delivered (through the system message), `model` is delivered, and `effort` and `temperature`
-    have **nowhere to go** — inventing a field for them would be a kernel change, and claiming they
-    were honoured is the lie this exists to stop.
+    delivered (through the system message), and `effort` and `temperature` have **nowhere to go** —
+    inventing a field for them would be a kernel change, and claiming they were honoured is the lie
+    this exists to stop.
+
+    **`model` depends on the port** (`selects_model`, D180, BUG-231). The field is on the request,
+    so a port is expected to read it, and the default is that one does — a port that says nothing is
+    taken at its word, because the kit's own adapter is the one that has to be accurate. But a
+    `LangChainModel` built by `over()` wraps a chat model somebody else configured and genuinely
+    cannot be re-specified, so it reports `selects_model` false and `model` is named here. Phase 62
+    said *`model` is delivered — the field was already there* while the only real adapter discarded
+    it; the field being present is not the same as it being read.
 
     `tools_offered` is not named: the catalogue this loop hands the model is narrowed to the
     offered set (D178), so it is honoured before the request is built. That sentence stood here
@@ -492,11 +502,8 @@ def unmapped_for_a_model(behaviour: Behaviour | None) -> tuple[str, ...]:
     """
     if behaviour is None:
         return ()
-    return tuple(
-        name
-        for name in ("effort", "temperature")
-        if getattr(behaviour, name, None) not in (None, "", ())
-    )
+    cannot = ["effort", "temperature"] if selects_model else ["model", "effort", "temperature"]
+    return tuple(name for name in cannot if getattr(behaviour, name, None) not in (None, "", ()))
 
 
 def instructions_for_prompt(provider: Provider, behaviour: Behaviour | None) -> str:

@@ -15,9 +15,9 @@ phase: phase-65-the-claims-are-true
 
 ## G2 — a key-backed model honours the mode's `model` (D180) · BUG-231
 
-- [ ] G2.1 `LangChainModel` re-binds where the request names a model that differs
-- [ ] G2.2 where it cannot, `unmapped_for_a_model` names `model`
-- [ ] G2.3 a request naming nothing is byte-for-byte the request it always was
+- [x] G2.1 `LangChainModel` re-binds where the request names a model that differs, caching one chat model per spec
+- [x] G2.2 where it cannot — the `over()` seam — `unmapped_for_a_model` names `model`, asked of the port rather than assumed
+- [x] G2.3 a request naming nothing, or naming what was constructed, builds nothing new
 
 ## G3 — a key-backed conversation remembers its turns (D181) · BUG-232
 

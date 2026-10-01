@@ -95,14 +95,21 @@ class _ModelSession:
         self._active: asyncio.Task[Any] | None = None
         self._interrupted = False
         self._loop: Any = None
-        self.unmapped: tuple[str, ...] = unmapped_for_a_model(behaviour)
-        """What this mode asked for that a `ModelRequest` has nowhere to put (BUG-229, D170).
+        self.unmapped: tuple[str, ...] = unmapped_for_a_model(
+            behaviour, selects_model=_selects_model(agent.model)
+        )
+        """What this mode asked for that this port cannot honour (BUG-229, D170, BUG-231).
 
         Read off the session by name in `Conversation` (ENH-020), exactly as a CLI's is. Before
         this a `_ModelSession` had no such attribute, so `getattr(session, "unmapped", ())`
         answered `()` — and a host read that as *your mode was honoured in full* while the
         instructions were being dropped. Empty was the one answer this must never give by
-        accident."""
+        accident.
+
+        `model` is now the port's answer rather than a constant (D180): one that can build a chat
+        model for another spec honours it, one wrapping a chat model somebody else configured cannot
+        and says so. Phase 62 reported it honoured unconditionally while the only real adapter
+        discarded it (BUG-231)."""
 
     async def turn(self, prompt: str) -> Turn:
         if self.closed:
@@ -230,3 +237,14 @@ def _optional_int(value: Any) -> int | None:
 
 
 __all__ = ["ModelAgent"]
+
+
+def _selects_model(port: Any) -> bool:
+    """Whether this `ModelPort` can answer a request naming a model other than its own (D180).
+
+    Asked of the port rather than assumed, and **defaulting to true**: `model` is a `ModelRequest`
+    field, so a port is expected to read it, and a port that says nothing is taken at its word. The
+    kit's own adapter is the one that has to be accurate, and it is — `LangChainModel.selects_model`
+    is false exactly where it wraps a chat model it cannot re-specify.
+    """
+    return bool(getattr(port, "selects_model", True))
