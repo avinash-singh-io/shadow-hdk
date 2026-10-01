@@ -167,6 +167,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | complete, unmerged | 5/5 groups |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

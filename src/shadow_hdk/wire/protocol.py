@@ -89,6 +89,9 @@ FILES_READ = "files/read"
 # the skills the composition carries, with their sources
 TOOLS_LIST = "tools/list"
 SKILLS_LIST = "skills/list"
+AGENTS_LIST = "agents/list"
+"""The agents a run may be given (D174/D177): the shipped library and the product's own `agents`
+rows, name and one line. The last of the plugin concepts to get a listing."""
 BATTERIES_LIST = "batteries/list"
 """What the serving process has switched on (D70): every battery it knows, on, off or unavailable
 and why."""

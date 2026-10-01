@@ -1,12 +1,70 @@
 # For a product — what the kit answers, and how to compose it
 
-> Written 2026-09-19 for Intent Studio (lane P) against **shadow-hdk 0.31.0**, in answer to ten
-> questions asked so the product neither assumes a mechanism nor rebuilds one. Every claim below
-> was checked against the code at that version before it was written; where the kit has no
-> answer it says so and names the follow-up. The rule the answers serve: *the product composes
-> the kit; it never rebuilds a mechanism the kit has; a gap in the kit is fixed in the kit.*
+> Written 2026-09-19 for Intent Studio (lane P) against **shadow-hdk 0.31.0**; **brought current
+> for 0.43.0 on 2026-10-02** (ENH-026). The rule the answers serve is unchanged: *the product
+> composes the kit; it never rebuilds a mechanism the kit has; a gap in the kit is fixed in the
+> kit.*
+>
+> **Read the next chapter first if you have read this document before.** *Everything a plugin is
+> made of* describes a surface that has existed for a long time and was documented nowhere — a
+> product asked us for plugin CRUD it already had. That omission is ours, and it is the reason
+> this refresh happened.
+>
+> Sections 1–10 below answer the ten questions asked in September, against 0.31.0. Where a later
+> release changed an answer it says so inline; nothing in them has been silently rewritten.
 
-The map first, then the ten answers, then the follow-ups that answering raised.
+A chapter on what a plugin is made of, then the map, then the ten answers, then the follow-ups.
+
+## Everything a plugin is made of, and how a product owns it
+
+**You already have full CRUD on every one of these, through the kit's own door.** The wire carries
+`store/put`, `store/get`, `store/delete`, `store/list` and `store/version`, with no collection
+allow-list. Create a skill by putting a row; update it by putting it again; delete it; list it.
+Each registry re-reads when its collection's version moves, so the next read sees the write — no
+restart, no cache to bust.
+
+| what | collection | the kit reads it with | listed by |
+|---|---|---|---|
+| skills | `skills` | `store_skills` | `skills/list` |
+| **agents** | `agents` | `store_patterns` | `agents/list` |
+| modes (policy + behaviour + agent) | `modes` | `store_modes` | `modes/list` |
+| rules | `rules` | `store_rules` | `rules/list` |
+| providers | `providers` | `store_providers` | `providers/list` |
+| batteries | `batteries` | `store_batteries` | `batteries/list` |
+| component switches | `components` | `store_switches` | `tools/list` |
+
+Nothing in that table is a *plugin*. The kit has no plugin concept and by its admission rule never
+will — a plugin is a product's word for a bundle of these, and bundling them is yours. What the kit
+owes you is that each piece is data you own, readable live, and that is now true of all seven.
+
+**`agents` is new in 0.43.0** and was the last gap: before it, an agent architecture could only
+come from a file the kit shipped, so a plugin's Build agent, Reviewer, Test fixer and Release
+writer had nowhere to live. An agent row is `name` and `system`, optionally `meta_tools`,
+`tool_names`, `ceiling`, `max_turns`, `nudge`, `catalogue_threshold`.
+
+### Choosing one per run
+
+A **mode names its agent** — `{"id": "reviewing", "policy": "workspace-write", "agent": "reviewer"}`
+— so switching agent goes through `set_mode`, a door that already exists and is already governed.
+`thread/start {"agent": "builder"}` overrides it for one thread. An unknown name is **refused,
+naming what does exist**, never a silent fallback to the default loop.
+
+`thread/start` answers with `agent`, the name it resolved to, for the snapshot you cache by hash.
+
+### Instructions and context
+
+Not store rows — they ride the mode's `Behaviour` (0.41.0): `system`, `append_system`, and
+`fragments`, a tuple of named, attributable `Fragment`s delivered identically to a governed CLI and
+a key-backed model. `root_instructions(root)` reads a root's own `AGENTS.md`/`CLAUDE.md` as
+fragments **you choose to pass** — the kit still does not let a provider read them behind your back.
+
+### What a run creates comes back
+
+`mint_skill` proposes on your `SinkPort`; you decide whether to keep it. Since 0.38.0 the kit keeps
+a proposal in its own store **only when you passed no sink** — if you passed one, nothing is stored
+on your behalf.
+
+---
 
 ## The map — what a product registers, what it reads, what it never touches
 
