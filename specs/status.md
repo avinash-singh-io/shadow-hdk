@@ -4,9 +4,9 @@ type: Status
 
 # Project Status
 
-> **Last Updated**: 2026-09-30 — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
+> **Last Updated**: 2026-10-01 — **v0.34.2 released** (BUG-226/227/228 from lane P's walk of the
 > installed app; tagged and on `main`, the gate run locally — GitHub Actions still refusing jobs); documentation ownership transferred; latest recorded code version
-> **v0.34.2**. **Current Phase**: none. This repository is the maintenance-supported
+> **v0.34.2**. **Current Phase**: Epic 0011 (**D153**), phases 59–63 — lane P's twelve asks of 2026-10-01, carried here because the product ships on 0.36.0 today and `shadow` is two to three weeks from usable. A bounded bridge, not a change of direction: `shadow` remains the destination and D142–D152 stand. This repository is the maintenance-supported
 > Python/LangGraph implementation and the canonical history through Phase 45. Future work starts
 > with Phase 46 in the sibling [`shadow`](../../shadow/specs/status.md) repository; its
 > [native architecture](../../shadow/specs/architecture/native-foundation.md) and
@@ -165,6 +165,8 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
+| 59 — a change on the record (Epic 0011) | `phase-59-a-change-on-the-record` | complete, unmerged | 5/5 groups |
+| 60 — the write-class completes (Epic 0011) | `phase-60-the-write-class-completes` | not started | 0/? |
 
 ## Epic Release Checkpoints
 

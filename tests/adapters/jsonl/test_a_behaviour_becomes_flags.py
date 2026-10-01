@@ -105,6 +105,9 @@ def test_a_templated_flag_renders_the_value_into_its_argument() -> None:
 
 
 def test_the_shipped_codex_file_maps_model_and_effort_and_names_the_rest() -> None:
+    """Since Epic 0011 Q1 `system` is no longer among *the rest*: Codex takes no flag for it, so
+    it is handed over in the turn instead and delivered rather than named. `temperature` is the
+    one that is still honestly unhonourable — a turn's text cannot set a sampling parameter."""
     from shadow_hdk.providers import shipped
 
     codex = shipped()["codex"]
@@ -112,4 +115,5 @@ def test_the_shipped_codex_file_maps_model_and_effort_and_names_the_rest() -> No
     argv = argv_for(codex, tools=(), behaviour=behaviour)
     assert argv[argv.index("-m") + 1] == "gpt-5"
     assert argv[argv.index("-c") + 1] == 'model_reasoning_effort="low"'
-    assert unmapped_behaviour(codex, behaviour) == ["system", "temperature"]
+    assert "be brief" not in argv, "not a launch flag; it travels in the turn"
+    assert unmapped_behaviour(codex, behaviour) == ["temperature"]

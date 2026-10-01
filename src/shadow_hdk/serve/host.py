@@ -283,12 +283,17 @@ class ServeHost:
         authorizer: AuthorizerPort | None = None,
         provider_capabilities: ProviderCapabilities | None = None,
         requirements: ExecutionRequirements | None = None,
+        keep_proposals: bool | None = None,
     ) -> None:
         """`governance` and `sink` handed in replace the shipped ones for every thread this host
         opens — one step deeper (D71) without composing the rest again. `store`, `threads` and
         `checkpointer` handed in are a product's own tables (D79): each replaces the one the url
         would have made, and a host that hands all four never reads the url. `run_store` (D93)
-        is a product's own `RunStore` — the checkpointer is then the library's saver over it."""
+        is a product's own `RunStore` — the checkpointer is then the library's saver over it.
+
+        `keep_proposals` decides whether a run's creations are also kept in **the kit's** store
+        (D156). `None`, the default, keeps them only where no `sink` was handed in — the kit keeps
+        only when nobody else is listening. `True` or `False` force it."""
         if agent is not None and model is not None:
             raise ValueError("hand either agent= or model=, not both")
         self.settings = settings
@@ -311,9 +316,18 @@ class ServeHost:
         self.rules = ActRules(sources=(store_rules(self.store),))
         self.modes = modes_for(self.store, files=settings.modes_dir)
         self.skills = skills_for(self.store)
-        self.sink: Any = KeepingSink(self.store, sink if sink is not None else StdoutSink())
-        """Where a run's proposals go: a minted skill is kept as a store row (ENH-011), and every
-        proposal reaches the sink handed in — or stdout, the shipped default."""
+        behind: Any = sink if sink is not None else StdoutSink()
+        self.keeping = sink is None if keep_proposals is None else keep_proposals
+        """Whether the kit also keeps a run's creations in its own store (D156).
+
+        `KeepingSink` says the rule itself — *whoever holds the sink decides* — so a kit that keeps
+        regardless is taking the product's decision, which is what lane P asked us to stop. But
+        never keeping would re-break ENH-011: with nobody listening, a store row is the only way a
+        minted skill survives a restart, and losing them was found by the demo. So the kit keeps
+        only when nobody else is listening, and `keep_proposals` forces it either way."""
+        self.sink: Any = KeepingSink(self.store, behind) if self.keeping else behind
+        """Where a run's proposals go: every proposal reaches the sink handed in — or stdout, the
+        shipped default — and is kept as a store row only when `self.keeping` (ENH-011, D156)."""
         self.batteries = batteries_for(self.store, files=settings.batteries_dir)
         self.batteries_opened: tuple[OpenedBattery, ...] = ()
         self.battery_problems: dict[str, str] = {}

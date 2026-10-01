@@ -42,6 +42,7 @@ export type DoneOn = string[]
 export type FailedAt = string
 export type FailedTextAt = string
 export type InputTokensAt = string
+export type InstructionsInPrompt = boolean
 export type InterruptLine = string
 export type McpConfigArg = string
 export type McpConfigShape = string
@@ -158,6 +159,7 @@ done_on?: DoneOn
 failed_at?: FailedAt
 failed_text_at?: FailedTextAt
 input_tokens_at?: InputTokensAt
+instructions_in_prompt?: InstructionsInPrompt
 interrupt_line?: InterruptLine
 mcp_config_arg?: McpConfigArg
 mcp_config_shape?: McpConfigShape

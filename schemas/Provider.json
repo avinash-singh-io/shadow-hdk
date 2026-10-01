@@ -186,6 +186,11 @@
           "title": "Input Tokens At",
           "type": "string"
         },
+        "instructions_in_prompt": {
+          "default": false,
+          "title": "Instructions In Prompt",
+          "type": "boolean"
+        },
         "interrupt_line": {
           "default": "",
           "title": "Interrupt Line",
