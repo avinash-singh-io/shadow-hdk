@@ -169,3 +169,34 @@ and published. Lane P's audit flagged exactly that (its H9) and was right; its c
 0.43.0 is untagged and unpublished is now stale, and the reply says so.
 
 ---
+### [DISCOVERY] 2026-10-02 — the narrowing reached a CLI's calls but not its listing (BUG-235)
+Topics: tools-offered, narrowing, recording-server, listing
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md, docs/migrations/0.44.md
+Detail: Found while answering lane P's BUG-258 (*Claude Code gets no tools in the installed desktop
+app*), by re-reading G1 against the code path that defect lives in. `Routing.shows()` was built as
+*the* predicate for what a provider may see and call, and `Routing.call` used it — but
+`RecordingServer.tools()`, the thing that actually answers a CLI's `tools/list`, still filtered by
+`withheld` alone. A narrowed Claude Code was therefore served the whole catalogue and refused *no
+component named …* on anything it used. The G1 tests missed it because they asserted on the refusal
+and never on the length of the served list: the narrowing was tested through the door that refuses
+and not the door that offers. Fixed, with two mutations biting. The lesson is the general one — a
+narrowing has two doors, and a test has to walk both.
+
+---
+
+### [NOTE] 2026-10-02 — lane P's BUG-258 answered, and verified rather than recalled
+Topics: bug-258, relay, no-tools, approvals, release
+Affects-phases: none
+Affects-specs: specs/epics/0011-reply-to-lane-p-2.md
+Detail: *Claude Code gets no tools in the installed desktop app* is the symptom of BUG-226 (a relay
+path containing a space split into a command and its arguments) and its sibling BUG-227 (the ACP
+transport dropping `ToolSource.env`), both closed in **0.34.2** — and lane P pins 0.34.1, so the
+version they are looking for is 0.34.2 or later. Verified rather than recalled: the eleven tests in
+`tests/adapters/test_the_relay_reaches_the_child.py` cover the spaced path on all three transports,
+the port and token travelling with the source, and the relay being resolved beside the running
+interpreter before `PATH`, and all eleven pass on this tree. Their other half — *does "Ask first"
+still stop* — was checked the same way: the 52 approval and park tests pass, which matters because
+this phase's G4 wrapped exactly that call path.
+
+---

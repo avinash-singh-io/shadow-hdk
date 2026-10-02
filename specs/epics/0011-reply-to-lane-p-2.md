@@ -20,6 +20,55 @@ BUG-230 through BUG-234 and TD-020 are in the backlog, each with the file and li
 **You were right about one thing in H9**, though: `specs/status.md` still headlined v0.42.0. That was
 our defect and it is fixed.
 
+## BUG-258 — which version fixes it: **0.34.2**
+
+*"Claude Code gets no tools in the installed desktop app"* is the symptom of a defect this repository
+already closed, and you are the one who found it. It is **BUG-226**, with **BUG-227** as its sibling,
+both closed in **0.34.2** — and 0.6.10 pins **0.34.1**, which is exactly one patch short.
+
+What was happening, in your own measurement from 2026-09-30: the kit sits at
+`/Applications/Intent Studio.app/…/shadow-hdk-registry`, and `mcp_config_for` did
+`source.address.split()`. So Claude Code was launched with
+`{"command": "/Applications/Intent", "args": ["Studio.app/…"]}` and answered
+`Connection failed (ENOENT)`. Because a governed CLI runs with its own built-ins off (`--tools ""`,
+BUG-031 — still true, by design), the turn then had **no tools at all** — indistinguishable from a
+model that chose to use none, and it fails *after* the turn is paid for. Any app bundle or user
+directory with a space in its name hits it; no developer tree has one, which is why it survived so
+long. BUG-227 is the same outcome by a different route: the ACP transport dropped `ToolSource.env`, so
+the relay never learnt the registry's port or token.
+
+**Verified on this tree, not recalled from the backlog.** The eleven tests in
+`tests/adapters/test_the_relay_reaches_the_child.py` all pass at 0.44.0, and they cover the spaced
+path on all three transports (Claude Code's JSON `--mcp-config`, Codex's `-c` overrides, ACP's
+`session/new`), the port and token travelling with the source, and the relay being resolved beside the
+running interpreter **before** `PATH` — because a console script sits next to the interpreter of the
+environment it was installed into, while `PATH` answers for whatever environment the host process was
+started with. That last one matters for a bundled app specifically.
+
+So: **pin 0.34.2 or later.** If you are pinning 0.44.0 for this release you get it too.
+
+**If it still reproduces after you pin**, it is not BUG-226 and it is worth telling us, because the
+three remaining ways a governed CLI ends up with nothing are all ours to fix: the relay binary missing
+from the bundle, the socket token not reaching it, or the registry's listener not up before the CLI
+lists. Each leaves a different line on the CLI's stderr, which the kit keeps — the tail of it is on
+the session, which is where to look first.
+
+### And "Ask first" still stops — checked, because this release touched that path
+
+Your plan to test it is the right instinct, and this release had a specific reason to worry: 0.44.0
+changed what happens around a tool call, so that time we spend answering one (your policy's judgement,
+your component, a person's approval) is given back to the provider's patience instead of counting
+against it. That wraps the exact call path "Ask first" runs through.
+
+The 52 approval and park tests pass on this tree — including a parked turn surviving the host process,
+a key-backed park settling after a restart, an act rule stopping the asking at the next judgement, and
+an open policy asking before a write with nobody there to answer. Please still test it on your side;
+but the mechanism is covered here and did not move.
+
+**One genuine improvement for you in this area**: a person taking twenty minutes to approve no longer
+fails the turn. On 0.34.1 it does, and the failure blames the provider (*the provider did not finish
+within 600s*). That was BUG-233, and it is in 0.44.0 and nothing earlier.
+
 ## Your ask back: A1–A8 confirmed against the code
 
 You asked us to confirm them before fixing, *"because they come from reading the source, not from
@@ -41,7 +90,13 @@ H37. They remain open and unexamined; treat their *Kit today* column as still un
 
 `docs/migrations/0.44.md` is the full note. The five in brief:
 
-**H1 — `tools_offered` narrows.** Worth knowing *where*: there are two catalogues. A key-backed model
+**H1 — `tools_offered` narrows.** ⚠️ **One thing to check before you pin.** It used to parse and do
+nothing, so a name matching no component was harmless. It is now **refused at the start of the turn**,
+naming the name and listing what the run offers. If you have any mode documents with `tools_offered`
+set, check each name against the components you register — a stale or misspelled one turns from
+quietly wide into a refused turn. A mode setting none is unaffected, which is most of them.
+
+ Worth knowing *where*: there are two catalogues. A key-backed model
 is handed a list; Claude Code and Codex are handed nothing and **ask** the registry over MCP. Fixing
 only the first would have left the claim false for the providers you actually run, so both narrow, from
 one derivation. A narrowed name is also not callable, so a CLI holding a listing from before a

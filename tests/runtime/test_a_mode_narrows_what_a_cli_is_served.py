@@ -229,3 +229,64 @@ async def test_a_mode_switch_renarrows_what_the_cli_may_call(tmp_path: Any) -> N
         await thread.close()
 
     assert agent.refusals == [], f"`write_it` is the new mode's own tool: {agent.refusals}"
+
+
+# ----------------------------------------- and the LISTING narrows, not only the call (BUG-235)
+
+
+async def test_the_served_listing_is_narrowed_not_only_the_call(tmp_path: Any) -> None:
+    """A CLI asks for a list and then calls from it. Narrowing only the call leaves a model shown
+    tools it cannot use — it picks one, is told *no component named ...*, and spends turns learning
+    that. Worse than either half alone, and the shape of every *no tools* defect this kit has had.
+
+    The first version of this group tested only the refusal, and the listing went unnarrowed. Pinned
+    here against the server that actually answers a CLI's `tools/list`.
+    """
+    from typing import cast
+
+    from shadow_hdk.adapters.basic import AllowAll
+    from shadow_hdk.adapters.recording import RecordingServer
+    from shadow_hdk.kernel import Ceiling, Composition, Floor, Invoke, Lease, Observation
+    from shadow_hdk.runtime import Ports, RunOptions, current_run, run
+    from shadow_hdk.runtime.testing import (
+        FixedClock,
+        InMemoryComponents,
+        ListSink,
+        make_registration,
+    )
+
+    seen: dict[str, Any] = {}
+    DRIVE = make_registration("drive", effects=EffectProfile(reads=WORKSPACE))
+
+    async def drive(_inputs: Any) -> Observation:
+        context = current_run()
+        assert context is not None
+        server = RecordingServer(context)
+        server.narrow_to(("read_it",))
+        seen["listed"] = sorted(t.name for t in await server.tools())
+        server.narrow_to(())
+        seen["wide"] = sorted(t.name for t in await server.tools())
+        return Completed({"ok": True})
+
+    events = [
+        _
+        async for _ in run(
+            Composition((Invoke("s1", DRIVE.id, ()),)),
+            Ports(
+                model=None,
+                components=(
+                    InMemoryComponents([(READ, _nothing), (WRITE, _nothing), (DRIVE, drive)]),
+                ),
+                governance=cast(Any, AllowAll()),
+                sink=ListSink(),
+                clock=FixedClock(),
+            ),
+            options=RunOptions(lease=Lease(Ceiling(20, 600, None), Floor(0))),
+        )
+    ]
+    assert events
+
+    assert seen["listed"] == ["read_it"], (
+        f"the list a CLI is served must narrow, not only its calls: {seen['listed']}"
+    )
+    assert "write_it" in seen["wide"], "and clearing the narrowing restores the whole list"

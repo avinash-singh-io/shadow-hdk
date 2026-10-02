@@ -44,6 +44,14 @@ assertion:
 3. A *resumed* thread had no agent override, so the same `set_mode` behaved differently before and
    after a restart. Found because a mutation on an unreachable default value survived.
 
+**And a fourth, found by re-reading rather than by a test.** Lane P asked which version fixes their
+BUG-258 (*Claude Code gets no tools in the installed desktop app*). Reading G1 against the code path
+that defect lives in showed that the narrowing reached a CLI's **calls** and not its **listing**
+(BUG-235): a narrowed Claude Code was served the whole catalogue and then refused *no component
+named …* for anything it picked. My G1 tests asserted on the refusal and never on the length of the
+served list — the narrowing was tested through the door that refuses and not the door that offers. A
+narrowing has two doors, and a test has to walk both.
+
 **Three equivalent mutants were resolved by deleting code, not by inventing tests.** Redundant guards
 that no test could distinguish were removed. A branch no test can tell from its absence is a branch
 claiming to matter when it does not.
@@ -87,6 +95,8 @@ anything else. Both passed. Only mutation showed them for what they were.
   something is *absent* passes against a function that reports nothing at all.
 - **Make the two sides of a false claim move in one change.** The behaviour and the field that
   describes it were corrected together, because the two disagreeing was the defect.
+- **A mechanism with two doors needs a test at each.** BUG-235 passed every G1 test because they all
+  went in through the refusal. The question to ask of any gate is *what does the other side see*.
 - **A skip must say what it needs.** TD-020's live legs now name the account required and what the
   measurement would prove. A silent skip is how an unmeasured claim stays unmeasured.
 
@@ -97,6 +107,7 @@ anything else. Both passed. Only mutation showed them for what they were.
 | ENH-052 | the carried transcript is unbounded; a token ceiling and a compaction that fires on it are the audit's H33/H34, outside Wave 1. Filed at the moment the risk was introduced, and named in the comment that introduces it |
 | TD-020 | Codex's instruction fold has never run end to end — this laptop's Codex refuses every model offered it. Needs an account where it accepts one; the skip now says so |
 | TD-019 | still open, and it shaped this phase |
+| BUG-235 | filed **and closed** in this phase: my own G1 defect, above |
 
 ## Verification Evidence
 
@@ -130,7 +141,7 @@ Success: no issues found in 507 source files
 ### `uv run pytest`
 
 ```
-2143 passed, 20 skipped, 23 deselected, 85 warnings
+2144 passed, 20 skipped, 23 deselected, 85 warnings
 exit=0
 ```
 
@@ -138,8 +149,8 @@ The wall-clock figure is left out on purpose: it differs between runs, so quotin
 retrospective disagree with the next gate over something that was never the claim. The counts and the
 exit code are what the gate asserts.
 
-Suite 2058 → 2143 across the phase. Fifty-two mutations verified: nine in G1, seven in G2, nine in
-G3, ten in G4, twelve in G5, with five survivors — three equivalent mutants resolved by deleting the
+Suite 2058 → 2144 across the phase. Fifty-four mutations verified: eleven in G1 (two of them on
+BUG-235's fix), seven in G2, nine in G3, ten in G4, twelve in G5, with five survivors — three equivalent mutants resolved by deleting the
 code, and two genuine test weaknesses that became the findings above.
 
 ### Live, opted into with `-m live`

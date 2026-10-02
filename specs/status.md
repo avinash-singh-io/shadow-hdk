@@ -13,8 +13,10 @@ type: Status
 > person's thinking time (BUG-233); and 0.43.0's agent selection survived neither `set_mode` nor a
 > resume (BUG-234). All five closed in **v0.44.0**. Wave 1 only, by the owner's decision of
 > 2026-10-02 — every other audit item is named in the phase overview's *Out*, on the ground that new
-> capability belongs to the native line. Suite 2058 → 2143, mypy strict 507 files. ENH-052 and TD-020
-> filed.
+> capability belongs to the native line. Suite 2058 → 2144, mypy strict 507 files. ENH-052 and TD-020 filed; **BUG-235 filed and closed
+> inside the phase** — the narrowing had reached a CLI's calls and not its listing, found by
+> re-reading G1 against lane P's BUG-258. Lane P's BUG-258 itself is answered: it is BUG-226/227,
+> fixed in **0.34.2**, verified on this tree.
 >
 > Before it, **Epic 0011: v0.38.0 through v0.43.0 released and published** (both distributions, all
 > seven files each, verified from outside CI). Eleven of lane P's twelve asks of 2026-10-01 shipped;
