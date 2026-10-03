@@ -6,7 +6,7 @@
 # packaging boundary (D78).
 [project]
 name = "shadow-hdk"
-version = "0.44.0"
+version = "0.44.1"
 description = "Shadow HDK — a Harness Development Kit: an effect-governed agent runtime, its components, and the wire."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ dependencies = [
     # The Linux confinement helper (Epic 0010, D123/D133): Landlock + seccomp applied before exec,
     # a bin-only platform wheel built from `native/sandbox`, in lockstep with this version. On the
     # two architectures it is built for; elsewhere on Linux the environment falls back to bwrap.
-    "shadow-hdk-linux-sandbox==0.44.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "shadow-hdk-linux-sandbox==0.44.1; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +61,9 @@ all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search,
 [project.scripts]
 shadow-hdk = "shadow_hdk.serve.__main__:main"
 shadow-hdk-registry = "shadow_hdk.adapters.recording.socket:relay"
+# What a host's migration step runs, under a role that may create tables (BUG-237). A console script
+# rather than only a function, because a migration step is a command and not a Python import.
+shadow-hdk-prepare = "shadow_hdk.adapters.postgres.prepare:main"
 
 # How the providers find the transports the shipped CLIs speak (D40): a provider file names one.
 [project.entry-points."shadow_hdk.transports"]
