@@ -245,6 +245,7 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D181 | a key-backed conversation remembers its turns — the transcript is the thread's, not the turn's, by the same seeding fork already does | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
 | D182 | time spent waiting for a person is not the provider's time: the ceiling is the provider's own silence, it is a mode's to set, and a parked turn's clock stops | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
 | D183 | the resolved agent is on the record, so `set_mode` re-resolves it and a resume restores it | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
+| D184 | **what moves to Shadow is stated per contract, in one file that every later bridge phase updates** — D153 required each phase to say what migrates and what is throwaway, seven phases did not, and eight shipped capabilities turned out to have no planned home | [`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md) |
 
 ## Other references
 

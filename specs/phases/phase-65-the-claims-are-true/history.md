@@ -216,3 +216,35 @@ another lane's row, but phase 64 is not an active lane — it is a released one,
 something untrue about a shipped release is worse than the convention it protects.
 
 ---
+### [DECISION] 2026-10-03 — H10 answered: eight shipped capabilities have no planned home
+Topics: h10, d153, migration, shadow, parity
+Affects-phases: none
+Affects-specs: specs/planning/what-moves-to-shadow.md, specs/decisions/index.md
+Detail: Written after this phase closed, on the owner's instruction, because the finding came out of
+this phase's work and the evidence existed only in two session transcripts. D153 permitted this
+bridge on one condition — *each phase stating what migrates and what is throwaway* — and phases 59
+through 65 did not state it, this one included. So it was satisfied in letter and not in substance,
+and that is how eight capabilities came to be built without anyone deciding whether they survive.
+
+The evidence, from `shadow` at `origin/main` plus `phase-64-models-and-tools`: Shadow's **Phase 59**
+is the only phase chartered to bring this kit's work across (*"After the alpha, bring the
+capabilities already built in `shadow-hdk` into the new architecture"*), and its named scope is ACP,
+Agent Skills/`SKILL.md`, `AGENTS.md` and OKF bundles, and OpenTelemetry — **none of the eight**.
+Phase 59 is `planned` and depends on Phase 51, which **is** the alpha and is itself `planned`; Phase
+61 (hardening, before the alpha) is `planned`; Phase 64 is `in-progress`.
+
+The parity list: `change` diffs on the record, `apply_patch`, `run_background`/`job_output`/`kill_job`,
+`checkpoint`/`restore`/`list_checkpoints`, `open_worktree`/`close_worktree`, `update_plan`,
+`tools_offered`, `silence_seconds`, agents as store rows, and `ThreadRecord.agent`. Each appears in
+**no** Shadow phase in any file.
+
+Two method notes, because counting nearly misled this: a term in a phase's `overview.md` is scope
+while a term only in its `history.md` or `evidence/` is a record, which is not a plan; and the
+generic words had to be read for sense — `checkpoint` in Shadow is the durable engine's state and "an
+internal checkpoint, not a supported release", and `worktree` is a development worktree in
+`repository-layout.md`. `SinkPort` and the Codex fold are recorded as **unknown** rather than guessed.
+
+D184 names the decision; `specs/planning/what-moves-to-shadow.md` is the statement, and any later
+bridge phase adds its contracts to it before closing.
+
+---
