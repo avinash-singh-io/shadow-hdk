@@ -333,3 +333,11 @@ decision is theirs; the *why* in that cell was written here, and a cold reader s
 which is which before relying on either.
 
 ---
+
+### [DECISION] 2026-10-03 — Handoff #001 → shadow
+Topics: orchestration, handoff, handoff-001
+Affects-phases: phase-66-the-short-list (or "none")
+Affects-specs: ../shadow/.momentum/inbox/handoff-001.md
+Detail: Handoff #001 written to shadow/.momentum/inbox/. Summary: HDK is maintenance-only and handed to a Codex lane. Two decisions now sit with Shadow: D-M (who builds the five file-and-shell tools) and D-N (whether to add a Proposal port). D189 makes Windows a retirement condition, so Shadow phase 50 is on the critical path.
+
+---
