@@ -4,6 +4,14 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — 0.47.0 candidate verified, not published.** D adds stored human-readable descriptions
+> to the existing agent chooser reply, preserving the absent-field fallback and role instructions.
+> Full gate: 2,254 passed, 8 skipped; lint/format/types clean. Six new cases pass on the installed
+> wheel outside checkout; seven mutation checks bite. Earlier candidates are frozen
+> separately on `codex/release-0.45.0` and `codex/release-0.46.0` for parent-first publication.
+> H6–H8 remain. Latest published release remains **0.44.1**.
+
+
 > **2026-10-04 — 0.46.0 candidate verified, not published.** C adds stored plan-limit parsing and uses
 > existing child-plan admission. Full gate: 2,248 passed, 8 skipped; lint/format/types clean.
 > Ten new cases pass on the installed wheel outside checkout; ten mutations bite. The 0.45.0 candidate
@@ -224,7 +232,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | 0.46.0 verified, owner landing pending | G1–G4 and H11 A+B/E/C done; D/G6 remain; release checkpoints in G7 |
+| 66 — the short list | `phase-66-the-short-list` | 0.47.0 verified, owner landing pending | G1–G5 done; G6 remains; release checkpoints in G7 |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

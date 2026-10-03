@@ -40,7 +40,7 @@ phase: phase-66-the-short-list
 - [x] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening; composed in **one place**, the behaviour every provider session is opened with
 - [x] G5.3 **E** — `skill` on the row
 - [x] G5.4 **C** — `plan` on the row
-- [ ] G5.5 **D** — `description` on the row
+- [x] G5.5 **D** — `description` on the row
 - [x] G5.6 **F** — not built: `model` and `effort` stay on the mode (G2's recommendation, lane P and the owner agreed)
 
 ## G6 — H6–H8
@@ -73,4 +73,11 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] source confirmed and reported before implementation; six cases red, ten new cases green
 - [x] ten anchored mutations bite; installed-wheel behaviour verified outside checkout
 - [x] full gate: 2,248 passed with disposable PostgreSQL; migration table and lane P note updated
+- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+
+## 0.47.0 checkpoint — D
+
+- [x] source confirmed before implementation; five cases red, six new cases green
+- [x] seven mutations bite; installed chooser behaviour verified outside checkout
+- [x] full gate: 2,254 passed with disposable PostgreSQL; migration table and lane P note updated
 - [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
