@@ -66,6 +66,7 @@ from shadow_hdk.kernel.ports import (
     ComponentPort,
     Context,
 )
+from shadow_hdk.kernel.providers import carried_into
 from shadow_hdk.kernel.threads import agent_now
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.kernel.workspace import Root, Workspace
@@ -333,6 +334,10 @@ class Conversation:
         modes adapter, so a host hands in its own. `None` means the conversation has no
         behaviours to apply and `set_mode` only flips the policy the governance selects by."""
         self._behaviour: Any = None
+        self._agent_carries: Any = None
+        """What the resolved agent contributes to the provider's behaviour (H11-B): its role and its
+        tool list, as plain data, so the runtime never learns what a `Pattern` is. `None` where no
+        agent was resolved, which is every composition that names none."""
         self._choose_agent: Any = None
         """How this conversation asks for an agent again when its mode changes (D183, BUG-234): a
         callable from the name a mode asks for to an `(AgentPort | None, resolved name)` pair.
@@ -386,6 +391,7 @@ class Conversation:
         idle_seconds: float | None = None,
         plan_limits: PlanLimits | None = None,
         choose_agent: Any = None,
+        agent_carries: Any = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
@@ -422,6 +428,7 @@ class Conversation:
             plan_limits=plan_limits,
         )
         conversation._choose_agent = choose_agent
+        conversation._agent_carries = agent_carries
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
             conversation._mode_plan = getattr(spec, "plan", None)
@@ -491,7 +498,7 @@ class Conversation:
         session = await self._agent.open(
             tools=tuple(self._sources),
             workspace=str(self.workspace.primary.path),
-            behaviour=self._behaviour,
+            behaviour=self._behaviour_for_the_provider(),
             **extra,
         )
         # What the opener could not take is read the way `session_id` is (ENH-020): off the
@@ -516,6 +523,26 @@ class Conversation:
         if giving_back is None or not hasattr(self.registry, "answering"):
             return
         self.registry.answering = giving_back
+
+    def _behaviour_for_the_provider(self) -> Any:
+        """The mode's behaviour with the resolved agent's role and tool list composed in (H11-B).
+
+        **One place.** This runs at open and at every reopen — which is what a `set_mode` performs —
+        so the agent a mode names is composed in exactly once per provider session and cannot drift
+        between the two paths. Two paths deciding the same thing is what H11-A's defect was.
+
+        Empty where no agent was carried, and then `carried_into` returns the behaviour unchanged
+        rather than a copy: the value reaches a CLI's system-prompt flag or is folded into its turn
+        and paid for, so identity matters.
+        """
+        carried = self._agent_carries
+        if carried is None:
+            return self._behaviour
+        return carried_into(
+            self._behaviour,
+            instructions=str(getattr(carried, "instructions", "") or ""),
+            tool_names=getattr(carried, "tool_names", None),
+        )
 
     def _remember_transcript(self) -> None:
         """A key-backed session's transcript, off the session (D181, BUG-232).
@@ -1130,10 +1157,21 @@ class Conversation:
         """
         if self._choose_agent is None:
             return
-        port, resolved = await self._choose_agent(agent_now(override, getattr(spec, "agent", "")))
+        chosen = await self._choose_agent(agent_now(override, getattr(spec, "agent", "")))
+        # **Two elements or three** (D14). A chooser is a callable a *host* supplies, and H11-B grew
+        # what it may return; one written against the earlier shape must keep working, so the third
+        # element is read where it is offered and defaulted where it is not. Requiring the new arity
+        # would have been a port grown by breaking its adapters — which is what phase 64 did to
+        # twenty-two doubles, and what this unpacking caught again here.
+        port, resolved = chosen[0], chosen[1]
+        carries = chosen[2] if len(chosen) > 2 else None
         if port is not None:
             self._agent = port
         self.agent = resolved
+        # The new mode's agent contributes its own role and tool list (H11-B). Replaced rather than
+        # merged with the old one's: a switch that layered two agents' roles would give the model
+        # two identities.
+        self._agent_carries = carries
 
     def _narrow_the_registry(self) -> None:
         """Tell the offer what this mode's `tools_offered` allows (D178, BUG-230).

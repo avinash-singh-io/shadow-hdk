@@ -50,6 +50,7 @@ from shadow_hdk.adapters.modes import (
 )
 from shadow_hdk.adapters.recording import SocketOffer
 from shadow_hdk.kernel import (
+    Carried,
     Ceiling,
     EnvironmentRequirements,
     ExecutionRequirements,
@@ -684,6 +685,7 @@ class ServeHost:
             # this host's default — which is what 0.43.0 did (BUG-234).
             agent_named=resolved_agent,
             agent_unhonoured=dropped_agent,
+            agent_carries=await self._agent_carries(wanted),
             agent_override=agent or "",
             choose_agent=self._choosing_an_agent,
         )
@@ -692,16 +694,41 @@ class ServeHost:
         self.provider = called
         return thread
 
-    async def _choosing_an_agent(self, wanted: str) -> tuple[AgentPort | None, str]:
-        """Resolve a name to a loop, for a thread whose mode has changed (D183, BUG-234).
+    async def _choosing_an_agent(self, wanted: str) -> tuple[AgentPort | None, str, Carried | None]:
+        """Resolve a name to a loop and to what it contributes, for a mode that changed (D183,
+        H11-B).
 
-        Handed to the thread so the runtime never learns about patterns: it knows a name and a
-        callable, and this knows the registry. `NoSuchAgent` raises straight through, which is the
-        D176 cut at the `set_mode` door — a silent fallback to `single` there would hand a product a
-        run that looks right and is not, exactly as it would at open.
+        Handed to the thread so the runtime never learns about patterns: it knows a name, a callable
+        and two plain fields. `NoSuchAgent` raises straight through, which is the D176 cut at the
+        `set_mode` door — a silent fallback to `single` there would hand a product a run that looks
+        right and is not, exactly as it would at open.
+
+        The third element is the half a CLI needs (H11-B): a provider that owns its own loop cannot
+        be handed a `Pattern`, but it can be handed that pattern's role and tool list through the
+        behaviour it is opened with.
         """
         chosen = await self._agent_named(wanted)
-        return chosen, agent_recorded(wanted, chosen=chosen is not None)
+        return (
+            chosen,
+            agent_recorded(wanted, chosen=chosen is not None),
+            await self._agent_carries(wanted),
+        )
+
+    async def _agent_carries(self, wanted: str) -> Carried | None:
+        """What a resolved agent contributes to a provider's behaviour (H11-B), as plain data.
+
+        `None` where no agent was named, so a composition that names none is untouched. Resolved
+        through the same registry as everything else, so an unknown name has already refused by the
+        time this is asked.
+        """
+        if not wanted:
+            return None
+        pattern = await self.patterns.named(wanted)
+        names = pattern.tool_names
+        return Carried(
+            instructions=pattern.system,
+            tool_names=None if names is None else tuple(sorted(names)),
+        )
 
     def _plan_limits_of(self, given: Any) -> PlanLimits | None:
         """The host's own plan limits (D109), in the wire's words — `{depth, fan_out, steps}`,
@@ -838,6 +865,7 @@ class ServeHost:
             plan_limits=self._plan_limits_of(plan_limits),
             attributes=attributes,
             choose_agent=self._choosing_an_agent,
+            agent_carries=await self._agent_carries(resuming),
         )
         self._selections[thread.id] = selection
         thread.execution = selection

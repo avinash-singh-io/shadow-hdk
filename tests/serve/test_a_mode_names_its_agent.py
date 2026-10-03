@@ -406,3 +406,124 @@ async def test_a_resumed_thread_that_named_no_agent_still_gets_single(tmp_path: 
     said = model.system_said()
     assert single.system[:40] in said, said
     assert "REVIEWER-ROLE" not in said
+
+
+# ------------- and a provider that owns its own loop gets the role and the tool list (H11-B)
+
+
+class _Cli:
+    """A provider double that owns its loop, so it is opened with a behaviour and never handed a
+    pattern — which is exactly the case that got nothing at all before phase 66."""
+
+    def __init__(self) -> None:
+        self.opened_with: list[Any] = []
+
+    async def open(self, *, behaviour: Any = None, **kw: Any) -> Any:
+        self.opened_with.append(behaviour)
+        return self
+
+    async def turn(self, prompt: str) -> Any:
+        from shadow_hdk.kernel import Turn
+
+        return Turn(text="done")
+
+    async def close(self) -> None:
+        return None
+
+    async def stream(self, prompt: str) -> Any:  # pragma: no cover
+        raise NotImplementedError
+
+
+async def _a_cli_host(
+    where: Path, modes: list[dict[str, Any]], agents: list[dict[str, Any]]
+) -> tuple[ServeHost, _Cli]:
+    """A host with **no model**, which is every CLI host, and an agent handed in as the provider."""
+    cli = _Cli()
+    host = ServeHost(
+        Settings(root=where, store=f"sqlite:///{where / 'cli.db'}"), agent=cast(Any, cli)
+    )
+    for document in modes:
+        await host.store.put("modes", document["id"], document)
+    for row in agents:
+        await host.store.put("agents", row["name"], row)
+    return host, cli
+
+
+async def test_a_cli_is_told_the_role_the_mode_named(tmp_path: Path) -> None:
+    """H11-B, the whole point. Before this a mode naming an agent on Claude Code or Codex got
+    nothing: the agent was dropped because the kit cannot run a loop there, and the role went with
+    it. The role does not need the loop — it travels on the behaviour, through the flag-or-fold path
+    that has shipped since 0.38.0."""
+    host, cli = await _a_cli_host(tmp_path, [a_mode("reviewing", agent="reviewer")], [A_REVIEWER])
+    try:
+        thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+        await thread.close()
+    finally:
+        await host.aclose()
+
+    assert cli.opened_with, "the provider was never opened"
+    behaviour = cli.opened_with[0]
+    assert behaviour is not None, "a CLI was opened with no behaviour at all"
+    assert "REVIEWER-ROLE" in behaviour.system, behaviour.system
+
+
+async def test_a_cli_whose_mode_names_no_agent_is_unchanged(tmp_path: Path) -> None:
+    """Nothing that works today moves."""
+    host, cli = await _a_cli_host(tmp_path, [a_mode("plain")], [A_REVIEWER])
+    try:
+        thread = await host.open(root=str(tmp_path), mode="plain", want=None, name="tools")
+        await thread.close()
+    finally:
+        await host.aclose()
+
+    behaviour = cli.opened_with[0]
+    assert behaviour is None or not behaviour.system, behaviour
+
+
+async def test_the_modes_own_words_are_layered_onto_the_role(tmp_path: Path) -> None:
+    """D168 end to end: the role first, the mode's words after."""
+    host, cli = await _a_cli_host(
+        tmp_path,
+        [
+            {
+                "id": "reviewing",
+                "policy": "workspace-write",
+                "agent": "reviewer",
+                "behaviour": {"system": "BE-TERSE"},
+            }
+        ],
+        [A_REVIEWER],
+    )
+    try:
+        thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+        await thread.close()
+    finally:
+        await host.aclose()
+
+    said = cli.opened_with[0].system
+    assert "REVIEWER-ROLE" in said and "BE-TERSE" in said, said
+    assert said.index("REVIEWER-ROLE") < said.index("BE-TERSE"), said
+
+
+async def test_a_cli_gets_the_agents_tool_list_intersected_with_the_modes(tmp_path: Path) -> None:
+    """The narrowing half. Both are allow-lists over one registry and the answer is the
+    intersection — never wider than the mode's, which is what D178 made safe."""
+    host, cli = await _a_cli_host(
+        tmp_path,
+        [
+            {
+                "id": "reviewing",
+                "policy": "workspace-write",
+                "agent": "reviewer",
+                "behaviour": {"tools_offered": ["read_file", "write_file"]},
+            }
+        ],
+        [{**A_REVIEWER, "tool_names": ["read_file", "run_shell"]}],
+    )
+    try:
+        thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+        await thread.close()
+    finally:
+        await host.aclose()
+
+    assert cli.opened_with[0].tools_offered == ("read_file",), cli.opened_with[0].tools_offered

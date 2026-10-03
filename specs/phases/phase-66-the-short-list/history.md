@@ -169,3 +169,34 @@ Codex fold is settled too: Shadow does not fold and forbids folding silently, so
 `instructions_in_prompt` is throwaway while the capability is met by its agent profile.
 
 ---
+### [DECISION] 2026-10-03 — D188: an agent's role and tool list compose into a CLI's behaviour
+Topics: h11, agents, cli, instructions, narrowing, d14
+Affects-phases: none
+Affects-specs: none
+Detail: G5-B, and G2's estimate held: no new mechanism, only the composition. A CLI gets everything
+but its own loop — instructions through the flag-or-fold path (0.38.0, 0.41.0, measured live) and a
+tool list through the registry narrowing (0.44.0) — and both shipped before this. What was missing is
+`carried_into`, a pure derivation with two rules.
+
+**Instructions layer, agent first**, reusing D168 rather than reinventing it: the role is who the
+agent is and the mode is what this run wants of it, so a mode's aside must not outrank the role.
+**Tool lists intersect and never widen**, because both are allow-lists over one registry and D178
+made narrowing safe by applying it last so it can only take away; two allow-lists where the later
+widened the earlier would let a mode be handed more than its policy left by naming an agent. The
+mode's order is kept — a catalogue with two sources of ordering has none.
+
+Composed in **one place**: `Conversation._behaviour_for_the_provider`, which runs at open and at every
+reopen, and a reopen is what a `set_mode` performs. One place because two paths deciding the same
+thing is exactly what H11-A's defect was. The runtime never learns what a `Pattern` is — the host
+hands it `Carried`, two plain fields, which the layering invariant requires and which also leaves room
+for E's `skill`.
+
+Two findings. A surviving mutation showed the no-instructions case was only ever tested against an
+empty `system`, so prepending nothing was invisible — and with a non-empty one it would have put a
+blank line at the head of what reaches a CLI's `--system-prompt` flag and is paid for. And widening
+the chooser's return **broke four existing doubles**, which is D14's rule catching me: a chooser is a
+callable a host supplies, so the third element is read where offered and defaulted where not, rather
+than required. Phase 64 broke twenty-two doubles the same way; this time the test suite said so
+immediately.
+
+---

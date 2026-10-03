@@ -24,7 +24,7 @@ transports it serves; an unknown one is refused by whoever was asked to open it,
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from shadow_hdk.kernel.capabilities import ProviderCapabilities
@@ -49,6 +49,20 @@ class EnvVar:
 
     name: str
     value: str
+
+
+@dataclass(frozen=True)
+class Carried:
+    """What a resolved agent contributes to the behaviour a provider is opened with (H11-B).
+
+    Plain data rather than a `Pattern`, because a provider that owns its own loop cannot be handed a
+    loop — and because the runtime composing this must not learn what a `Pattern` is (the layering
+    rule an invariant enforces). `tool_names=None` means *all of the run's*, exactly as an unset
+    `tools_offered` does.
+    """
+
+    instructions: str = ""
+    tool_names: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -403,6 +417,50 @@ def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[
     return unmapped
 
 
+def carried_into(
+    behaviour: Behaviour | None,
+    *,
+    instructions: str,
+    tool_names: tuple[str, ...] | None,
+) -> Behaviour | None:
+    """A mode's behaviour with a resolved agent's role and tool list composed in (H11-B).
+
+    For a provider that owns its own loop. A CLI gets *everything but the loop* — its instructions
+    through the flag-or-fold path (D64, ENH-051) and its tool list through the registry narrowing
+    (D178) — and both of those shipped before this; what was missing was the composition. Until
+    phase 66 a mode naming an agent on Claude Code or Codex got **nothing at all**, silently
+    (H11-A named the silence; this ends it).
+
+    **Instructions layer, agent first.** D168's rule, reused rather than reinvented: a mode's words
+    go *onto* the role and never replace it, because the role is who the agent is and the mode is
+    what this run wants of it. Reversed, a mode's aside would outrank the role and the agent would
+    stop being that agent.
+
+    **Tool lists intersect, and never widen.** Both are allow-lists over one registry. D178 made
+    narrowing safe by applying it last so it can only take away; two allow-lists where the later
+    widened the earlier would break exactly that, and a mode could be handed more than its policy
+    left by naming an agent. The mode's order is kept, because a catalogue with two sources of
+    ordering has none.
+
+    `tool_names=None` means *all of the run's*, as an unset `tools_offered` does — so it leaves the
+    mode's list alone. An explicitly empty tuple has said something, and it is not *everything*.
+
+    A behaviour with nothing to compose comes back **unchanged, not copied**: a rebuilt `system`
+    reaches a CLI's flag and is paid for, so identity matters here.
+    """
+    if not instructions and tool_names is None:
+        return behaviour
+    base = behaviour if behaviour is not None else Behaviour()
+    system = base.system
+    if instructions:
+        system = f"{instructions}\n\n{system}" if system else instructions
+    offered = base.tools_offered
+    if tool_names is not None:
+        wanted = set(tool_names)
+        offered = tuple(n for n in offered if n in wanted) if offered else tuple(tool_names)
+    return replace(base, system=system, tools_offered=offered)
+
+
 def narrowed(names: tuple[str, ...], behaviour: Behaviour | None) -> tuple[str, ...]:
     """The names a step is shown, narrowed to the subset its mode asked for (D178).
 
@@ -553,7 +611,9 @@ __all__ = [
     "EnvVar",
     "Fragment",
     "INSTRUCTION_FIELDS",
+    "Carried",
     "carried_by",
+    "carried_into",
     "unmapped_for_a_model",
     "framed",
     "Provider",

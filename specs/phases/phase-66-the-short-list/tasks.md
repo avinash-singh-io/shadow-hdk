@@ -37,7 +37,7 @@ phase: phase-66-the-short-list
 ## G5 — H11's confirmed remainder
 
 - [x] G5.1 **A** — the name resolved on every path (D176 made true on a CLI), and a dropped agent named on the thread, the record and the wire
-- [ ] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening
+- [x] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening; composed in **one place**, the behaviour every provider session is opened with
 - [ ] G5.3 **E** — `skill` on the row
 - [ ] G5.4 **C** — `plan` on the row
 - [ ] G5.5 **D** — `description` on the row

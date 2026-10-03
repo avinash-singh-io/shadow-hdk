@@ -237,6 +237,7 @@ class Thread:
         agent_named: str = "",
         agent_unhonoured: str = "",
         agent_override: str = "",
+        agent_carries: Any = None,
         choose_agent: Any = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
@@ -289,6 +290,7 @@ class Thread:
                 agent=agent,
                 ports=ports,
                 choose_agent=choose_agent,
+                agent_carries=agent_carries,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,
@@ -329,6 +331,7 @@ class Thread:
         plan_limits: PlanLimits | None = None,
         attributes: Mapping[str, JsonValue] | None = None,
         choose_agent: Any = None,
+        agent_carries: Any = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
@@ -358,6 +361,7 @@ class Thread:
                 agent=agent,
                 ports=ports,
                 choose_agent=choose_agent,
+                agent_carries=agent_carries,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,
