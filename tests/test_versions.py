@@ -18,30 +18,27 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.44.0"
-"""0.44.0 — the claims are true (phase 65, D178-D183): five claims the kit already made and did not
-keep, found by reading the source, three of them ours from phases 62 and 64. `tools_offered` now
-narrows what a step is shown, in **both** catalogues — the one an in-process loop builds and the one
-the registry serves a CLI over MCP — applied last so it can only take away, with a name nothing
-answers to refused (D178, D179). A key-backed model honours the mode's `model` by building a chat
-model for that spec, and `unmapped_for_a_model` names it where the adapter cannot (D180). A thread's
-later turns contain its earlier ones, the transcript being the thread's and not the turn's (D181). A
-turn is given up for the provider's **silence** rather than for taking long, time spent answering
-its own calls given back, and a mode may set its own ceiling (D182). And a selected agent survives a
-`set_mode` and a resume, on the record, with an override that goes on winning (D183). Additions only
-— every item has a test pinning that nothing which worked moved — so a **minor** (D9) and a *Pins*
-row; protocol 3 unchanged.
-
-0.42.0 — the loop is visible and steerable (ENH-045, ENH-046; Epic 0011 phase 63,
-D171-D173): `update_plan` as a registered component declaring **no effects at all**, so every mode
-admits the agent's own narration — an agent that had to ask permission to say what it intends would
-stop saying it (D171). An item's `status` is an open string, the cut `Provider.transport` makes
-(D172). Nothing extra carries the revisions: `Invoked.inputs` already does, which is why this is a
-component and not a runtime concept. And `ModelAgent.steer` can now answer `True`: a steer is
-queued and delivered as the person's words before the next model call (D173), because the loop
-between steps is the kit's own and a request in flight cannot be changed. `False` still where there
-is nothing to steer, and a one-shot dialect stays `False`. Contract additions, so a **minor** (D9)
-and a *Pins* row; protocol 3 unchanged.
+EXPECTED = "0.44.1"
+"""0.44.1 — a restricted database role can open the PostgreSQL adapters (BUG-237, Intent Studio's
+BUG-280). They executed their table DDL when a pool first opened **and again after every
+`aclose()`**, so a production runtime role with no DDL rights failed with SQLSTATE 42501 and the
+application could not start. Provisioning the tables in advance did not help, and that decides the
+fix:
+`CREATE TABLE IF NOT EXISTS` is **not** DDL-free, because PostgreSQL checks the CREATE privilege on
+the schema before it checks whether the table exists — held against a real server by a test, since
+it is counter-intuitive enough to measure rather than assert. So the schema is no longer executed at
+runtime at all. `prepare(url)` and a `shadow-hdk-prepare` console script create every table and call
+LangGraph's own `setup()` under an owner role, idempotently, recording the applied version in a new
+one-row `shadow_hdk_schema_version` table — without which *migrates* has nothing to migrate from and
+*behind* nothing to compare against. `prepared=True` on each adapter issues no DDL and instead
+verifies with one catalogue query, failing `SchemaNotPrepared` or `SchemaBehind` **named, at
+startup**. `runtime_grants(role)` publishes the grants a restricted role needs as data, with SELECT
+only on the version table, and the test grants exactly what it publishes. **Opt-in here** so a patch
+inverts nothing for hosts relying on self-preparation; the default flips in the first 0.45 release
+as a named behaviour change. Verified under two real roles — prepare as an owner, then every
+adapter's open,
+**reopen** and ordinary operations as a role that cannot create tables. A **patch** with an additive
+published surface, so a *Pins* row (D9); protocol 3 unchanged.
 
 0.41.0 — what a run carries into any provider (BUG-229, ENH-047, lane P's asks 4/5/11;
 Epic 0011 phase 62, D166-D170). **A fix first:** a key-backed model never received a mode's
