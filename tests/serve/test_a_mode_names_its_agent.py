@@ -260,3 +260,149 @@ async def test_a_threads_override_is_what_is_recorded(tmp_path: Path) -> None:
         assert thread.agent == "builder"
     finally:
         await thread.close()
+
+
+# ------------------------------------------------ and it survives the doors a product uses (D183)
+
+
+async def test_switching_mode_switches_the_agent(tmp_path: Path) -> None:
+    """BUG-234. Phase 64 shipped selection and left `set_mode` replacing the policy, the
+    environment and the behaviour while the agent stayed exactly as it was — so a product switching
+    from a Reviewer mode to a Builder mode kept the Reviewer, and the capability was real only for a
+    thread that was never switched.
+
+    Asserted on what the model was actually asked, as the rest of this file is.
+    """
+    builder = {"name": "builder", "system": "BUILDER-ROLE: you write the change."}
+    model = Listening()
+    host = await a_host(
+        tmp_path,
+        model,
+        [a_mode("reviewing", agent="reviewer"), a_mode("building", agent="builder")],
+        [A_REVIEWER, builder],
+    )
+
+    thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+    try:
+        async for _ in thread.turn("first"):
+            pass
+        assert "REVIEWER-ROLE" in model.system_said()
+        model.asked.clear()
+
+        await thread.set_mode("building")
+        async for _ in thread.turn("second"):
+            pass
+    finally:
+        await thread.close()
+
+    said = model.system_said()
+    assert "BUILDER-ROLE" in said, said
+    assert "REVIEWER-ROLE" not in said, "the switch kept the mode it was leaving"
+
+
+async def test_the_thread_reports_the_agent_it_switched_to(tmp_path: Path) -> None:
+    """D177's field has to keep being true after a switch, or a product's cached snapshot is of a
+    run that is no longer happening."""
+    builder = {"name": "builder", "system": "BUILDER-ROLE: you write the change."}
+    model = Listening()
+    host = await a_host(
+        tmp_path,
+        model,
+        [a_mode("reviewing", agent="reviewer"), a_mode("building", agent="builder")],
+        [A_REVIEWER, builder],
+    )
+
+    thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+    try:
+        assert thread.agent == "reviewer"
+        await thread.set_mode("building")
+        assert thread.agent == "builder", thread.agent
+    finally:
+        await thread.close()
+
+
+async def test_a_threads_own_agent_survives_a_mode_switch(tmp_path: Path) -> None:
+    """`thread/start {agent}` is an override *for this thread* (D175). One that evaporated at the
+    first `set_mode` would be the same defect in a new place."""
+    builder = {"name": "builder", "system": "BUILDER-ROLE: you write the change."}
+    model = Listening()
+    host = await a_host(
+        tmp_path,
+        model,
+        [a_mode("reviewing", agent="reviewer"), a_mode("plain")],
+        [A_REVIEWER, builder],
+    )
+
+    thread = await host.open(
+        root=str(tmp_path), mode="reviewing", want=None, name="tools", agent="builder"
+    )
+    try:
+        await thread.set_mode("plain")
+        assert thread.agent == "builder", thread.agent
+    finally:
+        await thread.close()
+
+
+async def test_an_unknown_agent_on_the_mode_switched_to_is_refused_naming_it(
+    tmp_path: Path,
+) -> None:
+    """D176 at the other door that selects an agent. A silent fallback to `single` here would hand a
+    product a run that looks right and is not, exactly as it would at open."""
+    model = Listening()
+    host = await a_host(
+        tmp_path, model, [a_mode("plain"), a_mode("broken", agent="nobody")], [A_REVIEWER]
+    )
+
+    thread = await host.open(root=str(tmp_path), mode="plain", want=None, name="tools")
+    try:
+        with pytest.raises(Exception) as refused:  # noqa: PT011 — the type is the kit's to choose
+            await thread.set_mode("broken")
+        assert "nobody" in str(refused.value), refused.value
+    finally:
+        await thread.close()
+
+
+async def test_a_resumed_thread_runs_the_agent_it_was_running(tmp_path: Path) -> None:
+    """BUG-234's other half. `ThreadRecord` had no `agent`, so a resume fell through to the host's
+    default and a Reviewer thread came back as `single` — while `thread.agent` reported `single`,
+    truthfully, about a run that was supposed to be a Reviewer."""
+    model = Listening()
+    host = await a_host(tmp_path, model, [a_mode("reviewing", agent="reviewer")], [A_REVIEWER])
+
+    thread = await host.open(root=str(tmp_path), mode="reviewing", want=None, name="tools")
+    thread_id = thread.id
+    await thread.close()
+
+    again = await host.resume(thread_id)
+    try:
+        assert again.agent == "reviewer", again.agent
+        async for _ in again.turn("after the resume"):
+            pass
+    finally:
+        await again.close()
+
+    assert "REVIEWER-ROLE" in model.system_said(), model.system_said()
+
+
+async def test_a_resumed_thread_that_named_no_agent_still_gets_single(tmp_path: Path) -> None:
+    """Nothing that works today moves."""
+    from shadow_hdk.adapters.agent import single
+
+    model = Listening()
+    host = await a_host(tmp_path, model, [a_mode("plain")], [A_REVIEWER])
+
+    thread = await host.open(root=str(tmp_path), mode="plain", want=None, name="tools")
+    thread_id = thread.id
+    await thread.close()
+
+    again = await host.resume(thread_id)
+    try:
+        assert again.agent == "single", again.agent
+        async for _ in again.turn("go"):
+            pass
+    finally:
+        await again.close()
+
+    said = model.system_said()
+    assert single.system[:40] in said, said
+    assert "REVIEWER-ROLE" not in said

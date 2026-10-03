@@ -95,8 +95,22 @@ async def _answer(root: Path, want: str, behaviour: Behaviour | None, *, edit: b
     if turn.failed and "limit" in said.lower():
         pytest.skip(f"{want} is out of quota: {said[:80]}")
     if turn.failed and CANNOT_USE_THE_MODEL in said:
+        # **A skip that says what it needs** (TD-020, phase 65 G6). This is the one leg of Epic
+        # 0011 Q1 that has never run, and the provider the feature exists for: Codex maps no
+        # system-prompt flag, so the fold is the only way it can be told who to be. The laptop this
+        # was written on has a ChatGPT-account Codex that refuses every model offered it
+        # (`gpt-6.1-sol`, `gpt-5-codex`, `gpt-5`, `gpt-5.1-codex-max`, `o3`), so the turn fails
+        # before anything is measured and skipping is the honest outcome — a pass here would be
+        # vacuous.
+        #
+        # A silent skip, though, is how an unmeasured claim stays unmeasured: the next person with a
+        # working account has no way to know this is waiting for them. So it says so.
         pytest.skip(
-            f"{want} cannot use this account's model, so nothing was measured: {said[:120]}"
+            f"NOTHING WAS MEASURED. {want} refused this account's model, so the turn failed before "
+            f"the fold could be observed. To close TD-020, run this on an account where Codex "
+            f"accepts a model — any ChatGPT or OpenAI account whose plan includes one — and it "
+            f"will prove a CLI mapping no system-prompt flag is still told who to be "
+            f"(Epic 0011 Q1, ENH-051). What it said: {said[:160]}"
         )
     assert not turn.failed, f"the turn itself failed: {said}"
     return said

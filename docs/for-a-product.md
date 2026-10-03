@@ -51,6 +51,15 @@ naming what does exist**, never a silent fallback to the default loop.
 
 `thread/start` answers with `agent`, the name it resolved to, for the snapshot you cache by hash.
 
+**It survives the doors you actually use (0.44.0).** Until then it did not: `set_mode` never
+re-resolved the agent, so switching from a Reviewer mode to a Builder mode kept the Reviewer, and the
+record had nowhere to keep it, so a resumed Reviewer thread came back as `single` — and reported
+`single`, truthfully, about a run that was supposed to be a Reviewer (BUG-234). Now a switch
+re-resolves (refusing an unknown name on the new mode, naming it), a resume restores what the record
+says, and a `thread/start {agent}` override goes on winning across both. `ThreadRecord` gained `agent`
+and `agent_override`; a record written earlier reads them as empty, which means *no agent in
+particular*.
+
 ### Instructions and context
 
 Not store rows — they ride the mode's `Behaviour` (0.41.0): `system`, `append_system`, and
@@ -132,6 +141,25 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
   `system`/`append_system`/`temperature` as unmapped; OpenCode maps none. `thread/start`,
   `thread/resume` and `thread/set_mode` return `unmapped_behaviour` — hide the control for that
   provider rather than show one that does nothing.
+- **Three of those fields only started working in 0.44.0, and the field above was lying about two.**
+  `tools_offered` parsed and **narrowed nothing** while being reported as honoured (BUG-230); it now
+  narrows what a step is shown, in both catalogues — the one an in-process loop builds and the one the
+  registry serves a CLI over MCP — applied last so it can only take away, with a name no component
+  answers to refused. If you were enforcing a tool limit yourself because ours did nothing, stop.
+  `model` reached `ModelRequest` and was discarded by the only `ModelPort` over real providers
+  (BUG-231); a key-backed model now honours it by building a chat model for that spec, and
+  `LangChainModel.over(chat)` — which cannot be re-specified — reports it as unhonourable instead of
+  dropping it in silence. And `Behaviour` gained **`silence_seconds`**: how long a CLI may say
+  *nothing* before its turn is given up. The ceiling used to be 600 seconds of *total turn time*,
+  which failed long runs and counted a person's approval against the provider (BUG-233); it is now the
+  gap between frames, defaults to 1800, and time the kit spends answering the provider's own call is
+  given back to it.
+- **A key-backed thread's later turns contain its earlier ones (0.44.0).** They did not: every turn
+  opened with the role and the new prompt, so turn three could not see turns one and two, and nothing
+  said so — a CLI-backed thread never had the problem, because the CLI keeps its own session
+  (BUG-232). The transcript is now the thread's. It is **unbounded** (ENH-052): fitting one to a
+  model's window is a budget and a compaction, neither of which this kit has, so a long thread will
+  reach the window. Cap your own turns, or enable the `compact` meta-tool on your pattern.
 - **Attribute names.** Reserved: `posture`, `component`, `inputs` (the step's), `thread`, `turn`,
   `mode` (the conversation's). Anything else — `intent`, `run`, `workspace`, a tenant — is yours.
   `resume(attributes=)` on *every* resume with your current words is the intended use: the

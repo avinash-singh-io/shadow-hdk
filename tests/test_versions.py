@@ -18,18 +18,19 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.43.0"
-"""0.43.0 — an agent is data, like everything else (phase 64, D174-D177): the last asymmetry in
-the plugin boundary. Skills, modes, rules, batteries, providers and component switches all read
-from the product's store; an agent read only from a packaged file, had no listing, and `ServeHost`
-hardcoded `single`, so every thread a host opened ran the same loop. Now `store_patterns` over an
-`agents` collection (D174), version-gated and skipping a malformed row rather than losing the rest;
-`ModeSpec.agent` names which agent runs a mode with `thread/start {agent}` overriding it (D175), so
-switching goes through the governed `set_mode`; an unknown name is refused naming what exists,
-never a silent `single` (D176); `agents/list` completes the listing symmetry and `thread/start`
-answers with the agent it resolved to, for a snapshot a product caches by hash (D177). Additions
-only — a mode naming no agent still gets `single`, pinned by a test — so a **minor** (D9) and a
-*Pins* row; protocol 3 unchanged.
+EXPECTED = "0.44.0"
+"""0.44.0 — the claims are true (phase 65, D178-D183): five claims the kit already made and did not
+keep, found by reading the source, three of them ours from phases 62 and 64. `tools_offered` now
+narrows what a step is shown, in **both** catalogues — the one an in-process loop builds and the one
+the registry serves a CLI over MCP — applied last so it can only take away, with a name nothing
+answers to refused (D178, D179). A key-backed model honours the mode's `model` by building a chat
+model for that spec, and `unmapped_for_a_model` names it where the adapter cannot (D180). A thread's
+later turns contain its earlier ones, the transcript being the thread's and not the turn's (D181). A
+turn is given up for the provider's **silence** rather than for taking long, time spent answering
+its own calls given back, and a mode may set its own ceiling (D182). And a selected agent survives a
+`set_mode` and a resume, on the record, with an override that goes on winning (D183). Additions only
+— every item has a test pinning that nothing which worked moved — so a **minor** (D9) and a *Pins*
+row; protocol 3 unchanged.
 
 0.42.0 — the loop is visible and steerable (ENH-045, ENH-046; Epic 0011 phase 63,
 D171-D173): `update_plan` as a registered component declaring **no effects at all**, so every mode

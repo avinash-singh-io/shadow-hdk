@@ -87,6 +87,15 @@ class Behaviour:
     effort: str = ""
     temperature: float | None = None
     tools_offered: tuple[str, ...] = ()
+
+    silence_seconds: float | None = None
+    """How long this mode lets a CLI say **nothing** before its turn is given up (D182, BUG-233).
+
+    A field the kit honours itself rather than one a CLI is handed, like `tools_offered` — no
+    provider has a flag for our patience. `None` is the adapter's default. It is a ceiling on the
+    *gap between frames*, not on the turn: a run that keeps streaming is working, however long it
+    takes, and before phase 65 a fixed ten minutes of total turn time failed real work.
+    """
     fragments: tuple[Fragment, ...] = ()
     """Named context this run carries besides the instructions (D166). Empty changes nothing.
 
@@ -370,11 +379,18 @@ def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[
     (`instructions_in_prompt`) delivers `system` and `append_system`, so naming them here would be
     a lie — and a lie a host acts on, because lane P hides the controls this field reports. Epic
     0011 Q1. `temperature` is still named for such a CLI: a turn's text cannot set one.
+
+    **`tools_offered` is not one of the fields reported here**, and until phase 65 this function
+    pretended otherwise: it unioned the name into `mapped`, which was **dead code** — the loop below
+    walks five field names and that is not one of them, so the union could never change an answer.
+    Found by a mutation that deleted it and survived. The field is honoured by the kit rather than
+    by the CLI: the registry serving the run's tools narrows its listing to the offered set before
+    the CLI ever lists (D178, BUG-230). A narrowing is therefore neither reported nor dropped.
     """
     if behaviour is None:
         return []
     dialect = provider.dialect or Dialect()
-    mapped = {a.field for a in dialect.behaviour_args} | {"tools_offered"}
+    mapped = {a.field for a in dialect.behaviour_args}
     if dialect.instructions_in_prompt:
         mapped |= set(INSTRUCTION_FIELDS)
     unmapped: list[str] = []
@@ -385,6 +401,49 @@ def unmapped_behaviour(provider: Provider, behaviour: Behaviour | None) -> list[
         if value not in (None, "", ()):
             unmapped.append(name)
     return unmapped
+
+
+def narrowed(names: tuple[str, ...], behaviour: Behaviour | None) -> tuple[str, ...]:
+    """The names a step is shown, narrowed to the subset its mode asked for (D178).
+
+    **Applied last, so it can only ever take away.** A mode naming a tool the policy already
+    refused does not get it back — the narrowing is an intersection with what was going to be shown
+    anyway, never a union. That is what makes `tools_offered` safe to put on a mode: no mode can
+    widen past its own policy by listing a name.
+
+    The run's order is kept, not the mode's. A catalogue that reshuffled because a mode happened to
+    list its names in another order would make the offered set a second source of ordering, and a
+    model reads a catalogue top to bottom.
+
+    An empty `tools_offered` is *all of the run's* (the field's documented default), so a mode that
+    names nothing is shown everything — which is every mode written before this phase.
+
+    Until phase 65 the field parsed and narrowed nothing, while two honesty fields reported it
+    honoured (BUG-230). One derivation, because there are genuinely two catalogues — the one an
+    in-process loop builds for a key-backed model and the one the registry serves a CLI over MCP —
+    and two that drifted is how the claim came to be false in the first place.
+    """
+    if behaviour is None or not behaviour.tools_offered:
+        return names
+    wanted = set(behaviour.tools_offered)
+    return tuple(name for name in names if name in wanted)
+
+
+def unanswered(names: tuple[str, ...], behaviour: Behaviour | None) -> tuple[str, ...]:
+    """Names in `tools_offered` that nothing in the run answers to, sorted (D179).
+
+    The D176 cut, again: a typo in a narrowing would otherwise be invisible, because a name that
+    matches nothing simply narrows nothing and the step runs looking right. Sorted so a refusal
+    reads the same twice.
+
+    Empty in, empty out — an unset `tools_offered` means *all of them*, not *none of them named
+    wrongly*, so it has nothing unanswered. That falls out of the difference rather than needing a
+    guard of its own: an early return for it was an equivalent mutant, which is to say a branch no
+    test could ever distinguish.
+    """
+    if behaviour is None:
+        return ()
+    return tuple(sorted(set(behaviour.tools_offered) - set(names)))
 
 
 def carried_by(behaviour: Behaviour | None, *, instructions: bool = True) -> tuple[Fragment, ...]:
@@ -427,24 +486,33 @@ def framed(fragments: tuple[Fragment, ...]) -> str:
     return "\n\n".join(blocks)
 
 
-def unmapped_for_a_model(behaviour: Behaviour | None) -> tuple[str, ...]:
+def unmapped_for_a_model(
+    behaviour: Behaviour | None, *, selects_model: bool = True
+) -> tuple[str, ...]:
     """What a key-backed model cannot honour, named (BUG-229, D170).
 
     `ModelRequest` carries `messages`, `tools` and `model`. So instructions and fragments are
-    delivered (through the system message), `model` is delivered, and `effort` and `temperature`
-    have **nowhere to go** — inventing a field for them would be a kernel change, and claiming they
-    were honoured is the lie this exists to stop.
+    delivered (through the system message), and `effort` and `temperature` have **nowhere to go** —
+    inventing a field for them would be a kernel change, and claiming they were honoured is the lie
+    this exists to stop.
 
-    `tools_offered` is not named: the registry narrows what a model is shown, so it is honoured
-    elsewhere, exactly as it is for a CLI.
+    **`model` depends on the port** (`selects_model`, D180, BUG-231). The field is on the request,
+    so a port is expected to read it, and the default is that one does — a port that says nothing is
+    taken at its word, because the kit's own adapter is the one that has to be accurate. But a
+    `LangChainModel` built by `over()` wraps a chat model somebody else configured and genuinely
+    cannot be re-specified, so it reports `selects_model` false and `model` is named here. Phase 62
+    said *`model` is delivered — the field was already there* while the only real adapter discarded
+    it; the field being present is not the same as it being read.
+
+    `tools_offered` is not named: the catalogue this loop hands the model is narrowed to the
+    offered set (D178), so it is honoured before the request is built. That sentence stood here
+    from phase 62 while **nothing narrowed anything** (BUG-230); phase 65 made it true rather than
+    softening it, because the field is what a product plans against.
     """
     if behaviour is None:
         return ()
-    return tuple(
-        name
-        for name in ("effort", "temperature")
-        if getattr(behaviour, name, None) not in (None, "", ())
-    )
+    cannot = ["effort", "temperature"] if selects_model else ["model", "effort", "temperature"]
+    return tuple(name for name in cannot if getattr(behaviour, name, None) not in (None, "", ()))
 
 
 def instructions_for_prompt(provider: Provider, behaviour: Behaviour | None) -> str:

@@ -66,6 +66,7 @@ from shadow_hdk.kernel.ports import (
     ComponentPort,
     Context,
 )
+from shadow_hdk.kernel.threads import agent_now
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.kernel.workspace import Root, Workspace
 from shadow_hdk.runtime.approvals import Parked
@@ -74,7 +75,7 @@ from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
-from shadow_hdk.runtime.offer import InProcessOffer, Offer
+from shadow_hdk.runtime.offer import InProcessOffer, Narrowing, Offer
 from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
@@ -332,6 +333,18 @@ class Conversation:
         modes adapter, so a host hands in its own. `None` means the conversation has no
         behaviours to apply and `set_mode` only flips the policy the governance selects by."""
         self._behaviour: Any = None
+        self._choose_agent: Any = None
+        """How this conversation asks for an agent again when its mode changes (D183, BUG-234): a
+        callable from the name a mode asks for to an `(AgentPort | None, resolved name)` pair.
+        Resolving a name to a loop is the host's business — the runtime is not learning about
+        patterns — and `None` means nobody is offering, which is every composition that does not
+        select agents."""
+        self.agent: str = ""
+        """Which agent this conversation resolved to (D177), as its mode last said. The thread puts
+        it on the record, so a resume restores it."""
+        self._before_turns: tuple[Any, ...] = ()
+        """A key-backed session's transcript, kept across a provider reopen (D181, BUG-232) — the
+        counterpart of `session_id` for a provider that has none."""
         self._options: dict[str, JsonValue] = {}
         self._current: Cancellation | None = None
         """The running turn's handle to stop it (D15), while one runs."""
@@ -372,6 +385,7 @@ class Conversation:
         spent: Spent | None = None,
         idle_seconds: float | None = None,
         plan_limits: PlanLimits | None = None,
+        choose_agent: Any = None,
     ) -> Conversation:
         """Serve the registry, open the provider on it. `workspace` names the roots (D76) — one
         or many; `root` alone is the one-root workspace. `mode` is the policy's mode id; when
@@ -407,9 +421,11 @@ class Conversation:
             idle_seconds=idle_seconds,
             plan_limits=plan_limits,
         )
+        conversation._choose_agent = choose_agent
         if modes is not None and (spec := modes.get(mode)) is not None:
             conversation._behaviour = spec.behaviour
             conversation._mode_plan = getattr(spec, "plan", None)
+        conversation._narrow_the_registry()
         await conversation._start()
         conversation._idle_from_now()
         return conversation
@@ -482,7 +498,49 @@ class Conversation:
         # session, by name, so a double or an adapter that predates the field reports nothing.
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
+        self._give_the_transcript_back(session)
+        self._let_the_provider_wait_for_us(session)
         return session
+
+    def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
+        """Wire the offer's *how long that call took* to the session's patience (D182, BUG-233).
+
+        A CLI that calls a tool is silent until we answer, and answering may mean asking a person
+        who takes twenty minutes (D58). Before this, that time was charged to the provider and the
+        turn failed saying *the provider did not finish* — about a person who had not answered yet.
+
+        Both ends are read by name: a session with no `waited_for_us` (every key-backed one, which
+        has no pipe to go quiet on) and an offer with no `answering` are both left alone.
+        """
+        giving_back = getattr(session, "waited_for_us", None)
+        if giving_back is None or not hasattr(self.registry, "answering"):
+            return
+        self.registry.answering = giving_back
+
+    def _remember_transcript(self) -> None:
+        """A key-backed session's transcript, off the session (D181, BUG-232).
+
+        **The counterpart of `_remember_session`.** A CLI's continuity across a reopen is its own
+        session id, which `--resume` restores; a key-backed model has no such thing, and its
+        continuity *is* the messages. So the conversation keeps them over a reopen exactly as it
+        keeps a session id, and hands them back below.
+
+        Read off the session by name, so a CLI adapter or a test double that has no such attribute
+        is unaffected — a port grown this way breaks no adapter (D14).
+        """
+        found = getattr(self._session, "before", None) if self._session is not None else None
+        if found:
+            self._before_turns = tuple(found)
+
+    def _give_the_transcript_back(self, session: AgentSession) -> None:
+        """What was said before this session existed, onto the session that replaced it (D181).
+
+        Set on the session rather than passed to `open()`: an opener that does not take the keyword
+        is every CLI adapter in the tree, and growing the port by argument is how phase 64 broke
+        twenty-two doubles.
+        """
+        if self._before_turns and hasattr(session, "before"):
+            session.before = self._before_turns
 
     def _remember_session(self) -> bool:
         """The provider's own session id, off the session (D76). `True` when it changed."""
@@ -496,6 +554,7 @@ class Conversation:
         if self._session is None:
             return
         self._remember_session()
+        self._remember_transcript()
         await self._session.close()
         self._session = await self._open_provider()
 
@@ -1001,7 +1060,7 @@ class Conversation:
             await self._reopen_provider()  # and one that does not (BUG-032) is reopened, resumed
         return await self.announce(lambda **k: WorkspaceChanged(roots=grown.roots, **k))
 
-    async def set_mode(self, mode_id: str) -> Changed | None:
+    async def set_mode(self, mode_id: str, *, override: str = "") -> Changed | None:
         """Change the run's mode mid-conversation (D64; ACP's `session/set_mode`).
 
         The policy the governance selects by changes at the next step; if the mode carries a
@@ -1038,15 +1097,65 @@ class Conversation:
             if spec is not None:
                 self._behaviour = behaviour
                 self._mode_plan = getattr(spec, "plan", None)
+                await self._choose_the_modes_agent(spec, override)
             # The provider is reopened on its own session (D76): the catalogue it holds is the
             # old mode's, and a resident CLI was measured to keep it after `list_changed`
             # (BUG-032) — a fresh process re-lists, and `--resume` keeps its memory.
+            self._narrow_the_registry()
             await self._reopen_provider()
             # The catalogue the provider holds is the old mode's (BUG-032): tell it to list again.
             await self.registry.changed()
         return Changed(
             mode=mode_id, environment=self.environment_mode, unmapped=self.unmapped_behaviour
         )
+
+    async def _choose_the_modes_agent(self, spec: Any, override: str) -> None:
+        """Ask for this mode's agent, and run it from the next turn (D183, BUG-234).
+
+        Phase 64 put an agent on a mode (D175) and then let `set_mode` replace the policy, the
+        environment and the behaviour while leaving the agent exactly as it was — so a product that
+        switched from a Reviewer mode to a Builder mode kept the Reviewer, and the capability was
+        real only for a thread that was never switched.
+
+        The thread's own `override` goes on winning (`agent_now`): `thread/start {agent}` is an
+        override *for this thread*, and one that evaporated at the first switch would be the same
+        defect in a new place.
+
+        **An unknown name on the new mode is refused here**, by raising out of `set_mode` — the D176
+        cut, at the one other door that selects an agent. Nothing has changed when it raises except
+        the mode id and the behaviour, and the caller is told which name was wrong.
+
+        The provider is reopened by the caller immediately after, which is what actually puts the
+        new loop in front of the next turn.
+        """
+        if self._choose_agent is None:
+            return
+        port, resolved = await self._choose_agent(agent_now(override, getattr(spec, "agent", "")))
+        if port is not None:
+            self._agent = port
+        self.agent = resolved
+
+    def _narrow_the_registry(self) -> None:
+        """Tell the offer what this mode's `tools_offered` allows (D178, BUG-230).
+
+        **The CLI half of the narrowing.** A key-backed loop is handed a catalogue, so it can be
+        narrowed where it is built; Claude Code and Codex are handed nothing and **ask** — they list
+        the registry over MCP — so for them the narrowing has to live on the thing that answers the
+        listing. Same kernel derivation either way (`narrowed`/`unanswered`), because two catalogues
+        that drifted is how this field came to be parsed, reported as honoured, and ignored.
+
+        Set at open and again at every `set_mode`, which is why it is settable rather than a
+        construction argument the way `withhold` is. `set_mode` then calls `registry.changed()` as
+        it already did, so a resident agent holding the old mode's listing asks for a new one.
+
+        An offer that cannot be narrowed is left alone: a host may have written its own against the
+        `Offer` port, and growing a port must break no adapter (D14).
+        """
+        offer = self.registry
+        if not isinstance(offer, Narrowing):
+            return
+        behaviour = self._behaviour
+        offer.narrow_to(tuple(getattr(behaviour, "tools_offered", ()) or ()))
 
     async def set_option(self, key: str, value: JsonValue) -> None:
         """A per-conversation governance option, read at the next step's `Context` (ACP's

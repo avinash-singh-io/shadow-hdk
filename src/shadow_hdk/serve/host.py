@@ -32,6 +32,7 @@ from shadow_hdk.adapters.agent import (
 from shadow_hdk.adapters.agent.patterns import (
     PatternRegistry,
     agent_recorded,
+    agent_to_resume,
     store_patterns,
 )
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
@@ -668,15 +669,27 @@ class ServeHost:
             idle_seconds=self.settings.idle_seconds,
             requirements=execution,
             plan_limits=self._plan_limits_of(plan_limits),
+            # On the record (D177, D183), so a resume restores it rather than falling through to
+            # this host's default — which is what 0.43.0 did (BUG-234).
+            agent_named=resolved_agent,
+            agent_override=agent or "",
+            choose_agent=self._choosing_an_agent,
         )
         self._selections[thread.id] = selection
         thread.execution = selection
-        # Read off the thread by name on the wire, the way `unmapped` is read off a session
-        # (ENH-020's idiom), so a host or a double that predates the field reports nothing
-        # rather than failing.
-        thread.agent = resolved_agent
         self.provider = called
         return thread
+
+    async def _choosing_an_agent(self, wanted: str) -> tuple[AgentPort | None, str]:
+        """Resolve a name to a loop, for a thread whose mode has changed (D183, BUG-234).
+
+        Handed to the thread so the runtime never learns about patterns: it knows a name and a
+        callable, and this knows the registry. `NoSuchAgent` raises straight through, which is the
+        D176 cut at the `set_mode` door — a silent fallback to `single` there would hand a product a
+        run that looks right and is not, exactly as it would at open.
+        """
+        chosen = await self._agent_named(wanted)
+        return chosen, agent_recorded(wanted, chosen=chosen is not None)
 
     def _plan_limits_of(self, given: Any) -> PlanLimits | None:
         """The host's own plan limits (D109), in the wire's words — `{depth, fan_out, steps}`,
@@ -756,7 +769,15 @@ class ServeHost:
             record.mode or self.settings.mode
         )
         execution = record.requirements
-        handed, available, provider_capabilities, _called = await self._provider_candidate(None)
+        # The agent this thread was running (D183, BUG-234). Before this the resume resolved
+        # nothing and fell through to the host's default, so a Reviewer thread came back as
+        # `single` — and `thread.agent` then reported `single`, truthfully, about a run that was
+        # supposed to be a Reviewer.
+        resuming = agent_to_resume(record.agent)
+        chosen = await self._agent_named(resuming)
+        handed, available, provider_capabilities, _called = await self._provider_candidate(
+            None, chosen
+        )
         environment = await LocalEnvironment.open(
             where,
             mode=environment_mode,
@@ -804,6 +825,7 @@ class ServeHost:
             idle_seconds=self.settings.idle_seconds,
             plan_limits=self._plan_limits_of(plan_limits),
             attributes=attributes,
+            choose_agent=self._choosing_an_agent,
         )
         self._selections[thread.id] = selection
         thread.execution = selection

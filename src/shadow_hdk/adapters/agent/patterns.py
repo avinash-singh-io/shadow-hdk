@@ -19,6 +19,7 @@ from typing import Any
 
 from shadow_hdk.adapters.agent.loader import pattern_from, shipped
 from shadow_hdk.adapters.agent.pattern import Pattern
+from shadow_hdk.kernel.threads import agent_now, agent_to_resume
 
 single = shipped()["single"]
 """One reasoning loop over its tools. No `compose`, so the model cannot change its own shape —
@@ -138,8 +139,13 @@ class PatternRegistry:
 
 
 __all__ = [
+    # `agent_now` and `agent_to_resume` live in the kernel — the runtime decides a mode switch and a
+    # resume with them, and the runtime may import no adapter — and are re-exported here so every
+    # decision about which agent runs is found in one place.
     "SINGLE_ROLE",
+    "agent_now",
     "agent_recorded",
+    "agent_to_resume",
     "NoSuchAgent",
     "PatternRegistry",
     "StorePatterns",
