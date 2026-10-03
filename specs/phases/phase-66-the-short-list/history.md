@@ -221,3 +221,27 @@ else it did.
 Gate at hand-over: ruff 0, format 0, mypy strict 0 over 511 files, 2200 passed, 20 skipped.
 
 ---
+
+### [NOTE] 2026-10-03 — the tracking debts this phase had accrued, cleared before the hand-over
+Topics: rule-2, rule-3, d184, changelog, backlog
+Affects-specs: specs/changelog/2026-10.md, specs/backlog/backlog.md, specs/planning/what-moves-to-shadow.md
+Detail: An audit before handing over found three things owed rather than done, and they are worth
+naming because all three are rules this project has for a reason.
+
+**Rule 2:** six commits of work and **no changelog line**. Logged now, which means it was written
+from the history and the diffs rather than from the work — the reconstruction cost Rule 2 warns about,
+paid in full.
+
+**Rule 3:** H11-A's defect was found, fixed and committed inside G5-A, and **filed afterwards** as
+BUG-236. The row says so. A defect filed after its fix is a weaker record than one filed when found,
+because the filing is what makes the finding independent of whoever happened to fix it.
+
+**D184, this phase's own decision:** `what-moves-to-shadow.md` did not carry phase 66's contracts.
+Handing over a file that violates the decision stated inside it would have been the exact failure H10
+exists to name — seven phases skipping the statement is how eight capabilities came to have no planned
+home. It now has an *Added by phase 66* table, and two of our new mechanisms are recorded as
+**throwaway with the capability met**: the in-memory hold for cut diffs, where Shadow's payload store
+is content-addressed and erasable, and the Codex strict flag, where Shadow's tool face is structural.
+The row for E, C and D says that whoever builds them updates it.
+
+---

@@ -21,6 +21,13 @@ That gate was green when this was written: ruff 0, format 0, mypy strict 0 over 
 **2200 passed, 20 skipped**. If it is not green for you, that is the first thing to fix and it is
 not something this phase left behind knowingly.
 
+**Nothing is owed.** Before this was written the phase's tracking was audited and three debts
+cleared: the changelog had no line for six commits of work (Rule 2), H11-A's defect was filed as
+BUG-236 after its fix rather than when found (Rule 3, and the row says so), and
+`what-moves-to-shadow.md` did not carry this phase's own contracts — which would have meant handing
+over a file violating the decision stated inside it. See the last `[NOTE]` in
+[`history.md`](history.md).
+
 Read, in this order: `specs/status.md` (Rule 1), this phase's
 [`overview.md`](overview.md) and [`tasks.md`](tasks.md), then
 [`evidence/g2-h11-gaps.md`](evidence/g2-h11-gaps.md) — that last one is the design for everything
@@ -122,9 +129,10 @@ Write the confirmation into `evidence/`, as G2 did, and report it before buildin
 3. `specs/changelog/2026-10.md`, `specs/status.md`, this phase's `history.md`, and a
    `retrospective.md` with a non-empty `## Verification Evidence` section — **the release-tag hook
    refuses a tag without one**.
-4. **Update [`what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md)** with anything this phase
-   added. D184 makes that a standing requirement of every bridge phase, and seven phases skipping it
-   is why H10 existed.
+4. **Update [`what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md)** with anything you add.
+   It already carries G1–G5B's contracts under *Added by phase 66*, including the row for **E, C and
+   D that says you update it**. D184 makes this a standing requirement of every bridge phase, and
+   seven phases skipping it is why H10 existed at all.
 5. The reply to lane P in `specs/epics/` (the previous one is `0011-reply-to-lane-p-2.md`).
 6. Full gate green, **output read from a file**.
 

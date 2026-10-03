@@ -79,6 +79,7 @@ and this file now says which is which per row.
 | ACP as a front door | Phase 59: *"Shadow as an ACP agent"* | `shadow/specs/` |
 | `steer` mid-turn | Phase 65's `overview.md`; shape unverified against ours | `shadow/specs/` |
 | Threads, turns, approvals, parking, durable runs | Shadow's core and its phase 63 durable engine port, **complete** | `shadow/specs/` |
+| **A governed run carrying only the tools it was given** — our Codex `--ignore-user-config` (0.45.0, H23) | **Yes.** Shadow's **tool face** lends a delegated CLI only the tools the plan grants and never control tools; its own answer names this as H23's answer too. Ours is a launch flag on one CLI; Shadow's is structural, so the flag is throwaway and the property survives | Shadow §2.1, phase 64 G10 |
 
 ## The primitives exist; who writes the component is an owner decision
 
@@ -93,11 +94,23 @@ recommends its phase 59; the owner decides** (Shadow §9.1, lane P's roadmap §5
 
 | contract | the primitive Shadow already has |
 |---|---|
-| `change` on the record — a diff per write | the **payload store** (64 G2b, done): content-addressed, SHA-256, scoped by principal and lineage, with erase. Shadow notes this answers **H20's harder half** directly — a host-set cap plus a governed door to fetch the whole diff later is `put` a payload, journal its digest, `get` it under the principal's authority. Absent: a file tool to emit the diff |
+| `change` on the record — a diff per write, **plus 0.45.0's host-set cap (`change_diff_bytes`), bounded hold (`change_diffs_held`) and `change_diff` door, with `whole` and `handle` on the change** | the **payload store** (64 G2b, done): content-addressed, SHA-256, scoped by principal and lineage, with erase. Shadow notes this answers **H20's harder half** directly — a host-set cap plus a governed door to fetch the whole diff later is `put` a payload, journal its digest, `get` it under the principal's authority. **Theirs is the better design**: ours holds cut diffs in memory, bounded and evicted oldest-first, where theirs is content-addressed and erasable. So 0.45.0's hold is **throwaway** and the capability is not. Absent either way: a file tool to emit the diff |
 | `apply_patch` | one governed component act with a bounded input schema; the schema validator (G5b) and the payload store carry it |
 | `run_background`, `job_output`, `kill_job` | **every primitive, and they are the hard part**: owned async acts (G2c) as futures the run owns to their terminal within a wall deadline and grace; owned resources by scope released on stop, cancel and takeover — which is what *jobs die with the environment* was; an act handle carrying a `background_job` kind given to recovery's reconcilers; **live output** through `LiveSink`, replacing our polling; and the process owner extracted in G1 with no leaked grandchildren as a G10 test. The three operations are a thin component over that |
 | `checkpoint`, `restore`, `list_checkpoints` | owned resources by scope (a checkpoint is run-scoped state released on cancel). Shadow confirms our reading that its own *"checkpoint"* is a different word |
 | `open_worktree`, `close_worktree` | the same: a worktree is an owned resource by scope, and the child-run machinery already narrows a child's ceiling |
+
+## Added by phase 66, and where each one lands
+
+D184 requires every bridge phase to add its contracts here before closing. Phase 66's:
+
+| contract | shipped | what happens to it |
+|---|---|---|
+| `change_diff_bytes`, `change_diffs_held`, `change_diff`, `change.whole`, `change.handle` | 0.45.0 (H20) | in the file-and-shell table above: the capability is answered by Shadow's payload store, our in-memory hold is throwaway |
+| `Dialect.mcp_strict_args` carrying `--ignore-user-config` for Codex | 0.45.0 (H23) | **migrates in substance** — Shadow's tool face is structural where ours is a flag on one CLI, so the flag is throwaway |
+| `Thread.agent_unhonoured`, `ThreadRecord.agent_unhonoured`, and the field in `thread/start`'s reply | 0.45.0 (H11-A) | **follows run templates, and Shadow's shape is better.** A template a run names is part of its binding and configuration digest, and Shadow's own rule is that *any* fallback is journaled rather than silent — so *the agent you asked for and could not have* is on the journal by construction rather than in a field we had to add |
+| `Carried` and `carried_into` — an agent's role and tool list composed into a provider's behaviour | 0.45.0 (H11-B) | **throwaway, capability met.** Instructions reach a delegated agent through Shadow's **agent profile**, which is data; the narrowing is the tool face and the context projector. Ours is a composition for a kit that has modes, and Shadow has none |
+| `Pattern.skill`, `Pattern.plan`, `Pattern.description` | 0.45.0 (H11 E, C, D) — **not yet built** | run templates already carry *"a model allowlist, tools, instructions, limits and a budget ceiling"*, so `plan` and `description` land there; `skill` lands with phase 59's Agent Skills. **Whoever builds E, C and D updates this row** |
 
 ## Not planned, and a real gap — `SinkPort` and proposals
 
