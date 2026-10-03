@@ -501,3 +501,15 @@ Release 0.45.0 completed after a fresh merged-tree gate (2,238 passed) and green
 The clean-runner wire-test defect was reproduced, repaired and both assertions mutation-checked;
 production sources still match the frozen candidates. PyPI workflow 37160034400 is running.
 Advance to 0.46.0 only after seven-file and outside-CI fresh-install verification.
+
+## Published 0.45.0 — 2026-10-04
+
+Owner explicitly authorized all six versions in this chat. Staging → main landed parent-first;
+the package sources match the frozen candidate. The release retains the verified CLI-independent
+wire-test repair. Merged-tree lint, format and strict types pass; 2238 passed, 8 skipped, 24 deselected, 85 warnings in 188.91s (0:03:08)
+Publish workflow 37160034400 is green, including installed Linux confinement. Both PyPI distributions
+have all seven files; downloaded hashes and 165 wheel Python sources match the tag. A fresh
+Python 3.12 installation outside checkout imports and answers initialize. Linux manylinux2014
+x86_64 and aarch64 resolutions each pull the exact matching helper.
+
+Release: https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.45.0. Evidence: `evidence/published-0.45.0.json`.

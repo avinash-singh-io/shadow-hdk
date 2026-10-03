@@ -64,7 +64,7 @@ phase: phase-66-the-short-list
 - [x] mutation checks bite; remove the redundant internal preparation default
 - [x] migration table updated for E, with C and D left unbuilt
 - [x] full gate and installed-artifact check: 2,238 passed; 17 new cases pass on installed wheel
-- [ ] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
+- [x] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
 
 G7 closes only when the train is complete. This checkpoint does not close the phase.
 
