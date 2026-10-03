@@ -27,8 +27,10 @@ not something this phase left behind knowingly.
 > as **0.44.1 branched from the v0.44.0 tag** — *not* as part of 0.45.x, because this branch still
 > carries H6–H8 whose scope is unconfirmed, and a ready release should not wait behind it.
 > **Who builds it is the owner's call and was open when this was written.** If it is not you, carry
-> on below and leave the v0.44.0 branch alone; if it is, read BUG-237's row first — it already has
-> the mechanism, the reason pre-provisioning does not help, and two design questions put to lane P.
+> on below and leave the v0.44.0 tag alone. If it is, **BUG-237's backlog row is the complete spec** —
+> the confirmed mechanism, the reason pre-provisioning does not help, the five things to build, the
+> three sentences the migration note owes, and lane P's answers to both design questions. Nothing
+> about it needs reconstructing from a conversation.
 
 **Nothing is owed.** Before this was written the phase's tracking was audited and three debts
 cleared: the changelog had no line for six commits of work (Rule 2), H11-A's defect was filed as
