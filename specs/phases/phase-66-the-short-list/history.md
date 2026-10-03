@@ -318,3 +318,18 @@ the owner amend D9, which is a decision with their name on it. Writing `0.45.1` 
 addition without amending D9 would make the version number mean two things in one repository.
 
 ---
+### [NOTE] 2026-10-03 — the D9 question settled: the train is minors
+Topics: d9, versioning, release-train, lane-p
+Affects-specs: specs/handoffs/2026-10-03-to-the-codex-lane.md, specs/planning/what-moves-to-shadow.md
+Detail: Lane P settled it the way D9 already said: **follow D9**, so the train is `0.45.0` (the
+DDL-free flip), then `0.46.0`, `0.47.0` as minors, with patches only where a release adds no contract.
+They updated their roadmap, initiative 0057 and their own Codex handoff to match, so nobody is pinning
+against the string "0.45.x". The handoff no longer presents this as an open question — leaving a
+settled question open invites the next lane to re-litigate it, and the thing that matters now is
+keeping it true rather than deciding it again.
+
+Also, D189's rationale is marked as **this repository's reading** rather than the owner's words. The
+decision is theirs; the *why* in that cell was written here, and a cold reader should be able to tell
+which is which before relying on either.
+
+---

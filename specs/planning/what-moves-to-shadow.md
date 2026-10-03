@@ -177,7 +177,7 @@ what an earlier draft of the Codex handoff called it):
 
 | # | Decision | Rationale |
 |---|---|---|
-| D189 | **`shadow-hdk` retires once Shadow runs on Mac *and* Windows, and at the earliest one release after Intent Studio's switch.** Until then it is the rollback | a rollback that cannot run where the product runs is not a rollback, so both platforms are the condition rather than the alpha. One release after the switch is the floor, not the date — the switch is the risky moment and the thing being rolled back to has to outlive it |
+| D189 | **`shadow-hdk` retires once Shadow runs on Mac *and* Windows, and at the earliest one release after Intent Studio's switch.** Until then it is the rollback | *The decision is the owner's; the rationale in this cell is this repository's reading of it and is open to correction.* A rollback that cannot run where the product runs is not a rollback, so both platforms are the condition rather than the alpha. One release after the switch is a floor rather than a date — the switch is the risky moment, and the thing being rolled back to has to outlive it |
 
 **What runs where until then**, as lane P describes the plan:
 

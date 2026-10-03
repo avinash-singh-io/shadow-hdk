@@ -153,22 +153,22 @@ rather than redesign it:
 4. **Every release gets its note in `specs/epics/`**, so Intent Studio can pin the latest. That file
    is the only signal lane P has; see *Reaching lane P*.
 
-## One thing to settle before you cut the second release
+## The numbers — settled, do not re-open
 
-Lane P wrote this as "0.45.x shipped item by item", and **that shorthand collides with D9**. D9 says
-that pre-1.0 **a contract change is a minor bump** plus a *Pins* row. E, C and D each add a field to
-the agent row — `Pattern.skill`, `Pattern.plan`, `Pattern.description` — so each is a contract
-addition, and on D9 the train is:
+Lane P's first wording was *"0.45.x item by item"*, which collided with **D9**: pre-1.0 a contract
+change is a **minor** bump plus a *Pins* row. E, C and D each add a field to the agent row
+(`Pattern.skill`, `Pattern.plan`, `Pattern.description`), so each is a contract addition.
 
-- `0.45.0` — the DDL-free default flip, plus whichever item ships with it
-- `0.46.0`, `0.47.0` — the next contract additions, **minors, not `0.45.1` and `0.45.2`**
-- patches only where a release adds no contract at all, which some of H6–H8 may not
+**Settled 2026-10-03: follow D9.** The train is
 
-**Do not quietly pick one.** Either follow D9 — in which case tell lane P the sequence is a run of
-minors, because they are planning their pins around the string "0.45.x" — or get the owner to amend
-D9, which is a decision and belongs in `specs/decisions/index.md` with their name on it. Writing
-`0.45.1` for a contract addition without amending D9 would make the version number mean two different
-things in one repository.
+- `0.45.0` — the DDL-free default flip
+- `0.46.0`, `0.47.0`, … — the next contract additions, as **minors**
+- **patches only where a release adds no contract at all**, which some of H6–H8 may not
+
+Intent Studio's roadmap, initiative 0057 and its own Codex handoff were updated to say exactly this
+(their `64452cd`), so **nobody is pinning against the string "0.45.x"**. You do not need to raise it
+again; you do need to keep it true — a contract addition numbered as a patch would make the version
+mean two things in one repository, and their pinning is what breaks on that.
 
 ---
 
