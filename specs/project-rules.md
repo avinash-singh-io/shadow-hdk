@@ -29,6 +29,26 @@ type: Rules
 **Mechanism here; policy and content in the product.** If a change needs to know what a claim, an
 intent, a workspace, a mode name or a tool name *means*, it belongs on the other side of a port.
 
+### D190 — the test, made enforceable
+
+| # | Decision | Rationale |
+|---|---|---|
+| D190 | **A kernel or runtime addition must name the property of *any* agent product that needs it, and a tool name appearing in the kernel or runtime layer is a review failure rather than a judgement call** | the boundary rule above was stated here, in `architecture/overview.md`, and in the product's own audit — three times, independently — and `runtime/environment.py` still came to define **fifteen** file-and-shell operations by name: `read_file`, `write_file`, `edit_file`, `apply_patch`, `move_file`, `glob`, `grep`, `run_shell`, `run_python`, `run_background`, `job_output`, `kill_job`, `checkpoint`, `restore`, `list_checkpoints`. A rule nothing enforces is a preference |
+
+**The sentence a reviewer looks for**: *a coding tool, a support desk and a research assistant would
+each use this*. Not *the product asked for it* — which is true of everything and therefore decides
+nothing. A support desk does not need worktrees; a research assistant does not need `apply_patch`.
+
+**What this does not do.** It changes nothing already shipped. Those fifteen operations stay exactly
+as they are: this repository is maintenance-only, they are load-bearing for a shipping product, and
+[`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md) already records them as
+throwaway. D190 exists so the *successor* does not inherit the shape, and so the next addition here
+has to argue for itself.
+
+Cross-repo context in `shadow-ecosystem`'s initiative 0002, *generic before product*, which also
+settles where such tools do belong: a **pack** of components, loaded only when a run asks — not the
+core, and not a mandatory ecosystem.
+
 ## Test-driven development — ENABLED (Rule 13)
 
 - Every group starts red: the test is written and fails for the stated reason before the code exists.

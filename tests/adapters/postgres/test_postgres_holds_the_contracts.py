@@ -40,7 +40,11 @@ def _fresh(kind: str) -> Any:
             "shadow_hdk_holds",
         ):
             connection.execute(f"drop table if exists {table}")
-    return PostgresStore(URL) if kind == "store" else PostgresThreads(URL)
+    return (
+        PostgresStore(URL, prepared=False)
+        if kind == "store"
+        else PostgresThreads(URL, prepared=False)
+    )
 
 
 def _effect_entries() -> tuple[EffectEntry, EffectEntry]:
@@ -72,7 +76,7 @@ class TestPostgresEffectJournalIsAnEffectJournal(EffectJournalContract):
         from shadow_hdk.adapters.postgres import PostgresEffectJournal
 
         _fresh("store")
-        return PostgresEffectJournal(URL)
+        return PostgresEffectJournal(URL, prepared=False)
 
     def entries(self) -> tuple[EffectEntry, EffectEntry]:
         return _effect_entries()
@@ -82,9 +86,9 @@ async def test_a_second_store_over_the_same_url_sees_the_rows_and_the_version() 
     from shadow_hdk.adapters.postgres import PostgresStore
 
     await wiped(URL)
-    first = PostgresStore(URL)
+    first = PostgresStore(URL, prepared=False)
     await first.put("modes", "calm", {"id": "calm", "n": [1, {"x": None}]})
-    second = PostgresStore(URL)
+    second = PostgresStore(URL, prepared=False)
     assert await second.get("modes", "calm") == {"id": "calm", "n": [1, {"x": None}]}
     assert await second.version("modes") == 1
     await first.aclose()
@@ -96,9 +100,9 @@ async def test_a_second_thread_store_over_the_same_url_sees_the_threads() -> Non
     from shadow_hdk.kernel import ThreadRecord
 
     await wiped(URL)
-    first = PostgresThreads(URL)
+    first = PostgresThreads(URL, prepared=False)
     await first.create(ThreadRecord(id="t1", root="/w", created_at="2026-01-01T00:00:00+00:00"))
-    second = PostgresThreads(URL)
+    second = PostgresThreads(URL, prepared=False)
     assert [t.id for t in await second.list()] == ["t1"]
     await first.aclose()
     await second.aclose()

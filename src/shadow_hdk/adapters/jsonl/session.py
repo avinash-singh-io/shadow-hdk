@@ -95,6 +95,14 @@ class JsonlSession(AgentSession):
         on the behaviour, like `tools_offered`, because it is a field the kit honours itself rather
         than one the CLI is handed. `timeout_s` is still accepted so a host that passed one is not
         broken, and it now means the same thing the default does."""
+        self.rearmed = 0
+        """How many times this turn's silence deadline has been pushed out (D182).
+
+        Observable because *rearmed once per frame* is the whole mechanism, and it is a **count**
+        rather than a duration. A test that proves it by sleeping races the machine: one that did
+        failed twice in full-suite runs while passing alone, which is TD-018's class, and widening
+        its margin twice did not fix it. A countable property deserves a counted test.
+        """
         self._deadline: asyncio.Timeout | None = None
         """The running turn's silence deadline, held so time the kit spends answering the provider's
         own call can be given back to it (`waited_for_us`)."""
@@ -194,6 +202,7 @@ class JsonlSession(AgentSession):
         if not self._dialect.resident:
             process.stdin.close()
 
+        self.rearmed = 0
         try:
             async with asyncio.timeout(self.silence_s) as deadline:
                 self._deadline = deadline
@@ -246,6 +255,7 @@ class JsonlSession(AgentSession):
         if when is None:
             return
         deadline.reschedule(asyncio.get_running_loop().time() + seconds)
+        self.rearmed += 1
 
     async def _stderr_drained(self) -> None:
         """Wait for the reader to see the pipe close, so what the CLI wrote last is on

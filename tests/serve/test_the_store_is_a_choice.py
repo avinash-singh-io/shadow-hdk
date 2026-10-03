@@ -188,6 +188,9 @@ async def test_a_postgres_url_fills_all_four_and_a_park_outlives_the_stores() ->
 
     assert POSTGRES is not None
     await wiped(POSTGRES)
+    from shadow_hdk.adapters.postgres import prepare
+
+    await prepare(POSTGRES)
     first = stores_for(POSTGRES)
     assert isinstance(first.store, PostgresStore) and isinstance(first.threads, PostgresThreads)
     assert isinstance(first.effects, PostgresEffectJournal)

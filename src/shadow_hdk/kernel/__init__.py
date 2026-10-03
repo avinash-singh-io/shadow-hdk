@@ -136,6 +136,7 @@ from shadow_hdk.kernel.ports import (
 from shadow_hdk.kernel.providers import (
     Behaviour,
     BehaviourArg,
+    Carried,
     Delta,
     Dialect,
     EnvVar,
@@ -222,6 +223,7 @@ __all__ = [
     "InputRequested",
     "Await",
     "Binding",
+    "Carried",
     "Ceiling",
     "ClockPort",
     "Completed",

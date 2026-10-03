@@ -8,7 +8,7 @@ from typing import Any
 from shadow_hdk.adapters.postgres.connection import require_psycopg
 
 
-async def postgres_checkpointer(url: str, *, prepared: bool = False) -> tuple[Any, Any]:
+async def postgres_checkpointer(url: str, *, prepared: bool = True) -> tuple[Any, Any]:
     """The saver and what closes it.
 
     `setup()` makes its tables the first time — **which is DDL**, so a restricted runtime role

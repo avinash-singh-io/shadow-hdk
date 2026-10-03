@@ -18,8 +18,18 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.44.1"
-"""0.44.1 — a restricted database role can open the PostgreSQL adapters (BUG-237, Intent Studio's
+EXPECTED = "0.45.0"
+"""0.45.0 — H11-E: an optional skill name on the stored agent row resolves against the host's
+registry before any provider opens. The model loop binds it, checks its needs before inference
+and receives its procedure; a CLI or handed agent reports `agent.skill` as unhonoured (D17,
+D55). Existing unreleased phase 66 H20/H23/H11-A/B ship beside it. PostgreSQL adapters and the
+checkpointer default to DDL-free runtime: run trusted preparation first, or opt into legacy
+`prepared=False` explicitly. A named behaviour change and a contract addition, so a minor and a
+Pins row (D9). Protocol 3 unchanged. D190: a coding tool, a support desk and a research
+assistant would each use procedure binding and a truthful report of unsupported execution.
+C/D/H6–H8 remain for separate releases.
+
+0.44.1 — a restricted database role can open the PostgreSQL adapters (BUG-237, Intent Studio's
 BUG-280). They executed their table DDL when a pool first opened **and again after every
 `aclose()`**, so a production runtime role with no DDL rights failed with SQLSTATE 42501 and the
 application could not start. Provisioning the tables in advance did not help, and that decides the

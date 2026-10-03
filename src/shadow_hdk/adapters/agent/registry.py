@@ -153,6 +153,14 @@ class SkillRegistry:
         by_name, _ = await self._resolved()
         return by_name.get(name)
 
+    async def named(self, name: str) -> Skill:
+        """Resolve a binding or refuse by name, saying what is available."""
+        found = await self.find(name)
+        if found is not None:
+            return found
+        have = ", ".join(sorted(s.name for s in await self.all())) or "none"
+        raise ValueError(f"no skill called {name!r} is registered here; there is: {have}")
+
     async def shadowed(self) -> tuple[Skill, ...]:
         _, shadowed = await self._resolved()
         return tuple(shadowed)
