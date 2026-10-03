@@ -8,7 +8,7 @@ type: Ad-hoc Record
 > **Created**: 2026-10-03
 > **Branch**: `fix/BUG-237-postgres-ddl-at-runtime`, from the **v0.44.0 tag** (`f693827`)
 > **Backlog**: BUG-237 (P0)
-> **Status**: in-progress (awaiting the owner's pushes)
+> **Status**: shipped
 > **Releases as**: 0.44.1
 
 ## Why this is a quick-task and not a phase (Rule 14, stated rather than skipped)
@@ -177,3 +177,31 @@ roles.
 **A line-reflow helper corrupted source twice** — once joining a string concatenation, once merging
 three statements into one line — and has been **removed from the repository**. A tool that silently
 breaks code is worse than the tedium it saves.
+
+## Shipped
+
+**v0.44.1, 2026-10-03.** Merged to `staging` and `main`, tagged, and released. Published to PyPI:
+`shadow-hdk==0.44.1` (2 files) and `shadow-hdk-linux-sandbox==0.44.1` (5), **7 between them**, as
+every release of this pair should have. Publish workflow green on nine of ten jobs with the
+fresh-install smoke still running at the time of writing; verified independently of it from a clean
+virtualenv **outside CI**, which is this project's habit because the pair has shipped half-published
+before:
+
+```
+installed: 0.44.1
+schema version: 1
+prepared= on the store: True
+pool() has the DDL-free branch: True
+grants: 6 | version table SELECT-only: True
+named errors present: SchemaNotPrepared SchemaBehind
+shadow-hdk-prepare exit=2   (usage, so the console script shipped)
+```
+
+`pool() has the DDL-free branch` is asserted against the **installed wheel** on purpose: the flag was
+accepted and ignored at one point during this work, so *"the published artifact actually honours it"*
+is the claim worth checking rather than assuming.
+
+One note for whoever next reads the release-tag hook: it looks for the newest **retrospective's**
+`## Verification Evidence`, and an ad-hoc release's evidence lives in this record instead. The push
+passed on phase 65's retrospective, which is in this tree — so the gate was satisfied by the right
+kind of document but not by *this* change's. Worth tightening if ad-hoc releases become common.
