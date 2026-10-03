@@ -249,6 +249,7 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D185 | the cap on a change's diff is the host's — an int, or `None` for the whole of it — defaulting to what it always was | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 | D186 | a cut diff is kept whole by handle in a bounded hold, and fetched through a governed read paging by `handle`/`start`/`length` — `recall`'s idiom, not a second one | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 | D187 | Codex's strict mode is `--ignore-user-config`, applied only when tools are injected: our own servers are command-line overrides and auth still uses `CODEX_HOME` | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
+| D188 | an agent's role and tool list compose into the behaviour a provider is opened with — instructions layered agent-first (D168), tool lists intersected and never widened (D178) — in one place | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 
 ## Other references
 

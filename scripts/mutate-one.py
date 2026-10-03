@@ -19,7 +19,10 @@ Beware equivalent mutants and no-op mutants (`() or x` is `x`). Both report SURV
 a test weakness. The file is restored in a `finally`, but a killed runner leaves it mutated — check
 `git status` if you interrupt one.
 """
-import pathlib, subprocess, sys
+
+import pathlib
+import subprocess
+import sys
 
 src, old, new, tests = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
 p = pathlib.Path(src)
@@ -34,7 +37,9 @@ p.write_text(original.replace(old, new, 1))
 try:
     done = subprocess.run(
         ["uv", "run", "pytest", "-x", "-q", "-p", "no:randomly", "--timeout=60", *tests],
-        capture_output=True, text=True, timeout=600,
+        capture_output=True,
+        text=True,
+        timeout=600,
     )
     out = (done.stdout + done.stderr).strip().split("\n")[-1]
     verdict = "BITES" if done.returncode != 0 else "*** SURVIVED ***"

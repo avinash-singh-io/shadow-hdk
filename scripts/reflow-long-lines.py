@@ -5,6 +5,7 @@ Only touches a line that is plain prose: no code fence, no `=`-assignment shape,
 and inside what looks like a docstring or comment block. It reflows the whole blank-line-delimited
 paragraph at that line's indent, so the result reads as prose rather than as a hard break.
 """
+
 import pathlib
 import subprocess
 import sys
@@ -16,7 +17,9 @@ LIMIT = 100
 def offenders(root: str) -> dict[str, list[int]]:
     out = subprocess.run(
         ["uv", "run", "ruff", "check", root, "--output-format=concise", "--select", "E501"],
-        capture_output=True, text=True, cwd=root,
+        capture_output=True,
+        text=True,
+        cwd=root,
     ).stdout
     found: dict[str, list[int]] = {}
     for line in out.splitlines():
@@ -36,7 +39,7 @@ def reflow(path: pathlib.Path, linenos: list[int]) -> bool:
         if i >= len(lines):
             continue
         line = lines[i]
-        if "```" in line or line.lstrip().startswith(("#!", "|")) or "    " == line:
+        if "```" in line or line.lstrip().startswith(("#!", "|")) or line == "    ":
             continue
         indent = line[: len(line) - len(line.lstrip())]
         # the paragraph: contiguous non-blank lines at this indent, no fences, no table rows

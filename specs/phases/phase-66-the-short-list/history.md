@@ -200,3 +200,24 @@ than required. Phase 64 broke twenty-two doubles the same way; this time the tes
 immediately.
 
 ---
+
+### [NOTE] 2026-10-03 — handed over, with the two tools the project kept rebuilding
+Topics: handover, tooling, mutation-testing
+Affects-phases: none
+Affects-specs: specs/phases/phase-66-the-short-list/handover.md
+Detail: The phase is handed over mid-G5 at the owner's request, with E, C and D still to build, then
+G6's H6–H8 and G7's release. [`handover.md`](handover.md) is self-contained: nothing in it depends on
+a session transcript, the design for E/C/D is G2's already-approved one, and it lists the traps this
+phase and the last one actually hit rather than general advice.
+
+Two scripts went into `scripts/` on the way out. `project-rules.md` requires every assertion to be
+mutation-checked and the repository had no tool for it, so each session wrote its own — phase 64's
+got it wrong three times, including one **vacuous** pass where a shell function never passed its
+arguments and all seven mutations reported success. `mutate-one.py` exits non-zero on a missing or
+ambiguous anchor, which is exactly the property those three lacked. `reflow-long-lines.py` exists
+because hand-wrapping prose to satisfy the formatter cost this session more round-trips than anything
+else it did.
+
+Gate at hand-over: ruff 0, format 0, mypy strict 0 over 511 files, 2200 passed, 20 skipped.
+
+---
