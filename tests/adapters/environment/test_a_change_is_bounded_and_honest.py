@@ -193,3 +193,38 @@ def test_the_builder_is_pure_over_two_strings() -> None:
     assert change["created"] is False and change["deleted"] is False
     assert change["before_unreadable"] is False
     assert change["truncated"] is False
+
+
+# ------------------------------------------------ and it says how big the change really was (H20)
+
+
+def test_it_reports_the_uncut_size_so_a_host_can_decide_whether_to_ask() -> None:
+    """`whole` is the size of the diff **before** the cap took anything, which is how a host decides
+    whether to fetch the rest (H20). The cut text's own length is already knowable from the text, so
+    reporting that would tell a caller nothing it did not have.
+
+    Pinned directly on `changed` rather than through an environment: every production call now
+    passes `cap=None` and does its own cutting, so a mutation reporting the cut size is invisible —
+    which is exactly what a surviving mutation showed.
+    """
+    from shadow_hdk.runtime.environment import changed
+
+    big = "".join(f"line {n}\n" for n in range(400))
+
+    cut = changed("f.txt", "", big, created=True, cap=120)
+    uncut = changed("f.txt", "", big, created=True, cap=None)
+
+    assert cut["truncated"] is True
+    assert len(str(cut["diff"])) <= 120
+    assert cut["whole"] == uncut["whole"], "the uncut size must not move with the cap"
+    assert cut["whole"] == len(str(uncut["diff"])), cut["whole"]
+    assert int(str(cut["whole"])) > len(str(cut["diff"])), "it reported the cut size"
+
+
+def test_an_uncut_change_reports_its_own_size_as_whole() -> None:
+    from shadow_hdk.runtime.environment import changed
+
+    told = changed("f.txt", "a\n", "b\n")
+
+    assert told["truncated"] is False
+    assert told["whole"] == len(str(told["diff"]))

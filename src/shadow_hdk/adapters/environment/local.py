@@ -49,6 +49,8 @@ from shadow_hdk.kernel.capabilities import EnvironmentRequirements
 from shadow_hdk.kernel.observations import Observation
 from shadow_hdk.kernel.workspace import Workspace
 from shadow_hdk.runtime.environment import (
+    CHANGE_DIFF_BYTES,
+    CHANGE_DIFFS_HELD,
     Environment,
     Isolation,
     Mode,
@@ -323,6 +325,8 @@ class LocalEnvironment(Environment):
         at: str = "",
         workspace: Workspace | None = None,
         requirements: EnvironmentRequirements | None = None,
+        change_diff_bytes: int | None = CHANGE_DIFF_BYTES,
+        change_diffs_held: int = CHANGE_DIFFS_HELD,
     ) -> None:
         super().__init__(
             root,
@@ -332,6 +336,8 @@ class LocalEnvironment(Environment):
             at=at,
             workspace=workspace,
             requirements=requirements,
+            change_diff_bytes=change_diff_bytes,
+            change_diffs_held=change_diffs_held,
         )
         self._box = box
         self._timeout_s = timeout_s
@@ -352,6 +358,8 @@ class LocalEnvironment(Environment):
         at: str = "",
         workspace: Workspace | None = None,
         requirements: EnvironmentRequirements | None = None,
+        change_diff_bytes: int | None = CHANGE_DIFF_BYTES,
+        change_diffs_held: int = CHANGE_DIFFS_HELD,
     ) -> LocalEnvironment:
         """Construct, proving first. Refuses a confined mode nothing here can enforce. `workspace`
         names one or many roots (D76); `root` alone is the one-root workspace."""
@@ -378,6 +386,8 @@ class LocalEnvironment(Environment):
             at=at,
             workspace=workspace,
             requirements=requirements,
+            change_diff_bytes=change_diff_bytes,
+            change_diffs_held=change_diffs_held,
         )
 
     def _prove_now(self, workspace: Workspace, mode: Mode) -> Isolation:

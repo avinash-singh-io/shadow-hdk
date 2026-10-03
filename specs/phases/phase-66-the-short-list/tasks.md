@@ -14,17 +14,17 @@ phase: phase-66-the-short-list
 
 ## G2 — H11: confirm the gaps before building anything
 
-- [ ] G2.1 what an agent row can carry today, read off the source
-- [ ] G2.2 what a CLI provider honours of it, per field, per transport
-- [ ] G2.3 what a key-backed model honours of it
-- [ ] G2.4 the gap list, reported to the owner and lane P **before** G5 starts
+- [x] G2.1 what an agent row can carry today, read off the source
+- [x] G2.2 what a CLI provider honours of it — **nothing: `_agent_named` returns early with no model, so even the D176 refusal never runs**
+- [x] G2.3 what a key-backed model honours of it — all of the row; `plan`, `absorb` and `offload_over` are not settable *as data*
+- [x] G2.4 the gap list reported in `evidence/g2-h11-gaps.md`, with a recommendation per item and one question for the owner (F)
 
 ## G3 — H20: full diffs
 
-- [ ] G3.1 the cap is the host's to set, not a constant
-- [ ] G3.2 a recorded change's whole diff can be fetched later, governed like any read
-- [ ] G3.3 unified diff, which is the standard, not a shape of our own
-- [ ] G3.4 a truncated diff still says it was truncated, and by how much
+- [x] G3.1 `Environment.open(change_diff_bytes=)` — an int, or `None` for the whole diff; the default is unchanged
+- [x] G3.2 `change_diff` — a registered read-class component, paging by `handle`/`start`/`length` as `recall` does (D47)
+- [x] G3.3 unified diff from stdlib `difflib` throughout, on the record and through the door
+- [x] G3.4 `truncated` and `whole` — the uncut size, so a host can decide whether to ask before asking
 
 ## G4 — H23: a governed Codex carries only what it was given
 
