@@ -405,3 +405,27 @@ Affects-specs: none
 Detail: Full gate passed with disposable PostgreSQL: 2,254 passed, 8 skipped, 24 deselected; lint, format and strict types passed. Six new cases pass on the clean installed wheel and seven mutations bite. Freeze this separately for parent-first owner landing; H6–H8 remain, and publication is not claimed.
 
 ---
+
+### [DISCOVERY] 2026-10-04 — H6 confirmed as BUG-238
+Topics: context-fragments, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: A mode row retains dictionaries and shared assembly raises AttributeError. The existing store-put wire path already transports these rows, so the fix is typed decoding of the existing fragment contract, planned separately as 0.47.1.
+
+---
+
+### [NOTE] 2026-10-04 — H6 decoding repaired test-first
+Topics: context-fragments, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Five cases red, then six green through the existing wire-store and shared assembler path; 118 mode tests pass. Ten anchored mutations bite. The patch candidate is 0.47.1, with the D184 map updated; full gate and installed-artifact verification are underway.
+
+---
+
+### [NOTE] 2026-10-04 — H6 checkpoint verified for 0.47.1
+Topics: context-fragments, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed with disposable PostgreSQL: 2,260 passed, 8 skipped, 24 deselected, lint/format/types clean. Six new cases pass against a fresh installed wheel and ten mutations bite. Schemas and TypeScript regenerate without drift; H7/H8 remain and owner publication is pending.
+
+---

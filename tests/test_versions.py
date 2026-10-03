@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.47.0"
-"""0.47.0 — H11-D: Pattern.description and the stored row can carry human-readable chooser text.
+EXPECTED = "0.47.1"
+"""0.47.1 — H6/BUG-238: stored mode fragments decode through the existing contract loader
+before shared prompt assembly. Existing wire transport already carries them. No new field or
+wire shape; a patch with no Pins row (D9).
+
+0.47.0 — H11-D: Pattern.description and the stored row can carry human-readable chooser text.
 The existing agents/list reply uses it, while absent or null retains the first system-prompt
 line and an explicit empty description stays empty. Role instructions are unchanged. A contract
 addition, so a minor and Pins row (D9); protocol 3 unchanged. D190: a coding tool, a support
