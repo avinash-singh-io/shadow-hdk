@@ -18,8 +18,14 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.45.0"
-"""0.45.0 — H11-E: an optional skill name on the stored agent row resolves against the host's
+EXPECTED = "0.46.0"
+"""0.46.0 — H11-C: a stored agent row can set plan limits through the existing PlanLimits contract
+parser. Those limits meet the host limits at existing child-plan admission; a stored bound
+changes whether planned work runs. Unset limits defer to the run. absorb and offload_over
+remain excluded. A contract addition, so a minor and Pins row (D9); protocol 3 unchanged. D190:
+a coding tool, a support desk and a research assistant would each use whole-plan shape limits.
+
+0.45.0 — H11-E: an optional skill name on the stored agent row resolves against the host's
 registry before any provider opens. The model loop binds it, checks its needs before inference
 and receives its procedure; a CLI or handed agent reports `agent.skill` as unhonoured (D17,
 D55). Existing unreleased phase 66 H20/H23/H11-A/B ship beside it. PostgreSQL adapters and the

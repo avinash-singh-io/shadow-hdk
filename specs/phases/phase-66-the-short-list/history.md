@@ -373,3 +373,19 @@ Affects-specs: none
 Detail: The owner requested continued autonomous implementation without waiting for publication. Each candidate is frozen on a codex/release branch; land parent-first, one release at a time. Correct the 0.45.0 instructions to use its frozen release branch rather than the moving phase branch.
 
 ---
+
+### [FEATURE] 2026-10-04 — C confirmed and implemented test-first
+Topics: agent-patterns, plans, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: The loader rejected stored plan limits while existing child admission consumed Pattern.plan. Six new cases failed on that gap before adding the approved contract parsing path; execution is counted under a stored bound. No absorb or offload_over row knobs are added.
+
+---
+
+### [NOTE] 2026-10-04 — C checkpoint verified for 0.46.0
+Topics: plans, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed: 2,248 passed, 8 skipped, 24 deselected with disposable PostgreSQL enabled; lint, format and strict types passed. Ten new cases pass on the clean installed wheel and ten mutations bite. Freeze the candidate separately for parent-first owner landing; D and H6–H8 remain, and no release is claimed published.
+
+---

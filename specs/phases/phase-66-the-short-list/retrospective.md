@@ -52,3 +52,21 @@ Fresh verification on 2026-10-04:
 Owner protected landings, release tag and GitHub Release, then fresh-install and seven-file
 publication verification for both distributions. Follow the lane P reply. Continue with C only
 once this release checkpoint has landed and published; then D and individually confirmed H6–H8.
+
+## 0.46.0 checkpoint — C, phase still open
+
+The owner authorized preparation of the remaining separate checkpoints without waiting for
+publication. This supersedes the earlier waiting instruction; each candidate freezes independently
+and must land and publish parent-first. C uses the approved existing PlanLimits parser and existing
+child admission. No new decision, kernel type or port was required. D and H6–H8 remain.
+
+### Verification Evidence
+
+Fresh verification on 2026-10-04: lint clean, 549 files formatted, strict types clean over 516
+files; **2,248 passed, 8 skipped, 24 deselected**, exit 0 in 195.26 seconds, with disposable
+PostgreSQL enabled. Ten C cases pass on the clean installed 0.46.0 wheel outside the checkout.
+Ten mutations bite. All 165 Python source files match the wheel; schemas and TypeScript
+contracts regenerate without drift. The kit wheel and sdist build. Raw gate and mutation outputs:
+[`0.46-gate.txt`](evidence/0.46-gate.txt), [`g5-c-mutations.txt`](evidence/g5-c-mutations.txt).
+
+Protected landing, release and seven-file publication verification remain with the owner.
