@@ -27,6 +27,24 @@ A_REVIEWER = {"name": "reviewer", "system": "REVIEWER-ROLE: you review a change.
 A_BUILDER = {"name": "builder", "system": "BUILDER-ROLE: you write the change."}
 
 
+class Cli:
+    """A handed CLI port: the wire check must also run on machines with no vendor CLI."""
+
+    async def open(self, **kw: Any) -> Any:
+        return self
+
+    async def turn(self, prompt: str) -> Any:
+        from shadow_hdk.kernel import Turn
+
+        return Turn(text="done")
+
+    async def close(self) -> None:
+        return None
+
+    async def stream(self, prompt: str) -> Any:  # pragma: no cover
+        raise NotImplementedError
+
+
 class Quiet:
     async def complete(self, request: Any) -> ModelResponse:
         return ModelResponse(text="done")
@@ -136,7 +154,9 @@ async def test_a_thread_says_which_agent_it_could_not_run(tmp_path: Path) -> Non
     66 that was silent — `agent` answered `""`, which means *no agent applies*, and said nothing
     about
     the request."""
-    host = ServeHost(Settings(root=tmp_path, store=f"sqlite:///{tmp_path / 'h.db'}"))
+    host = ServeHost(
+        Settings(root=tmp_path, store=f"sqlite:///{tmp_path / 'h.db'}"), agent=cast(Any, Cli())
+    )
     await host.store.put("agents", "reviewer", dict(A_REVIEWER))
     await host.store.put(
         "modes", "reviewing", {"id": "reviewing", "policy": "workspace-write", "agent": "reviewer"}
