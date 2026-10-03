@@ -117,3 +117,20 @@ Eight targeted mutations bite. Full gate with disposable PostgreSQL: 2,264 passe
 checkout; 165 Python sources and the provider record match it. Source and installed live checks on
 Claude Code 2.1.187 retain the process/session and receive SECOND_OK on the following turn.
 Wheel/sdist build; schema/client regeneration has no drift.
+
+## 0.47.3 checkpoint — H8; implementation complete, phase release still open
+
+Existing cache fields were lost at the loop's accumulation/output and the model-session's
+reconstruction. Repair both adapter stages, retaining zero/unknown semantics; the runtime meter
+and wire already carry the fields. Mutation checking exposed TD-021 (cached bytecode can mask
+same-second/same-size edits); clear source caches before each mutation and disable writes. All
+previous train assertions were rechecked with this precaution. The general tool fix remains open.
+
+### Verification Evidence
+
+Nine cases red before implementation; ten final cases pass on source and a fresh installed wheel
+outside checkout. Twenty H8 mutants and all 55 earlier train mutants bite. Full gate with disposable
+PostgreSQL: 2,274 passed, 8 skipped, 24 deselected; lint/format/types clean. All 165 Python package
+sources match the wheel. Wheel/sdist build; schema/client regeneration has no drift. Separate
+release notes and parent-first owner commands cover every candidate. Owner landing/publication
+remain, so the phase is not closed and no candidate is claimed published.

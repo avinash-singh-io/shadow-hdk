@@ -1,0 +1,50 @@
+[
+  {
+    "candidate": "0.45.0",
+    "ref": "bab76ba9b00aea8d933da7393da5e80a2e4a9539",
+    "wheel_sources": 165,
+    "gate_passed": 2238,
+    "installed_cases": 17,
+    "source_and_metadata_match": true
+  },
+  {
+    "candidate": "0.46.0",
+    "ref": "df83606d2b612c8f1b6ff92bd141d2c8a0958d7e",
+    "wheel_sources": 165,
+    "gate_passed": 2248,
+    "installed_cases": 10,
+    "source_and_metadata_match": true
+  },
+  {
+    "candidate": "0.47.0",
+    "ref": "72b66af3fa1a7c0f3265a77dfea22568b9fe348e",
+    "wheel_sources": 165,
+    "gate_passed": 2254,
+    "installed_cases": 6,
+    "source_and_metadata_match": true
+  },
+  {
+    "candidate": "0.47.1",
+    "ref": "39421f259b5d865be21efa79f095fb0abd701d08",
+    "wheel_sources": 165,
+    "gate_passed": 2260,
+    "installed_cases": 6,
+    "source_and_metadata_match": true
+  },
+  {
+    "candidate": "0.47.2",
+    "ref": "362b3a12176cbe05d028a3fb5f655638006d3e7f",
+    "wheel_sources": 165,
+    "gate_passed": 2264,
+    "installed_cases": 4,
+    "source_and_metadata_match": true
+  },
+  {
+    "candidate": "0.47.3",
+    "ref": "codex/release-0.47.3",
+    "wheel_sources": 165,
+    "gate_passed": 2274,
+    "installed_cases": 10,
+    "source_and_metadata_match": true
+  }
+]

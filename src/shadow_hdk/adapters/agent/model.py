@@ -246,6 +246,8 @@ def _usage(value: Any) -> Usage | None:
         input_tokens=_optional_int(value.get("input_tokens")),
         output_tokens=_optional_int(value.get("output_tokens")),
         cost_cents=_optional_int(value.get("cost_cents")),
+        cache_read_tokens=_optional_int(value.get("cache_read_tokens")),
+        cache_write_tokens=_optional_int(value.get("cache_write_tokens")),
     )
 
 
