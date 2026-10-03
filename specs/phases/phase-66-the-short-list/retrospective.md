@@ -87,3 +87,17 @@ regenerate without drift. The kit wheel and sdist build. Raw evidence:
 [`0.47-gate.txt`](evidence/0.47-gate.txt), [`g5-d-mutations.txt`](evidence/g5-d-mutations.txt).
 
 Owner landing and publication remain parent-first, one version and GitHub Release at a time.
+
+## 0.47.1 checkpoint — H6, phase still open
+
+Mode fragments were raw dictionaries, crashing the shared assembler. Existing wire transport
+already carries rows: typed decoding repairs the contract without a new API or redesign. The
+installed regression proves names, text, attribution and order; malformed rows are source problems.
+H7 and H8 remain; owner publication is pending.
+
+### Verification Evidence
+
+Five cases failed before implementation; six pass after it, alongside all 118 mode tests.
+Ten mutations bite. Full gate with disposable PostgreSQL: 2,260 passed, 8 skipped,
+24 deselected; lint/format/types clean. Six new cases pass outside checkout on a fresh wheel;
+all 165 Python package files match it. Wheel/sdist build; schema/client regeneration has no drift.
