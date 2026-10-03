@@ -246,6 +246,9 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D182 | time spent waiting for a person is not the provider's time: the ceiling is the provider's own silence, it is a mode's to set, and a parked turn's clock stops | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
 | D183 | the resolved agent is on the record, so `set_mode` re-resolves it and a resume restores it | [`phases/phase-65-the-claims-are-true/overview.md`](/phases/phase-65-the-claims-are-true/overview.md) |
 | D184 | **what moves to Shadow is stated per contract, in one file that every later bridge phase updates** — D153 required each phase to say what migrates and what is throwaway, seven phases did not, and eight shipped capabilities turned out to have no planned home | [`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md) |
+| D185 | the cap on a change's diff is the host's — an int, or `None` for the whole of it — defaulting to what it always was | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
+| D186 | a cut diff is kept whole by handle in a bounded hold, and fetched through a governed read paging by `handle`/`start`/`length` — `recall`'s idiom, not a second one | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
+| D187 | Codex's strict mode is `--ignore-user-config`, applied only when tools are injected: our own servers are command-line overrides and auth still uses `CODEX_HOME` | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 
 ## Other references
 

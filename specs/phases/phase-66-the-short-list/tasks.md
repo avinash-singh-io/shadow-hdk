@@ -28,9 +28,9 @@ phase: phase-66-the-short-list
 
 ## G4 — H23: a governed Codex carries only what it was given
 
-- [ ] G4.1 confirm the leak against the source and the provider record
-- [ ] G4.2 the user's own MCP servers do not join a governed run
-- [ ] G4.3 an ungoverned run is unchanged
+- [x] G4.1 confirmed — and the record's own prose was the false claim: it said Codex needed a strict flag upstream, and `--ignore-user-config` existed on that very version
+- [x] G4.2 `mcp_strict_args = ["--ignore-user-config"]`, the same seam Claude Code uses; our own servers survive it as `-c` overrides and auth still uses `CODEX_HOME`
+- [x] G4.3 applied only when tools are injected — a launch governing nothing does not drop a person's configuration
 
 ## G5 — H11's confirmed remainder
 

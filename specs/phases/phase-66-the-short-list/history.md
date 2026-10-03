@@ -71,3 +71,50 @@ Also covered: `bool` is an `int` subclass in Python, so an unguarded `int(start)
 and silently drops the first character.
 
 ---
+
+### [DECISION] 2026-10-03 — D187: Codex's strict mode existed all along (H23, ENH-005 closed)
+Topics: h23, codex, mcp, capabilities, open-standards
+Affects-phases: none
+Affects-specs: docs/for-a-product.md, docs/packages/providers.md, specs/backlog/backlog.md
+Detail: G4, and it closed by **reading the CLI rather than building anything**. ENH-005, measured
+2026-09-12 on `codex-cli 0.154.0`, concluded Codex had no equivalent of `--strict-mcp-config` and
+needed one upstream, and shipped that conclusion in the provider record's prose. `codex exec --help`
+on that same version lists `--ignore-user-config` — *Do not load `$CODEX_HOME/config.toml`; auth
+still uses `CODEX_HOME`*. Three phases were built on a claim that one `--help` would have corrected,
+which is the same lesson as every item of phase 65: confirm a claim against the thing itself.
+
+Two properties make it the right flag rather than a blunt one: our servers go in as `-c`
+command-line overrides so they survive it (without that a governed run would have no tools at all,
+BUG-226's outcome by another route), and auth still uses `CODEX_HOME`, which `backfill_env` already
+carried. It is `mcp_strict_args`, the same seam Claude Code uses, applied only when tools are
+injected.
+
+`tool_path` stays `uncontrolled` and the **reason** changed: Codex still has no flag to refuse its
+own tools, so its native reads remain outside the registry. Both documents that stated the old reason
+said the axis was uncontrolled *because configured servers cannot be excluded* — which is now false,
+so both were corrected. Raising the axis would be an unmeasured claim and needs a model-accepting
+Codex account (TD-020); it is not made.
+
+One consequence named rather than discovered later: the flag drops the whole user config, so a
+governed run whose mode names no `model` gets the CLI's built-in default rather than the person's.
+Lane P will set `model` explicitly on Codex modes.
+
+---
+
+### [SCOPE_CHANGE] 2026-10-03 — lane P settled H11's order, and B ships as the fix
+Topics: h11, scope, lane-p, behaviour-change
+Affects-phases: none
+Affects-specs: specs/phases/phase-66-the-short-list/tasks.md
+Detail: With the owner's agreement, lane P approved G2's recommended order — **A** (validate the
+agent name on every path, and report a dropped agent), **B** (the agent's `system` and `tool_names`
+honoured on a CLI, intersected with the mode's and never widening), **E** (`skill` on the row), **C**
+(`plan` on the row), **D** (`description` on the row) — and accepted G2's recommendation on **F**:
+`model` and `effort` stay on the mode, and the product composes a mode from the agent's default and
+the conversation's choice through its own port.
+
+B is a behaviour change and ships **as the fix, with no opt-in flag**, which lane P chose when
+offered one. Today a mode naming an agent on a CLI does nothing, silently; afterwards it applies that
+agent's instructions and tool narrowing. A flag would have been a way of keeping the bug. Lane P will
+check any mode carrying an agent before pinning 0.45.x.
+
+---

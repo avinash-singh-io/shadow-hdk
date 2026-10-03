@@ -41,8 +41,13 @@ This is the last phase of the bridge. After its release the kit takes bugs and t
 
 ## Decisions
 
-Recorded per group as they are taken. G1's is D184, in
-[`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md).
+G1's is D184, in [`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md).
+
+| # | Decision | Rationale |
+|---|---|---|
+| D185 | **The cap on a change's diff is the host's** — an int, or `None` for the whole of it — defaulting to what it has always been | a product showing a diff panel knows what it can render and the kit does not. The old comment said *a host that needs the whole change reads the file*, which was never true for a contained or remote environment, and that is the case this record exists for. All four call sites had taken the one constant, so lane P's workbench showed 4 KB per file because nobody could choose otherwise |
+| D186 | **A cut diff is kept whole, by handle, in a bounded hold, and fetched through a governed read** paging by `handle`/`start`/`length` | raising the cap for every change to suit the largest one makes every record bigger, so the honest shape is a small diff on the record and a door to the rest. `recall`'s idiom deliberately (D47): one shape for *a result too large to show whole*, not two. Bounded because holding every cut diff for an environment's life would keep the content of every file an agent ever touched — a leak and a privacy problem nobody asked for — so a handle exists only for a cut diff, the oldest go first, and an evicted one is refused with *it was dropped*, which is a different fact from *no such handle* |
+| D187 | **Codex's strict mode is `--ignore-user-config`**, applied only when tools are injected | ENH-005 concluded Codex needed the equivalent of `--strict-mcp-config` upstream and shipped that in the record's prose; the flag existed on the same version all along. Our own servers travel as `-c` command-line overrides so they survive it, and auth still uses `CODEX_HOME` so a subscription login survives it. Applied only for a governed launch, because a launch injecting nothing has no business dropping a person's configuration |
 
 ## Verification
 

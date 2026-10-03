@@ -12,7 +12,8 @@ Every `Provider` also carries `ProviderCapabilities`: tool path, session continu
 interruptibility, streaming, reasoning, token usage and cost usage, with evidence per axis. Missing
 fields default to `unknown`; discovery keeps the record on `Available`. The shipped records are
 measured or derived facts, not normalization: Claude Code has a controlled path, Codex is
-uncontrolled because configured MCP servers cannot be excluded, and OpenCode currently exposes a
+uncontrolled because its own reads cannot be refused (its configured MCP servers *are* excluded
+since 0.45.0, through `--ignore-user-config`), and OpenCode currently exposes a
 process session with final-only output through this adapter. A host compares these facts with
 `ProviderRequirements` before opening the agent.
 
