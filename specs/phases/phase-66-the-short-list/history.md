@@ -365,3 +365,11 @@ Affects-specs: none
 Detail: Full gate passed with disposable PostgreSQL enabled: 2,238 passed, 8 skipped, 24 deselected; lint, format and strict types passed. All 17 new cases passed on a clean installed wheel outside the checkout, and twenty retained mutations bite. Release checkpoint evidence and owner commands are prepared; phase 66 remains open, and 0.45.0 is not published.
 
 ---
+
+### [NOTE] 2026-10-04 — Freeze independently landable release checkpoints
+Topics: release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: The owner requested continued autonomous implementation without waiting for publication. Each candidate is frozen on a codex/release branch; land parent-first, one release at a time. Correct the 0.45.0 instructions to use its frozen release branch rather than the moving phase branch.
+
+---

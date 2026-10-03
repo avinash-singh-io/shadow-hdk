@@ -49,13 +49,13 @@ set -e
 git fetch origin
 git switch staging
 git merge --ff-only origin/staging
-git merge --no-ff origin/phase-66-the-short-list -m 'merge: phase 66 E checkpoint into staging'
-git diff --exit-code origin/phase-66-the-short-list staging --
+git merge --no-ff origin/codex/release-0.45.0 -m 'merge: phase 66 E checkpoint into staging'
+git diff --exit-code origin/codex/release-0.45.0 staging --
 touch .momentum/merge-approved && git push origin staging
 git switch main
 git merge --ff-only origin/main
 git merge --no-ff staging -m 'merge: staging into main for v0.45.0'
-git diff --exit-code origin/phase-66-the-short-list main --
+git diff --exit-code origin/codex/release-0.45.0 main --
 touch .momentum/merge-approved && git push origin main
 git tag -a v0.45.0 -m 'release: v0.45.0'
 git push origin v0.45.0
