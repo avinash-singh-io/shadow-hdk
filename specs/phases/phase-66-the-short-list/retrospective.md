@@ -101,3 +101,19 @@ Five cases failed before implementation; six pass after it, alongside all 118 mo
 Ten mutations bite. Full gate with disposable PostgreSQL: 2,260 passed, 8 skipped,
 24 deselected; lint/format/types clean. Six new cases pass outside checkout on a fresh wheel;
 all 165 Python package files match it. Wheel/sdist build; schema/client regeneration has no drift.
+
+## 0.47.2 checkpoint — H7, phase still open
+
+The advertised native interrupt had no configured request. Adding it alone exposed a cancelled
+reader boundary: the next turn could consume the old result. Drain the interrupted terminal frame
+without reporting its activity, and clear the boundary even if completion occurs during the write.
+H8 remains; owner publication is pending.
+
+### Verification Evidence
+
+Two cases red before implementation; four final cases pass, alongside all 76 JSONL cases.
+Eight targeted mutations bite. Full gate with disposable PostgreSQL: 2,264 passed, 8 skipped,
+24 deselected; lint/format/types clean. Four new cases pass on the fresh installed wheel outside
+checkout; 165 Python sources and the provider record match it. Source and installed live checks on
+Claude Code 2.1.187 retain the process/session and receive SECOND_OK on the following turn.
+Wheel/sdist build; schema/client regeneration has no drift.

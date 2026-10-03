@@ -132,6 +132,8 @@ name = "CLAUDE_CODE_DISABLE_AUTO_MEMORY"
 value = "1"
 
 [dialect]
+# H7 / BUG-239: the existing native control protocol, matching the official SDK.
+interrupt_line = '{"type":"control_request","request_id":"shadow-interrupt","request":{"subtype":"interrupt"}}'
 resident = true
 prompt_shape = "stream-json-user"
 say_on = ["assistant"]

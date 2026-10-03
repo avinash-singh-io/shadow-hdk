@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.47.1"
-"""0.47.1 — H6/BUG-238: stored mode fragments decode through the existing contract loader
+EXPECTED = "0.47.2"
+"""0.47.2 — H7/BUG-239: native interruption uses the existing dialect control line and
+drains interrupted terminal frames without reporting them into the next run. Process/session
+identity and turn boundaries survive. Existing contracts; patch, no Pins row (D9).
+
+0.47.1 — H6/BUG-238: stored mode fragments decode through the existing contract loader
 before shared prompt assembly. Existing wire transport already carries them. No new field or
 wire shape; a patch with no Pins row (D9).
 
