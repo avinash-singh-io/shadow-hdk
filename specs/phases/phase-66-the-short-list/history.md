@@ -389,3 +389,19 @@ Affects-specs: none
 Detail: Full gate passed: 2,248 passed, 8 skipped, 24 deselected with disposable PostgreSQL enabled; lint, format and strict types passed. Ten new cases pass on the clean installed wheel and ten mutations bite. Freeze the candidate separately for parent-first owner landing; D and H6–H8 remain, and no release is claimed published.
 
 ---
+
+### [FEATURE] 2026-10-04 — D confirmed and wired test-first
+Topics: agent-patterns, descriptions, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Five new cases failed before adding the approved optional description field. Stored text now reaches the existing agents-list reply; absent or null retains the old derivation and explicit empty text is kept. Role instructions remain separate, and this is D's own release item.
+
+---
+
+### [NOTE] 2026-10-04 — D checkpoint verified for 0.47.0
+Topics: descriptions, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed with disposable PostgreSQL: 2,254 passed, 8 skipped, 24 deselected; lint, format and strict types passed. Six new cases pass on the clean installed wheel and seven mutations bite. Freeze this separately for parent-first owner landing; H6–H8 remain, and publication is not claimed.
+
+---

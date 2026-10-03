@@ -1,0 +1,7 @@
+BITES  'description=None,'  -> 1 failed in 0.25s
+BITES  'system=str(data.get("description", "")).strip(),'  -> 1 failed in 0.19s
+BITES  'description: str | None = "unexpected"'  -> 1 failed in 0.19s
+BITES  'if False'  -> 1 failed in 0.19s
+BITES  'if p.description'  -> 1 failed in 0.18s
+BITES  'if True'  -> 1 failed in 0.18s
+BITES  'if True'  -> 1 failed in 0.20s
