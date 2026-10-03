@@ -493,3 +493,11 @@ Affects-specs: none
 Detail: Full gate passed with disposable PostgreSQL: 2,274 passed, 8 skipped, 24 deselected; lint/format/types clean. Ten installed cases, twenty H8 mutants and all 55 earlier train mutants pass the cache-safe check. G1–G6 implementation is complete; prepare frozen 0.47.3 and audit all candidate refs/notes/evidence. G7 owner publication and phase closure remain outside this goal's authorization.
 
 ---
+
+## Release execution authorized — 2026-10-04
+
+The owner instructed this lane to release all six versions. Staging/main landing and GitHub
+Release 0.45.0 completed after a fresh merged-tree gate (2,238 passed) and green CI 37159639057.
+The clean-runner wire-test defect was reproduced, repaired and both assertions mutation-checked;
+production sources still match the frozen candidates. PyPI workflow 37160034400 is running.
+Advance to 0.46.0 only after seven-file and outside-CI fresh-install verification.

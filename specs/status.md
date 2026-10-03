@@ -4,6 +4,11 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — owner authorized all six releases.** v0.45.0 is merged through staging
+> and main and published on GitHub. PyPI build/publication and fresh-install verification
+> are in progress (workflow 37160034400); later versions have not yet been landed.
+
+
 > **2026-10-04 — authorized Phase 66 implementation and release preparation complete.**
 > H8/BUG-240 is verified in the **0.47.3 candidate**, with 2,274 passed, 8 skipped and clean
 > lint/format/types. Ten installed-wheel cases pass; twenty H8 mutations bite, and all 55 earlier
