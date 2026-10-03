@@ -25,9 +25,11 @@ from typing import Any
 from shadow_hdk.adapters.agent.pattern import META_TOOLS, Pattern
 from shadow_hdk.kernel.contracts import load
 from shadow_hdk.kernel.effects import EffectProfile
+from shadow_hdk.kernel.planning import PlanLimits
 
 KEYS = frozenset(
     {
+        "plan",
         "skill",
         "name",
         "system",
@@ -62,7 +64,9 @@ def pattern_from(data: dict[str, Any], *, where: str) -> Pattern:
 
     tools = data.get("tool_names")
     ceiling = data.get("ceiling")
+    plan = data.get("plan")
     pattern = Pattern(
+        plan=None if plan is None else load(json.dumps(plan), PlanLimits),
         skill=None if data.get("skill") is None else str(data["skill"]),
         name=str(data["name"]),
         system=str(data["system"]).strip(),
