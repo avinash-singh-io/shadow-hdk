@@ -1,0 +1,10 @@
+BITES  'made["fragments"] = ()'  -> 1 failed in 0.24s
+BITES  'made["fragments"] = tuple(reversed(load(json.dumps(made["fragments"]),'  -> 1 failed in 0.18s
+BITES  'made["fragments"] = tuple(Fragment(name="wrong", text=f.text, source=f'  -> 1 failed in 0.19s
+BITES  'made["fragments"] = tuple(Fragment(name=f.name, text="wrong", source=f'  -> 1 failed in 0.19s
+BITES  'made["fragments"] = tuple(Fragment(name=f.name, text=f.text) for f in '  -> 1 failed in 0.19s
+BITES  'made["fragments"] = load(json.dumps(made["fragments"]), tuple[Fragment'  -> 1 failed, 1 passed in 0.20s
+BITES  'pass'  -> 1 failed in 0.18s
+BITES  'pass'  -> 1 failed in 0.18s
+BITES  'pass'  -> 1 failed in 0.18s
+BITES  'pass'  -> 1 failed in 0.19s

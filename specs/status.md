@@ -4,6 +4,12 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — 0.47.1 candidate verified, not published.** H6/BUG-238 repairs typed decoding
+> of mode-document fragments before shared prompt assembly. The existing wire store path already
+> carries them. Full gate: 2,260 passed, 8 skipped; lint/format/types clean. Six new cases pass on
+> the installed wheel; ten mutations bite. Frozen candidates must publish parent-first through
+> 0.47.1. H7 and H8 remain. Latest published release remains **0.44.1**.
+
 > **2026-10-04 — 0.47.0 candidate verified, not published.** D adds stored human-readable descriptions
 > to the existing agent chooser reply, preserving the absent-field fallback and role instructions.
 > Full gate: 2,254 passed, 8 skipped; lint/format/types clean. Six new cases pass on the installed
@@ -232,7 +238,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | 0.47.0 verified, owner landing pending | G1–G5 done; G6 remains; release checkpoints in G7 |
+| 66 — the short list | `phase-66-the-short-list` | 0.47.1 verified, owner landing pending | G1–G5 done; H6 fixed; H7/H8 remain; release checkpoints in G7 |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

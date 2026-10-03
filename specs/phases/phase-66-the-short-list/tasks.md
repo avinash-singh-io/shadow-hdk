@@ -45,7 +45,7 @@ phase: phase-66-the-short-list
 
 ## G6 — H6–H8
 
-- [ ] G6.1 H6 confirm: fragments in a mode document, and over the wire
+- [x] G6.1 H6 confirm: fragments in a mode document, and over the wire
 - [ ] G6.2 H7 confirm: interrupting Claude Code without ending the session
 - [ ] G6.3 H8 confirm: cache tokens on the key-backed loop
 - [ ] G6.4 fix what is confirmed; report what is not
@@ -80,4 +80,11 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] source confirmed before implementation; five cases red, six new cases green
 - [x] seven mutations bite; installed chooser behaviour verified outside checkout
 - [x] full gate: 2,254 passed with disposable PostgreSQL; migration table and lane P note updated
+- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+
+## 0.47.1 checkpoint — H6 / BUG-238
+
+- [x] source confirmed and reported before implementation; five cases red, six green
+- [x] existing wire-store path proved; ten mutations bite; six installed-wheel cases pass
+- [x] full gate: 2,260 passed with disposable PostgreSQL; D184 map and lane P note updated
 - [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification

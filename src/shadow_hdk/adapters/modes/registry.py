@@ -9,6 +9,7 @@ never imports this adapter, so a product may hand in its own.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field, fields, replace
 from typing import Any, Protocol
@@ -17,7 +18,9 @@ from shadow_hdk.adapters.modes.check import widens_plan
 from shadow_hdk.adapters.modes.mode import Mode as Policy
 from shadow_hdk.adapters.modes.mode import ModeGovernance
 from shadow_hdk.kernel import Behaviour, EffectProfile, ScopeSet
+from shadow_hdk.kernel.contracts import load
 from shadow_hdk.kernel.planning import PlanLimits
+from shadow_hdk.kernel.providers import Fragment
 from shadow_hdk.kernel.rules import in_scope
 
 EVERYTHING = ScopeSet(everything=True)
@@ -217,6 +220,8 @@ def mode_from_document(document: Any, *, source: str) -> ModeSpec:
     made: dict[str, Any] = dict(raw)
     if "tools_offered" in made:
         made["tools_offered"] = tuple(made["tools_offered"])
+    if "fragments" in made:
+        made["fragments"] = load(json.dumps(made["fragments"]), tuple[Fragment, ...])
     # The environment mode (D76): the document's own, or the one the named policy ships with.
     environment = str(document.get("environment", "") or "") or ENVIRONMENT_OF.get(policy_name, "")
     if environment not in ENVIRONMENT_MODES:

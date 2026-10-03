@@ -74,7 +74,7 @@ and this file now says which is which per row.
 | **`ThreadRecord.agent`** | **Follows run templates.** The template a run names is part of its binding and configuration digest, so *which agent ran* is on the record and survives a resume and a takeover **by construction** — the record is the journal, not a mutable row, which is precisely what broke in our BUG-234 | Shadow §2.1 |
 | Skills, and a skill's declared needs | Phase 59: *"Agent Skills (SKILL.md) … Keep `shadow-hdk`'s checking of a skill's needs and its recorded origin."* Named explicitly, ours cited | `shadow/specs/` |
 | `root_instructions`, `AGENTS.md` | Phase 59: instruction and knowledge sources resolving once at run start into what phase 64's agent pins | `shadow/specs/` |
-| Context fragments (D166–D168) | Phase 64 design evidence (`group-5c`), and phase 59's instruction-pinning. The assembler is throwaway; framed context survives | `shadow/specs/` |
+| Context fragments (D166–D168) | Phase 64 design evidence (`group-5c`), and phase 59's instruction-pinning. The assembler is throwaway; framed context survives. HDK H6/BUG-238 now decodes stored mode fragments before assembly (0.47.1 candidate); the existing store-put wire path carries them | `shadow/specs/` |
 | Usage, cost and OTel | Phase 59: OpenTelemetry with GenAI conventions, *"Port `shadow-hdk`'s rule that payloads never go on spans"* | `shadow/specs/` |
 | ACP as a front door | Phase 59: *"Shadow as an ACP agent"* | `shadow/specs/` |
 | `steer` mid-turn | Phase 65's `overview.md`; shape unverified against ours | `shadow/specs/` |
