@@ -1,0 +1,10 @@
+BITES  'plan=None,'  -> 1 failed in 0.24s
+BITES  'plan=PlanLimits(steps=0),'  -> 1 failed in 0.18s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.18s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.18s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.18s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.18s
+BITES  'plan=None,'  -> 1 failed in 0.19s
+BITES  'plan=PlanLimits(steps=0),'  -> 1 failed in 0.19s
+BITES  '"plan", "absorb",'  -> 1 failed in 0.18s
+BITES  '"plan", "offload_over",'  -> 1 failed in 0.18s

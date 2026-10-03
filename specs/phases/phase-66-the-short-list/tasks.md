@@ -39,7 +39,7 @@ phase: phase-66-the-short-list
 - [x] G5.1 **A** — the name resolved on every path (D176 made true on a CLI), and a dropped agent named on the thread, the record and the wire
 - [x] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening; composed in **one place**, the behaviour every provider session is opened with
 - [x] G5.3 **E** — `skill` on the row
-- [ ] G5.4 **C** — `plan` on the row
+- [x] G5.4 **C** — `plan` on the row
 - [ ] G5.5 **D** — `description` on the row
 - [x] G5.6 **F** — not built: `model` and `effort` stay on the mode (G2's recommendation, lane P and the owner agreed)
 
@@ -67,3 +67,10 @@ phase: phase-66-the-short-list
 - [ ] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
 
 G7 closes only when the train is complete. This checkpoint does not close the phase.
+
+## 0.46.0 checkpoint — C
+
+- [x] source confirmed and reported before implementation; six cases red, ten new cases green
+- [x] ten anchored mutations bite; installed-wheel behaviour verified outside checkout
+- [x] full gate: 2,248 passed with disposable PostgreSQL; migration table and lane P note updated
+- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
