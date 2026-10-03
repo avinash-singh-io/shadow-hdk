@@ -191,6 +191,16 @@ class Thread:
         return self._record.agent_override
 
     @property
+    def agent_unhonoured(self) -> str:
+        """The agent this run asked for and could not have (H11-A) — off the record, so a resume
+        reports it too. Empty where it got what it asked for, or asked for nothing.
+
+        Read beside `agent`, and exactly one of them is ever set: a product that named an agent and
+        received the CLI's own loop had no field to read before this, which is the shape of ENH-051
+        and BUG-229 both."""
+        return self._record.agent_unhonoured
+
+    @property
     def agent(self) -> str:
         """Which agent this run resolved to (D177) — **off the record**, so a resume restores it
         (D183, BUG-234) and there is one answer rather than an attribute and a column that can
@@ -225,7 +235,9 @@ class Thread:
         requirements: ExecutionRequirements | None = None,
         plan_limits: PlanLimits | None = None,
         agent_named: str = "",
+        agent_unhonoured: str = "",
         agent_override: str = "",
+        agent_carries: Any = None,
         choose_agent: Any = None,
     ) -> Thread:
         """Start a thread: the record created and held, the conversation opened on it.
@@ -267,6 +279,7 @@ class Thread:
             budget=budget,
             requirements=requirements or ExecutionRequirements(),
             agent=agent_named,
+            agent_unhonoured=agent_unhonoured,
             agent_override=agent_override,
             version=RECORD_VERSION,
         )
@@ -277,6 +290,7 @@ class Thread:
                 agent=agent,
                 ports=ports,
                 choose_agent=choose_agent,
+                agent_carries=agent_carries,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,
@@ -317,6 +331,7 @@ class Thread:
         plan_limits: PlanLimits | None = None,
         attributes: Mapping[str, JsonValue] | None = None,
         choose_agent: Any = None,
+        agent_carries: Any = None,
     ) -> Thread:
         """Pick a thread up from its store: the provider reopened (with its own session id, when
         it kept one), the turns kept, the numbering continued, the meter from what the record
@@ -346,6 +361,7 @@ class Thread:
                 agent=agent,
                 ports=ports,
                 choose_agent=choose_agent,
+                agent_carries=agent_carries,
                 lease=thread._own_lease(lease),
                 registry=registry or InProcessOffer(name=name, withhold={TURN}),
                 approvals=approvals,

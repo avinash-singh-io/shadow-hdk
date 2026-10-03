@@ -4,6 +4,32 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — 0.45.0 candidate verified, not published.** H11-E binds a stored procedure
+> on the kit-owned model loop; unsupported pre-binding is reported as `agent.skill`, while CLI
+> skill choosing remains governed and checked. PostgreSQL runtime defaults to DDL-free access.
+> Full gate: 2,238 passed, 8 skipped; lint/format/types clean. All 17 new cases pass on the installed
+> wheel outside the checkout; 20 mutation checks bite. Database checks used a disposable server.
+> Release preparation stays on `phase-66-the-short-list`; protected landing is the owner's.
+> C, D and H6–H8 remain for later separate releases. Latest published release remains **0.44.1**.
+
+
+> **Decisions closed, 2026-10-04 — D190 and ecosystem initiative 0002, *generic before product*.**
+> The runtime layer defines fifteen file-and-shell operations by name, in the layer whose own
+> boundary rule forbids it — so D184's parity list is **what the successor should not inherit**, not
+> a gap in it. D-M: those tools are a **pack** of components, never core or mandatory. D-N: **build**
+> Shadow's Proposal port. D-O: the genericity test is enforceable as **D190**. D-P: an outside-world
+> capability is a port plus an optional adapter. The paste-ready brief is
+> [`handoffs/2026-10-04-prompt-for-the-codex-lane.md`](/handoffs/2026-10-04-prompt-for-the-codex-lane.md).
+>
+> **Handoff, 2026-10-03 — HDK's work moved to a Codex lane.** Start from
+> [`handoffs/2026-10-03-to-the-codex-lane.md`](/handoffs/2026-10-03-to-the-codex-lane.md). **BUG-237
+> is first**, released as **0.44.1** from the `v0.44.0` tag: the PostgreSQL adapters issue DDL at
+> runtime, so a restricted database role cannot open them, and it blocks Intent Studio's 0.7.0. Then
+> 0.45 onward **one item per release** (E, C, D, then H6–H8, each confirmed before being fixed) — a
+> release train, not a batch, and the handoff names where that collides with D9's minor-per-contract
+> rule. HDK is maintenance only from here, and **D189** sets its retirement. Lane P reads this file from git — keep it current, and
+> put replies in `specs/epics/`.
+
 > **Last Updated**: 2026-10-02 — **phase 65 complete on its branch: the claims are true.** Lane P's
 > audit of 2026-10-02 lists forty items; its A-group is claims this kit already made and did not keep.
 > Five were confirmed against the source before the phase opened, and **three originate in our own
@@ -189,7 +215,8 @@ the new engine becomes the default. Documentation approval has not started Phase
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
-| 65 — the claims are true | `phase-65-the-claims-are-true` | releasing as v0.44.0 | 6/6 groups |
+| 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
+| 66 — the short list | `phase-66-the-short-list` | 0.45.0 verified, owner landing pending | G1–G4 and H11 A+B/E done; C/D/G6 remain; release checkpoints in G7 |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

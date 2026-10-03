@@ -201,7 +201,7 @@ async def _exercise(url: str) -> None:
     from shadow_hdk.adapters.postgres import PostgresEffectJournal, PostgresStore, PostgresThreads
     from shadow_hdk.kernel import ThreadRecord
 
-    store = PostgresStore(url, prepared=True)
+    store = PostgresStore(url)
     try:
         await store.put("modes", "calm", {"id": "calm"})
         assert await store.get("modes", "calm") == {"id": "calm"}
@@ -211,7 +211,7 @@ async def _exercise(url: str) -> None:
     finally:
         await store.aclose()
 
-    threads = PostgresThreads(url, prepared=True)
+    threads = PostgresThreads(url)
     try:
         made = ThreadRecord(id="t1", root="/w", created_at="2026-01-01T00:00:00+00:00")
         await threads.create(made)
@@ -221,7 +221,7 @@ async def _exercise(url: str) -> None:
     finally:
         await threads.aclose()
 
-    journal = PostgresEffectJournal(url, prepared=True)
+    journal = PostgresEffectJournal(url)
     try:
         assert await journal.read("nothing") == ()
         await journal.aclose()
@@ -280,7 +280,7 @@ async def test_a_missing_schema_fails_named_rather_than_attempting_ddl(two_roles
     """`prepare` was never run. The runtime must say so, not try to fix it."""
     from shadow_hdk.adapters.postgres import PostgresStore, SchemaNotPrepared
 
-    store = PostgresStore(two_roles["runtime"], prepared=True)
+    store = PostgresStore(two_roles["runtime"])
     try:
         with pytest.raises(SchemaNotPrepared) as refused:
             await store.get("modes", "calm")
@@ -302,7 +302,7 @@ async def test_a_behind_schema_fails_named(two_roles: Any) -> None:
             connection.execute(statement)
         connection.execute("update shadow_hdk_schema_version set version = 0")
 
-    store = PostgresStore(two_roles["runtime"], prepared=True)
+    store = PostgresStore(two_roles["runtime"])
     try:
         with pytest.raises(SchemaBehind) as refused:
             await store.get("modes", "calm")
@@ -315,12 +315,13 @@ async def test_a_behind_schema_fails_named(two_roles: Any) -> None:
 # ----------------------------------------- and nothing that works today changes
 
 
-async def test_a_host_passing_no_flag_still_prepares_itself(two_roles: Any) -> None:
-    """The guardrail. 0.44.1 must not invert behaviour for anyone who is not lane P, so the default
-    is still self-preparing — DDL at open, against a role that may issue it."""
+async def test_a_host_explicitly_requesting_self_preparation_can_still_do_so(
+    two_roles: Any,
+) -> None:
+    """Legacy preparation remains an explicit choice for a role that may issue DDL."""
     from shadow_hdk.adapters.postgres import PostgresStore
 
-    store = PostgresStore(two_roles["owner"])
+    store = PostgresStore(two_roles["owner"], prepared=False)
     try:
         await store.put("modes", "calm", {"id": "calm"})
         assert await store.get("modes", "calm") == {"id": "calm"}

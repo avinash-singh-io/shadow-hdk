@@ -28,7 +28,7 @@ second environment never has to import the first, and rule 4 stays a property ra
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -99,6 +99,219 @@ class Isolation:
 
 class CannotEnforce(RuntimeError):
     """A mode was asked for that this environment cannot make true. Names the gap."""
+
+
+CHANGE_DIFFS_HELD = 32
+"""How many cut diffs an environment keeps so they can be asked for whole (H20, D186).
+
+Bounded on purpose, and small. A cut diff is held only because a host may want the rest of it, and
+holding every one for the life of an environment would keep the content of every file an agent ever
+touched in memory — a leak, and a privacy problem nobody asked for. The oldest go first, and asking
+for one that went is **refused saying it was dropped**, which is a different fact from *no such
+handle* and calls for different behaviour from a host.
+
+The host's to set, like the cap itself. Zero holds nothing, which is the right choice for a product
+that renders the recorded diff and never asks for more.
+"""
+
+CHANGE_DIFF_BYTES = 4_096
+"""How much of a change's diff travels on the record (D154, ENH-044).
+
+**One constant, named once — and now only the default.** A cap written into four call sites is four
+caps, and the first one somebody tunes is the one they can find. Phase 66 made it the host's
+(`Environment.open(change_diff_bytes=)`, H20): a product showing a diff panel knows what it can
+render and this does not, and *"a host that needs the whole change reads the file"* was never true
+for a contained or remote environment, which is the case this record exists for. The default is
+unchanged, so every existing composition behaves exactly as it did.
+
+Why a **diff** rather than the before and after content: lane P settled the shape — content to a
+cap, `truncated` past it, and no per-file version history, because git keeps that for a repository.
+Before-and-after cut at this size shows nothing at all of a small change to a large file; a diff of
+the same change shows all of it. The line counts beside it are computed from the *whole* diff, so
+they stay exact when the text is cut.
+"""
+
+_WALK_CEILING = 50_000
+"""A walk this big is a workspace nobody meant to search whole; stop rather than hang."""
+
+
+def _as_limit(given: JsonValue, fallback: int) -> int:
+    """A caller's limit, or the default. A nonsense one is the default rather than a refusal:
+    a search is not the place to argue about an argument."""
+    if isinstance(given, bool) or not isinstance(given, int) or given < 1:
+        return fallback
+    return min(given, fallback)
+
+
+def _glob_matcher(pattern: str) -> re.Pattern[str]:
+    """A glob as a regular expression, with `**` crossing separators and `*` not.
+
+    `fnmatch` is no good here: its `*` matches `/` too, so `src/*.py` would find
+    `src/deep/c.py`. The distinction between "in this directory" and "anywhere below" is the
+    whole of what a caller means by `*` versus `**`.
+    """
+    out = ["(?s:"]
+    i = 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif pattern.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    out.append(r")\Z")
+    return re.compile("".join(out))
+
+
+def _ranged(whole: str, offset: JsonValue, limit: JsonValue) -> Observation:
+    """A file, or the lines a caller asked for (ENH-041).
+
+    Neither given, this is `read_file` exactly as it always was: the whole file, a plain string.
+    A range past the end is **refused, naming the line count** — an empty string would read to a
+    model as a file with nothing in it, and it would stop looking.
+    """
+    if offset is None and limit is None:
+        return _completed(whole)
+    lines = whole.splitlines(keepends=True)
+    first = offset if isinstance(offset, int) and not isinstance(offset, bool) else 1
+    if first < 1:
+        return Refused(f"offset {first} is not a line number; lines count from 1")
+    if first > len(lines):
+        return Refused(f"offset {first} is past the end of the file, which has {len(lines)} lines")
+    how_many = limit if isinstance(limit, int) and not isinstance(limit, bool) else 0
+    start = first - 1
+    chosen = lines[start:] if how_many < 1 else lines[start : start + how_many]
+    return _completed("".join(chosen))
+
+
+def _whole_number(given: JsonValue, fallback: int) -> int:
+    """A caller's number, or the fallback where it gave none or gave nonsense.
+
+    A string, a list or a float from the wire is a caller's mistake and not worth failing a read
+    over: paging arguments have an obvious safe answer (the whole thing, from the start), and the
+    refusals this operation owes are about the handle, which is the part only the kit knows.
+    """
+    if isinstance(given, bool) or given is None:
+        return fallback
+    if isinstance(given, int | float):
+        return max(0, int(given))
+    return fallback
+
+
+def _completed(output: JsonValue) -> Observation:
+    from shadow_hdk.kernel.observations import Completed
+
+    return Completed(output)
+
+
+@dataclass
+class _Job:
+    """One background process the environment owns (D157), and what it has said.
+
+    Its output is drained by a task from the moment it starts, and that is not tidiness: a child
+    writing more than its pipe holds — 64 KB on Linux and macOS — blocks on `write(2)` until
+    somebody reads, and a job nobody drains is a job that hangs. BUG-059 is that bug, found in a
+    provider session for the same reason.
+    """
+
+    name: str
+    command: str
+    process: Any
+    said: str = ""
+    read_to: int = 0
+    """How far a caller has already been told, so a poll is billed for new bytes only."""
+    lost: bool = False
+    """Whether the buffer overflowed and the earliest output is gone."""
+    reader: Any = None
+
+    def start_reading(self, cap: int) -> None:
+        import asyncio
+
+        async def drain(stream: Any) -> None:
+            while chunk := await stream.read(4096):
+                self.said += chunk.decode("utf-8", "replace")
+                if len(self.said) > cap:
+                    cut = len(self.said) - cap
+                    self.said = self.said[cut:]
+                    self.read_to = max(0, self.read_to - cut)
+                    self.lost = True
+
+        streams = [s for s in (self.process.stdout, self.process.stderr) if s is not None]
+        self.reader = asyncio.gather(*(drain(s) for s in streams)) if streams else None
+
+    def told(self) -> dict[str, JsonValue]:
+        fresh = self.said[self.read_to :]
+        self.read_to = len(self.said)
+        code = self.process.returncode
+        return {
+            "job": self.name,
+            "command": self.command,
+            "running": code is None,
+            # Unknown, never zero, while it runs — the rule `Usage` keeps for cache tokens (D141).
+            "exit_code": code,
+            "output": fresh,
+            "truncated": self.lost,
+        }
+
+    def end(self) -> bool:
+        """`True` if it was still running and had to be ended."""
+        from shadow_hdk.runtime.processes import end_the_group
+
+        if self.process.returncode is not None:
+            return False
+        end_the_group(self.process)
+        if self.reader is not None:
+            self.reader.cancel()
+        return True
+
+
+def edited_by(path: str, content: str, edits: JsonValue) -> str | Refused:
+    """`content` with every edit applied in order, or the refusal that stopped it (ENH-042).
+
+    Pure, and shared by `edit_file` and `apply_patch` (D158) so the refusals cannot drift apart.
+
+    **Why the refusals are the design.** An `old` that is absent means the caller is working from a
+    picture of the file that is out of date, and applying the rest of the batch would act on that
+    picture. An `old` that appears twice means it did not say which one it meant, and taking the
+    first is how an agent edits the wrong line and reports success. Neither returns a partial
+    result, so the file a failed edit leaves behind is the file that was there — the one state both
+    the model and the record already describe.
+    """
+    if not isinstance(edits, list) or not edits:
+        return Refused(
+            f"an edit names the regions to change: `edits` for {path} is a list of {{old, new}}, "
+            "and an empty list would be a whole-file rewrite under another name"
+        )
+    edited = content
+    for index, edit in enumerate(edits, start=1):
+        if not isinstance(edit, dict):
+            return Refused(f"edit {index} for {path} is not an object with `old` and `new`")
+        old, new = edit.get("old"), edit.get("new")
+        if not isinstance(old, str) or not isinstance(new, str):
+            return Refused(f"edit {index} for {path} needs `old` and `new`, both strings")
+        found = edited.count(old)
+        if found == 0:
+            return Refused(
+                f"edit {index}: {old!r} is not in {path} — nothing was written. The file may "
+                "not be what you last read; read it again."
+            )
+        if found > 1:
+            return Refused(
+                f"edit {index}: {old!r} appears {found} times in {path}, so which one to "
+                "change is not said — nothing was written. Name more of the surrounding "
+                "text so it matches once."
+            )
+        edited = edited.replace(old, new, 1)
+    return edited
 
 
 MODES: tuple[Mode, ...] = ("read-only", "workspace-write", "full")
@@ -302,6 +515,18 @@ OPERATIONS: tuple[tuple[str, Operation, str, dict[str, JsonValue], list[str]], .
         ["command"],
     ),
     (
+        "change_diff",
+        "read",
+        "The rest of a change's diff, when the one on the record was cut. You were given a handle "
+        "and the whole size; ask for a slice by start and length. Unified diff, as recorded.",
+        {
+            "handle": {"type": "string", "description": "The handle the cut change carried."},
+            "start": {"type": "integer", "minimum": 0},
+            "length": {"type": "integer", "minimum": 1},
+        },
+        ["handle"],
+    ),
+    (
         "job_output",
         "read",
         "What a background job has said since you last asked, and whether it is still running. "
@@ -441,6 +666,8 @@ class Environment(ComponentPort):
         at: str = "",
         workspace: Workspace | None = None,
         requirements: EnvironmentRequirements | None = None,
+        change_diff_bytes: int | None = CHANGE_DIFF_BYTES,
+        change_diffs_held: int = CHANGE_DIFFS_HELD,
     ) -> None:
         requires(isolation, mode)
         available = capabilities_of(isolation, mode)
@@ -461,6 +688,17 @@ class Environment(ComponentPort):
         self._at = at
         self._requirements = requirements
         self._jobs: dict[str, _Job] = {}
+        self._change_cap = change_diff_bytes
+        """How much of a change's diff goes on the record — the host's (H20). `None` for all."""
+        self._diffs_held = max(0, change_diffs_held)
+        self._held_diffs: dict[str, str] = {}
+        """Cut diffs, whole, by handle (D186) — so a host can ask for the rest of one. Bounded by
+        `_diffs_held`, oldest evicted first."""
+        self._diff_counter = 0
+        self._dropped_diffs: set[str] = set()
+        """Handles that were held and are not any more. Kept so asking for one is refused with *it
+        was dropped* rather than *no such handle* — different facts, and a host acts on them
+        differently."""
         self.history: WorkspaceHistoryPort | None = None
         """How this workspace is captured and put back (D161), or `None` where it cannot be.
         A product reaches this **directly** for its own per-turn checkpoints: that is the
@@ -551,7 +789,7 @@ class Environment(ComponentPort):
                 # this call's inputs, so a host could assemble the change itself — but only for an
                 # edit, and a files-changed panel that reads one shape for four operations and a
                 # different one for the fifth is a panel with a bug waiting in it.
-                "change": changed(path, content, applied),
+                "change": self._change_of(path, content, applied),
             }
         )
 
@@ -597,7 +835,7 @@ class Environment(ComponentPort):
         written: list[JsonValue] = []
         for path, before, after in planned:
             await self._write(path, after)
-            written.append({"path": path, "change": changed(path, before, after)})
+            written.append({"path": path, "change": self._change_of(path, before, after)})
         return _completed({"files": len(planned), "changed": written})
 
     async def _relocate(self, source: str, destination: str) -> Observation:
@@ -650,6 +888,65 @@ class Environment(ComponentPort):
         self._jobs[name] = _Job(name=name, command=command, process=process)
         self._jobs[name].start_reading(self._output_cap())
         return _completed({"job": name, "command": command, "pid": process.pid})
+
+    def _change_of(self, path: str, before: str, after: str, **kw: Any) -> dict[str, JsonValue]:
+        """What an act did to one file, cut to this host's cap, with a handle to the rest (H20).
+
+        The diff is derived **once**, uncut, and cut here — so the kernel's `changed` stays pure
+        over two strings while the host's cap and the hold live with the environment that owns them.
+
+        The handle exists **only** for a cut diff. A handle on every write would hold the content of
+        every file an agent ever touched for the life of the environment, which is a leak and a
+        privacy problem nobody asked for; so nothing is held when nothing was cut, and a host
+        reading no handle knows it already has the whole thing.
+        """
+        whole = changed(path, before, after, cap=None, **kw)
+        text = str(whole["diff"])
+        cap = self._change_cap
+        if cap is None or len(text) <= cap:
+            return whole
+        cut: dict[str, JsonValue] = {**whole, "diff": text[:cap], "truncated": True}
+        if self._diffs_held <= 0:
+            return cut
+        handle = f"change-{self._diff_counter}"
+        self._diff_counter += 1
+        self._held_diffs[handle] = text
+        while len(self._held_diffs) > self._diffs_held:
+            oldest = next(iter(self._held_diffs))
+            del self._held_diffs[oldest]
+            self._dropped_diffs.add(oldest)
+        return {**cut, "handle": handle}
+
+    def _change_diff(self, arguments: Mapping[str, JsonValue]) -> Observation:
+        """Part of a cut change's diff, by handle, start and length (H20, D186).
+
+        **`recall`'s idiom, deliberately** (D47): the kit already has one shape for *a result too
+        large to show whole*, and a second shape for the same problem would be a second thing to
+        learn. Same field names, same meaning.
+
+        Unified diff, the same format that went on the record, so a product parses one thing.
+        """
+        handle = str(arguments.get("handle", ""))
+        whole = self._held_diffs.get(handle)
+        if whole is None:
+            if handle in self._dropped_diffs:
+                return Refused(
+                    f"the diff for {handle!r} is no longer held: this environment keeps the last "
+                    f"{self._diffs_held} cut diffs and that one was dropped to stay bounded"
+                )
+            return Refused(f"no held diff for {handle!r}")
+        start = _whole_number(arguments.get("start"), 0)
+        length = _whole_number(arguments.get("length"), len(whole))
+        piece = whole[start : start + max(0, length)]
+        return _completed(
+            {
+                "diff": piece,
+                "start": start,
+                "length": len(piece),
+                "total": len(whole),
+                "more": start + len(piece) < len(whole),
+            }
+        )
 
     def _output_cap(self) -> int:
         """How much of a job's output is kept. A subclass with its own limit says so."""
@@ -908,7 +1205,7 @@ class Environment(ComponentPort):
                         {
                             "path": path,
                             "bytes": written,
-                            "change": changed(
+                            "change": self._change_of(
                                 path,
                                 before,
                                 content,
@@ -942,7 +1239,7 @@ class Environment(ComponentPort):
                     return _completed(
                         {
                             "deleted": gone,
-                            "change": changed(
+                            "change": self._change_of(
                                 gone,
                                 before,
                                 "",
@@ -969,6 +1266,8 @@ class Environment(ComponentPort):
                             "this environment is read-only; running a command is not offered"
                         )
                     return await self._background(arguments.get("command"))
+                case "change_diff":
+                    return self._change_diff(arguments)
                 case "job_output":
                     return await self._job_told(arguments.get("job", ""))
                 case "kill_job":
@@ -1071,189 +1370,6 @@ GLOB_LIMIT = 1000
 GREP_LIMIT = 200
 """How many matches a `grep` returns before it says it stopped."""
 
-CHANGE_DIFF_BYTES = 4_096
-"""How much of a change's diff travels on the record (D154, ENH-044).
-
-**One constant, named once.** A cap written into three call sites is three caps, and the first one
-somebody tunes is the one they can find. A host that needs the whole change reads the file; what
-this carries is enough to render a files-changed panel and an approval preview, which is what it
-was asked for.
-
-Why a **diff** rather than the before and after content: lane P settled the shape — content to a
-cap, `truncated` past it, and no per-file version history, because git keeps that for a repository.
-Before-and-after cut at this size shows nothing at all of a small change to a large file; a diff of
-the same change shows all of it. The line counts beside it are computed from the *whole* diff, so
-they stay exact when the text is cut.
-"""
-
-_WALK_CEILING = 50_000
-"""A walk this big is a workspace nobody meant to search whole; stop rather than hang."""
-
-
-def _as_limit(given: JsonValue, fallback: int) -> int:
-    """A caller's limit, or the default. A nonsense one is the default rather than a refusal:
-    a search is not the place to argue about an argument."""
-    if isinstance(given, bool) or not isinstance(given, int) or given < 1:
-        return fallback
-    return min(given, fallback)
-
-
-def _glob_matcher(pattern: str) -> re.Pattern[str]:
-    """A glob as a regular expression, with `**` crossing separators and `*` not.
-
-    `fnmatch` is no good here: its `*` matches `/` too, so `src/*.py` would find
-    `src/deep/c.py`. The distinction between "in this directory" and "anywhere below" is the
-    whole of what a caller means by `*` versus `**`.
-    """
-    out = ["(?s:"]
-    i = 0
-    while i < len(pattern):
-        if pattern.startswith("**/", i):
-            out.append("(?:.*/)?")
-            i += 3
-        elif pattern.startswith("**", i):
-            out.append(".*")
-            i += 2
-        elif pattern[i] == "*":
-            out.append("[^/]*")
-            i += 1
-        elif pattern[i] == "?":
-            out.append("[^/]")
-            i += 1
-        else:
-            out.append(re.escape(pattern[i]))
-            i += 1
-    out.append(r")\Z")
-    return re.compile("".join(out))
-
-
-def _ranged(whole: str, offset: JsonValue, limit: JsonValue) -> Observation:
-    """A file, or the lines a caller asked for (ENH-041).
-
-    Neither given, this is `read_file` exactly as it always was: the whole file, a plain string.
-    A range past the end is **refused, naming the line count** — an empty string would read to a
-    model as a file with nothing in it, and it would stop looking.
-    """
-    if offset is None and limit is None:
-        return _completed(whole)
-    lines = whole.splitlines(keepends=True)
-    first = offset if isinstance(offset, int) and not isinstance(offset, bool) else 1
-    if first < 1:
-        return Refused(f"offset {first} is not a line number; lines count from 1")
-    if first > len(lines):
-        return Refused(f"offset {first} is past the end of the file, which has {len(lines)} lines")
-    how_many = limit if isinstance(limit, int) and not isinstance(limit, bool) else 0
-    start = first - 1
-    chosen = lines[start:] if how_many < 1 else lines[start : start + how_many]
-    return _completed("".join(chosen))
-
-
-def _completed(output: JsonValue) -> Observation:
-    from shadow_hdk.kernel.observations import Completed
-
-    return Completed(output)
-
-
-@dataclass
-class _Job:
-    """One background process the environment owns (D157), and what it has said.
-
-    Its output is drained by a task from the moment it starts, and that is not tidiness: a child
-    writing more than its pipe holds — 64 KB on Linux and macOS — blocks on `write(2)` until
-    somebody reads, and a job nobody drains is a job that hangs. BUG-059 is that bug, found in a
-    provider session for the same reason.
-    """
-
-    name: str
-    command: str
-    process: Any
-    said: str = ""
-    read_to: int = 0
-    """How far a caller has already been told, so a poll is billed for new bytes only."""
-    lost: bool = False
-    """Whether the buffer overflowed and the earliest output is gone."""
-    reader: Any = None
-
-    def start_reading(self, cap: int) -> None:
-        import asyncio
-
-        async def drain(stream: Any) -> None:
-            while chunk := await stream.read(4096):
-                self.said += chunk.decode("utf-8", "replace")
-                if len(self.said) > cap:
-                    cut = len(self.said) - cap
-                    self.said = self.said[cut:]
-                    self.read_to = max(0, self.read_to - cut)
-                    self.lost = True
-
-        streams = [s for s in (self.process.stdout, self.process.stderr) if s is not None]
-        self.reader = asyncio.gather(*(drain(s) for s in streams)) if streams else None
-
-    def told(self) -> dict[str, JsonValue]:
-        fresh = self.said[self.read_to :]
-        self.read_to = len(self.said)
-        code = self.process.returncode
-        return {
-            "job": self.name,
-            "command": self.command,
-            "running": code is None,
-            # Unknown, never zero, while it runs — the rule `Usage` keeps for cache tokens (D141).
-            "exit_code": code,
-            "output": fresh,
-            "truncated": self.lost,
-        }
-
-    def end(self) -> bool:
-        """`True` if it was still running and had to be ended."""
-        from shadow_hdk.runtime.processes import end_the_group
-
-        if self.process.returncode is not None:
-            return False
-        end_the_group(self.process)
-        if self.reader is not None:
-            self.reader.cancel()
-        return True
-
-
-def edited_by(path: str, content: str, edits: JsonValue) -> str | Refused:
-    """`content` with every edit applied in order, or the refusal that stopped it (ENH-042).
-
-    Pure, and shared by `edit_file` and `apply_patch` (D158) so the refusals cannot drift apart.
-
-    **Why the refusals are the design.** An `old` that is absent means the caller is working from a
-    picture of the file that is out of date, and applying the rest of the batch would act on that
-    picture. An `old` that appears twice means it did not say which one it meant, and taking the
-    first is how an agent edits the wrong line and reports success. Neither returns a partial
-    result, so the file a failed edit leaves behind is the file that was there — the one state both
-    the model and the record already describe.
-    """
-    if not isinstance(edits, list) or not edits:
-        return Refused(
-            f"an edit names the regions to change: `edits` for {path} is a list of {{old, new}}, "
-            "and an empty list would be a whole-file rewrite under another name"
-        )
-    edited = content
-    for index, edit in enumerate(edits, start=1):
-        if not isinstance(edit, dict):
-            return Refused(f"edit {index} for {path} is not an object with `old` and `new`")
-        old, new = edit.get("old"), edit.get("new")
-        if not isinstance(old, str) or not isinstance(new, str):
-            return Refused(f"edit {index} for {path} needs `old` and `new`, both strings")
-        found = edited.count(old)
-        if found == 0:
-            return Refused(
-                f"edit {index}: {old!r} is not in {path} — nothing was written. The file may "
-                "not be what you last read; read it again."
-            )
-        if found > 1:
-            return Refused(
-                f"edit {index}: {old!r} appears {found} times in {path}, so which one to "
-                "change is not said — nothing was written. Name more of the surrounding "
-                "text so it matches once."
-            )
-        edited = edited.replace(old, new, 1)
-    return edited
-
 
 def changed(
     path: str,
@@ -1263,12 +1379,18 @@ def changed(
     created: bool = False,
     deleted: bool = False,
     before_unreadable: bool = False,
-    cap: int = CHANGE_DIFF_BYTES,
+    cap: int | None = CHANGE_DIFF_BYTES,
 ) -> dict[str, JsonValue]:
     """What a write-class act did to one file, bounded (D154, ENH-044).
 
     Pure over two strings, so it is testable without a filesystem and identical for every
     environment — a local root, a sandbox and a remote one all say the same thing about a change.
+
+    **The cap is the caller's** (H20): an `int` to bound the diff, or `None` for the whole of it. A
+    host showing a diff panel knows what it can render and this does not, and until phase 66 the one
+    constant was the only answer — all four call sites took the default, so lane P's workbench
+    showed 4 KB per file because nobody could choose otherwise. `whole` is the uncut size either
+    way, so a host can tell what it is missing before deciding to ask for it.
 
     `added` and `removed` are counted over the **whole** diff before it is cut, so a host reading
     `truncated` still learns the true size of what happened. They are `None` only when the prior
@@ -1288,10 +1410,11 @@ def changed(
     added = sum(1 for line in lines if line.startswith("+") and not line.startswith("+++"))
     removed = sum(1 for line in lines if line.startswith("-") and not line.startswith("---"))
     diff = "".join(lines)
-    over = len(diff) > cap
+    over = cap is not None and len(diff) > cap
     return {
         "diff": diff[:cap] if over else diff,
         "truncated": over,
+        "whole": len(diff),
         "added": None if before_unreadable else added,
         "removed": None if before_unreadable else removed,
         "created": created,
@@ -1301,6 +1424,7 @@ def changed(
 
 
 __all__ = [
+    "CHANGE_DIFFS_HELD",
     "CHANGE_DIFF_BYTES",
     "GLOB_LIMIT",
     "GREP_LIMIT",

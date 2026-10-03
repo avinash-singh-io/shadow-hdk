@@ -83,6 +83,26 @@ def agent_recorded(wanted: str, *, chosen: bool) -> str:
     return (wanted or single.name) if chosen else ""
 
 
+def agent_unhonoured(wanted: str, *, chosen: bool) -> str:
+    """The agent a run asked for and could not have, named (H11-A).
+
+    **The counterpart of `agent_recorded`**, and exactly one of the two is ever set: `agent` says
+    what ran, this says what could not, and a product reading both must never have to work out which
+    it believes.
+
+    Why it is needed at all: `agent_recorded(wanted, chosen=False)` answers `""`, which the contract
+    defines as *no agent applies* — a CLI provider owns its own loop, so naming one would be a claim
+    the kit cannot make. That is honest about the kit's choice and silent about the product's
+    request, so a product that named an agent and got the CLI's own loop had nothing to read. It is
+    the shape of ENH-051 and BUG-229 both: the kit drops what a mode asked for and no field says so.
+
+    Asking for nothing drops nothing, which is every composition that names no agent — and that
+    falls out of `wanted` being empty rather than needing a guard of its own, which was an
+    equivalent mutant.
+    """
+    return wanted if not chosen else ""
+
+
 def store_patterns(store: Any, collection: str = "agents") -> StorePatterns:
     return StorePatterns(store, collection)
 
@@ -146,6 +166,7 @@ __all__ = [
     "agent_now",
     "agent_recorded",
     "agent_to_resume",
+    "agent_unhonoured",
     "NoSuchAgent",
     "PatternRegistry",
     "StorePatterns",

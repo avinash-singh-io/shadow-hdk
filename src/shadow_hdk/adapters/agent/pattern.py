@@ -67,6 +67,9 @@ class Pattern:
         )
     )
 
+    skill: str | None = None
+    """An opaque procedure name resolved by the host, never a permission."""
+
     def __post_init__(self) -> None:
         unknown = self.meta_tools - META_TOOLS
         if unknown:

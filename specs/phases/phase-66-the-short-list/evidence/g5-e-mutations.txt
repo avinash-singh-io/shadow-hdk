@@ -1,0 +1,20 @@
+BITES  '"no_skill",'  -> 1 failed in 0.38s
+BITES  'skill=None,'  -> 1 failed in 0.37s
+BITES  'skill: str | None = "unexpected"'  -> 1 failed in 0.37s
+BITES  'return None\n        have ='  -> 1 failed, 3 passed in 0.40s
+BITES  'unknown skill; there is: {have}'  -> 1 failed, 1 passed in 0.37s
+BITES  'there is: unavailable'  -> 1 failed, 1 passed in 0.38s
+BITES  'skill=None)'  -> 1 failed, 3 passed in 0.38s
+BITES  'if False'  -> 1 failed, 4 passed in 0.38s
+BITES  'if True'  -> 1 failed, 5 passed in 0.48s
+BITES  'self.unmapped_behaviour = tuple(getattr(self._agent_carries, "unhonour'  -> 1 failed, 8 passed in 0.62s
+BITES  'self.unmapped_behaviour += ()'  -> 1 failed, 8 passed in 0.59s
+BITES  'missing = frozenset()'  -> 1 failed, 7 passed in 0.60s
+BITES  'prepared: bool = False'  -> 1 failed in 0.23s
+BITES  'prepared: bool = False'  -> 1 failed, 1 passed in 0.23s
+BITES  'prepared: bool = False'  -> 1 failed, 2 passed in 0.24s
+BITES  'prepared: bool = False'  -> 1 failed, 4 passed in 0.23s
+BITES  'if prepared:'  -> 1 failed, 4 passed in 0.23s
+BITES  'if not self._prepared:'  -> 1 failed in 0.24s
+BITES  'self._ready = True\n\n\n__all__'  -> 1 failed in 0.23s
+BITES  'parts.append("")'  -> 1 failed, 6 passed in 0.59s

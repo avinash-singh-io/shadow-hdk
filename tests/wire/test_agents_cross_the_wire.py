@@ -125,3 +125,44 @@ async def test_a_thread_naming_nothing_says_single(tmp_path: Path) -> None:
         await side.peer.call("thread/close", {"thread_id": started["thread_id"]})
 
     assert started["agent"] == "single", started
+
+
+# ------------------------------------- and what it asked for and could not have (H11-A, phase 66)
+
+
+async def test_a_thread_says_which_agent_it_could_not_run(tmp_path: Path) -> None:
+    """A product over the wire needs this exactly as much as one in process. A host with no model is
+    every CLI host: the agent is dropped there because the CLI owns its own loop, and before phase
+    66 that was silent — `agent` answered `""`, which means *no agent applies*, and said nothing
+    about
+    the request."""
+    host = ServeHost(Settings(root=tmp_path, store=f"sqlite:///{tmp_path / 'h.db'}"))
+    await host.store.put("agents", "reviewer", dict(A_REVIEWER))
+    await host.store.put(
+        "modes", "reviewing", {"id": "reviewing", "policy": "workspace-write", "agent": "reviewer"}
+    )
+    try:
+        async with loopback(threads=host) as (side, _runtime):
+            await side.initialize()
+            started = await side.peer.call(
+                "thread/start", {"root": str(tmp_path), "mode": "reviewing"}
+            )
+            await side.peer.call("thread/close", {"thread_id": started["thread_id"]})
+    finally:
+        await host.aclose()
+
+    assert started["agent_unhonoured"] == "reviewer", started
+    assert started["agent"] == "", "exactly one of the two is ever set"
+
+
+async def test_a_thread_that_ran_its_agent_reports_nothing_unhonoured(tmp_path: Path) -> None:
+    """Paired against the above, through the same door: this host has a model, so the agent runs."""
+    host = await a_host(tmp_path)
+
+    async with loopback(threads=host) as (side, _runtime):
+        await side.initialize()
+        started = await side.peer.call("thread/start", {"root": str(tmp_path), "mode": "reviewing"})
+        await side.peer.call("thread/close", {"thread_id": started["thread_id"]})
+
+    assert started["agent"] == "reviewer", started
+    assert started["agent_unhonoured"] == "", started

@@ -80,42 +80,90 @@ def a_session(cli: Path, root: Path | None, **kw: Any) -> JsonlSession:
 # ------------------------------------------------------------------ the ceiling is silence
 
 
+async def test_the_deadline_is_rearmed_once_for_every_frame(tmp_path: Path) -> None:
+    """The mechanism of BUG-233's fix, **counted rather than timed**.
+
+    *Rearmed once per frame* is a count, and a count can be asserted exactly. The version of this
+    test that proved it by sleeping — gaps comfortably inside a ceiling, total comfortably past it —
+    failed twice in full-suite runs while passing alone, and widening its margin twice did not fix
+    it. That is TD-018's class: a wall-clock margin is something a loaded machine can eat.
+    So the property is counted here, where nothing can stall it, and the end-to-end behaviour keeps
+    one deliberately generous test below.
+    """
+    frames = [(0.0, _said(f"frame {n}")) for n in range(5)] + [(0.0, _done("ok"))]
+    cli = a_cli_that(tmp_path, frames, "chatty")
+    session = a_session(cli, tmp_path, silence_s=30.0)
+    try:
+        done = await session.turn("go")
+    finally:
+        await session.close()
+
+    assert not done.failed, done.text
+    assert session.rearmed == len(frames), (
+        f"the deadline must move once per frame: {session.rearmed} re-arms for {len(frames)} frames"
+    )
+
+
+def a_cli_that_answers_every_turn(where: Path, frames: list[dict[str, Any]], name: str) -> Path:
+    """A resident CLI that answers **each** line on stdin with the same frames — so two turns can
+    be taken on one process, which is what a resident dialect actually does."""
+    printing = "\n".join(f"    print({json.dumps(json.dumps(f))}, flush=True)" for f in frames)
+    made = where / name
+    made.write_text(
+        "#!/usr/bin/env python3\nimport sys\nwhile sys.stdin.readline():\n" + printing + "\n",
+        encoding="utf-8",
+    )
+    made.chmod(0o755)
+    return made
+
+
+async def test_the_count_is_this_turns_and_not_the_threads(tmp_path: Path) -> None:
+    """A resident CLI holds one process across turns, so a cumulative count would keep climbing and
+    say nothing about the turn a host is actually looking at."""
+    cli = a_cli_that_answers_every_turn(
+        tmp_path, [_said("x"), _said("y"), _said("z"), _done("ok")], "twice"
+    )
+    session = a_session(cli, tmp_path, silence_s=30.0)
+    try:
+        first = await session.turn("one")
+        after_first = session.rearmed
+        second = await session.turn("two")
+    finally:
+        await session.close()
+
+    assert not first.failed and not second.failed, (first.text, second.text)
+    assert after_first == 4, after_first
+    assert session.rearmed == 4, (
+        f"the second turn's count carried the first turn's: {session.rearmed}"
+    )
+
+
 async def test_a_turn_longer_than_the_ceiling_still_finishes_while_it_keeps_talking(
     tmp_path: Path,
 ) -> None:
-    """The heart of BUG-233. Twenty-five gaps of 0.1s under a ceiling of 1.0s is a turn of ~2.5s —
-    which the old total-time ceiling would have failed and a silence ceiling must not.
+    """BUG-233 end to end: a turn of about four seconds under a two-second *silence* ceiling.
 
-    **Many small gaps rather than a few large ones**, so the margin is one load cannot eat: failing
-    needs a single `readline` to stall for 0.9s, where an earlier version needed only 0.5s and did
-    stall that long in a full-suite run.
-
-    **The first frame is printed with no sleep at all**, and that is load-bearing rather than
-    tidiness: the first `readline` waits for a Python interpreter to boot as well as for the
-    script's first sleep, and that boot is unbounded under load. An earlier version put a 0.3s
-    sleep before the first frame with a 0.8s ceiling and **failed in a full-suite run** while
-    passing alone — precisely the TD-015/TD-018 flake class, and in a test whose own docstring
-    warned about it. Printing immediately lets the deadline rearm once startup is over, so every
-    gap this test actually measures is a clean sleep.
-
-    Fixed by removing the timing dependence, not by widening the margin and re-running until green
-    — re-running until green is the behaviour that class rewards."""
+    **The margin is deliberately large and the test deliberately slow.** Failing needs a single
+    `readline` to stall for 1.9s, which would mean real trouble rather than a busy afternoon;
+    earlier versions needed 0.5s and then 0.9s, and both flaked. Four seconds of suite time is the
+    price of an end-to-end proof that does not lie, and the mechanism itself is counted above where
+    it costs nothing.
+    """
     cli = a_cli_that(
         tmp_path,
-        [(0.0, _said("ready"))]  # absorbs interpreter startup; see above
-        + [(0.1, _said(f"still going {n}")) for n in range(24)]
+        [(0.0, _said("ready"))]  # absorbs interpreter startup, which is unbounded under load
+        + [(0.1, _said(f"still going {n}")) for n in range(39)]
         + [(0.1, _done("ok"))],
         "talkative",
     )
-    session = a_session(cli, tmp_path, silence_s=1.0)
+    session = a_session(cli, tmp_path, silence_s=2.0)
     try:
         done = await session.turn("go")
     finally:
         await session.close()
 
     assert not done.failed, (
-        f"a turn of ~2.5s was given up on under a 1.0s *silence* ceiling, so the deadline is not "
-        f"being rearmed per frame: {done.text!r}"
+        f"a turn of ~4s was given up on under a 2s *silence* ceiling: {done.text!r}"
     )
     assert done.text == "ok", done.text
 
