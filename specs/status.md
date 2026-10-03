@@ -4,6 +4,14 @@ type: Status
 
 # Project Status
 
+> **Decisions closed, 2026-10-04 — D190 and ecosystem initiative 0002, *generic before product*.**
+> The runtime layer defines fifteen file-and-shell operations by name, in the layer whose own
+> boundary rule forbids it — so D184's parity list is **what the successor should not inherit**, not
+> a gap in it. D-M: those tools are a **pack** of components, never core or mandatory. D-N: **build**
+> Shadow's Proposal port. D-O: the genericity test is enforceable as **D190**. D-P: an outside-world
+> capability is a port plus an optional adapter. The paste-ready brief is
+> [`handoffs/2026-10-04-prompt-for-the-codex-lane.md`](/handoffs/2026-10-04-prompt-for-the-codex-lane.md).
+>
 > **Handoff, 2026-10-03 — HDK's work moved to a Codex lane.** Start from
 > [`handoffs/2026-10-03-to-the-codex-lane.md`](/handoffs/2026-10-03-to-the-codex-lane.md). **BUG-237
 > is first**, released as **0.44.1** from the `v0.44.0` tag: the PostgreSQL adapters issue DDL at
