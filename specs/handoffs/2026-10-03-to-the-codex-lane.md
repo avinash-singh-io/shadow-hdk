@@ -141,6 +141,37 @@ rather than redesign it:
 
 ---
 
+# The release train (the owner, 2026-10-03)
+
+**Small releases every few days, not batches.**
+
+1. **0.44.1 — BUG-237**, first, as above.
+2. **Then 0.45 onward, one item per release**, each shipped as it is ready and gated: E, C, D, then
+   H6, H7, H8 — each *confirmed against the source* before it is built. **Not one batch.**
+3. **The DDL-free default flip lands in the first 0.45 release**, with the named behaviour change in
+   that release's note.
+4. **Every release gets its note in `specs/epics/`**, so Intent Studio can pin the latest. That file
+   is the only signal lane P has; see *Reaching lane P*.
+
+## One thing to settle before you cut the second release
+
+Lane P wrote this as "0.45.x shipped item by item", and **that shorthand collides with D9**. D9 says
+that pre-1.0 **a contract change is a minor bump** plus a *Pins* row. E, C and D each add a field to
+the agent row — `Pattern.skill`, `Pattern.plan`, `Pattern.description` — so each is a contract
+addition, and on D9 the train is:
+
+- `0.45.0` — the DDL-free default flip, plus whichever item ships with it
+- `0.46.0`, `0.47.0` — the next contract additions, **minors, not `0.45.1` and `0.45.2`**
+- patches only where a release adds no contract at all, which some of H6–H8 may not
+
+**Do not quietly pick one.** Either follow D9 — in which case tell lane P the sequence is a run of
+minors, because they are planning their pins around the string "0.45.x" — or get the owner to amend
+D9, which is a decision and belongs in `specs/decisions/index.md` with their name on it. Writing
+`0.45.1` for a contract addition without amending D9 would make the version number mean two different
+things in one repository.
+
+---
+
 # Standing rules
 
 These are the owner's, relayed through lane P on 2026-10-03. Treat them as settled and do not
@@ -152,9 +183,16 @@ re-open them from inside this repository.
 - **Nothing from Shadow's capability map gets built in HDK.** Named so absence does not read as
   oversight: **H12–H17, H21, H22, H29, H30, H41–H43**. If something seems to need one, stop and ask —
   that is a signal, not a licence to extend scope.
-- **HDK is Intent Studio's rollback for one release after the switch to Shadow, then retires** once
-  Shadow runs on Windows. (Relayed; the Windows condition is lane P's wording and this repository has
-  no independent record of it.)
+- **Retirement is now the owner's own decision — D189, 2026-10-03.** `shadow-hdk` retires once
+  Shadow runs on **Mac *and* Windows**, and at the earliest **one release after Intent Studio's
+  switch**; until then it is the rollback. Recorded in
+  [`what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md) and the decisions index. An earlier
+  draft of this handoff marked the Windows condition as merely relayed, which was right at the time
+  and is no longer the case.
+- **What runs where until then.** Intent Studio's chats and workbench **stay on HDK** until Shadow's
+  phase 52 moves them, estimated late November to December 2026. New feature types — connections,
+  background runs, routines, helpers, images — **run on Shadow** from its alpha and beta. So nothing
+  new is built here, which is the same rule as the *Out* list and the reason the parity tables matter.
 - **Prefer open-source software where it does the job, and follow open standards rather than
   inventing a format.** This kit already does where it matters: MCP for tools, ACP for editors,
   `SKILL.md` and `AGENTS.md` for instructions, OpenTelemetry's GenAI conventions, unified diff from

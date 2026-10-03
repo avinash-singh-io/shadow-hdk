@@ -8,8 +8,9 @@ type: Status
 > [`handoffs/2026-10-03-to-the-codex-lane.md`](/handoffs/2026-10-03-to-the-codex-lane.md). **BUG-237
 > is first**, released as **0.44.1** from the `v0.44.0` tag: the PostgreSQL adapters issue DDL at
 > runtime, so a restricted database role cannot open them, and it blocks Intent Studio's 0.7.0. Then
-> 0.45.x's remainder on `phase-66-the-short-list` (E, C, D, then H6–H8, each confirmed before being
-> fixed). HDK is maintenance only from here. Lane P reads this file from git — keep it current, and
+> 0.45 onward **one item per release** (E, C, D, then H6–H8, each confirmed before being fixed) — a
+> release train, not a batch, and the handoff names where that collides with D9's minor-per-contract
+> rule. HDK is maintenance only from here, and **D189** sets its retirement. Lane P reads this file from git — keep it current, and
 > put replies in `specs/epics/`.
 
 > **Last Updated**: 2026-10-02 — **phase 65 complete on its branch: the claims are true.** Lane P's

@@ -169,6 +169,27 @@ the capability it exists for is met by a different and better-governed mechanism
    reason. Any future revision of this file should ask the sibling repository rather than only read
    it — which is what this revision did.
 
+## Retirement, and what runs where until then
+
+**D189 — the owner's decision, 2026-10-03** (relayed through lane P, which is the coordination
+channel the owner designated; recorded here as theirs rather than as a relayed condition, which is
+what an earlier draft of the Codex handoff called it):
+
+| # | Decision | Rationale |
+|---|---|---|
+| D189 | **`shadow-hdk` retires once Shadow runs on Mac *and* Windows, and at the earliest one release after Intent Studio's switch.** Until then it is the rollback | a rollback that cannot run where the product runs is not a rollback, so both platforms are the condition rather than the alpha. One release after the switch is the floor, not the date — the switch is the risky moment and the thing being rolled back to has to outlive it |
+
+**What runs where until then**, as lane P describes the plan:
+
+- **Intent Studio's chats and workbench stay on HDK** until Shadow's phase 52 moves them — estimated
+  late November to December 2026.
+- **New feature types run on Shadow** from its alpha and beta: connections, background runs,
+  routines, helpers, images. **Nothing new is built here**, which is the same rule as the *Out* list
+  in phase 66's overview and the reason this file's parity tables matter — they are what a product
+  would lose on the day it switches.
+- **HDK takes maintenance and corrections only.** A correction that makes an existing claim true is
+  in scope; a capability is not.
+
 ## Keeping this true
 
 Any later bridge phase in this repository adds its contracts to one of the three tables before it

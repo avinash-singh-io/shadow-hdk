@@ -250,6 +250,7 @@ A new port, so an ADR (project-rules): D161 is it, and D162–D165 are the decis
 | D186 | a cut diff is kept whole by handle in a bounded hold, and fetched through a governed read paging by `handle`/`start`/`length` — `recall`'s idiom, not a second one | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 | D187 | Codex's strict mode is `--ignore-user-config`, applied only when tools are injected: our own servers are command-line overrides and auth still uses `CODEX_HOME` | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
 | D188 | an agent's role and tool list compose into the behaviour a provider is opened with — instructions layered agent-first (D168), tool lists intersected and never widened (D178) — in one place | [`phases/phase-66-the-short-list/overview.md`](/phases/phase-66-the-short-list/overview.md) |
+| D189 | **the owner, 2026-10-03:** `shadow-hdk` retires once Shadow runs on Mac *and* Windows, and at the earliest one release after Intent Studio's switch; until then it is the rollback, taking maintenance and corrections only | [`planning/what-moves-to-shadow.md`](/planning/what-moves-to-shadow.md) |
 
 ## Other references
 

@@ -293,3 +293,28 @@ else's condition into a fact.
 Gate at hand-over: ruff 0, format 0, mypy strict 0 over 511 files, 2200 passed, 20 skipped.
 
 ---
+### [DECISION] 2026-10-03 — D189: retirement is the owner's decision, and the release becomes a train
+Topics: d189, retirement, release-train, d9, versioning, maintenance
+Affects-specs: specs/planning/what-moves-to-shadow.md, specs/decisions/index.md, specs/handoffs/2026-10-03-to-the-codex-lane.md, specs/status.md
+Detail: Three things the owner settled, relayed through lane P, folded into the Codex handoff.
+
+**D189 — retirement.** `shadow-hdk` retires once Shadow runs on **Mac *and* Windows**, and at the
+earliest **one release after Intent Studio's switch**; until then it is the rollback. Recorded as the
+owner's own decision, which replaces the earlier handoff's marking of the Windows condition as merely
+relayed — that marking was right when the condition had no owner and is not right now. Both platforms
+rather than the alpha, because a rollback that cannot run where the product runs is not a rollback;
+one release after the switch is a floor rather than a date, because the switch is the risky moment.
+
+**The release train.** Small releases every few days: 0.44.1 first, then one item per release — E, C,
+D, then H6–H8, each confirmed before being built — with the DDL-free default flip in the first 0.45
+release and a note in `specs/epics/` for each so Intent Studio pins the latest.
+
+**And a collision found while writing it down.** Lane P's shorthand was *"0.45.x item by item"*, and
+D9 says that pre-1.0 **a contract change is a minor bump**. E, C and D each add a field to the agent
+row, so on D9 the train is `0.45.0`, `0.46.0`, `0.47.0` — a run of **minors**, not `0.45.1` and
+`0.45.2`. The handoff says so and tells the next lane not to pick one quietly: either follow D9 and
+tell lane P the sequence is minors, because they are planning pins around the string "0.45.x", or have
+the owner amend D9, which is a decision with their name on it. Writing `0.45.1` for a contract
+addition without amending D9 would make the version number mean two things in one repository.
+
+---
