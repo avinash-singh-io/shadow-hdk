@@ -18,8 +18,15 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.46.0"
-"""0.46.0 — H11-C: a stored agent row can set plan limits through the existing PlanLimits contract
+EXPECTED = "0.47.0"
+"""0.47.0 — H11-D: Pattern.description and the stored row can carry human-readable chooser text.
+The existing agents/list reply uses it, while absent or null retains the first system-prompt
+line and an explicit empty description stays empty. Role instructions are unchanged. A contract
+addition, so a minor and Pins row (D9); protocol 3 unchanged. D190: a coding tool, a support
+desk and a research assistant would each use human-readable agent descriptions, supplied as
+adapter data rather than runtime policy.
+
+0.46.0 — H11-C: a stored agent row can set plan limits through the existing PlanLimits contract
 parser. Those limits meet the host limits at existing child-plan admission; a stored bound
 changes whether planned work runs. Unset limits defer to the run. absorb and offload_over
 remain excluded. A contract addition, so a minor and Pins row (D9); protocol 3 unchanged. D190:

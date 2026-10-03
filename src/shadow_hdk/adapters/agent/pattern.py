@@ -70,6 +70,9 @@ class Pattern:
     skill: str | None = None
     """An opaque procedure name resolved by the host, never a permission."""
 
+    description: str | None = None
+    """Human-readable chooser text; None keeps the system-derived listing."""
+
     def __post_init__(self) -> None:
         unknown = self.meta_tools - META_TOOLS
         if unknown:

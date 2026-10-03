@@ -70,3 +70,20 @@ contracts regenerate without drift. The kit wheel and sdist build. Raw gate and 
 [`0.46-gate.txt`](evidence/0.46-gate.txt), [`g5-c-mutations.txt`](evidence/g5-c-mutations.txt).
 
 Protected landing, release and seven-file publication verification remain with the owner.
+
+## 0.47.0 checkpoint — D, phase still open
+
+The approved optional description reaches the existing chooser reply; role instructions remain
+separate and the absent-field fallback is preserved. This is a minor contract addition, not a
+redesign. H6–H8 remain for separate source-confirmed fixes.
+
+### Verification Evidence
+
+Fresh verification on 2026-10-04: lint clean, 550 files formatted, strict types clean over 517
+files; **2,254 passed, 8 skipped, 24 deselected**, exit 0 in 197.38 seconds, with disposable
+PostgreSQL enabled. Six new D cases pass on the clean installed wheel outside the checkout.
+Seven mutations bite. All 165 Python sources match the wheel; schemas and TypeScript contracts
+regenerate without drift. The kit wheel and sdist build. Raw evidence:
+[`0.47-gate.txt`](evidence/0.47-gate.txt), [`g5-d-mutations.txt`](evidence/g5-d-mutations.txt).
+
+Owner landing and publication remain parent-first, one version and GitHub Release at a time.

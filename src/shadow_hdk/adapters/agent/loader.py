@@ -29,6 +29,7 @@ from shadow_hdk.kernel.planning import PlanLimits
 
 KEYS = frozenset(
     {
+        "description",
         "plan",
         "skill",
         "name",
@@ -66,6 +67,7 @@ def pattern_from(data: dict[str, Any], *, where: str) -> Pattern:
     ceiling = data.get("ceiling")
     plan = data.get("plan")
     pattern = Pattern(
+        description=None if data.get("description") is None else str(data["description"]),
         plan=None if plan is None else load(json.dumps(plan), PlanLimits),
         skill=None if data.get("skill") is None else str(data["skill"]),
         name=str(data["name"]),

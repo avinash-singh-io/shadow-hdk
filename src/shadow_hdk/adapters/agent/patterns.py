@@ -35,7 +35,8 @@ class StorePatterns:
     changes when a person edits a plugin.
 
     The row is the document a pattern file carries: `name`, `system`, and optionally `meta_tools`,
-    `tool_names`, `ceiling`, `max_turns`, `nudge`, `catalogue_threshold`.
+    `tool_names`, `ceiling`, `max_turns`, `nudge`, `catalogue_threshold`, `skill`, `plan`,
+    `description`.
 
     **A malformed row is skipped, never fatal**, and what was skipped is kept on `skipped` so a
     product can show it. Losing three good agents to one bad one is the failure; losing one
@@ -153,7 +154,12 @@ class PatternRegistry:
     async def listing(self) -> tuple[tuple[str, str], ...]:
         """Name and one line, for a product showing a person what it may run."""
         return tuple(
-            (p.name, p.system.strip().splitlines()[0] if p.system.strip() else "")
+            (
+                p.name,
+                p.description
+                if p.description is not None
+                else (p.system.strip().splitlines()[0] if p.system.strip() else ""),
+            )
             for p in await self.all()
         )
 
