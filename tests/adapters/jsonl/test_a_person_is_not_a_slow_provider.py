@@ -71,7 +71,7 @@ def a_cli_that(where: Path, script: list[tuple[float, dict[str, Any]]], name: st
     return made
 
 
-def a_session(cli: Path, root: Path, **kw: Any) -> JsonlSession:
+def a_session(cli: Path, root: Path | None, **kw: Any) -> JsonlSession:
     return JsonlSession(
         a_provider(), binary=cli, env={"PATH": "/usr/bin:/bin"}, workspace=root, **kw
     )
@@ -83,24 +83,40 @@ def a_session(cli: Path, root: Path, **kw: Any) -> JsonlSession:
 async def test_a_turn_longer_than_the_ceiling_still_finishes_while_it_keeps_talking(
     tmp_path: Path,
 ) -> None:
-    """The heart of BUG-233. Four gaps of 0.3s under a ceiling of 0.8s is a turn of 1.2s — which
-    the old total-time ceiling would have failed and a silence ceiling must not.
+    """The heart of BUG-233. Twenty-five gaps of 0.1s under a ceiling of 1.0s is a turn of ~2.5s —
+    which the old total-time ceiling would have failed and a silence ceiling must not.
 
-    The gaps are comfortably inside the ceiling on purpose. The property is *total exceeds the
-    ceiling while no single gap does*, and a margin tight enough to race a Python interpreter's
-    startup would make this a flake rather than a test (the TD-015 class)."""
+    **Many small gaps rather than a few large ones**, so the margin is one load cannot eat: failing
+    needs a single `readline` to stall for 0.9s, where an earlier version needed only 0.5s and did
+    stall that long in a full-suite run.
+
+    **The first frame is printed with no sleep at all**, and that is load-bearing rather than
+    tidiness: the first `readline` waits for a Python interpreter to boot as well as for the
+    script's first sleep, and that boot is unbounded under load. An earlier version put a 0.3s
+    sleep before the first frame with a 0.8s ceiling and **failed in a full-suite run** while
+    passing alone — precisely the TD-015/TD-018 flake class, and in a test whose own docstring
+    warned about it. Printing immediately lets the deadline rearm once startup is over, so every
+    gap this test actually measures is a clean sleep.
+
+    Fixed by removing the timing dependence, not by widening the margin and re-running until green
+    — re-running until green is the behaviour that class rewards."""
     cli = a_cli_that(
         tmp_path,
-        [(0.3, _said("still")), (0.3, _said("going")), (0.3, _said("on")), (0.3, _done("ok"))],
+        [(0.0, _said("ready"))]  # absorbs interpreter startup; see above
+        + [(0.1, _said(f"still going {n}")) for n in range(24)]
+        + [(0.1, _done("ok"))],
         "talkative",
     )
-    session = a_session(cli, tmp_path, silence_s=0.8)
+    session = a_session(cli, tmp_path, silence_s=1.0)
     try:
         done = await session.turn("go")
     finally:
         await session.close()
 
-    assert not done.failed, done.text
+    assert not done.failed, (
+        f"a turn of ~2.5s was given up on under a 1.0s *silence* ceiling, so the deadline is not "
+        f"being rearmed per frame: {done.text!r}"
+    )
     assert done.text == "ok", done.text
 
 
@@ -207,3 +223,42 @@ async def test_giving_back_time_before_a_turn_runs_is_harmless(tmp_path: Path) -
         await session.close()
 
     assert not done.failed
+
+
+# ------------------------------------- and the mechanism itself, with no clock to race
+
+
+async def test_the_deadline_moves_when_time_is_given_back() -> None:
+    """The arithmetic, with no process and no sleeping — so it cannot flake.
+
+    The tests above measure the *effect* through a real pipe, which is where a timeout on a pipe
+    belongs. But their margins are wall-clock, and a wall-clock margin is something a loaded machine
+    can eat: one of them did fail in a full-suite run while passing alone, which is the
+    TD-015/TD-018 class. So the mechanism gets a proof with no clock in it at all, and the
+    behavioural tests keep their job of showing it works end to end.
+    """
+    session = a_session(Path("/nonexistent"), None)
+
+    async with asyncio.timeout(10.0) as deadline:
+        session._deadline = deadline  # noqa: SLF001 — the deadline *is* the mechanism under test
+        before = deadline.when()
+        session.waited_for_us(100.0)
+        after = deadline.when()
+
+    assert before is not None and after is not None
+    assert after > before + 50, f"the deadline did not move: {before} -> {after}"
+
+
+async def test_giving_back_nothing_moves_nothing() -> None:
+    """Zero and negative are no-ops rather than a deadline pulled *in*: a host reporting a call that
+    took no measurable time must not shorten the provider's patience."""
+    session = a_session(Path("/nonexistent"), None)
+
+    async with asyncio.timeout(10.0) as deadline:
+        session._deadline = deadline  # noqa: SLF001
+        before = deadline.when()
+        session.waited_for_us(0.0)
+        session.waited_for_us(-5.0)
+        after = deadline.when()
+
+    assert before == after, f"{before} -> {after}"

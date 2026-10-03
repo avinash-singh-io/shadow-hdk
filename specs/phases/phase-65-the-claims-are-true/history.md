@@ -200,3 +200,19 @@ still stop* — was checked the same way: the 52 approval and park tests pass, w
 this phase's G4 wrapped exactly that call path.
 
 ---
+### [NOTE] 2026-10-03 — the runway was one doc commit divergent, and a lane row was stale
+Topics: release, landing-order, status
+Affects-phases: none
+Affects-specs: specs/status.md
+Detail: Two things found in the landing pre-flight rather than during a protected-branch merge.
+`origin/main` carried `8e7b880` (*the phase 62 retrospective named a note that is not in its tree* —
+the fix for the v0.41.0 red tag) and `origin/staging` never received it, so the two had diverged by
+one commit of content. Merged into this phase's branch first, where a conflict would have been
+cheap, rather than discovering it on `main`.
+
+And the Active Phase table still described phase 64 as *complete, unmerged* when v0.43.0 was tagged,
+merged and published on 2026-10-02. Corrected to *released as v0.43.0*. Rule 15 keeps a lane out of
+another lane's row, but phase 64 is not an active lane — it is a released one, and a row asserting
+something untrue about a shipped release is worse than the convention it protects.
+
+---

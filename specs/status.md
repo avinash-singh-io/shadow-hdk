@@ -13,7 +13,7 @@ type: Status
 > person's thinking time (BUG-233); and 0.43.0's agent selection survived neither `set_mode` nor a
 > resume (BUG-234). All five closed in **v0.44.0**. Wave 1 only, by the owner's decision of
 > 2026-10-02 — every other audit item is named in the phase overview's *Out*, on the ground that new
-> capability belongs to the native line. Suite 2058 → 2144, mypy strict 507 files. ENH-052 and TD-020 filed; **BUG-235 filed and closed
+> capability belongs to the native line. Suite 2058 → 2146, mypy strict 507 files. ENH-052 and TD-020 filed; **BUG-235 filed and closed
 > inside the phase** — the narrowing had reached a CLI's calls and not its listing, found by
 > re-reading G1 against lane P's BUG-258. Lane P's BUG-258 itself is answered: it is BUG-226/227,
 > fixed in **0.34.2**, verified on this tree.
@@ -187,8 +187,8 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 | Phase | Branch | Status | Progress |
 |-------|--------|--------|----------|
-| 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | complete, unmerged | 5/5 groups |
-| 65 — the claims are true | `phase-65-the-claims-are-true` | complete on branch | 6/6 groups |
+| 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
+| 65 — the claims are true | `phase-65-the-claims-are-true` | releasing as v0.44.0 | 6/6 groups |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

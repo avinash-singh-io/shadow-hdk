@@ -80,6 +80,17 @@ step and the parameter in another — a cell that raised before writing, so an e
 landed had not. Reading the failure rather than guessing took one command; believing a `print` instead
 of checking the file cost three.
 
+**And I wrote a flake of the exact class I had documented the day before.** G4's
+*a long turn still finishes* test put a 0.3s sleep before the CLI's first frame under a 0.8s
+ceiling — but the first `readline` waits for a Python interpreter to boot as well, and that boot is
+unbounded under load. It **failed in the landing's full-suite run** and passed alone: TD-018's
+signature, in a test whose own docstring warned against exactly this. Two things worth keeping about
+how it was handled. It passed three consecutive runs after the first structural fix, and I did not
+accept that as the fix — re-running until green is the behaviour that class rewards. And the repair
+was to remove the clock from the proof, not to widen a margin: the mechanism now has a test with no
+sleeping in it at all, and the behavioural test keeps its job with twenty-five small gaps instead of
+five large ones, so failing needs a 0.9s stall where before it needed 0.5s.
+
 **Two of my own tests were nearly vacuous.** The override-survives-a-switch test switched into a mode
 naming the same agent as the override, so the mode's own answer happened to be right. The
 narrowing-honesty test asserted an empty list against a function that could never have returned
@@ -97,6 +108,9 @@ anything else. Both passed. Only mutation showed them for what they were.
   describes it were corrected together, because the two disagreeing was the defect.
 - **A mechanism with two doors needs a test at each.** BUG-235 passed every G1 test because they all
   went in through the refusal. The question to ask of any gate is *what does the other side see*.
+- **If a property is arithmetic, prove it with arithmetic.** A wall-clock margin is something a
+  loaded machine can eat, so a timing test's margin is a flake waiting for a busy afternoon. Measure
+  the effect through the real thing *and* prove the mechanism with no clock in it.
 - **A skip must say what it needs.** TD-020's live legs now name the account required and what the
   measurement would prove. A silent skip is how an unmeasured claim stays unmeasured.
 
@@ -111,7 +125,8 @@ anything else. Both passed. Only mutation showed them for what they were.
 
 ## Verification Evidence
 
-Captured 2026-10-02 on `phase-65-the-claims-are-true`, macOS 26 (Darwin 27.0.0), Python 3.14.6.
+Captured 2026-10-03 on `phase-65-the-claims-are-true` with `origin/main` merged in (the release
+tree for **v0.44.0**), macOS 26 (Darwin 27.0.0), Python 3.14.6.
 `pytest`'s output read from a file rather than through a pipe, and its exit code read directly — a
 `tail` in the pipeline once reported `exit=0` over two failures, and that lesson is now in every one
 of these.
@@ -141,7 +156,7 @@ Success: no issues found in 507 source files
 ### `uv run pytest`
 
 ```
-2144 passed, 20 skipped, 23 deselected, 85 warnings
+2146 passed, 20 skipped, 23 deselected, 85 warnings
 exit=0
 ```
 
@@ -149,8 +164,8 @@ The wall-clock figure is left out on purpose: it differs between runs, so quotin
 retrospective disagree with the next gate over something that was never the claim. The counts and the
 exit code are what the gate asserts.
 
-Suite 2058 → 2144 across the phase. Fifty-four mutations verified: eleven in G1 (two of them on
-BUG-235's fix), seven in G2, nine in G3, ten in G4, twelve in G5, with five survivors — three equivalent mutants resolved by deleting the
+Suite 2058 → 2146 across the phase. Fifty-four mutations verified: eleven in G1 (two of them on
+BUG-235's fix), seven in G2, nine in G3, twelve in G4, twelve in G5, with five survivors — three equivalent mutants resolved by deleting the
 code, and two genuine test weaknesses that became the findings above.
 
 ### Live, opted into with `-m live`
