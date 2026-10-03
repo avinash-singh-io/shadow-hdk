@@ -147,6 +147,35 @@ app-server field; any fallback would be journaled rather than silent. So
 `Dialect.instructions_in_prompt` is **throwaway** — it is a quirk of driving one CLI one way — while
 the capability it exists for is met by a different and better-governed mechanism.
 
+## The reframing, 2026-10-04 — this is not a list of what Shadow lacks
+
+**Measured in this repository**: `src/shadow_hdk/runtime/environment.py` defines **fifteen operations
+by name** in the runtime layer — `read_file`, `write_file`, `edit_file`, `apply_patch`, `move_file`,
+`glob`, `grep`, `run_shell`, `run_python`, `run_background`, `job_output`, `kill_job`, `checkpoint`,
+`restore`, `list_checkpoints`.
+
+Every one is a file-or-shell operation whose *meaning* the runtime knows — in the layer whose own
+boundary rule says that a tool name's meaning belongs behind a port. And none passes the test the
+product's own audit stated: *"a coding tool, a support desk or a research assistant could use it
+equally."* A support desk does not need worktrees.
+
+**So the *Not planned* and *primitives exist* tables above should be read as what the successor should
+**not** inherit, rather than as a gap in it.** Shadow's own answer said this and it was under-read at
+the time: *"Shadow has none, by design and not by omission: it governs effects rather than names, and
+a file edit or a shell command is a **component** behind the component contract."*
+
+That is a diagnosis and not a reproach. This kit was a bridge built at speed for a shipping product,
+those operations are load-bearing for it today, and nothing about them changes — the repository is
+maintenance-only. What changes is that the list stops being read as a demand on Shadow.
+
+**Where such tools do belong**, by Shadow's own boundary table: Components, published as a **Pack**,
+loaded only when a run asks. Not Core, which owns pure contracts and not product policy; not Runtime,
+which explicitly does not own a product-specific agent. Shadow's phase 64 G11 tool preset is already
+that shape.
+
+Recorded as **D190** in [`project-rules.md`](/project-rules.md), and cross-repo in
+`shadow-ecosystem`'s initiative **0002, generic before product**, which settles D-M and D-N.
+
 ## What this means, stated plainly
 
 1. **The parity list is five, not eight, and none of the five is a from-scratch build.** Shadow has

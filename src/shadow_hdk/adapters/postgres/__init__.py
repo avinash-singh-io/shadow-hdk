@@ -7,8 +7,25 @@ not installed, the way the sandbox names its own.
 """
 
 from shadow_hdk.adapters.postgres.checkpoints import postgres_checkpointer
+from shadow_hdk.adapters.postgres.connection import (
+    SCHEMA_VERSION,
+    SchemaBehind,
+    SchemaNotPrepared,
+)
 from shadow_hdk.adapters.postgres.effects import PostgresEffectJournal
+from shadow_hdk.adapters.postgres.prepare import OUR_TABLES, prepare, runtime_grants
 from shadow_hdk.adapters.postgres.store import PostgresStore
 from shadow_hdk.adapters.postgres.threads import PostgresThreads
 
-__all__ = ["PostgresEffectJournal", "PostgresStore", "PostgresThreads", "postgres_checkpointer"]
+__all__ = [
+    "OUR_TABLES",
+    "SCHEMA_VERSION",
+    "PostgresEffectJournal",
+    "PostgresStore",
+    "PostgresThreads",
+    "SchemaBehind",
+    "SchemaNotPrepared",
+    "postgres_checkpointer",
+    "prepare",
+    "runtime_grants",
+]

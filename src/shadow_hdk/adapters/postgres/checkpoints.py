@@ -8,8 +8,14 @@ from typing import Any
 from shadow_hdk.adapters.postgres.connection import require_psycopg
 
 
-async def postgres_checkpointer(url: str) -> tuple[Any, Any]:
-    """The saver and what closes it. `setup()` makes its tables the first time."""
+async def postgres_checkpointer(url: str, *, prepared: bool = False) -> tuple[Any, Any]:
+    """The saver and what closes it.
+
+    `setup()` makes its tables the first time — **which is DDL**, so a restricted runtime role
+    cannot run it (BUG-237). `prepared=True` skips it, on the understanding that `prepare(url)`
+    already called it under an owner role. It is LangGraph's own function and cannot be made
+    DDL-free here, so calling it from the one trusted place is the only honest arrangement.
+    """
     require_psycopg()
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
     from psycopg import AsyncConnection
@@ -19,7 +25,8 @@ async def postgres_checkpointer(url: str) -> tuple[Any, Any]:
         url, autocommit=True, prepare_threshold=0, row_factory=dict_row
     )
     saver = AsyncPostgresSaver(connection)
-    await saver.setup()
+    if not prepared:
+        await saver.setup()
     return saver, connection
 
 

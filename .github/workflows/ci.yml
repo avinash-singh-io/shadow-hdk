@@ -18,7 +18,7 @@ jobs:
         python: ["3.12", "3.13", "3.14"]
     name: check (${{ matrix.python }})
     # The Postgres adapter's contract suites run against a real server (D79): this one. Without
-    # the variable below they skip, saying so — the desk runs them against its own Postgres.
+    # the variables below they skip, saying so — the desk runs them against its own Postgres.
     services:
       postgres:
         image: postgres:16
@@ -32,6 +32,11 @@ jobs:
           --health-retries 10
     env:
       SHADOW_HDK_TEST_POSTGRES_URL: postgresql://harness:harness@localhost:5432/shadow_hdk_test
+      # BUG-237's two-role test needs a connection that may CREATE ROLE, because the only way to
+      # prove a restricted role can open the adapters is to make one and try. `harness` is the
+      # service's superuser, so the same server answers both. Without this the test skips saying so,
+      # and the bug it exists to catch would be invisible again.
+      SHADOW_HDK_TEST_POSTGRES_SUPERUSER_URL: postgresql://harness:harness@localhost:5432/shadow_hdk_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
