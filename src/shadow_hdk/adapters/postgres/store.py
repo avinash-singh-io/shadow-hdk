@@ -29,8 +29,11 @@ BUMP = (
 
 
 class PostgresStore(Store):
-    def __init__(self, url: str) -> None:
-        self._pooled = Pooled(url, schema=SCHEMA)
+    def __init__(self, url: str, *, prepared: bool = False) -> None:
+        """`prepared=True` issues **no DDL at all** — a trusted `prepare` made the tables and this
+        only verifies them (BUG-237). Default `False` keeps 0.44.0's self-preparing behaviour, so a
+        patch release inverts nothing; the default flips in the first 0.45 release."""
+        self._pooled = Pooled(url, schema=SCHEMA, prepared=prepared)
 
     async def aclose(self) -> None:
         await self._pooled.aclose()
