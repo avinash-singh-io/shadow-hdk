@@ -90,7 +90,7 @@ async def _verify(connection: Any) -> None:
 class Pooled:
     """The connection pool a Postgres adapter draws from."""
 
-    def __init__(self, url: str, *, schema: str, prepared: bool = False) -> None:
+    def __init__(self, url: str, *, schema: str, prepared: bool) -> None:
         require_psycopg()
         self._url = url
         self._schema = schema
@@ -103,8 +103,8 @@ class Pooled:
         table that is already there. That is why a host provisioning its tables in advance did not
         help, and why this is a separate path rather than a smarter statement.
 
-        Default `False` in 0.44.1 so a patch release does not invert behaviour for hosts relying on
-        self-preparation. The default flips in the first 0.45 release.
+        Public adapters pass `True` by default from 0.45.0: prepare before runtime use.
+        `prepared=False` explicitly opts into legacy self-preparation under a DDL-capable role.
         """
         self._pool: Any = None
         self._ready = False

@@ -341,3 +341,27 @@ Affects-specs: ../shadow/.momentum/inbox/handoff-001.md
 Detail: Handoff #001 written to shadow/.momentum/inbox/. Summary: HDK is maintenance-only and handed to a Codex lane. Two decisions now sit with Shadow: D-M (who builds the five file-and-shell tools) and D-N (whether to add a Proposal port). D189 makes Windows a retirement condition, so Shadow phase 50 is on the critical path.
 
 ---
+
+### [NOTE] 2026-10-04 — Codex pickup: E confirmed before building
+Topics: agent-patterns, skills, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Clean branch at 08437fe. Source confirms the row-to-model binding gap; follow the approved CLI-only-own-skills boundary and name the unhonoured binding. Baseline gate running; E starts test-first, with C/D/H6–H8 held for later releases.
+
+---
+
+### [FEATURE] 2026-10-04 — E binds the existing procedure, without a new decision
+Topics: agent-patterns, skills, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: The owner confirmed the approved binding-versus-choosing boundary and appended the clarification to E's evidence. New cases started red, then 17 passed; 37 PostgreSQL/store tests passed on a disposable server. Mutation checks proved the bound procedure reaches inference and unmet needs prevent it. C/D/H6–H8 stay out of this release.
+
+---
+
+### [NOTE] 2026-10-04 — 0.45.0 checkpoint gated, owner landing remains
+Topics: skills, release-train, postgres
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed with disposable PostgreSQL enabled: 2,238 passed, 8 skipped, 24 deselected; lint, format and strict types passed. All 17 new cases passed on a clean installed wheel outside the checkout, and twenty retained mutations bite. Release checkpoint evidence and owner commands are prepared; phase 66 remains open, and 0.45.0 is not published.
+
+---

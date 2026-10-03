@@ -4,6 +4,15 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — 0.45.0 candidate verified, not published.** H11-E binds a stored procedure
+> on the kit-owned model loop; unsupported pre-binding is reported as `agent.skill`, while CLI
+> skill choosing remains governed and checked. PostgreSQL runtime defaults to DDL-free access.
+> Full gate: 2,238 passed, 8 skipped; lint/format/types clean. All 17 new cases pass on the installed
+> wheel outside the checkout; 20 mutation checks bite. Database checks used a disposable server.
+> Release preparation stays on `phase-66-the-short-list`; protected landing is the owner's.
+> C, D and H6–H8 remain for later separate releases. Latest published release remains **0.44.1**.
+
+
 > **Decisions closed, 2026-10-04 — D190 and ecosystem initiative 0002, *generic before product*.**
 > The runtime layer defines fifteen file-and-shell operations by name, in the layer whose own
 > boundary rule forbids it — so D184's parity list is **what the successor should not inherit**, not
@@ -207,7 +216,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | handed over mid-G5 | G1–G4 done, H11 A+B done; E, C, D, G6, G7 remain |
+| 66 — the short list | `phase-66-the-short-list` | 0.45.0 verified, owner landing pending | G1–G4 and H11 A+B/E done; C/D/G6 remain; release checkpoints in G7 |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

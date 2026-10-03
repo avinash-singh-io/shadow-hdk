@@ -50,6 +50,19 @@ G1's is D184, in [`planning/what-moves-to-shadow.md`](/planning/what-moves-to-sh
 | D188 | **An agent's role and tool list compose into the behaviour a provider is opened with** — instructions layered agent-first, tool lists intersected and never widened — in one place, the behaviour built for every provider session | a CLI gets everything but its own loop, and both mechanisms for that already shipped: the instruction flag-or-fold path and the registry narrowing. What was missing was the composition. Agent-first reuses D168 (the role is who the agent is; the mode is what this run wants of it, and reversed a mode's aside would outrank the role). Intersecting keeps D178's guarantee that narrowing can only take away — two allow-lists where the later widened the earlier would let a mode be handed more than its policy left by naming an agent. One place because two paths deciding the same thing is exactly what H11-A's defect was |
 | D187 | **Codex's strict mode is `--ignore-user-config`**, applied only when tools are injected | ENH-005 concluded Codex needed the equivalent of `--strict-mcp-config` upstream and shipped that in the record's prose; the flag existed on the same version all along. Our own servers travel as `-c` command-line overrides so they survive it, and auth still uses `CODEX_HOME` so a subscription login survives it. Applied only for a governed launch, because a launch injecting nothing has no business dropping a person's configuration |
 
+### E — the approved binding, under D17 and D55
+
+A row's optional `skill` names a procedure in the host's skill registry. Resolve and validate it
+before opening any provider, refusing an unknown name and listing available names. Bind it to the
+kit-owned model loop, which already checks needs before inference. On a CLI or a handed agent,
+report the requested pre-binding as `agent.skill` in unmapped behaviour. Skill choosing remains
+available through the governed registry component, including its needs check (D17, D55). The
+plain `Carried.unhonoured` tuple reports opaque unsupported contributions without teaching the
+runtime a skill or tool name. Read by name with an empty default (D14).
+
+D190: a coding tool, a support desk and a research assistant would each use this. Procedures and
+dependencies belong to the host; the mechanism resolves names and reports unsupported execution.
+
 ## Verification
 
 TDD strict, every assertion mutation-checked, mindful of TD-019 (a failing test that stands up a

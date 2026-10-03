@@ -38,7 +38,7 @@ phase: phase-66-the-short-list
 
 - [x] G5.1 **A** — the name resolved on every path (D176 made true on a CLI), and a dropped agent named on the thread, the record and the wire
 - [x] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening; composed in **one place**, the behaviour every provider session is opened with
-- [ ] G5.3 **E** — `skill` on the row
+- [x] G5.3 **E** — `skill` on the row
 - [ ] G5.4 **C** — `plan` on the row
 - [ ] G5.5 **D** — `description` on the row
 - [x] G5.6 **F** — not built: `model` and `effort` stay on the mode (G2's recommendation, lane P and the owner agreed)
@@ -50,9 +50,20 @@ phase: phase-66-the-short-list
 - [ ] G6.3 H8 confirm: cache tokens on the key-backed loop
 - [ ] G6.4 fix what is confirmed; report what is not
 
-## G7 — the release
+## G7 — the release train
 
-- [ ] G7.1 the migration note
-- [ ] G7.2 version, changelog, status, history, retrospective with verification evidence
-- [ ] G7.3 the reply to lane P in `specs/epics/`
-- [ ] G7.4 the full gate green, output read from a file
+- [/] G7.1 the migration note
+- [/] G7.2 version, changelog, status, history, retrospective with verification evidence
+- [/] G7.3 the reply to lane P in `specs/epics/`
+- [/] G7.4 the full gate green, output read from a file
+
+## 0.45.0 checkpoint — E plus the required default change
+
+- [x] confirm E against source before implementation; preserve the approved binding/choosing boundary
+- [x] new tests red, then 17 targeted tests green; 37 PostgreSQL/store tests green on a disposable server
+- [x] mutation checks bite; remove the redundant internal preparation default
+- [x] migration table updated for E, with C and D left unbuilt
+- [x] full gate and installed-artifact check: 2,238 passed; 17 new cases pass on installed wheel
+- [ ] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
+
+G7 closes only when the train is complete. This checkpoint does not close the phase.

@@ -500,9 +500,10 @@ class ServeHost:
         (`agent_unhonoured`).
         """
         pattern = await self.patterns.named(wanted) if wanted else single
+        skill = await self.skills.named(pattern.skill) if pattern.skill is not None else None
         if self._handed_agent is not None or self._model is None:
             return None
-        return ModelAgent(model=self._model, pattern=pattern)
+        return ModelAgent(model=self._model, pattern=pattern, skill=skill)
 
     async def _open_candidate(
         self,
@@ -726,6 +727,9 @@ class ServeHost:
         pattern = await self.patterns.named(wanted)
         names = pattern.tool_names
         return Carried(
+            unhonoured=("agent.skill",)
+            if pattern.skill is not None and (self._model is None or self._handed_agent is not None)
+            else (),
             instructions=pattern.system,
             tool_names=None if names is None else tuple(sorted(names)),
         )

@@ -28,6 +28,7 @@ from shadow_hdk.kernel.effects import EffectProfile
 
 KEYS = frozenset(
     {
+        "skill",
         "name",
         "system",
         "meta_tools",
@@ -62,6 +63,7 @@ def pattern_from(data: dict[str, Any], *, where: str) -> Pattern:
     tools = data.get("tool_names")
     ceiling = data.get("ceiling")
     pattern = Pattern(
+        skill=None if data.get("skill") is None else str(data["skill"]),
         name=str(data["name"]),
         system=str(data["system"]).strip(),
         meta_tools=meta,

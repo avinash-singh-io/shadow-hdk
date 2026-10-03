@@ -63,6 +63,8 @@ class Carried:
 
     instructions: str = ""
     tool_names: tuple[str, ...] | None = None
+    unhonoured: tuple[str, ...] = ()
+    """Opaque contributions this provider cannot execute, reported by the host (D17, D55)."""
 
 
 @dataclass(frozen=True)

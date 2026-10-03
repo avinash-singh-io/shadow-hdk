@@ -505,6 +505,7 @@ class Conversation:
         # session, by name, so a double or an adapter that predates the field reports nothing.
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
+        self.unmapped_behaviour += tuple(getattr(self._agent_carries, "unhonoured", ()))
         self._give_the_transcript_back(session)
         self._let_the_provider_wait_for_us(session)
         return session

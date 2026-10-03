@@ -29,10 +29,10 @@ BUMP = (
 
 
 class PostgresStore(Store):
-    def __init__(self, url: str, *, prepared: bool = False) -> None:
+    def __init__(self, url: str, *, prepared: bool = True) -> None:
         """`prepared=True` issues **no DDL at all** — a trusted `prepare` made the tables and this
-        only verifies them (BUG-237). Default `False` keeps 0.44.0's self-preparing behaviour, so a
-        patch release inverts nothing; the default flips in the first 0.45 release."""
+        only verifies them (BUG-237). DDL-free access is the default from 0.45.0; pass
+        `prepared=False` explicitly for legacy self-preparation under a DDL-capable role."""
         self._pooled = Pooled(url, schema=SCHEMA, prepared=prepared)
 
     async def aclose(self) -> None:
