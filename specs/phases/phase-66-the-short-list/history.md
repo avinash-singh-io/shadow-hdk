@@ -273,3 +273,23 @@ be re-run on a LangGraph upgrade, not only on ours.
 Who builds it is the owner's call, open at the time of writing.
 
 ---
+### [NOTE] 2026-10-03 — HDK's work moved to a Codex lane; the cold-start handoff written
+Topics: handoff, codex, bug-237, maintenance
+Affects-specs: specs/handoffs/2026-10-03-to-the-codex-lane.md, specs/status.md
+Detail: The owner moved HDK's work to a Codex session, relayed by lane P, which also settles who
+builds BUG-237: that lane, not this one. Nothing was started on it here.
+
+`specs/handoffs/2026-10-03-to-the-codex-lane.md` is the cold-start document and `specs/status.md`
+links it from the top, because a Codex session **cannot receive cross-session messages** — so the
+repository is the only channel. Status goes in `status.md` and replies in `specs/epics/`, which lane P
+reads from git.
+
+It leads with BUG-237 as 0.44.1 from the `v0.44.0` tag, with all seven agreed points, then 0.45.x's
+remainder, then the standing rules, then the traps that cost phases 65 and 66 real time. One wording
+is marked as relayed rather than owned: HDK retiring *once Shadow runs on Windows* is lane P's, and
+this repository has no independent record of it — a handoff is the wrong place to launder someone
+else's condition into a fact.
+
+Gate at hand-over: ruff 0, format 0, mypy strict 0 over 511 files, 2200 passed, 20 skipped.
+
+---

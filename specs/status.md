@@ -4,6 +4,14 @@ type: Status
 
 # Project Status
 
+> **Handoff, 2026-10-03 — HDK's work moved to a Codex lane.** Start from
+> [`handoffs/2026-10-03-to-the-codex-lane.md`](/handoffs/2026-10-03-to-the-codex-lane.md). **BUG-237
+> is first**, released as **0.44.1** from the `v0.44.0` tag: the PostgreSQL adapters issue DDL at
+> runtime, so a restricted database role cannot open them, and it blocks Intent Studio's 0.7.0. Then
+> 0.45.x's remainder on `phase-66-the-short-list` (E, C, D, then H6–H8, each confirmed before being
+> fixed). HDK is maintenance only from here. Lane P reads this file from git — keep it current, and
+> put replies in `specs/epics/`.
+
 > **Last Updated**: 2026-10-02 — **phase 65 complete on its branch: the claims are true.** Lane P's
 > audit of 2026-10-02 lists forty items; its A-group is claims this kit already made and did not keep.
 > Five were confirmed against the source before the phase opened, and **three originate in our own
