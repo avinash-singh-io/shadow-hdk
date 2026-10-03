@@ -245,3 +245,31 @@ is content-addressed and erasable, and the Codex strict flag, where Shadow's too
 The row for E, C and D says that whoever builds them updates it.
 
 ---
+
+### [DISCOVERY] 2026-10-03 — BUG-237: the PostgreSQL adapters cannot run under a restricted role
+Topics: postgres, ddl, production, lane-p, p0
+Affects-phases: none
+Affects-specs: specs/backlog/backlog.md, specs/phases/phase-66-the-short-list/handover.md
+Detail: Reported by lane P as their Intent Studio BUG-280, blocking their 0.7.0, and **confirmed
+against the source before answering**. `Pooled.pool()` executes its schema on first use and again
+after every `aclose()` — `aclose` sets `_ready = False` — which is precisely the *first and reopened
+access* they measured. Three adapters do it through `Pooled` and the fourth calls LangGraph's
+`AsyncPostgresSaver.setup()`; five tables of ours plus LangGraph's four is the nine they report.
+
+The subtle part, which they had right and which decides the fix: `CREATE TABLE IF NOT EXISTS` is
+**not** DDL-free, because PostgreSQL checks the CREATE privilege before the existence check — so it
+fails with 42501 against a table that already exists, which is why pre-provisioning did not help. The
+fix cannot be *make the DDL conditional*; it must be *do not execute the schema at runtime*. Taking
+the obvious reading would have shipped them something that still failed.
+
+Recommended as **0.44.1 from the v0.44.0 tag**, not 0.45.x: their release is otherwise ready and this
+branch still carries H6–H8 whose scope is deliberately unconfirmed and therefore undatable. Two
+design questions were put to lane P rather than decided for them — whether runtime verifies the
+schema (one catalogue query, turning *the schema is behind* into a named startup error) and whether
+DDL-free becomes the default, which would invert behaviour for anyone relying on auto-setup. Also
+flagged: LangGraph's `setup()` is third-party, so `prepare` must call it under the owner role and must
+be re-run on a LangGraph upgrade, not only on ours.
+
+Who builds it is the owner's call, open at the time of writing.
+
+---

@@ -21,6 +21,15 @@ That gate was green when this was written: ruff 0, format 0, mypy strict 0 over 
 **2200 passed, 20 skipped**. If it is not green for you, that is the first thing to fix and it is
 not something this phase left behind knowingly.
 
+> **A P0 arrived after this was written, and it is not phase 66's.** Lane P's Intent Studio BUG-280
+> blocks their 0.7.0: the PostgreSQL adapters issue DDL at runtime, so a restricted database role
+> cannot open them. Filed here as **BUG-237** with the confirmation and the design, and recommended
+> as **0.44.1 branched from the v0.44.0 tag** — *not* as part of 0.45.x, because this branch still
+> carries H6–H8 whose scope is unconfirmed, and a ready release should not wait behind it.
+> **Who builds it is the owner's call and was open when this was written.** If it is not you, carry
+> on below and leave the v0.44.0 branch alone; if it is, read BUG-237's row first — it already has
+> the mechanism, the reason pre-provisioning does not help, and two design questions put to lane P.
+
 **Nothing is owed.** Before this was written the phase's tracking was audited and three debts
 cleared: the changelog had no line for six commits of work (Rule 2), H11-A's defect was filed as
 BUG-236 after its fix rather than when found (Rule 3, and the row says so), and
