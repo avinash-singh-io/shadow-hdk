@@ -115,6 +115,12 @@ class ThreadRecord:
 
     Phase 64 made an agent selectable and readable and put it nowhere durable, so a resumed Reviewer
     thread came back as `single` (BUG-234)."""
+    agent_unhonoured: str = ""
+    """The agent this thread asked for and could not have (H11-A).
+
+    A CLI provider owns its own loop, so a name it was given is dropped — and until phase 66 that
+    was silent: `agent` answered `""`, which means *no agent applies*, and said nothing about the
+    request. Exactly one of `agent` and this is ever set."""
     agent_override: str = ""
     """The agent this thread was opened with over its mode's, if any (`thread/start {agent}`, D175).
 

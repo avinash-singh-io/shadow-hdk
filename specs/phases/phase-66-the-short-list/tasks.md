@@ -7,6 +7,8 @@ phase: phase-66-the-short-list
 
 ## G1 — H10: what moves to Shadow (D184)
 
+- [x] G1.5 revised 2026-10-03 from Shadow's own row-by-row answer: five rows moved, the parity list is five, and `SinkPort` is settled as a real gap
+
 - [x] G1.1 every contract from 0.38.0 to 0.44.0 classified: migrates, not planned, or unknown
 - [x] G1.2 the method written down so the next reader can repeat it — and so counting cannot mislead
 - [x] G1.3 D184 recorded; phase 65's history carries the finding
@@ -34,7 +36,12 @@ phase: phase-66-the-short-list
 
 ## G5 — H11's confirmed remainder
 
-- [ ] G5.1 whatever G2 found, built, in the owner's priority
+- [x] G5.1 **A** — the name resolved on every path (D176 made true on a CLI), and a dropped agent named on the thread, the record and the wire
+- [ ] G5.2 **B** — the agent's `system` and `tool_names` honoured on a CLI, intersected with the mode's and never widening
+- [ ] G5.3 **E** — `skill` on the row
+- [ ] G5.4 **C** — `plan` on the row
+- [ ] G5.5 **D** — `description` on the row
+- [x] G5.6 **F** — not built: `model` and `effort` stay on the mode (G2's recommendation, lane P and the owner agreed)
 
 ## G6 — H6–H8
 

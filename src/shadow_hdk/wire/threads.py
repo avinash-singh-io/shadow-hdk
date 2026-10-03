@@ -304,6 +304,10 @@ class ThreadMethods:
             # Which agent this run resolved to (D177) — empty where none applies, because a CLI
             # provider owns its own loop and naming one would be a claim the kit cannot make.
             "agent": getattr(thread, "agent", ""),
+            # And what it asked for and could not have (H11-A): a CLI provider owns its own
+            # loop, so a named agent is dropped there — which was silent until phase 66, and a
+            # product over the wire needs it exactly as much as one in process.
+            "agent_unhonoured": getattr(thread, "agent_unhonoured", ""),
             "plan_limits": _plan_limits_json(thread.plan_limits),
             "modes": await self._modes(host, thread),
             **_identity_json(thread),

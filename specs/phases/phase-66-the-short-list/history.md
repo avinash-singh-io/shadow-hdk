@@ -118,3 +118,54 @@ agent's instructions and tool narrowing. A flag would have been a way of keeping
 check any mode carrying an agent before pinning 0.45.x.
 
 ---
+### [DECISION] 2026-10-03 — H11-A: the name is resolved on every path, and a drop is named
+Topics: h11, agents, d176, honesty, wire
+Affects-phases: none
+Affects-specs: specs/phases/phase-66-the-short-list/tasks.md
+Detail: G5-A, in lane P's approved order. Two defects, one cause: `_agent_named` returned early
+whenever the host had no model — every CLI host — and `patterns.named`, which is the whole of D176's
+refusal, sat on the line *after* that return. So a mode naming `"reviewr"` on Claude Code or Codex
+was accepted in silence; D176's claim was true on a key-backed host and false on a CLI. Fixed by
+resolving before deciding, which costs one store lookup and makes the refusal true everywhere it is
+claimed.
+
+And a dropped agent is now named. `agent_unhonoured(wanted, chosen=)` is the counterpart of
+`agent_recorded`, and exactly one of the two is ever set: `agent` says what ran, the new field says
+what could not. It is on `ThreadRecord` so a resume reports it too, and it crosses in
+`thread/start`'s reply beside `agent`, because a product over the wire needs it as much as one in
+process. Before this a product that named an agent and received the CLI's own loop had no field to
+read at all — the shape of ENH-051 and BUG-229 both.
+
+The wire-parity invariant caught the new public property before it could ship unaccounted for, and
+one surviving mutation showed `wanted and not chosen` carried a redundant guard, now gone.
+
+---
+
+### [DISCOVERY] 2026-10-03 — D184 revised from Shadow's own reading; the parity list is five, not eight
+Topics: h10, d184, parity, shadow, sink-port
+Affects-phases: none
+Affects-specs: specs/planning/what-moves-to-shadow.md
+Detail: Shadow's session answered D184 row by row **from its source rather than its specs**, and
+five rows moved. The lesson is methodological and belongs in the file: **a spec grep answers *is this
+name present* and cannot answer *is this capability present under another name*.** Three of my eight
+"not planned" rows existed there under other words — `tools_offered` as plan grants, the tool face
+and a journaled per-turn projector narrowing; `silence_seconds` as a stall deadline reset by stream
+progress, with approvals as durable parked decisions (so D182's point holds there structurally);
+`update_plan`'s durable half as journaled `PlanRevisionAdmission`. Two more arrive before the alpha as
+**run templates** (64 G5.1), which are our agent rows minus store CRUD and minus the mode indirection.
+
+The remaining five are one group — file and shell tools — and Shadow has the **primitive** for every
+one, so none is a from-scratch build: the payload store answers H20's harder half directly, and
+owned async acts plus owned-resources-by-scope are the hard part of background jobs, checkpoints and
+worktrees. Who writes the component is an owner decision between Shadow's phase 59 and the product's
+adapter.
+
+And the `Unknown` row is settled in the direction that matters: **Shadow has no `SinkPort`
+equivalent and no phase names one**, so propose-never-commit is true there only vacuously — it holds
+none of the six kinds because it has none of the concepts. Shadow recommends a Proposal port; I
+recorded my own view that it should be built, because the gap is a governance boundary rather than a
+feature and phase 55 would otherwise journal a compaction a product expected to be proposed. The
+Codex fold is settled too: Shadow does not fold and forbids folding silently, so
+`instructions_in_prompt` is throwaway while the capability is met by its agent profile.
+
+---

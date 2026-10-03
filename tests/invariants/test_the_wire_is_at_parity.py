@@ -147,6 +147,9 @@ HANDLES_NOT_CROSSING: dict[str, str] = {
     "`thread/resume`, `thread/set_mode` and `thread/add_root`",
     "Thread.unmapped_behaviour": "crosses as `unmapped_behaviour` in the results of "
     "`thread/start`, `thread/resume`, `thread/set_mode` and `thread/add_root` (ENH-020)",
+    "Thread.agent_unhonoured": "crosses as `agent_unhonoured` in the result of `thread/start` "
+    "(H11-A), beside `agent`: a CLI provider owns its own loop, so an agent it was given is "
+    "dropped, and before phase 66 that was silent",
     "Thread.agent": "crosses as `agent` in the result of `thread/start` (D177), and is on the "
     "record `thread/resume` and `thread/list` return, which is what makes a resume restore it "
     "(D183); a property over the record rather than an operation of its own",

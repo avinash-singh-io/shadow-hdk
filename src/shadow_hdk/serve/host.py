@@ -33,6 +33,7 @@ from shadow_hdk.adapters.agent.patterns import (
     PatternRegistry,
     agent_recorded,
     agent_to_resume,
+    agent_unhonoured,
     store_patterns,
 )
 from shadow_hdk.adapters.basic import StdoutSink, SystemClock
@@ -487,12 +488,19 @@ class ServeHost:
         """A key-backed agent on the pattern this run asked for (D175, D176).
 
         `None` where this host has no model — a CLI provider owns its own loop, so an agent name
-        is not a thing the kit can honour there and the caller falls through to the provider.
+        is not a thing the kit can *run* there and the caller falls through to the provider.
         An unknown name raises `NoSuchAgent` **before** anything is opened or asked.
+
+        **The name is resolved on every path** (H11-A). Until phase 66 the early return came first,
+        so `patterns.named` — which is the whole of D176's refusal — never ran on a CLI host, and a
+        mode naming `"reviewr"` on Claude Code or Codex was accepted in silence. Resolving before
+        deciding costs one store-backed lookup and makes the refusal true everywhere it is claimed.
+        A name that resolves but cannot be run is reported rather than dropped quietly
+        (`agent_unhonoured`).
         """
+        pattern = await self.patterns.named(wanted) if wanted else single
         if self._handed_agent is not None or self._model is None:
             return None
-        pattern = await self.patterns.named(wanted) if wanted else single
         return ModelAgent(model=self._model, pattern=pattern)
 
     async def _open_candidate(
@@ -612,6 +620,9 @@ class ServeHost:
         # hash. Empty where no agent applies — a CLI provider owns its own loop, and saying
         # `single` there would be a claim about something the kit did not choose.
         resolved_agent = agent_recorded(wanted, chosen=chosen is not None)
+        # And what it asked for and could not have (H11-A): a CLI provider owns its own loop, so a
+        # named agent is dropped there — which was silent until this phase.
+        dropped_agent = agent_unhonoured(wanted, chosen=chosen is not None)
         handed, available, provider_capabilities, called = await self._provider_candidate(
             want, chosen
         )
@@ -672,6 +683,7 @@ class ServeHost:
             # On the record (D177, D183), so a resume restores it rather than falling through to
             # this host's default — which is what 0.43.0 did (BUG-234).
             agent_named=resolved_agent,
+            agent_unhonoured=dropped_agent,
             agent_override=agent or "",
             choose_agent=self._choosing_an_agent,
         )
