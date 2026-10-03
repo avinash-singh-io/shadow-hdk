@@ -29,7 +29,22 @@ from shadow_hdk.kernel import AgentSession, Dialect, Provider, ToolSource, Turn,
 from shadow_hdk.kernel.providers import Behaviour, instructions_for_prompt
 from shadow_hdk.runtime import current_run
 
-DEFAULT_TIMEOUT_S = 600.0
+DEFAULT_SILENCE_S = 1800.0
+"""How long a CLI may say **nothing** before its turn is given up (D182, BUG-233).
+
+Not a budget for the turn. Until phase 65 this was `DEFAULT_TIMEOUT_S = 600.0` wrapped around the
+whole wait, so a turn was failed for *taking long* — and the work products now hand these CLIs runs
+well past ten minutes. A turn is not a failure for being long; what a ceiling is for is a hung
+process, and a hang is silence.
+
+So the number means something different now, and it is a different number for that reason: leaving
+600 in place would have invited the next reader to assume nothing had changed. Half an hour between
+frames from a CLI that streams its thinking, its tool calls and its text is a hang by any reading.
+A mode may set its own (`Behaviour.silence_seconds`).
+"""
+
+DEFAULT_TIMEOUT_S = DEFAULT_SILENCE_S
+"""The old name, kept so a host that imported it still resolves. It no longer measures a turn."""
 STDERR_KEPT = 64 * 1024
 """How much of the CLI's stderr is kept: the tail, so the sentence that explains a failure is
 there and a megabyte of progress bars is not."""
@@ -62,7 +77,8 @@ class JsonlSession(AgentSession):
         env: Mapping[str, str],
         workspace: Path | None = None,
         tools: tuple[ToolSource, ...] = (),
-        timeout_s: float = DEFAULT_TIMEOUT_S,
+        silence_s: float = DEFAULT_SILENCE_S,
+        timeout_s: float | None = None,
         resume: str | None = None,
         unmapped: tuple[str, ...] = (),
         behaviour: Behaviour | None = None,
@@ -73,7 +89,15 @@ class JsonlSession(AgentSession):
         self._env = dict(env)
         self._workspace = workspace
         self._tools = tools
-        self._timeout_s = timeout_s
+        asked = behaviour.silence_seconds if behaviour is not None else None
+        self.silence_s = float(asked if asked else (timeout_s if timeout_s else silence_s))
+        """How long this CLI may say nothing (D182). The mode's own where it set one — it travels
+        on the behaviour, like `tools_offered`, because it is a field the kit honours itself rather
+        than one the CLI is handed. `timeout_s` is still accepted so a host that passed one is not
+        broken, and it now means the same thing the default does."""
+        self._deadline: asyncio.Timeout | None = None
+        """The running turn's silence deadline, held so time the kit spends answering the provider's
+        own call can be given back to it (`waited_for_us`)."""
         self._process: asyncio.subprocess.Process | None = None
         self._session_id: str | None = resume or None
         """The CLI's own session id — read off its stream where the dialect says, or handed in
@@ -171,19 +195,57 @@ class JsonlSession(AgentSession):
             process.stdin.close()
 
         try:
-            async with asyncio.timeout(self._timeout_s):
+            async with asyncio.timeout(self.silence_s) as deadline:
+                self._deadline = deadline
                 turn = await self._read_until_done(process)
         except TimeoutError:
             await self.close()
-            return Turn(
-                text=f"the provider did not finish within {self._timeout_s:g}s", failed=True
-            )
+            return Turn(text=f"the provider said nothing for {self.silence_s:g}s", failed=True)
+        finally:
+            self._deadline = None
 
         if not self._dialect.resident:
             await process.wait()
             await self._stderr_drained()
             self._process = None
         return turn
+
+    async def _a_line_from(self, process: asyncio.subprocess.Process) -> bytes:
+        """One frame, and the silence ceiling pushed out past it (D182, BUG-233).
+
+        **This is what makes the ceiling a gap rather than a total.** The deadline is rearmed after
+        every line the CLI writes, so a provider that keeps streaming is never given up on however
+        long the whole turn takes, and one that stops is given up on after `silence_s`.
+        """
+        assert process.stdout is not None
+        line = await process.stdout.readline()
+        if line:
+            self._push_the_deadline_out(self.silence_s)
+        return line
+
+    def waited_for_us(self, seconds: float) -> None:
+        """Give back time the kit spent answering this provider's own call (D182, BUG-233).
+
+        When the CLI calls a tool, the kit routes it through the run — judged, recorded, and where
+        the policy says so **put to the person, who may take twenty minutes** (D58). The CLI is
+        silent for all of it because it is waiting for *us*, so charging it to the provider's
+        patience failed the turn with *the provider did not finish* about a person who had not
+        answered yet.
+
+        Harmless with no turn running, and harmless called late: a host reporting a wait it has
+        already finished is giving back time that was already spent.
+        """
+        if seconds > 0:
+            self._push_the_deadline_out(seconds)
+
+    def _push_the_deadline_out(self, seconds: float) -> None:
+        deadline = self._deadline
+        if deadline is None:
+            return
+        when = deadline.when()
+        if when is None:
+            return
+        deadline.reschedule(asyncio.get_running_loop().time() + seconds)
 
     async def _stderr_drained(self) -> None:
         """Wait for the reader to see the pipe close, so what the CLI wrote last is on
@@ -199,7 +261,7 @@ class JsonlSession(AgentSession):
         said: list[str] = []
         thought_so_far: list[str] = []
         dialect = self._dialect
-        while line := await process.stdout.readline():
+        while line := await self._a_line_from(process):
             try:
                 event = json.loads(line)
             except (ValueError, UnicodeDecodeError):

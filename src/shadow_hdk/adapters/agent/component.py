@@ -62,7 +62,13 @@ from shadow_hdk.kernel.ports import (
     ToolCall,
     Usage,
 )
-from shadow_hdk.kernel.providers import Behaviour, carried_by, framed
+from shadow_hdk.kernel.providers import (
+    Behaviour,
+    carried_by,
+    framed,
+    narrowed,
+    unanswered,
+)
 from shadow_hdk.runtime import RunContext, current_run
 from shadow_hdk.runtime.children import PlanNotAdmitted
 
@@ -138,6 +144,7 @@ class _Turnwise:
         *,
         model: ModelPort | None = None,
         behaviour: Behaviour | None = None,
+        before: tuple[Message, ...] = (),
     ) -> None:
         self.agent = agent
         self.pattern = agent.pattern
@@ -151,6 +158,14 @@ class _Turnwise:
         self._turning = True
         """A model owned by an AgentPort adapter; absent means the run's ordinary ModelPort."""
         self.messages: list[Message] = []
+        self._before: tuple[Message, ...] = tuple(before)
+        """What this thread said in its earlier turns (D181, BUG-232). A key-backed loop is built
+        fresh for every turn, so the transcript has to arrive from the session that outlives it —
+        before this it did not arrive at all, and turn three could not see turns one and two."""
+        self._brief_at = 0
+        """Where this turn's own request sits once `work()` has laid the messages out. Compaction
+        keeps the role and the brief and drops the middle, and with a transcript in between those
+        two are no longer at indices 0 and 1."""
         self.held: dict[str, str] = {}
         """Results too large for the model's context; kept for the run, paged by `recall` (D47)."""
         self.spent = Usage(0, 0, 0)
@@ -179,7 +194,15 @@ class _Turnwise:
                         f"{', '.join(sorted(missing))}, which this deployment does not offer"
                     ),
                 )
-        self.messages = [Message("system", self._role(skill)), Message("user", brief)]
+        # **Role, then what was said, then what is being asked** (D181). The role is rebuilt every
+        # turn rather than carried, because a `set_mode` may have changed who the model is and a
+        # model handed three stale roles is being told three different things about itself.
+        self.messages = [
+            Message("system", self._role(skill)),
+            *self._before,
+            Message("user", brief),
+        ]
+        self._brief_at = len(self.messages) - 1
         # **Picking up where it parked** (D57, BUG-020). A tool call the policy asked about parked
         # this step with the transcript kept; the host has answered. The transcript comes back,
         # the answer goes into the held child, and the turn the model was on continues — it is not
@@ -325,12 +348,17 @@ class _Turnwise:
         return "\n\n".join(p for p in parts if p)
 
     async def catalogue(self) -> tuple[Interface, ...]:
-        """What the model sees: the policy's answer, this role's names, and the pattern's verbs.
+        """What the model sees: the policy's answer, this role's names, the mode's narrowing, and
+        the pattern's verbs.
 
         A registered tool named like a meta-tool is refused here, before the model is asked
         (BUG-001): every call whose name is in `BY_NAME` is routed to the meta handler, enabled by
         the pattern or not, so such a tool would be shadowed silently. A deployment's naming is not
         the model's to work around, and a rename on the fly would lie about the registration's id.
+
+        The mode's `tools_offered` narrows what is left, **last** (D178) — so it can only take
+        away, never widen past the policy or the role. The verbs are not narrowed: they are the
+        model's own, and a loop that cannot say `done` does not finish.
         """
         visible = [
             registration
@@ -356,6 +384,7 @@ class _Turnwise:
             if self.pattern.shows(registration.component.interface.name)
             and self._within_the_ceiling(registration)
         ]
+        tools = self._narrowed(tools)
         # Thinned only above the pattern's threshold (D13). The meta-tools are never thinned:
         # they are the model's own verbs, and a verb it has to ask about is a verb it will not use.
         # **And `describe` is offered whenever thinning is in effect**, whether the pattern enabled
@@ -366,6 +395,34 @@ class _Turnwise:
         if self.pattern.offload_over is not None:
             verbs.add(RECALL)  # a handle the model cannot follow is worse than the flood
         return thin(tools, self.pattern) + tuple(BY_NAME[name] for name in sorted(verbs))
+
+    def _narrowed(self, tools: list[Interface]) -> list[Interface]:
+        """The mode's `tools_offered`, applied to what the policy and the role left (D178, BUG-230).
+
+        Until phase 65 the field parsed and narrowed nothing while two honesty fields reported it
+        honoured. The derivation is the kernel's — `narrowed`/`unanswered` — and it is the same one
+        the registry uses for the list it serves a CLI, because there are two catalogues and two
+        that drifted is how the claim came to be false.
+
+        A name nothing answers to is **refused, naming it and saying what there is** (D179), by the
+        same cut as the meta-tool collision above: it is raised here, before any model is asked, and
+        it is raised rather than silently ignored because a narrowing that matches nothing narrows
+        nothing, so the typo would leave a turn looking right and running wide.
+
+        No early return for *no behaviour* or *no narrowing*: both derivations already answer
+        correctly for those, so a guard here was an equivalent mutant — a branch no test could
+        distinguish, found by one that deleted it and survived.
+        """
+        behaviour = self.behaviour
+        names = tuple(interface.name for interface in tools)
+        missing = unanswered(names, behaviour)
+        if missing:
+            raise ValueError(
+                f"the mode offers {', '.join(repr(n) for n in missing)}, which this run has no "
+                f"component for; it offers {', '.join(repr(n) for n in sorted(names))}"
+            )
+        kept = set(narrowed(names, behaviour))
+        return [interface for interface in tools if interface.name in kept]
 
     def _within_the_ceiling(self, registration: Registration) -> bool:
         """Whether this role could ever be permitted to use it (BUG-012).
@@ -469,8 +526,13 @@ class _Turnwise:
                 ),
             )
         )
-        # The role and the brief — `work()` puts them first and in that order.
-        kept = self.messages[:2]
+        # The role and this turn's own brief. `work()` used to put them at 0 and 1; with the
+        # thread's earlier turns between them (D181) the brief has moved, so its position is
+        # recorded rather than assumed — slicing `[:2]` would now summarise away the request and
+        # keep the oldest carried message instead.
+        kept = [self.messages[0]]
+        if 0 < self._brief_at < len(self.messages):
+            kept.append(self.messages[self._brief_at])
         self.messages = [
             *kept,
             Message("assistant", f"Summary of what happened before this point: {summary}"),
@@ -687,6 +749,7 @@ class _Turnwise:
             "nudged": self.nudged,
             "proposed": self.proposed,
             "turns": self.turns,
+            "brief_at": self._brief_at,
         }
 
     def _restore(self, kept: dict[str, Any]) -> None:
@@ -699,6 +762,7 @@ class _Turnwise:
         self.nudged = bool(kept.get("nudged", False))
         self.proposed = int(kept.get("proposed", 0))
         self.turns = int(kept.get("turns", 0))
+        self._brief_at = int(kept.get("brief_at", 1))
 
     async def _wake(self, handle: str, answer: Any) -> list[Event]:
         """The held child woken with the host's answer — or, if the person amended the plan

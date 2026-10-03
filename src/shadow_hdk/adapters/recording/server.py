@@ -70,7 +70,16 @@ class RecordingServer(Routing):
     # ------------------------------------------------------------------ what it offers
 
     async def tools(self) -> list[types.Tool]:
-        """`RunContext.visible()`, translated. Not a second list, and not a second policy."""
+        """`RunContext.visible()`, translated, as the parent and the mode leave it. Not a second
+        list, and not a second policy.
+
+        `shows` is the one predicate — what the parent withholds and what the mode narrowed to
+        (D178) — and it is the same one `call` enforces. **Both halves or neither**: narrowing the
+        call while leaving the listing wide shows a model tools it cannot use, so it picks one, is
+        told *no component named …*, and spends turns learning that. A listing narrowed while calls
+        stayed open is the mirror of it. Pinned by a test, because the first version of the
+        narrowing did exactly the first of those (BUG-235).
+        """
         context = self.context
         if context is None:
             return []
@@ -82,7 +91,7 @@ class RecordingServer(Routing):
                 or {"type": "object"},
             )
             for registration in await context.visible()
-            if registration.component.interface.name not in self.withheld
+            if self.shows(registration.component.interface.name)
         ]
 
     # ------------------------------------------------------------------ what it does

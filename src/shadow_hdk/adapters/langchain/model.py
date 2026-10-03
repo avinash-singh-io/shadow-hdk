@@ -51,6 +51,11 @@ class LangChainModel(ModelPort):
 
         self._chat: BaseChatModel = init_chat_model(spec, **kw)
         self._price = price
+        self._spec = spec
+        self._kw = dict(kw)
+        self._others: dict[str, BaseChatModel] = {}
+        """A chat model per spec a mode asked for, built once and kept (D180, BUG-231). A thread
+        running twenty turns on one mode must not construct twenty chat models."""
 
     @classmethod
     def over(cls, chat: BaseChatModel, *, price: Price | None = None) -> LangChainModel:
@@ -59,6 +64,9 @@ class LangChainModel(ModelPort):
         model = cls.__new__(cls)
         model._chat = chat
         model._price = price
+        model._spec = ""
+        model._kw = {}
+        model._others = {}
         return model
 
     # ------------------------------------------------------------------ the port
@@ -98,10 +106,46 @@ class LangChainModel(ModelPort):
 
     # ------------------------------------------------------------------ translation
 
-    def _bind(self, request: ModelRequest) -> Any:
-        if not request.tools:
+    @property
+    def selects_model(self) -> bool:
+        """Whether this port can answer a request that names a model other than its own (D180).
+
+        True for one built from a `spec`, because another spec is another `init_chat_model` call.
+        **False for one built by `over()`**: a chat model somebody else configured cannot be
+        re-specified, and answering as though it could is exactly the lie BUG-231 was. The run's
+        honesty field reads this, so a mode asking for a model it cannot have is told.
+        """
+        return bool(self._spec)
+
+    def _for(self, request: ModelRequest) -> BaseChatModel:
+        """The chat model this request asked for (D180, BUG-231).
+
+        `ModelRequest.model` carried a mode's `model` since phase 62 and **nothing read it** — the
+        request was built, the field set, and `_bind` returned whatever the host constructed. So a
+        product running one host with a cheap model for one mode and a strong one for another could
+        not, and `unmapped_for_a_model` named `effort` and `temperature` while dropping this in
+        silence.
+
+        A request naming nothing, or naming what was constructed, is answered by the constructed one
+        — byte for byte today's behaviour. Anything else is built once and cached, with the same
+        keyword arguments the host passed, because a `base_url` and an `api_key` are how an
+        OpenAI-compatible endpoint is reached and a second spec on the same endpoint still needs
+        them.
+        """
+        wanted = request.model
+        if not wanted or wanted == self._spec or not self._spec:
             return self._chat
-        return self._chat.bind_tools([_as_tool(interface) for interface in request.tools])
+        if wanted not in self._others:
+            from langchain.chat_models import init_chat_model
+
+            self._others[wanted] = init_chat_model(wanted, **self._kw)
+        return self._others[wanted]
+
+    def _bind(self, request: ModelRequest) -> Any:
+        chat = self._for(request)
+        if not request.tools:
+            return chat
+        return chat.bind_tools([_as_tool(interface) for interface in request.tools])
 
     def _response(self, answer: BaseMessage) -> ModelResponse:
         found = _usage_of(answer)

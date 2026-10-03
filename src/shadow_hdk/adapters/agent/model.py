@@ -13,6 +13,7 @@ from shadow_hdk.kernel import Behaviour, EffectProfile
 from shadow_hdk.kernel.observations import ApprovalRequest, Completed, Failed
 from shadow_hdk.kernel.ports import (
     AgentSession,
+    Message,
     ModelPort,
     ToolSource,
     Turn,
@@ -95,14 +96,31 @@ class _ModelSession:
         self._active: asyncio.Task[Any] | None = None
         self._interrupted = False
         self._loop: Any = None
-        self.unmapped: tuple[str, ...] = unmapped_for_a_model(behaviour)
-        """What this mode asked for that a `ModelRequest` has nowhere to put (BUG-229, D170).
+        self.before: tuple[Message, ...] = ()
+        """This thread's earlier turns, carried from one turn to the next (D181, BUG-232).
+
+        It lives here rather than on the loop because **the loop is built fresh for every turn** and
+        the session is what outlives them. Everything after the system message, so the role is
+        rebuilt per turn and a `set_mode` is not shadowed by a stale one.
+
+        Unbounded on purpose, for now: this is what every chat API does and what a product expects
+        of a thread. Fitting a transcript to a model's window is a budget and a compaction, which
+        are separate asks — ENH-052 records the interaction."""
+        self.unmapped: tuple[str, ...] = unmapped_for_a_model(
+            behaviour, selects_model=_selects_model(agent.model)
+        )
+        """What this mode asked for that this port cannot honour (BUG-229, D170, BUG-231).
 
         Read off the session by name in `Conversation` (ENH-020), exactly as a CLI's is. Before
         this a `_ModelSession` had no such attribute, so `getattr(session, "unmapped", ())`
         answered `()` — and a host read that as *your mode was honoured in full* while the
         instructions were being dropped. Empty was the one answer this must never give by
-        accident."""
+        accident.
+
+        `model` is now the port's answer rather than a constant (D180): one that can build a chat
+        model for another spec honours it, one wrapping a chat model somebody else configured cannot
+        and says so. Phase 62 reported it honoured unconditionally while the only real adapter
+        discarded it (BUG-231)."""
 
     async def turn(self, prompt: str) -> Turn:
         if self.closed:
@@ -138,6 +156,7 @@ class _ModelSession:
             # BUG-229: stored here since Phase 30 and read by nothing, so a mode's instructions
             # were dropped and the thread reported them honoured.
             behaviour=self.behaviour,
+            before=self.before,
         )
         # Held while the turn runs so `steer` has something to deliver into (ENH-046).
         self._loop = loop
@@ -146,6 +165,11 @@ class _ModelSession:
         finally:
             loop._turning = False  # noqa: SLF001 — two halves of this adapter
             self._loop = None
+            # Everything but the role, so the next turn reads what this one said (D181, BUG-232).
+            # Kept even on a failed or interrupted turn: a model that was asked something and
+            # answered badly was still asked it, and a transcript with the awkward parts removed is
+            # not the conversation that happened.
+            self.before = tuple(loop.messages[1:])
         while isinstance(observation, ApprovalRequest):
             answer = await context.request_approval(
                 observation.question,
@@ -230,3 +254,14 @@ def _optional_int(value: Any) -> int | None:
 
 
 __all__ = ["ModelAgent"]
+
+
+def _selects_model(port: Any) -> bool:
+    """Whether this `ModelPort` can answer a request naming a model other than its own (D180).
+
+    Asked of the port rather than assumed, and **defaulting to true**: `model` is a `ModelRequest`
+    field, so a port is expected to read it, and a port that says nothing is taken at its word. The
+    kit's own adapter is the one that has to be accurate, and it is — `LangChainModel.selects_model`
+    is false exactly where it wraps a chat model it cannot re-specify.
+    """
+    return bool(getattr(port, "selects_model", True))
