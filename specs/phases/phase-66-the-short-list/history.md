@@ -429,3 +429,27 @@ Affects-specs: none
 Detail: Full gate passed with disposable PostgreSQL: 2,260 passed, 8 skipped, 24 deselected, lint/format/types clean. Six new cases pass against a fresh installed wheel and ten mutations bite. Schemas and TypeScript regenerate without drift; H7/H8 remain and owner publication is pending.
 
 ---
+
+### [DISCOVERY] 2026-10-04 — H7 confirmed as BUG-239
+Topics: provider-interruption, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Claude Code advertises native interrupt but its dialect sends no line, so cancellation closes the process. The cancelled reader also leaves interrupted frames for the next turn if only a line is added; verify both transport and turn boundaries before fixing. Official SDK control-request format checked.
+
+---
+
+### [NOTE] 2026-10-04 — H7 repaired and measured live
+Topics: provider-interruption, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Two new cases failed first, then passed; all 74 JSONL cases pass and seven mutants bite. Claude Code 2.1.187 accepted interruption, kept the same process and session, and answered the following turn with SECOND_OK. Prepare 0.47.2 separately; full gate and installed verification underway.
+
+---
+
+### [NOTE] 2026-10-04 — H7 checkpoint verified for 0.47.2
+Topics: provider-interruption, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed: 2,264 passed, 8 skipped, 24 deselected with disposable PostgreSQL; lint/format/types clean. Four final installed-wheel cases pass and eight mutants bite; the completion-during-write case guards the cleared boundary. Source and installed live Claude Code 2.1.187 keep their process/session and answer the following turn. H8 remains; publication is pending.
+
+---

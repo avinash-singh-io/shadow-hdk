@@ -107,6 +107,8 @@ class JsonlSession(AgentSession):
         """The running turn's silence deadline, held so time the kit spends answering the provider's
         own call can be given back to it (`waited_for_us`)."""
         self._process: asyncio.subprocess.Process | None = None
+        self._interrupted = False
+        """A told interrupt still owes its terminal frame before another turn (BUG-239)."""
         self._session_id: str | None = resume or None
         """The CLI's own session id — read off its stream where the dialect says, or handed in
         to resume (D76): the first process is started with the dialect's resume flag, so a
@@ -196,17 +198,22 @@ class JsonlSession(AgentSession):
         process = self._process
         assert process.stdin is not None and process.stdout is not None
 
-        process.stdin.write(self._written(self._told(prompt)))
-        await process.stdin.drain()
-        self._owed_instructions = ""  # written, so never owed again (Epic 0011 Q1)
-        if not self._dialect.resident:
-            process.stdin.close()
-
         self.rearmed = 0
         try:
             async with asyncio.timeout(self.silence_s) as deadline:
                 self._deadline = deadline
+                if self._interrupted:
+                    # The cancelled reader left the old result in the pipe. It belongs to the
+                    # interrupted turn, never to this run's answer or activity (BUG-239).
+                    await self._read_until_done(process, report=False)
+                    self._interrupted = False
+                process.stdin.write(self._written(self._told(prompt)))
+                await process.stdin.drain()
+                self._owed_instructions = ""  # written, so never owed again (Epic 0011 Q1)
+                if not self._dialect.resident:
+                    process.stdin.close()
                 turn = await self._read_until_done(process)
+                self._interrupted = False
         except TimeoutError:
             await self.close()
             return Turn(text=f"the provider said nothing for {self.silence_s:g}s", failed=True)
@@ -266,7 +273,9 @@ class JsonlSession(AgentSession):
                 async with asyncio.timeout(2):
                     await reader
 
-    async def _read_until_done(self, process: asyncio.subprocess.Process) -> Turn:
+    async def _read_until_done(
+        self, process: asyncio.subprocess.Process, *, report: bool = True
+    ) -> Turn:
         assert process.stdout is not None
         said: list[str] = []
         thought_so_far: list[str] = []
@@ -294,7 +303,7 @@ class JsonlSession(AgentSession):
                     if thought in thought_so_far:
                         continue
                     thought_so_far.append(thought)
-                    if (context := current_run()) is not None:
+                    if report and (context := current_run()) is not None:
                         await context.reasoning(thought)
             if dialect.deltas and matches(event, kind, dialect.delta_on, dialect.subtype_key):
                 # **What is happening, beside the record** (D63). A streamed piece of thinking or
@@ -304,7 +313,7 @@ class JsonlSession(AgentSession):
                 for delta in dialect.deltas:
                     if delta.on == which:
                         piece = read_at(event, delta.at)
-                        if piece and (context := current_run()) is not None:
+                        if report and piece and (context := current_run()) is not None:
                             await context.activity(delta.kind, str(piece))
             if matches(event, kind, dialect.say_on, dialect.subtype_key):
                 said += texts_at(event, dialect.say_at)
@@ -377,12 +386,14 @@ class JsonlSession(AgentSession):
         if not line or process is None or process.stdin is None or process.stdin.is_closing():
             return False
         process.stdin.write(line.encode() + b"\n")
+        self._interrupted = True
         await process.stdin.drain()
         return True
 
     async def close(self) -> None:
         """Ending the session ends the tree it started (D35)."""
         process, self._process = self._process, None
+        self._interrupted = False
         if process is None or process.returncode is not None:
             await self._stderr_drained()
             return

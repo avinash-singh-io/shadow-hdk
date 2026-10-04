@@ -1,0 +1,2 @@
+version: 2.1.187 (Claude Code)
+interrupt accepted: True same process: True next failed: False next reply: SECOND_OK session retained: True

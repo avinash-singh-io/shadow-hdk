@@ -1,0 +1,8 @@
+BITES  'interrupt_line = ""'  -> 1 failed in 0.55s
+BITES  'if False:\n                    # The cancelled reader'  -> 1 failed in 0.53s
+BITES  'await self._read_until_done(process, report=True)'  -> 1 failed in 0.57s
+BITES  'if (context := current_run()) is not None:'  -> 1 failed in 0.60s
+BITES  'if piece and (context := current_run()) is not None:'  -> 1 failed in 0.66s
+BITES  'self._interrupted = True\n        await process.stdin.drain()\n        r'  -> 1 failed in 0.53s
+BITES  'if self._process is not None and self._interrupted:\n            await '  -> 1 failed in 0.60s
+BITES  'await process.stdin.drain()\n        self._interrupted = True'  -> 1 failed, 2 passed in 1.03s

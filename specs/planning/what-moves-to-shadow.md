@@ -115,6 +115,8 @@ D184 requires every bridge phase to add its contracts here before closing. Phase
 | `Pattern.description` and stored description on agents/list | 0.47.0 candidate (H11-D), not published | descriptions belong with run templates; retain human-readable presentation metadata, not HDK's prompt-derived fallback as a required successor contract |
 | PostgreSQL `prepared=True` default | 0.45.0 candidate, not published | trusted provisioning separated from DDL-free runtime is a generic storage-adapter boundary; no runtime file-and-shell operation is inherited |
 
+| Native interruption preserving session and turn boundaries (existing contract repaired) | 0.47.2 candidate (H7/BUG-239), not published | **Unknown implementation parity.** The turn boundary is generic; the provider JSONL control line is adapter data and throwaway. No successor implementation is inferred from HDK's source and live verification |
+
 ## Not planned, and a real gap — `SinkPort` and proposals
 
 This was D184's *Unknown* row and it is now settled, in the direction that matters most.
