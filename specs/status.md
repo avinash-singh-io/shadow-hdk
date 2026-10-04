@@ -4,6 +4,13 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — 0.47.2 candidate verified, not published.** H7/BUG-239 repairs native
+> interruption and the cancelled-turn boundary. Full gate: 2,264 passed, 8 skipped;
+> lint/format/types clean. Four installed-wheel cases pass; eight mutations bite. Live Claude Code
+> 2.1.187, on source and installed wheel, keeps its process/session and answers the following turn.
+> Frozen candidates must publish parent-first through 0.47.2. H8 remains. Latest published
+> release remains **0.44.1**.
+
 > **2026-10-04 — 0.47.1 candidate verified, not published.** H6/BUG-238 repairs typed decoding
 > of mode-document fragments before shared prompt assembly. The existing wire store path already
 > carries them. Full gate: 2,260 passed, 8 skipped; lint/format/types clean. Six new cases pass on
@@ -238,7 +245,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | 0.47.1 verified, owner landing pending | G1–G5 done; H6 fixed; H7/H8 remain; release checkpoints in G7 |
+| 66 — the short list | `phase-66-the-short-list` | 0.47.2 verified, owner landing pending | G1–G5 done; H6/H7 fixed; H8 remains; release checkpoints in G7 |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 
