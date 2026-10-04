@@ -1,0 +1,62 @@
+RECHECK shadow-045-mutations.py
+DEPENDENCY ANCHOR             missing = missing_for(skill, await self.ctx.visible())
+BITES  '"no_skill",'  -> 1 failed in 0.46s
+BITES  'skill=None,'  -> 1 failed in 0.40s
+BITES  'skill: str | None = "unexpected"'  -> 1 failed in 0.40s
+BITES  'return None\n        have ='  -> 1 failed, 3 passed in 0.41s
+BITES  'unknown skill; there is: {have}'  -> 1 failed, 1 passed in 0.41s
+BITES  'there is: unavailable'  -> 1 failed, 1 passed in 0.41s
+BITES  'skill=None)'  -> 1 failed, 3 passed in 0.40s
+BITES  'if False'  -> 1 failed, 4 passed in 0.41s
+BITES  'if True'  -> 1 failed, 5 passed in 0.41s
+BITES  'self.unmapped_behaviour = tuple(getattr(self._agent_carries, "unhonour'  -> 1 failed, 8 passed in 0.62s
+BITES  'self.unmapped_behaviour += ()'  -> 1 failed, 8 passed in 0.61s
+BITES  'missing = frozenset()'  -> 1 failed, 7 passed in 0.60s
+BITES  'prepared: bool = False'  -> 1 failed in 0.27s
+BITES  'prepared: bool = False'  -> 1 failed, 1 passed in 0.24s
+BITES  'prepared: bool = False'  -> 1 failed, 2 passed in 0.25s
+BITES  'prepared: bool = False'  -> 1 failed, 4 passed in 0.25s
+BITES  'if prepared:'  -> 1 failed, 4 passed in 0.24s
+BITES  'if not self._prepared:'  -> 1 failed in 0.25s
+BITES  'self._ready = True\n\n\n__all__'  -> 1 failed in 0.24s
+RECHECK shadow-c-mutate.py
+BITES  'plan=None,'  -> 1 failed in 0.21s
+BITES  'plan=PlanLimits(steps=0),'  -> 1 failed in 0.20s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.21s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.20s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.20s
+BITES  'plan=PlanLimits(),'  -> 1 failed in 0.23s
+BITES  'plan=None,'  -> 1 failed in 0.24s
+BITES  'plan=PlanLimits(steps=0),'  -> 1 failed in 0.24s
+BITES  '"plan", "absorb",'  -> 1 failed in 0.21s
+BITES  '"plan", "offload_over",'  -> 1 failed in 0.21s
+RECHECK shadow-d-mutate.py
+BITES  'description=None,'  -> 1 failed in 0.22s
+BITES  'system=str(data.get("description", "")).strip(),'  -> 1 failed in 0.21s
+BITES  'description: str | None = "unexpected"'  -> 1 failed in 0.21s
+BITES  'if False'  -> 1 failed in 0.21s
+BITES  'if p.description'  -> 1 failed in 0.22s
+BITES  'if True'  -> 1 failed in 0.22s
+BITES  'if True'  -> 1 failed in 0.22s
+RECHECK shadow-h6-mutate.py
+BITES  'made["fragments"] = ()'  -> 1 failed in 0.23s
+BITES  'made["fragments"] = tuple(reversed(load(json.dumps(made["fragments"]),'  -> 1 failed in 0.22s
+BITES  'made["fragments"] = tuple(Fragment(name="wrong", text=f.text, source=f'  -> 1 failed in 0.22s
+BITES  'made["fragments"] = tuple(Fragment(name=f.name, text="wrong", source=f'  -> 1 failed in 0.22s
+BITES  'made["fragments"] = tuple(Fragment(name=f.name, text=f.text) for f in '  -> 1 failed in 0.23s
+BITES  'made["fragments"] = load(json.dumps(made["fragments"]), tuple[Fragment'  -> 1 failed, 1 passed in 0.24s
+BITES  'pass'  -> 1 failed in 0.22s
+BITES  'pass'  -> 1 failed in 0.22s
+BITES  'pass'  -> 1 failed in 0.22s
+BITES  'pass'  -> 1 failed in 0.22s
+RECHECK shadow-h7-mutate.py
+BITES  'interrupt_line = ""'  -> 1 failed in 0.88s
+BITES  'if False:\n                    # The cancelled reader'  -> 1 failed in 0.42s
+BITES  'await self._read_until_done(process, report=True)'  -> 1 failed in 0.41s
+BITES  'if (context := current_run()) is not None:'  -> 1 failed in 0.42s
+BITES  'if piece and (context := current_run()) is not None:'  -> 1 failed in 0.43s
+BITES  'self._interrupted = True\n        await process.stdin.drain()\n        r'  -> 1 failed in 0.43s
+BITES  'if self._process is not None and self._interrupted:\n            await '  -> 1 failed in 0.46s
+BITES  'await process.stdin.drain()\n        self._interrupted = True'  -> 1 failed, 2 passed in 0.83s
+RECHECK E procedure prompt
+BITES  'parts.append("")'  -> 1 failed, 6 passed in 0.52s

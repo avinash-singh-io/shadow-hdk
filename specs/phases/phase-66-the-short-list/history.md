@@ -453,3 +453,43 @@ Affects-specs: none
 Detail: Full gate passed: 2,264 passed, 8 skipped, 24 deselected with disposable PostgreSQL; lint/format/types clean. Four final installed-wheel cases pass and eight mutants bite; the completion-during-write case guards the cleared boundary. Source and installed live Claude Code 2.1.187 keep their process/session and answer the following turn. H8 remains; publication is pending.
 
 ---
+
+### [DISCOVERY] 2026-10-04 — H8 confirmed as BUG-240
+Topics: usage-accounting, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: The loop initializes, aggregates and emits only three usage fields; the model-session adapter reconstructs only those three. Cache counters already exist in Usage and runtime metering, so repair the adapter path and prove model responses through thread records and wire output, separately as 0.47.3.
+
+---
+
+### [DISCOVERY] 2026-10-04 — TD-021, mutation bytecode cache
+Topics: testing, usage-accounting
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Same-size source edits in one second can reuse cached bytecode in a new Python process; a three-read reproduction reports 1, 1, then 2 after cache removal. File TD-021 and verify this train with source bytecode cleared before every anchored mutant and writes disabled. H8's twenty mutations now bite; earlier checkpoint assertions are being rechecked under that precaution.
+
+---
+
+### [NOTE] 2026-10-04 — H8 adapter path repaired test-first
+Topics: usage-accounting, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Nine new cases failed before production changes; ten now pass on source and a fresh installed wheel outside checkout. Twenty H8 mutants and all 55 earlier train mutants bite with source caches cleared before each. Existing runtime metering and wire shapes suffice; prepare 0.47.3 separately, with full gate underway.
+
+---
+
+### [NOTE] 2026-10-04 — Correct the verified stale BUG-237 status
+Topics: postgres, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: The backlog still marked BUG-237 open although its ad-hoc record documents v0.44.1 and both published distributions. Fresh GitHub release evidence confirms v0.44.1 published, non-draft, and still latest; correct only the row's status/phase cells, preserving its historical detail. The default flip is separately verified in the 0.45.0 candidate.
+
+---
+
+### [NOTE] 2026-10-04 — H8 verified; authorized train preparation complete
+Topics: usage-accounting, release-train
+Affects-phases: phase-66-the-short-list
+Affects-specs: none
+Detail: Full gate passed with disposable PostgreSQL: 2,274 passed, 8 skipped, 24 deselected; lint/format/types clean. Ten installed cases, twenty H8 mutants and all 55 earlier train mutants pass the cache-safe check. G1–G6 implementation is complete; prepare frozen 0.47.3 and audit all candidate refs/notes/evidence. G7 owner publication and phase closure remain outside this goal's authorization.
+
+---

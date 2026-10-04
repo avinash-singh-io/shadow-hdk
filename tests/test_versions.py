@@ -18,8 +18,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.47.2"
-"""0.47.2 — H7/BUG-239: native interruption uses the existing dialect control line and
+EXPECTED = "0.47.3"
+"""0.47.3 — H8/BUG-240: model-loop usage retains existing cache read/write counters
+through aggregation, component output, model-session reconstruction and thread metering. Known
+zero and unknown remain distinct. Existing Usage contract repaired; patch, no Pins row (D9).
+
+0.47.2 — H7/BUG-239: native interruption uses the existing dialect control line and
 drains interrupted terminal frames without reporting them into the next run. Process/session
 identity and turn boundaries survive. Existing contracts; patch, no Pins row (D9).
 
