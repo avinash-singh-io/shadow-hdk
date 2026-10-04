@@ -561,3 +561,15 @@ Python 3.12 installation outside checkout imports and answers initialize. Linux 
 x86_64 and aarch64 resolutions each pull the exact matching helper.
 
 Release: https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.2. Evidence: `evidence/published-0.47.2.json`.
+
+## Published 0.47.3 — 2026-10-04
+
+Owner explicitly authorized all six versions in this chat. Staging → main landed parent-first;
+the package sources match the frozen candidate. The release retains the verified CLI-independent
+wire-test repair. Merged-tree lint, format and strict types pass; 2274 passed, 8 skipped, 24 deselected, 85 warnings in 210.51s (0:03:30)
+Publish workflow 37180839795 is green, including installed Linux confinement. Both PyPI distributions
+have all seven files; downloaded hashes and 165 wheel Python sources match the tag. A fresh
+Python 3.12 installation outside checkout imports and answers initialize. Linux manylinux2014
+x86_64 and aarch64 resolutions each pull the exact matching helper.
+
+Release: https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.3. Evidence: `evidence/published-0.47.3.json`.
