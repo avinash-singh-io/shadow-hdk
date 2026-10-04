@@ -10,6 +10,12 @@ type: Roadmap
 >
 > **Start Date**: 2026-09-10
 
+## Maintenance delivery — 2026-10-04
+
+Phase 66, the short list, is complete and published as six separate versions: 0.45.0, 0.46.0,
+0.47.0, 0.47.1, 0.47.2 and 0.47.3. This closes the approved HDK maintenance scope; native
+delivery stays in the canonical sibling roadmap linked above.
+
 ## Vision
 
 **Shadow** is the umbrella framework for building and running agents, workflows and custom

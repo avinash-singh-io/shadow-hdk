@@ -1,0 +1,38 @@
+[
+  {
+    "version": "0.45.0",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37160034400"
+  },
+  {
+    "version": "0.46.0",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37160648652"
+  },
+  {
+    "version": "0.47.0",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37161642730"
+  },
+  {
+    "version": "0.47.1",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37179194036"
+  },
+  {
+    "version": "0.47.2",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37180063858"
+  },
+  {
+    "version": "0.47.3",
+    "files_on_pypi": 7,
+    "package_files_compared_in_each_kit_artifact": 182,
+    "publish_run": "37180839795"
+  }
+]

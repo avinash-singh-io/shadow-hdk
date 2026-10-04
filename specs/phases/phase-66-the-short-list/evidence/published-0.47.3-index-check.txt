@@ -1,0 +1,25 @@
+{
+  "shadow-hdk": {
+    "version": "0.47.3",
+    "files": [
+      "shadow_hdk-0.47.3-py3-none-any.whl",
+      "shadow_hdk-0.47.3.tar.gz"
+    ]
+  },
+  "shadow-hdk-linux-sandbox": {
+    "version": "0.47.3",
+    "files": [
+      "shadow_hdk_linux_sandbox-0.47.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+      "shadow_hdk_linux_sandbox-0.47.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "shadow_hdk_linux_sandbox-0.47.3-py3-none-musllinux_1_2_aarch64.whl",
+      "shadow_hdk_linux_sandbox-0.47.3-py3-none-musllinux_1_2_x86_64.whl",
+      "shadow_hdk_linux_sandbox-0.47.3.tar.gz"
+    ]
+  },
+  "wheel_sources_match_tag": 165
+}
+Using Python 3.12.13 environment at: /tmp/shadow-published-0.47.3/fresh
+Checked 1 package in 30ms
+Published package 0.47.3 imports and answers initialize; protocol 3
+shadow-hdk-linux-sandbox==0.47.3
+shadow-hdk-linux-sandbox==0.47.3

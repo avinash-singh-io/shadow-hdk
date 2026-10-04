@@ -52,10 +52,10 @@ phase: phase-66-the-short-list
 
 ## G7 — the release train
 
-- [/] G7.1 the migration note
-- [/] G7.2 version, changelog, status, history, retrospective with verification evidence
-- [/] G7.3 the reply to lane P in `specs/epics/`
-- [/] G7.4 the full gate green, output read from a file
+- [x] G7.1 the migration note
+- [x] G7.2 version, changelog, status, history, retrospective with verification evidence
+- [x] G7.3 the reply to lane P in `specs/epics/`
+- [x] G7.4 the full gate green, output read from a file
 
 ## 0.45.0 checkpoint — E plus the required default change
 
@@ -64,7 +64,7 @@ phase: phase-66-the-short-list
 - [x] mutation checks bite; remove the redundant internal preparation default
 - [x] migration table updated for E, with C and D left unbuilt
 - [x] full gate and installed-artifact check: 2,238 passed; 17 new cases pass on installed wheel
-- [ ] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
+- [x] owner protected landing, tag and GitHub Release; verify both published distributions afterwards
 
 G7 closes only when the train is complete. This checkpoint does not close the phase.
 
@@ -73,38 +73,38 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] source confirmed and reported before implementation; six cases red, ten new cases green
 - [x] ten anchored mutations bite; installed-wheel behaviour verified outside checkout
 - [x] full gate: 2,248 passed with disposable PostgreSQL; migration table and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
 ## 0.47.0 checkpoint — D
 
 - [x] source confirmed before implementation; five cases red, six new cases green
 - [x] seven mutations bite; installed chooser behaviour verified outside checkout
 - [x] full gate: 2,254 passed with disposable PostgreSQL; migration table and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
 ## 0.47.1 checkpoint — H6 / BUG-238
 
 - [x] source confirmed and reported before implementation; five cases red, six green
 - [x] existing wire-store path proved; ten mutations bite; six installed-wheel cases pass
 - [x] full gate: 2,260 passed with disposable PostgreSQL; D184 map and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
 ## 0.47.2 checkpoint — H7 / BUG-239
 
 - [x] source confirmed and reported before implementation; two cases red, four final cases green
 - [x] eight mutations bite; four installed-wheel cases pass; live same-process/session next-turn check passes on source and installed wheel
 - [x] full gate: 2,264 passed with disposable PostgreSQL; D184 map and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
 ## 0.47.3 checkpoint — H8 / BUG-240
 
 - [x] source confirmed and reported before implementation; nine cases red, ten green
 - [x] twenty mutations bite; ten installed-wheel cases pass; all 55 earlier train checks rechecked with source caches cleared
 - [x] full gate: 2,274 passed with disposable PostgreSQL; D184 map and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
-## Authorized implementation and release preparation complete
+## Implementation and release complete
 
 G1–G6 are complete. Every release has a version, migration note, full gate, installed-package
-behaviour proof and concrete owner commands. G7 remains in progress solely for owner-controlled
-landing/publication and phase closure. See the release-train index in the epic replies.
+behaviour proof and concrete owner commands. G7 is complete: all six versions are merged,
+published and independently verified. See the release-train index in the epic replies.

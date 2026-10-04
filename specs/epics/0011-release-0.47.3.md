@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.47.3 candidate, H8 / BUG-240
 
+**Published and verified:** [v0.47.3](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.3),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.47.3.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Not published. Existing cache read/write counters now survive the key-backed loop's aggregation,
 output and model-session reconstruction, reaching persisted records and existing wire events.
 See [`0.47.3.md`](../../docs/migrations/0.47.3.md). Known zero and unknown stay distinct.

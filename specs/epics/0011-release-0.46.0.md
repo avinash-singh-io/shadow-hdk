@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.46.0 candidate, H11-C
 
+**Published and verified:** [v0.46.0](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.46.0),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.46.0.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Not published. The new item is stored plan-limit parsing through the existing contract parser;
 actual planned execution changes under a stored bound. All three axes parse, absent or null
 limits defer to the run, malformed values refuse, and loop-tuning knobs remain excluded.

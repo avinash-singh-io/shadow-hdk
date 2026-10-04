@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.45.0 release candidate
 
+**Published and verified:** [v0.45.0](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.45.0),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.45.0.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Prepared on `phase-66-the-short-list`; **not published**. The owner must perform protected
 landings, tag and publish before lane P changes its pin. See the migration note
 [`0.45.md`](../../docs/migrations/0.45.md).

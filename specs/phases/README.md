@@ -53,6 +53,7 @@ plan/tasks/history files are created when implementation starts.
 | **44** | **Tools as code, from any language** | **Complete, v0.32.0 release** | `phase-44-tools-as-code` |
 | **41** | **Linux confinement** (Epic 0010) | **Complete, v0.33.0 release** | `phase-41-linux-confinement` |
 | **45** | **Truth both ways** | **Complete, v0.34.0 release** | `phase-45-truth-both-ways` |
+| **66** | **The short list** | **Complete, merged and published — v0.45.0 through v0.47.3** | `phase-66-the-short-list` |
 
 ## Phase Structure
 

@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.47.1 candidate, H6 / BUG-238
 
+**Published and verified:** [v0.47.1](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.1),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.47.1.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Not published. Mode fragments now decode before the shared prompt assembler reads them.
 The crash is confirmed; the audit's missing-wire-path claim is not: existing store/put already
 carries these rows. See [`0.47.1.md`](../../docs/migrations/0.47.1.md).

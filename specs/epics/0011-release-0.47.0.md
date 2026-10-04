@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.47.0 candidate, H11-D
 
+**Published and verified:** [v0.47.0](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.0),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.47.0.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Not published. A stored description now reaches the existing agents-list reply, while absent
 or null retains today's fallback and role instructions stay separate. See
 [`0.47.md`](../../docs/migrations/0.47.md). The migration table records D as built; H6–H8 remain.
