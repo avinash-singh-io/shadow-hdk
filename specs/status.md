@@ -4,6 +4,15 @@ type: Status
 
 # Project Status
 
+> **Latest Release: v0.47.3 — published and verified, 2026-10-04.** Phase 66 is complete.
+> All six versions landed staging → main in order. All six publication workflows are green;
+> every release has all seven PyPI files, a verified fresh index installation, and exact helper
+> resolution on Linux x86_64 and aarch64. The final merged-tree gate passed 2,274 tests, with
+> 8 skipped and 24 live cases deselected; lint, formatting and strict types pass.
+> Product pins remain owned by the product lane. TD-021 remains separate tooling work.
+
+**Historical checkpoint notes follow; their pending-release statements describe preparation.**
+
 > **2026-10-04 — v0.47.3 published and verified.** All seven PyPI files and a fresh index
 > installation verified outside CI; Linux resolves the matching helper on both architectures.
 > Release workflow 37180839795 is green. The remaining frozen versions continue parent-first.
@@ -260,6 +269,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 | 44 | Tools as code, from any language | Complete, merged | **v0.32.0** |
 | 41 | Linux confinement (Epic 0010) | Complete, merged | **v0.33.0** |
 | 45 | Truth both ways | Complete, merged | **v0.34.0** |
+| 66 | The short list | Complete, merged and published | **v0.45.0, v0.46.0, v0.47.0, v0.47.1, v0.47.2, v0.47.3** |
 
 ## Ad-hoc / Patch Releases
 
@@ -288,7 +298,6 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | implementation/preparation complete; owner release pending | G1–G6 done; 0.45.0 through 0.47.3 separately verified; G7 owner publication pending |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

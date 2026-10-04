@@ -573,3 +573,21 @@ Python 3.12 installation outside checkout imports and answers initialize. Linux 
 x86_64 and aarch64 resolutions each pull the exact matching helper.
 
 Release: https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.3. Evidence: `evidence/published-0.47.3.json`.
+
+## Phase 66 complete — 2026-10-04
+
+All six versions are merged and published in order. G1–G7 are complete. Final merged-tree
+gate: 2,274 passed, 8 skipped, 24 live cases deselected. All six clean-runner CI and publication
+workflows pass. All 42 PyPI distribution files and 990 kit Python wheel sources were checked
+against their hashes and tags. Six fresh index installations answer initialize; each version
+resolves the matching Linux helper on x86_64 and aarch64. Published status and BUG-238/239/240
+closures now reflect verified releases. Closure changes only specifications; runtime/package
+sources stay byte-identical to v0.47.3. Product pins and excluded native scope stay in their
+own lanes. TD-021 remains open.
+
+### Final package audit and tracking gate
+
+All 182 tracked package files, including the provider records, match each tag in both the
+kit wheel and source archive. All 42 published file hashes match PyPI. The closure tracking
+tree passed the full local gate: 2,274 passed, 8 skipped, 24 live cases deselected; lint,
+formatting and strict types pass. Only specifications differ from v0.47.3.

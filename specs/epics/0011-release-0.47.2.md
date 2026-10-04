@@ -4,6 +4,12 @@ type: Reply
 
 # Lane H — 0.47.2 candidate, H7 / BUG-239
 
+**Published and verified:** [v0.47.2](https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.2),
+2026-10-04. The prepared branch is merged. All seven PyPI files, fresh installation and Linux
+helper resolution are verified; see `../phases/phase-66-the-short-list/evidence/published-0.47.2.json`.
+
+**Historical preparation snapshot follows. Its pending status and commands precede publication.**
+
 Not published. Native interruption now sends the configured control line and drains the old
 terminal frame before the next prompt, preserving the process without leaking old activity.
 See [`0.47.2.md`](../../docs/migrations/0.47.2.md). Live checked on Claude Code 2.1.187.

@@ -25,5 +25,7 @@
   },
   "publish_run": "37160648652",
   "local_gate": "=== 2248 passed, 8 skipped, 24 deselected, 85 warnings in 198.09s (0:03:18) ====",
-  "main_commit": "d731bc09f46b7630865d76bdba4f9978fea1ecea"
+  "main_commit": "d731bc09f46b7630865d76bdba4f9978fea1ecea",
+  "frozen_candidate_commit": "df83606d2b612c8f1b6ff92bd141d2c8a0958d7e",
+  "all_package_files_match_tag_in_wheel_and_sdist": 182
 }

@@ -52,10 +52,10 @@ phase: phase-66-the-short-list
 
 ## G7 — the release train
 
-- [/] G7.1 the migration note
-- [/] G7.2 version, changelog, status, history, retrospective with verification evidence
-- [/] G7.3 the reply to lane P in `specs/epics/`
-- [/] G7.4 the full gate green, output read from a file
+- [x] G7.1 the migration note
+- [x] G7.2 version, changelog, status, history, retrospective with verification evidence
+- [x] G7.3 the reply to lane P in `specs/epics/`
+- [x] G7.4 the full gate green, output read from a file
 
 ## 0.45.0 checkpoint — E plus the required default change
 
@@ -103,8 +103,8 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] full gate: 2,274 passed with disposable PostgreSQL; D184 map and lane P note updated
 - [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
-## Authorized implementation and release preparation complete
+## Implementation and release complete
 
 G1–G6 are complete. Every release has a version, migration note, full gate, installed-package
-behaviour proof and concrete owner commands. G7 remains in progress solely for owner-controlled
-landing/publication and phase closure. See the release-train index in the epic replies.
+behaviour proof and concrete owner commands. G7 is complete: all six versions are merged,
+published and independently verified. See the release-train index in the epic replies.

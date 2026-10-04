@@ -16,16 +16,10 @@
       "shadow_hdk_linux_sandbox-0.47.3.tar.gz"
     ]
   },
-  "wheel_sources_match_tag": 165,
-  "github_release": {
-    "isDraft": false,
-    "publishedAt": "2026-10-04T05:46:13Z",
-    "tagName": "v0.47.3",
-    "url": "https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.3"
-  },
-  "publish_run": "37180839795",
-  "local_gate": "=== 2274 passed, 8 skipped, 24 deselected, 85 warnings in 210.51s (0:03:30) ====",
-  "main_commit": "53c2d78a8fe9bf4d6d9a61bcd320f6824606b01e",
-  "frozen_candidate_commit": "251990fd9a0eef791b6a8dff86792c5d134e8640",
-  "all_package_files_match_tag_in_wheel_and_sdist": 182
+  "wheel_sources_match_tag": 165
 }
+Using Python 3.12.13 environment at: /tmp/shadow-published-0.47.3/fresh
+Checked 1 package in 30ms
+Published package 0.47.3 imports and answers initialize; protocol 3
+shadow-hdk-linux-sandbox==0.47.3
+shadow-hdk-linux-sandbox==0.47.3

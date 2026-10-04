@@ -2,11 +2,12 @@
 type: Reply
 ---
 
-# Lane H — approved implementation and release preparation complete
+# Lane H — six versions published and verified
 
-**Not published.** Six independent release candidates are frozen and pushed, in the order below.
-Latest published release remains 0.44.1, confirmed from GitHub release state on 2026-10-04.
-The phase remains open for owner landing, publication and closure; no product pin changed.
+**Published and verified on 2026-10-04.** All six versions landed staging → main, were tagged
+and published on GitHub and PyPI in order. Latest published release is **v0.47.3**. Phase 66
+is complete. All 42 distribution files, six fresh installs and both Linux helper resolutions
+per version are verified. The prepared candidate branches are merged; no product pin changed.
 
 | order | candidate branch | item | full gate passed | new installed cases | anchored mutations | owner note |
 |---|---|---|---:|---:|---:|---|
@@ -59,10 +60,10 @@ and supplies tag/Release commands. Stop on any mismatch and gate the changed tre
 moving phase branch as a substitute. Proposed merged trees match the gated candidates; recheck
 when landing because upstream can change.
 
-Protected pushes, approval sentinels, tags, GitHub Releases, product pins and final phase closure
-are the owner's actions. None was performed by this preparation. After each publication, verify
-both distributions and all seven files, the matching Linux helper, and a fresh install outside CI
-before proceeding to the next candidate. G7 stays open for these actions; G1–G6 are complete.
+The owner explicitly delegated all six landings and publications in this chat. Protected pushes,
+tags and GitHub Releases were executed after their gates. Both distributions, all seven files,
+matching Linux helpers and fresh installs outside CI were verified before each next landing.
+G1–G7 are complete. Product pin updates remain with the product lane.
 
 ## Published 0.45.0 — 2026-10-04
 
@@ -135,3 +136,10 @@ Python 3.12 installation outside checkout imports and answers initialize. Linux 
 x86_64 and aarch64 resolutions each pull the exact matching helper.
 
 Release: https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.3. Evidence: `evidence/published-0.47.3.json`.
+
+## Final publication audit
+
+[All six publication records](../phases/phase-66-the-short-list/evidence/release-train-published-audit.json)
+verify all 42 file hashes. Every tracked package file (182 per version) matches its tag in
+both wheel and source archive. [Closure gate](../phases/phase-66-the-short-list/evidence/release-train-closure-gate.txt)
+passes with 2,274 tests, 8 skipped and 24 live cases deselected.
