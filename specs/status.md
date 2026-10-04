@@ -4,6 +4,14 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — authorized Phase 66 implementation and release preparation complete.**
+> H8/BUG-240 is verified in the **0.47.3 candidate**, with 2,274 passed, 8 skipped and clean
+> lint/format/types. Ten installed-wheel cases pass; twenty H8 mutations bite, and all 55 earlier
+> train mutations were rechecked with bytecode caches cleared. C, D, H6, H7 and H8 are separate
+> candidates. Parent-first owner landing/publication remains; the phase stays open for that work.
+> Latest published release remains **0.44.1**. TD-021 records the testing-tool cache issue;
+> verification uses a confirmed workaround. No product pin changed.
+
 > **2026-10-04 — 0.47.2 candidate verified, not published.** H7/BUG-239 repairs native
 > interruption and the cancelled-turn boundary. Full gate: 2,264 passed, 8 skipped;
 > lint/format/types clean. Four installed-wheel cases pass; eight mutations bite. Live Claude Code
@@ -245,7 +253,7 @@ the new engine becomes the default. Documentation approval has not started Phase
 |-------|--------|--------|----------|
 | 64 — an agent is data (Epic 0011) | `phase-64-an-agent-is-data` | released as v0.43.0 | 5/5 groups |
 | 65 — the claims are true | `phase-65-the-claims-are-true` | released as v0.44.0 | 6/6 groups |
-| 66 — the short list | `phase-66-the-short-list` | 0.47.2 verified, owner landing pending | G1–G5 done; H6/H7 fixed; H8 remains; release checkpoints in G7 |
+| 66 — the short list | `phase-66-the-short-list` | implementation/preparation complete; owner release pending | G1–G6 done; 0.45.0 through 0.47.3 separately verified; G7 owner publication pending |
 
 > None. Epic 0011's phases 59–63 are all landed on `main` and released — see the checkpoints below.
 

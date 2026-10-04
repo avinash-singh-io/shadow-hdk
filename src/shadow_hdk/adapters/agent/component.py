@@ -168,7 +168,7 @@ class _Turnwise:
         two are no longer at indices 0 and 1."""
         self.held: dict[str, str] = {}
         """Results too large for the model's context; kept for the run, paged by `recall` (D47)."""
-        self.spent = Usage(0, 0, 0)
+        self.spent = Usage(0, 0, 0, 0, 0)
         self.nudged = False
         self.proposed = 0
         self.turns = 0
@@ -841,6 +841,8 @@ class _Turnwise:
             input_tokens=_add(self.spent.input_tokens, usage.input_tokens),
             output_tokens=_add(self.spent.output_tokens, usage.output_tokens),
             cost_cents=_add(self.spent.cost_cents, usage.cost_cents),
+            cache_read_tokens=_add(self.spent.cache_read_tokens, usage.cache_read_tokens),
+            cache_write_tokens=_add(self.spent.cache_write_tokens, usage.cache_write_tokens),
         )
 
     def finished(self, reason: str, *, text: str = "") -> Observation:
@@ -859,6 +861,8 @@ class _Turnwise:
                     "input_tokens": self.spent.input_tokens,
                     "output_tokens": self.spent.output_tokens,
                     "cost_cents": self.spent.cost_cents,
+                    "cache_read_tokens": self.spent.cache_read_tokens,
+                    "cache_write_tokens": self.spent.cache_write_tokens,
                 },
             }
         )

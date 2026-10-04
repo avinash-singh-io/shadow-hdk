@@ -47,8 +47,8 @@ phase: phase-66-the-short-list
 
 - [x] G6.1 H6 confirm: fragments in a mode document, and over the wire
 - [x] G6.2 H7 confirm: interrupting Claude Code without ending the session
-- [ ] G6.3 H8 confirm: cache tokens on the key-backed loop
-- [ ] G6.4 fix what is confirmed; report what is not
+- [x] G6.3 H8 confirm: cache tokens on the key-backed loop
+- [x] G6.4 fix what is confirmed; report what is not
 
 ## G7 — the release train
 
@@ -95,3 +95,16 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] eight mutations bite; four installed-wheel cases pass; live same-process/session next-turn check passes on source and installed wheel
 - [x] full gate: 2,264 passed with disposable PostgreSQL; D184 map and lane P note updated
 - [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+
+## 0.47.3 checkpoint — H8 / BUG-240
+
+- [x] source confirmed and reported before implementation; nine cases red, ten green
+- [x] twenty mutations bite; ten installed-wheel cases pass; all 55 earlier train checks rechecked with source caches cleared
+- [x] full gate: 2,274 passed with disposable PostgreSQL; D184 map and lane P note updated
+- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+
+## Authorized implementation and release preparation complete
+
+G1–G6 are complete. Every release has a version, migration note, full gate, installed-package
+behaviour proof and concrete owner commands. G7 remains in progress solely for owner-controlled
+landing/publication and phase closure. See the release-train index in the epic replies.
