@@ -1,10 +1,20 @@
 ---
 type: Retrospective
 phase: phase-66-the-short-list
-status: in-progress
+status: complete
 ---
 
-# Phase 66 — 0.45.0 checkpoint, phase still open
+# Phase 66 — release train complete
+
+All six releases are merged and published, and their seven-file and fresh-install evidence is
+recorded in `evidence/published-*.json` and `published-*-index-check.txt`. Local full gates ran
+on each merged tree before its tag. Each clean-runner CI and publication workflow passed.
+The wire test had depended on an installed vendor CLI; a guarded red reproduction exposed it,
+and a handed CLI port fixed the test without changing package code. Both assertions kill their
+mutations. Index propagation delayed some fresh installations; only the final install job was
+restarted for 0.46.0, 0.47.1 and 0.47.2, then passed. TD-021 remains explicitly open with its workaround.
+
+## Historical checkpoint notes
 
 The first train checkpoint adds E, ships the previously gated unreleased changes and applies the
 mandated DDL-free PostgreSQL default. C, D and H6–H8 remain for separate releases. This is release
@@ -134,3 +144,362 @@ PostgreSQL: 2,274 passed, 8 skipped, 24 deselected; lint/format/types clean. All
 sources match the wheel. Wheel/sdist build; schema/client regeneration has no drift. Separate
 release notes and parent-first owner commands cover every candidate. Owner landing/publication
 remain, so the phase is not closed and no candidate is claimed published.
+
+
+## Final Verification Evidence
+
+### Merged-tree 0.45.0: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2238 passed, 8 skipped, 24 deselected, 85 warnings in 188.91s (0:03:08) ====
+```
+
+### Merged-tree 0.46.0: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2248 passed, 8 skipped, 24 deselected, 85 warnings in 198.09s (0:03:18) ====
+```
+
+### Merged-tree 0.47.0: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2254 passed, 8 skipped, 24 deselected, 85 warnings in 216.82s (0:03:36) ====
+```
+
+### Merged-tree 0.47.1: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2260 passed, 8 skipped, 24 deselected, 85 warnings in 210.57s (0:03:30) ====
+```
+
+### Merged-tree 0.47.2: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2264 passed, 8 skipped, 24 deselected, 85 warnings in 198.34s (0:03:18) ====
+```
+
+### Merged-tree 0.47.3: lint, format, mypy and pytest — exit 0
+
+Commands: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy`,
+`uv run pytest`, with the disposable PostgreSQL URLs configured.
+
+```text
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:192: DeprecationWarning: sys_interval is deprecated, use 'plugins' to define configuration
+    warnings.warn("sys_interval is deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/amqtt/contexts.py:196: DeprecationWarning: 'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration
+    warnings.warn("'auth' and 'topic-check' are deprecated, use 'plugins' to define configuration",
+
+tests/adapters/mqtt/test_environment.py: 3 warnings
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:41: DeprecationWarning: Loading plugins from EntryPoints is deprecated and will be removed in a future version. Use `plugins` section of config instead.
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_refuses_us_is_a_connection_error_naming_the_refusal
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:34: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py: 1 warning
+tests/adapters/mqtt/test_mqtt.py: 12 warnings
+tests/adapters/mqtt/test_review_findings.py: 6 warnings
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/conftest.py:70: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/adapters/mqtt/test_environment.py::test_a_broker_that_leaves_fails_the_act_and_nothing_is_sent_when_it_is_back
+  /Users/avinash/Workspace/Projects/shadow-hdk/tests/adapters/mqtt/test_environment.py:65: DeprecationWarning: `BrokerSysPlugin`: `psutil` will be removed as a project-level dependency in future versions. Please explicitly update your environment to use the optional dependency to ensure compatibility: 'amqtt[dollarsys]'
+
+tests/kernel/test_an_adapter_is_built_once_per_type.py::test_a_type_never_seen_is_built_once_and_then_never_again
+  /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/pydantic/type_adapter.py:677: UserWarning: Pydantic serializer warnings:
+    PydanticSerializationUnexpectedValue(Defaulting to left to right union serialization - failed to get discriminator value for tagged union serialization [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Started` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Composed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Invoked` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `EffectRecorded` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Observed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Proposed` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Refused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ApprovalRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `InputRequested` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Spawned` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanAdmitted` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `PlanRefused` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Held` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `UsageReported` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Reasoning` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `ModeChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `WorkspaceChanged` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    PydanticSerializationUnexpectedValue(Expected `Ended` - serialized value may not be as expected [input_value=Completed(output='ok', kind='completed'), input_type=Completed])
+    return self.serializer.to_json(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=== 2274 passed, 8 skipped, 24 deselected, 85 warnings in 210.51s (0:03:30) ====
+```
+
+## Closure gate — exit 0
+
+All 182 tracked package files match the release tag in both wheel and sdist for every
+version, including provider TOML records and skill data. All 42 file hashes still match PyPI.
+The final tracking tree passed lint, format, strict types and the full suite with disposable
+PostgreSQL: 2,274 passed, 8 skipped, 24 live cases deselected, 85 warnings.
+Raw output: `evidence/release-train-closure-gate.txt`.
