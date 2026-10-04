@@ -94,7 +94,7 @@ G7 closes only when the train is complete. This checkpoint does not close the ph
 - [x] source confirmed and reported before implementation; two cases red, four final cases green
 - [x] eight mutations bite; four installed-wheel cases pass; live same-process/session next-turn check passes on source and installed wheel
 - [x] full gate: 2,264 passed with disposable PostgreSQL; D184 map and lane P note updated
-- [ ] owner parent-first landing, tag, publication and fresh-install/seven-file verification
+- [x] owner parent-first landing, tag, publication and fresh-install/seven-file verification
 
 ## 0.47.3 checkpoint — H8 / BUG-240
 

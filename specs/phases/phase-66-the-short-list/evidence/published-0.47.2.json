@@ -1,0 +1,29 @@
+{
+  "shadow-hdk": {
+    "version": "0.47.2",
+    "files": [
+      "shadow_hdk-0.47.2-py3-none-any.whl",
+      "shadow_hdk-0.47.2.tar.gz"
+    ]
+  },
+  "shadow-hdk-linux-sandbox": {
+    "version": "0.47.2",
+    "files": [
+      "shadow_hdk_linux_sandbox-0.47.2-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+      "shadow_hdk_linux_sandbox-0.47.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "shadow_hdk_linux_sandbox-0.47.2-py3-none-musllinux_1_2_aarch64.whl",
+      "shadow_hdk_linux_sandbox-0.47.2-py3-none-musllinux_1_2_x86_64.whl",
+      "shadow_hdk_linux_sandbox-0.47.2.tar.gz"
+    ]
+  },
+  "wheel_sources_match_tag": 165,
+  "github_release": {
+    "isDraft": false,
+    "publishedAt": "2026-10-04T05:29:59Z",
+    "tagName": "v0.47.2",
+    "url": "https://github.com/avinash-singh-io/shadow-hdk/releases/tag/v0.47.2"
+  },
+  "publish_run": "37180063858",
+  "local_gate": "=== 2264 passed, 8 skipped, 24 deselected, 85 warnings in 198.34s (0:03:18) ====",
+  "main_commit": "5d81151b26ba6aa6648c15197e7f720c4cba5026"
+}

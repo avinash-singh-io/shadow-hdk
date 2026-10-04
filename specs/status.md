@@ -4,6 +4,11 @@ type: Status
 
 # Project Status
 
+> **2026-10-04 — v0.47.2 published and verified.** All seven PyPI files and a fresh index
+> installation verified outside CI; Linux resolves the matching helper on both architectures.
+> Release workflow 37180063858 is green. The remaining frozen versions continue parent-first.
+
+
 > **2026-10-04 — v0.47.1 published and verified.** All seven PyPI files and a fresh index
 > installation verified outside CI; Linux resolves the matching helper on both architectures.
 > Release workflow 37179194036 is green. The remaining frozen versions continue parent-first.
