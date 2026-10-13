@@ -8,3 +8,11 @@
 
 - [VERIFY] Group 1: production socket/relay mode-switch regression plus existing controls, 10 passed. Removing forwarding kills both catalogue/call and execution assertions; source restored byte-for-byte, 2 restored controls pass.
 - [DISCOVERY] okf index regeneration removed curated decision records; restored the prior curated indexes rather than accepting that unrelated deletion.
+
+### [SCOPE_CHANGE] 2026-10-13 — Owner expands the next release to optional primitives
+Topics: browser, background-jobs, host-access, test-results, codex, component-packs
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/project-rules.md#D190
+Detail: The owner explicitly authorizes adding a browser, N-W1/N-W5/N-W6 and Codex audited reads to the next release, using validated open-source engines under optional ports. This supersedes the original maintenance-only exclusion; interactive PTY and product changes remain out. The active goal continues until this expanded acceptance and publication are verified.
+
+---

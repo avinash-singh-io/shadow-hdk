@@ -4,4 +4,8 @@
 - [/] Group 2: custom branch ownership and lifecycle red/green/mutations.
 - [ ] Group 3: ignore-aware large-repository search red/green/mutations.
 - [ ] Group 4: incremental private history, targeted restore, measurements and mutations.
-- [ ] Group 5: full acceptance, package verification, CI, publication and cleanup.
+- [/] Group 5: open-source selection, optional contracts, image delivery and resource lifecycle.
+- [ ] Group 6: isolated governed browser pack and real browser controls.
+- [ ] Group 7: background jobs, person/host command-file door and structured test results.
+- [ ] Group 8: Codex native-read correction and audited CLI verification.
+- [ ] Group 9: full acceptance, package verification, CI, publication and cleanup.
