@@ -1,26 +1,5 @@
 # Phases
 
-## Upcoming — native foundation and onward
-
-* [46 — Architecture proof and contract baseline](/phases/phase-46-architecture-proof/overview.md) - planned, not started
-* [47 — Native Core and durable execution](/phases/phase-47-native-core-and-runtime/overview.md) - planned, not started
-* [48 — Components and execution strategies](/phases/phase-48-components-and-strategies/overview.md) - planned, not started
-* [49 — Public APIs and language integration](/phases/phase-49-sdks-and-embedding/overview.md) - planned, not started
-* [50 — Windows lifecycle and capabilities](/phases/phase-50-windows-lifecycle/overview.md) - planned, not started
-* [51 — Native distribution](/phases/phase-51-native-distribution/overview.md) - planned, not started
-* [52 — Migration and native release acceptance](/phases/phase-52-native-migration/overview.md) - planned, not started
-* [53 — The harness as data](/phases/phase-53-the-harness-as-data/overview.md) - planned, not started
-* [54 — The durable run request](/phases/phase-54-the-durable-run-request/overview.md) - planned, not started
-* [55 — Context engineering](/phases/phase-55-context-engineering/overview.md) - planned, not started
-* [56 — The UI plane](/phases/phase-56-the-ui-plane/overview.md) - planned, not started
-* [57 — Collaboration](/phases/phase-57-collaboration/overview.md) - planned, not started
-* [58 — Evaluation and governed evolution](/phases/phase-58-evaluation-and-evolution/overview.md) - planned, not started
-
-See [phase identities](/planning/phase-map.md) for old planned IDs. These overviews carry
-outcomes and dependencies; plans/tasks/history are derived at phase start.
-
-## Completed — identities unchanged
-
 * [phase-0-the-runtime](/phases/phase-0-the-runtime/overview.md) - complete
 * [phase-1-real-adapters](/phases/phase-1-real-adapters/overview.md) - complete
 * [phase-10-effect-rules](/phases/phase-10-effect-rules/overview.md) - complete
@@ -54,8 +33,30 @@ outcomes and dependencies; plans/tasks/history are derived at phase start.
 * [phase-41-linux-confinement](/phases/phase-41-linux-confinement/overview.md) - complete
 * [phase-44-tools-as-code](/phases/phase-44-tools-as-code/overview.md) - complete
 * [phase-45-truth-both-ways](/phases/phase-45-truth-both-ways/overview.md) - complete
+* [phase-46-architecture-proof](/phases/phase-46-architecture-proof/overview.md) - planned
+* [phase-47-native-core-and-runtime](/phases/phase-47-native-core-and-runtime/overview.md) - planned
+* [phase-48-components-and-strategies](/phases/phase-48-components-and-strategies/overview.md) - planned
+* [phase-49-sdks-and-embedding](/phases/phase-49-sdks-and-embedding/overview.md) - planned
 * [phase-5-the-recording-server](/phases/phase-5-the-recording-server/overview.md) - complete
+* [phase-50-windows-lifecycle](/phases/phase-50-windows-lifecycle/overview.md) - planned
+* [phase-51-native-distribution](/phases/phase-51-native-distribution/overview.md) - planned
+* [phase-52-native-migration](/phases/phase-52-native-migration/overview.md) - planned
+* [phase-53-the-harness-as-data](/phases/phase-53-the-harness-as-data/overview.md) - planned
+* [phase-54-the-durable-run-request](/phases/phase-54-the-durable-run-request/overview.md) - planned
+* [phase-55-context-engineering](/phases/phase-55-context-engineering/overview.md) - planned
+* [phase-56-the-ui-plane](/phases/phase-56-the-ui-plane/overview.md) - planned
+* [phase-57-collaboration](/phases/phase-57-collaboration/overview.md) - planned
+* [phase-58-evaluation-and-evolution](/phases/phase-58-evaluation-and-evolution/overview.md) - planned
+* [phase-59-a-change-on-the-record](/phases/phase-59-a-change-on-the-record/overview.md) - in-progress
 * [phase-6-the-compiler-complete](/phases/phase-6-the-compiler-complete/overview.md) - complete
+* [phase-60-the-write-class-completes](/phases/phase-60-the-write-class-completes/overview.md) - in-progress
+* [phase-61-undo-and-an-agents-own-workspace](/phases/phase-61-undo-and-an-agents-own-workspace/overview.md) - in-progress
+* [phase-62-what-a-run-carries](/phases/phase-62-what-a-run-carries/overview.md) - in-progress
+* [phase-63-visible-and-steerable](/phases/phase-63-visible-and-steerable/overview.md) - in-progress
+* [phase-64-an-agent-is-data](/phases/phase-64-an-agent-is-data/overview.md) - in-progress
+* [phase-65-the-claims-are-true](/phases/phase-65-the-claims-are-true/overview.md) - in-progress
+* [phase-66-the-short-list](/phases/phase-66-the-short-list/overview.md) - complete
+* [phase-67-workbench-corrections](/phases/phase-67-workbench-corrections/overview.md) - in-progress
 * [phase-7-sub-agents](/phases/phase-7-sub-agents/overview.md) - complete
 * [phase-8-patterns-skills-replay](/phases/phase-8-patterns-skills-replay/overview.md) - complete
 * [phase-9-the-wire](/phases/phase-9-the-wire/overview.md) - complete
