@@ -77,6 +77,14 @@ class SocketOffer:
     def holder(self) -> RecordingServer:
         return self._holder
 
+    @property
+    def narrowing(self) -> tuple[str, ...]:
+        """The mode's narrowing, on the server answering both listings and calls (N-W0)."""
+        return self._holder.narrowing
+
+    def narrow_to(self, names: tuple[str, ...]) -> None:
+        self._holder.narrow_to(names)
+
     def attach(self, context: RunContext) -> None:
         self._holder.attach(context)
 

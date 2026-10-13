@@ -1,0 +1,48 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio] ____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-357/test_socket_narrows_listing_an0')
+
+    async def test_socket_narrows_listing_and_calls_again_after_mode_switch(tmp_path: Path) -> None:
+        ran: list[str] = []
+        async def read(_: Any) -> Completed:
+            ran.append('read')
+            return Completed('read')
+        async def write(_: Any) -> Completed:
+            ran.append('write')
+            return Completed('write')
+        cli = SocketCli()
+        thread = await Thread.open(
+            agent=cast(Any, cli),
+            registry=SocketOffer(withhold={'turn'}),
+            ports=Ports(model=None, components=(InMemoryComponents([
+                (make_registration('read_it'), read), (make_registration('write_it'), write)
+            ]),), governance=AllowAll(), sink=ListSink(), clock=FixedClock()),
+            store=InMemoryThreads(), root=tmp_path,
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+            modes=ModeRegistry((
+                ModeSpec.of('read', behaviour=Behaviour(tools_offered=('read_it',))),
+                ModeSpec.of('write', behaviour=Behaviour(tools_offered=('write_it',))),
+                ModeSpec.of('all'),
+            )), mode='read',
+        )
+        try:
+            for mode in ('read', 'write', 'all'):
+                if mode != 'read':
+                    await thread.set_mode(mode)
+                async for _ in thread.turn('go'):
+                    pass
+        finally:
+            await thread.close()
+>       assert cli.seen == [['read_it'], False, True, ['write_it'], True, False,
+                            ['read_it', 'write_it'], False, False]
+E       AssertionError: assert [['read_it', ...e, False, ...] == [['read_it'],...e, False, ...]
+E         
+E         At index 0 diff: ['read_it', 'write_it'] != ['read_it']
+E         Use -v to get more diff
+
+tests/adapters/recording/test_a_socket_offer_honours_modes.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/recording/test_a_socket_offer_honours_modes.py::test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio]
+1 failed in 7.89s
