@@ -35,6 +35,8 @@ WIRE = PACKAGES / "wire"
 
 #: import root → the distribution that provides it (the name a `pip install` line uses).
 PROVIDED_BY: dict[str, str] = {
+    "filelock": "filelock",
+    "pathspec": "pathspec",
     "pydantic": "pydantic",
     "langgraph": "langgraph",
     "mcp": "mcp",

@@ -23,9 +23,11 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "pydantic>=2.9",                      # the kernel's one dependency: the published contracts
+    "pydantic>=2.12",                      # the kernel's one dependency: the published contracts
     "langgraph>=1.2,<2",                  # the runtime: a composition compiles to a graph
     "mcp>=2.0,<3",                        # MCP servers as components; the registry offered as one
+    "filelock>=3.16,<4",                  # serialize private Git history caches across processes
+    "pathspec>=0.12,<2",                  # portable nested .gitignore semantics for search
     "anyio>=4",                           # the wire, the recording server, the batteries
     "agent-client-protocol>=0.12,<1",     # the ACP transport — OpenCode, anything Zed-compatible
     "starlette>=0.37",                    # `shadow-hdk serve --http`: the loopback listener with SSE
