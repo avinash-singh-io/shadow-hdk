@@ -1,0 +1,26 @@
+{
+  "routed": [],
+  "hits": [
+    [
+      0,
+      "/direct"
+    ],
+    [
+      0,
+      "/chain"
+    ],
+    [
+      1,
+      "/chain"
+    ],
+    [
+      0,
+      "/page"
+    ]
+  ],
+  "sockets": [],
+  "errors": [],
+  "snapshot": "- heading \"Local app\" [level=1]\n- img",
+  "image_bytes": 7688,
+  "blocked_hits": []
+}

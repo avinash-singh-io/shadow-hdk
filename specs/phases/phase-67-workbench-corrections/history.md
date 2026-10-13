@@ -16,3 +16,19 @@ Affects-specs: specs/project-rules.md#D190
 Detail: The owner explicitly authorizes adding a browser, N-W1/N-W5/N-W6 and Codex audited reads to the next release, using validated open-source engines under optional ports. This supersedes the original maintenance-only exclusion; interactive PTY and product changes remain out. The active goal continues until this expanded acceptance and publication are verified.
 
 ---
+
+### [DISCOVERY] 2026-10-13 — A routing allowlist leaks through a second redirect
+Topics: browser, origin-policy
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md
+Detail: A real isolated Chromium 1.63.0 probe observed a blocked server receive a request through an allowed-to-allowed-to-denied redirect chain. Context routing with fetch(max_redirects=0) plus checking each visible Location is insufficient because the browser's subsequent redirect bypasses that handler. The candidate is rejected; origin enforcement needs an independent interception/proxy boundary and the same counterexample must pass before the browser ships.
+
+---
+
+### [FEATURE] 2026-10-13 — Corrections and initial image contracts verified
+Topics: worktrees, search, snapshots, images, resources
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/developer-guide.md, specs/architecture/overview.md
+Detail: Host-named branch controls and seven ownership mutations pass; a recreated checkout with the same path/branch is distinguished by a private Git-administration birth marker, including the default-prefix path. Ignore-aware search and history mutations pass, with a 100k tracked + 100k ignored CI benchmark control below all budgets. The current generic image/wire/resource candidate passed a full suite of 2,293 tests (29 skipped, 25 deselected), with fresh lint/format/types; after the birth-marker correction, 24 worktree controls pass. Group 5 remains in progress: resource lifetime through parked approvals and multi-turn sessions still requires acceptance before the browser ships.
+
+---
