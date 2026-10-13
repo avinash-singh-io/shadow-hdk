@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________________ test_an_older_host_has_the_no_resource_default ________________
+
+    async def test_an_older_host_has_the_no_resource_default() -> None:
+        from typing import Any, cast
+    
+        from shadow_hdk.wire.peer import Peer, RemoteError
+        from shadow_hdk.wire.remote import RemoteComponents
+    
+        class Older:
+            async def call(self, method: str, params: Any) -> Any:
+                raise RemoteError(-32601, "unknown method")
+    
+        try:
+            answer = await RemoteComponents(cast(Peer, Older())).release_run("root")
+        except RemoteError as error:
+            answer = error.code  # type: ignore[assignment]
+>       assert answer is None
+E       assert -32601 is None
+
+tests/wire/test_images_and_resources.py:77: AssertionError
+=========================== short test summary info ============================
+FAILED tests/wire/test_images_and_resources.py::test_an_older_host_has_the_no_resource_default
+1 failed in 0.39s

@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_a_cleanup_failure_is_a_failed_run_with_its_reason ____________
+
+    async def test_a_cleanup_failure_is_a_failed_run_with_its_reason() -> None:
+        port = Managed(fail=True)
+        events = await collect(port)
+>       assert (events[-1].reason, events[-1].detail, port.closed) == (
+            "failed",
+            "resource cleanup failed: RuntimeError: cleanup sentinel",
+            [events[0].run_id],
+        )
+E       AssertionError: assert ('completed',..., ['id-0001']) == ('failed', 'r..., ['id-0001'])
+E         
+E         At index 0 diff: 'completed' != 'failed'
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:71: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_run_resources.py::test_a_cleanup_failure_is_a_failed_run_with_its_reason
+1 failed in 0.07s

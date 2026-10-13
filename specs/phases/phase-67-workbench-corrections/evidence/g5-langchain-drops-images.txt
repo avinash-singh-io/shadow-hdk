@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_langchain_and_mcp_preserve_image_blocks _________________
+
+    def test_langchain_and_mcp_preserve_image_blocks() -> None:
+        message = Message("tool", "page", "c1", images=(PNG,))
+        native = _to_langchain((message,))[0]
+        wire = _as_result(Completed({"caption": "page"}, images=(PNG,)))
+>       assert (native.content, [(b.type, getattr(b, "data", None)) for b in wire.content]) == (
+            [
+                {"type": "text", "text": "page"},
+                {"type": "image_url", "image_url": {"url": "data:image/png;base64," + PNG.data}},
+            ],
+            [("text", None), ("image", PNG.data)],
+        )
+E       AssertionError: assert ('page', [('t...BORw0KGgo=')]) == ([{'type': 't...BORw0KGgo=')])
+E         
+E         At index 0 diff: 'page' != [{'type': 'text', 'text': 'page'}, {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,iVBORw0KGgo='}}]
+E         Use -v to get more diff
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:116: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_langchain_and_mcp_preserve_image_blocks
+1 failed in 0.35s

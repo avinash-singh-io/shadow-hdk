@@ -1,0 +1,33 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_a_crossed_component_sees_its_resource_scope_and_closes_with_the_run ___
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/wire/test_images_and_resources.py", line 14, in test_a_crossed_component_sees_its_resource_scope_and_closes_with_the_run
+  |     async with loopback(ports) as (host, _):
+  |                ~~~~~~~~^^^^^^^
+  |   File "/Users/avinash/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/contextlib.py", line 235, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/wire/sides.py", line 515, in loopback
+  |     async with anyio.create_task_group() as group:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/wire/sides.py", line 519, in loopback
+    |     yield host, runtime
+    |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/wire/test_images_and_resources.py", line 21, in test_a_crossed_component_sees_its_resource_scope_and_closes_with_the_run
+    |     assert (seen, picture.scopes, picture.released) == (
+    |     ...<3 lines>...
+    |     )
+    | AssertionError: assert ([Completed(o...id-0001'], []) == ([Completed(o..., ['id-0001'])
+    |   
+    |   At index 2 diff: [] != ['id-0001']
+    |   Use -v to get more diff
+    +------------------------------------
+=========================== short test summary info ============================
+FAILED tests/wire/test_images_and_resources.py::test_a_crossed_component_sees_its_resource_scope_and_closes_with_the_run
+1 failed in 0.36s

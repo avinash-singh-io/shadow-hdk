@@ -186,21 +186,40 @@ def _as_tool(interface: Interface) -> dict[str, JsonValue]:
     }
 
 
+def _content_of(message: Message) -> str | list[str | dict[str, Any]]:
+    if not message.images:
+        return message.content
+    return [
+        {"type": "text", "text": message.content},
+        *[
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{image.mime_type};base64,{image.data}"},
+            }
+            for image in message.images
+        ],
+    ]
+
+
 def _to_langchain(messages: tuple[Message, ...]) -> list[BaseMessage]:
     out: list[BaseMessage] = []
     for message in messages:
         match message.role:
             case "system":
-                out.append(SystemMessage(content=message.content))
+                out.append(SystemMessage(content=_content_of(message)))
             case "user":
-                out.append(HumanMessage(content=message.content))
+                out.append(HumanMessage(content=_content_of(message)))
             case "assistant":
                 out.append(
-                    AIMessage(content=message.content, tool_calls=_calls_for(message.tool_calls))
+                    AIMessage(
+                        content=_content_of(message), tool_calls=_calls_for(message.tool_calls)
+                    )
                 )
             case "tool":
                 out.append(
-                    ToolMessage(content=message.content, tool_call_id=message.tool_call_id or "")
+                    ToolMessage(
+                        content=_content_of(message), tool_call_id=message.tool_call_id or ""
+                    )
                 )
     return out
 

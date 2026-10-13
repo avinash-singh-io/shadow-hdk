@@ -1,0 +1,49 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_images_reach_the_model_and_the_run_closes_resources ___________
+
+    async def test_images_reach_the_model_and_the_run_closes_resources() -> None:
+        picture = Picture()
+        agent = AgentComponent(pattern=Pattern(name="a", system="Look"), effects=EffectProfile())
+        model = ScriptedModel(
+            [
+                ModelResponse(tool_calls=(ToolCall("c1", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("c2", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("d", "done", {"summary": "seen"}),)),
+            ]
+        )
+        ports = Ports(
+            model=model,
+            components=(picture, agent),
+            governance=AllowAll(),
+            sink=ListSink(),
+            clock=FixedClock(),
+        )
+        events = [
+            e
+            async for e in run(
+                Composition(
+                    (Invoke("a", agent.registration_id, (Binding(name="brief", value="look"),)),)
+                ),
+                ports,
+                options=RunOptions(lease=Lease(Ceiling(40, 3600, 10_000), Floor(0))),
+            )
+        ]
+        assert len(model.requests) == 3, events
+        results = [m for m in model.requests[2].messages if m.role == "tool"]
+>       assert (
+            [m.images for m in results],
+            all(PNG.data not in m.content for m in results),
+            len(set(picture.scopes)),
+            picture.released,
+            events[-1].kind,
+        ) == ([(PNG,), (PNG,)], True, 1, [picture.scopes[0]], "ended")
+E       AssertionError: assert ([(), ()], Tr...01'], 'ended') == ([(Image(mime...01'], 'ended')
+E         
+E         At index 0 diff: [(), ()] != [(Image(mime_type='image/png', data='iVBORw0KGgo='),), (Image(mime_type='image/png', data='iVBORw0KGgo='),)]
+E         Use -v to get more diff
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:103: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
+1 failed in 0.46s

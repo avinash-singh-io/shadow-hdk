@@ -156,9 +156,15 @@ def _as_result(observation: Observation | None) -> types.CallToolResult:
     text says which, so an agent can tell "you may not" from "it broke" and choose differently.
     """
     match observation:
-        case Completed(output=output):
+        case Completed(output=output, images=images):
             return types.CallToolResult(
-                content=[types.TextContent(type="text", text=json.dumps(output))]
+                content=[
+                    types.TextContent(type="text", text=json.dumps(output)),
+                    *[
+                        types.ImageContent(type="image", data=i.data, mime_type=i.mime_type)
+                        for i in images
+                    ],
+                ]
             )
         case Refused(reason=reason):
             return _error(f"refused: {reason}")

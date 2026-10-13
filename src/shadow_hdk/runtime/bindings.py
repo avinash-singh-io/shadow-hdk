@@ -7,6 +7,7 @@ proposes, reads what is left of its lease, and spawns children without any of th
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -35,6 +36,7 @@ from shadow_hdk.kernel.ports import (
     ObserverPort,
     Questions,
     Refuse,
+    RunResourcePort,
     SinkPort,
 )
 
@@ -130,8 +132,16 @@ class RunContext:
         ports: Ports,
         registry: Registry,
         checkpointer: Any = None,
+        resource_owner: RunContext | None = None,
     ) -> None:
         self._session = session
+        self._resource_scope = resource_owner.resource_scope if resource_owner else session.run_id
+        self._resources: dict[int, RunResourcePort] = (
+            resource_owner._resources if resource_owner else {}
+        )
+        for port in ports.components:
+            if isinstance(port, RunResourcePort):
+                self._resources[id(port)] = port
         self._kept: dict[str, JsonValue] = {}
         self._resumed: dict[str, Resumed] = {}
         self._emitter = emitter
@@ -149,6 +159,22 @@ class RunContext:
     @property
     def run_id(self) -> RunId:
         return self._session.run_id
+
+    @property
+    def resource_scope(self) -> str:
+        """Opaque execution-tree identity for optional resources; no component vocabulary."""
+        return self._resource_scope
+
+    async def _release_resources(self) -> str | None:
+        failures: list[str] = []
+        resources = list(self._resources.values())
+        self._resources.clear()
+        for port in reversed(resources):
+            try:
+                await port.release_run(self.resource_scope)
+            except (Exception, asyncio.CancelledError) as error:
+                failures.append(f"{type(error).__name__}: {error}")
+        return "; ".join(failures) or None
 
     @property
     def principal(self) -> str | None:

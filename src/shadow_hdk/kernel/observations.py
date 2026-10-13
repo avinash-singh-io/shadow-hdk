@@ -16,9 +16,22 @@ from shadow_hdk.kernel.composition import Handle
 
 
 @dataclass(frozen=True)
+class Image:
+    """An inline tool image: base64 bytes and their media type, never a local pathname.
+
+    A coding tool, support desk and research assistant each consume visual observations.
+    The bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.
+    """
+
+    mime_type: str
+    data: str
+
+
+@dataclass(frozen=True)
 class Completed:
     output: JsonValue = None
     kind: Literal["completed"] = "completed"
+    images: Annotated[tuple[Image, ...], Field(exclude_if=lambda value: not value)] = ()
 
 
 @dataclass(frozen=True)

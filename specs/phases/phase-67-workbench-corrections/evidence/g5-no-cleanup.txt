@@ -1,0 +1,66 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_images_reach_the_model_and_the_run_closes_resources ___________
+
+    async def test_images_reach_the_model_and_the_run_closes_resources() -> None:
+        picture = Picture()
+        agent = AgentComponent(pattern=Pattern(name="a", system="Look"), effects=EffectProfile())
+        model = ScriptedModel(
+            [
+                ModelResponse(tool_calls=(ToolCall("c1", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("c2", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("d", "done", {"summary": "seen"}),)),
+            ]
+        )
+        ports = Ports(
+            model=model,
+            components=(picture, agent),
+            governance=AllowAll(),
+            sink=ListSink(),
+            clock=FixedClock(),
+        )
+        events = [
+            e
+            async for e in run(
+                Composition(
+                    (Invoke("a", agent.registration_id, (Binding(name="brief", value="look"),)),)
+                ),
+                ports,
+                options=RunOptions(lease=Lease(Ceiling(40, 3600, 10_000), Floor(0))),
+            )
+        ]
+        assert len(model.requests) == 3, events
+        results = [m for m in model.requests[2].messages if m.role == "tool"]
+>       assert (
+            [m.images for m in results],
+            all(PNG.data not in m.content for m in results),
+            len(set(picture.scopes)),
+            picture.released,
+            events[-1].kind,
+        ) == ([(PNG,), (PNG,)], True, 1, [picture.scopes[0]], "ended")
+E       AssertionError: assert ([(Image(mime..., [], 'ended') == ([(Image(mime...01'], 'ended')
+E         
+E         At index 3 diff: [] != ['id-0001']
+E         Use -v to get more diff
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:103: AssertionError
+____________ test_a_cleanup_failure_is_a_failed_run_with_its_reason ____________
+
+    async def test_a_cleanup_failure_is_a_failed_run_with_its_reason() -> None:
+        port = Managed(fail=True)
+        events = await collect(port)
+>       assert (events[-1].reason, events[-1].detail, port.closed) == (
+            "failed",
+            "resource cleanup failed: RuntimeError: cleanup sentinel",
+            [events[0].run_id],
+        )
+E       AssertionError: assert ('completed', None, []) == ('failed', 'r..., ['id-0001'])
+E         
+E         At index 0 diff: 'completed' != 'failed'
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:71: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
+FAILED tests/runtime/test_run_resources.py::test_a_cleanup_failure_is_a_failed_run_with_its_reason
+2 failed in 0.26s

@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________ test_mcp_image_results_survive_ingress ____________________
+
+    async def test_mcp_image_results_survive_ingress() -> None:
+        from mcp import StdioServerParameters
+    
+        class Session:
+            async def call_tool(self, name: str, arguments: Any) -> CallToolResult:
+                return CallToolResult(
+                    content=[
+                        TextContent(type="text", text='{"caption":"page"}'),
+                        ImageContent(type="image", data=PNG.data, mime_type=PNG.mime_type),
+                    ]
+                )
+    
+        port = McpComponents(StdioServerParameters(command="unused"))
+        port._session = Session()  # type: ignore[assignment]
+        port._tools["picture"] = "picture"
+>       assert await port.invoke("picture", {}) == Completed({"caption": "page"}, images=(PNG,))
+E       AssertionError: assert Completed(out...d', images=()) == Completed(out...ORw0KGgo='),))
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing attributes:
+E         ['images']
+E         
+E         Drill down into differing attribute images:
+E           images: () != (Image(mime_type='image/png', data='iVBORw0KGgo='),)
+E           Right contains one more item: Image(mime_type='image/png', data='iVBORw0KGgo=')
+E           Use -v to get more diff
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:140: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_mcp_image_results_survive_ingress
+1 failed in 0.37s

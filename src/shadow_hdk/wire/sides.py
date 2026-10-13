@@ -63,6 +63,7 @@ from shadow_hdk.wire.protocol import (
     PROPOSE,
     PROTOCOL_VERSION,
     REGISTRATIONS,
+    RELEASE_RUN,
     RESUME,
     RUN,
     Agreed,
@@ -358,6 +359,7 @@ class HostSide:
         self.peer.serves(COMPLETE, self._complete)
         self.peer.serves(REGISTRATIONS, self._registrations)
         self.peer.serves(INVOKE, self._invoke)
+        self.peer.serves(RELEASE_RUN, self._release_run)
         self.peer.serves(PROPOSE, self._propose)
         self.peer.hears(EVENT, self._event)
         self.peer.hears(ITEM, self._item)
@@ -449,6 +451,7 @@ class HostSide:
                         self.ports,
                         str(params.get("run_id", "")),
                         str(params.get("step") or wanted),
+                        resource_scope=params.get("resource_scope"),
                     )
                 )
                 try:
@@ -457,6 +460,19 @@ class HostSide:
                     _CURRENT.reset(token)
                 return json.loads(dump(observation, Observation))
         return json.loads(dump(Failed(f"no component registered as {wanted!r}"), Observation))
+
+    async def _release_run(self, params: dict[str, Any]) -> None:
+        from shadow_hdk.kernel.ports import RunResourcePort
+
+        failures: list[str] = []
+        for port in self.ports.components:
+            if isinstance(port, RunResourcePort):
+                try:
+                    await port.release_run(str(params["resource_scope"]))
+                except Exception as error:
+                    failures.append(f"{type(error).__name__}: {error}")
+        if failures:
+            raise RuntimeError("; ".join(failures))
 
     async def _propose(self, params: dict[str, Any]) -> Any:
         await self.ports.sink.propose(load(json.dumps(params["proposal"]), Proposal))

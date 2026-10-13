@@ -720,13 +720,30 @@ class _Turnwise:
                 # the call unanswered, which is the dangling tool call every provider rejects, and
                 # broke this interface's own promise that *you see every result*.
                 self.messages.append(
-                    Message("tool", _readable_plan(composition, observed), tool_call_id=call.id)
+                    Message(
+                        "tool",
+                        _readable_plan(composition, observed),
+                        tool_call_id=call.id,
+                        images=tuple(
+                            image
+                            for value in observed.values()
+                            if isinstance(value, Completed)
+                            for image in value.images
+                        ),
+                    )
                 )
                 continue
             if call.name in BY_NAME:
                 continue
             observation = observed.get(call.id)
-            self.messages.append(Message("tool", self.offered(observation), tool_call_id=call.id))
+            self.messages.append(
+                Message(
+                    "tool",
+                    self.offered(observation),
+                    tool_call_id=call.id,
+                    images=observation.images if isinstance(observation, Completed) else (),
+                )
+            )
         return None
 
     # ------------------------------------------------------------------ parking (D57)

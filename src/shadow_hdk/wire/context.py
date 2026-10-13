@@ -69,18 +69,25 @@ def _as_answer(raw: Any) -> Any:
 class WireRunContext(RunContext):
     """`current_run()` for a component the host is running on the runtime's behalf."""
 
-    def __init__(self, peer: Peer, ports: Ports, run_id: str, step: str) -> None:
+    def __init__(
+        self, peer: Peer, ports: Ports, run_id: str, step: str, resource_scope: str | None = None
+    ) -> None:
         # Deliberately not calling `RunContext.__init__`: it wants a session, an emitter and a
         # registry, and all three belong to the run — which is on the other side. Everything this
         # class can honestly answer is overridden below, and everything it cannot says so.
         self._peer = peer
         self._ports = ports
         self._run_id = run_id
+        self._resource_scope = resource_scope or run_id
         self._step = step
 
     @property
     def run_id(self) -> str:
         return self._run_id
+
+    @property
+    def resource_scope(self) -> str:
+        return self._resource_scope
 
     @property
     def ports(self) -> Ports:
