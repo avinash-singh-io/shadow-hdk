@@ -1,0 +1,198 @@
+FFFFFFFFFFFFF                                                            [100%]
+=================================== FAILURES ===================================
+_________________ test_custom_branch_lifecycle[asyncio-branch] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_lifecycle_a0')
+check = 'branch'
+
+    @pytest.mark.parametrize('check', ['branch', 'head', 'listed', 'kept', 'person'])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / 'personal'
+        git(repo, 'worktree', 'add', '-b', 'intent/person', str(theirs))
+>       tree = await open_worktree(repo, 'agent', branch='intent/task-1234')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:16: TypeError
+__________________ test_custom_branch_lifecycle[asyncio-head] __________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_lifecycle_a1')
+check = 'head'
+
+    @pytest.mark.parametrize('check', ['branch', 'head', 'listed', 'kept', 'person'])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / 'personal'
+        git(repo, 'worktree', 'add', '-b', 'intent/person', str(theirs))
+>       tree = await open_worktree(repo, 'agent', branch='intent/task-1234')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:16: TypeError
+_________________ test_custom_branch_lifecycle[asyncio-listed] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_lifecycle_a2')
+check = 'listed'
+
+    @pytest.mark.parametrize('check', ['branch', 'head', 'listed', 'kept', 'person'])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / 'personal'
+        git(repo, 'worktree', 'add', '-b', 'intent/person', str(theirs))
+>       tree = await open_worktree(repo, 'agent', branch='intent/task-1234')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:16: TypeError
+__________________ test_custom_branch_lifecycle[asyncio-kept] __________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_lifecycle_a3')
+check = 'kept'
+
+    @pytest.mark.parametrize('check', ['branch', 'head', 'listed', 'kept', 'person'])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / 'personal'
+        git(repo, 'worktree', 'add', '-b', 'intent/person', str(theirs))
+>       tree = await open_worktree(repo, 'agent', branch='intent/task-1234')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:16: TypeError
+_________________ test_custom_branch_lifecycle[asyncio-person] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_lifecycle_a4')
+check = 'person'
+
+    @pytest.mark.parametrize('check', ['branch', 'head', 'listed', 'kept', 'person'])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / 'personal'
+        git(repo, 'worktree', 'add', '-b', 'intent/person', str(theirs))
+>       tree = await open_worktree(repo, 'agent', branch='intent/task-1234')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:16: TypeError
+__________ test_invalid_or_existing_branch_changes_nothing[asyncio-] ___________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc0')
+branch = ''
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+______ test_invalid_or_existing_branch_changes_nothing[asyncio-../escape] ______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc1')
+branch = '../escape'
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+______ test_invalid_or_existing_branch_changes_nothing[asyncio-bad name] _______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc2')
+branch = 'bad name'
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+________ test_invalid_or_existing_branch_changes_nothing[asyncio-HEAD] _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc3')
+branch = 'HEAD'
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+________ test_invalid_or_existing_branch_changes_nothing[asyncio--flag] ________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc4')
+branch = '-flag'
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+________ test_invalid_or_existing_branch_changes_nothing[asyncio-main] _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_invalid_or_existing_branc5')
+branch = 'main'
+
+    @pytest.mark.parametrize('branch', ['', '../escape', 'bad name', 'HEAD', '-flag', 'main'])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+        with pytest.raises(CannotIsolate):
+>           await open_worktree(repo, 'agent', branch=branch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:32: TypeError
+_________________ test_custom_branch_can_be_discarded[asyncio] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_custom_branch_can_be_disc0')
+
+    async def test_custom_branch_can_be_discarded(tmp_path: Path) -> None:
+        repo = a_repository(tmp_path)
+>       tree = await open_worktree(repo, 'agent', branch='feature/discard')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:37: TypeError
+______________ test_a_reused_custom_branch_is_not_owned[asyncio] _______________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-360/test_a_reused_custom_branch_is0')
+
+    async def test_a_reused_custom_branch_is_not_owned(tmp_path: Path) -> None:
+        repo = a_repository(tmp_path)
+>       tree = await open_worktree(repo, 'agent', branch='feature/reused')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: open_worktree() got an unexpected keyword argument 'branch'
+
+tests/adapters/environment/test_the_host_names_its_branch.py:43: TypeError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-branch]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-head]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-listed]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-kept]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-person]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-../escape]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-bad name]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-HEAD]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio--flag]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-main]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_can_be_discarded[asyncio]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_a_reused_custom_branch_is_not_owned[asyncio]
+13 failed in 26.84s

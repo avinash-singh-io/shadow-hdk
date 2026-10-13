@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_custom_branch_lifecycle[asyncio-person] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-420/test_custom_branch_lifecycle_a0')
+check = 'person'
+
+    @pytest.mark.parametrize("check", ["branch", "head", "listed", "kept", "person"])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / "personal"
+        git(repo, "worktree", "add", "-b", "intent/person", str(theirs))
+        tree = await open_worktree(repo, "agent", branch="intent/task-1234")
+        listed = [(w.path, w.branch) for w in await worktrees(repo)]
+        head = git(tree.path, "branch", "--show-current")
+        if check == "listed":
+            assert listed == [(tree.path, "intent/task-1234")]
+        await close_worktree(tree)
+        actual = {
+            "branch": tree.branch,
+            "head": head,
+            "listed": listed,
+            "kept": git(repo, "branch", "--list", "intent/task-1234").strip(),
+            "person": (theirs.exists(), git(repo, "branch", "--show-current")),
+        }
+        expected = {
+            "branch": "intent/task-1234",
+            "head": "intent/task-1234",
+            "listed": [(tree.path, "intent/task-1234")],
+            "kept": "intent/task-1234",
+            "person": (True, "main"),
+        }
+        if check != "listed":
+>           assert actual[check] == expected[check]
+E           AssertionError: assert (True, '') == (True, 'main')
+E             
+E             At index 1 diff: '' != 'main'
+E             Use -v to get more diff
+
+tests/adapters/environment/test_the_host_names_its_branch.py:44: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-person]
+1 failed in 0.44s

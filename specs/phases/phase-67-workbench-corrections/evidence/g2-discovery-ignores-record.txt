@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_custom_branch_lifecycle[asyncio-listed] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-418/test_custom_branch_lifecycle_a0')
+check = 'listed'
+
+    @pytest.mark.parametrize("check", ["branch", "head", "listed", "kept", "person"])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / "personal"
+        git(repo, "worktree", "add", "-b", "intent/person", str(theirs))
+        tree = await open_worktree(repo, "agent", branch="intent/task-1234")
+        listed = [(w.path, w.branch) for w in await worktrees(repo)]
+        head = git(tree.path, "branch", "--show-current")
+        if check == "listed":
+>           assert listed == [(tree.path, "intent/task-1234")]
+E           AssertionError: assert [] == [(PosixPath('...t/task-1234')]
+E             
+E             Right contains one more item: (PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-418/test_custom_branch_lifecycle_a0/.repo-agent'), 'intent/task-1234')
+E             Use -v to get more diff
+
+tests/adapters/environment/test_the_host_names_its_branch.py:27: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-listed]
+1 failed in 0.33s
