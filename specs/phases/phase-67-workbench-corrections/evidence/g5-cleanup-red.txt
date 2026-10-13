@@ -13,7 +13,7 @@ _______ test_cancellation_during_cleanup_waits_for_the_resource_to_close _______
             await asyncio.wait_for(collecting, 2)
 >       assert (len(port.closed), current_run()) == (1, None)
 E       assert (0, None) == (1, None)
-E         
+E
 E         At index 0 diff: 0 != 1
 E         Use -v to get more diff
 

@@ -32,7 +32,7 @@ repository = False, operation = 'glob'
                 else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
             )
 E           AssertionError: assert ['node_module...'src/keep.py'] == ['src/keep.py']
-E             
+E
 E             At index 0 diff: 'node_modules/big.py' != 'src/keep.py'
 E             Left contains 2 more items, first extra item: 'src/hide.py'
 E             Use -v to get more diff
@@ -70,7 +70,7 @@ repository = False, operation = 'grep'
                 else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
             )
 E           AssertionError: assert [{'path': 'no...t': 'needle'}] == [{'path': 'sr...t': 'needle'}]
-E             
+E
 E             At index 0 diff: {'path': 'node_modules/big.py', 'line': 1, 'text': 'needle'} != {'path': 'src/keep.py', 'line': 1, 'text': 'needle'}
 E             Left contains 2 more items, first extra item: {'path': 'src/hide.py', 'line': 1, 'text': 'needle'}
 E             Use -v to get more diff
@@ -89,17 +89,17 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10aab3530>
         env = await LocalEnvironment.open(tmp_path, mode="full")
         original = env._search_entries
         visited: list[str] = []
-    
+
         async def listing(path: str) -> list[str]:
             visited.append(path)
             return await original(path)
-    
+
         monkeypatch.setattr(env, "_search_entries", listing)
         try:
             await env._walk(".")
 >           assert visited == ["."]
 E           AssertionError: assert ['.', 'ignored'] == ['.']
-E             
+E
 E             Left contains one more item: 'ignored'
 E             Use -v to get more diff
 
@@ -119,7 +119,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         try:
 >           assert [await env._walk("src"), await env._walk("ignored")] == [["src/keep.txt"], []]
 E           AssertionError: assert [['src/hide.t...ed/hide.txt']] == [['src/keep.txt'], []]
-E             
+E
 E             At index 0 diff: ['src/hide.tmp', 'src/keep.txt'] != ['src/keep.txt']
 E             Use -v to get more diff
 

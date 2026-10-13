@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_arguments_not_used_by_an_action_are_refused_before_opening_a_profile ___
+
+    async def test_arguments_not_used_by_an_action_are_refused_before_opening_a_profile() -> None:
+        engine = PlaywrightEngine()
+        for action, inputs in (
+            ("tabs", {"tab": "unused"}),
+            ("new_tab", {"url": "http://localhost", "tab": "unused"}),
+            ("find", {"selector": "button", "nth": 2}),
+            ("console", {"timeout_ms": 1000}),
+            ("click", {"selector": "button", "name": "unused accessible name"}),
+            ("type", {"selector": "input", "value": None}),
+            ("open", {"url": "http://localhost", "script": "ignored"}),
+        ):
+            result = await engine.execute(action, inputs, "unopened")
+>           assert isinstance(result, Refused) and "invalid browser inputs" in result.reason, result
+E           AssertionError: Refused(reason='no browser is open in this scope', kind='refused')
+E           assert (True and 'invalid browser inputs' in 'no browser is open in this scope')
+E            +  where True = isinstance(Refused(reason='no browser is open in this scope', kind='refused'), Refused)
+E            +  and   'no browser is open in this scope' = Refused(reason='no browser is open in this scope', kind='refused').reason
+
+tests/adapters/browser/test_browser_inputs_match_the_catalogue.py:19: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_inputs_match_the_catalogue.py::test_arguments_not_used_by_an_action_are_refused_before_opening_a_profile
+1 failed in 0.28s

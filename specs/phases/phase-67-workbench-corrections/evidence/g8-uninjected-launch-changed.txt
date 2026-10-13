@@ -1,0 +1,38 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_an_uninjected_cli_keeps_its_working_directory ______________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-562/test_an_uninjected_cli_keeps_i0')
+
+    async def test_an_uninjected_cli_keeps_its_working_directory(tmp_path: Path) -> None:
+        from tests.adapters.jsonl.test_a_turn import a_provider
+
+        cli = tmp_path / "cli"
+        cli.write_text(
+            "#!/usr/bin/env python3\nimport sys,pathlib,json\nsys.stdin.readline()\n"
+            "print(json.dumps({'type':'result','result':str(pathlib.Path.cwd())}),flush=True)\n"
+        )
+        cli.chmod(0o755)
+        session = JsonlSession(
+            replace(
+                a_provider(),
+                dialect=replace(
+                    Dialect(resident=True, done_on=("result",), done_at="result"),
+                    private_working_directory=True,
+                ),
+            ),
+            binary=cli,
+            env={"PATH": "/usr/bin:/bin"},
+            workspace=tmp_path,
+        )
+        try:
+            turn = await session.turn("go")
+>           assert Path(turn.text) == tmp_path
+E           AssertionError: assert PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-e_0y81zd') == PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-562/test_an_uninjected_cli_keeps_i0')
+E            +  where PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-e_0y81zd') = Path('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-e_0y81zd')
+E            +    where '/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-e_0y81zd' = Turn(text='/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-e_0y81zd', usage=Usage(input_tokens...None, cache_read_tokens=None, cache_write_tokens=None), stop_reason='', reasoning='', failed=False, session_gone=False).text
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_an_uninjected_cli_keeps_its_working_directory
+1 failed in 0.41s

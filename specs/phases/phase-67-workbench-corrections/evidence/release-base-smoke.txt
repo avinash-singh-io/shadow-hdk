@@ -1,0 +1,1 @@
+{"version": "0.48.0", "base_has_no_optional_engines": true, "browser_declarations": 17, "gateway_resource_packaged": true, "missing_extras_explicit": true}

@@ -21,11 +21,11 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd00510>
         (repo / "new" / "deep" / "created").write_text("new")
         walks: list[Path] = []
         old = Path.rglob
-    
+
         def walking(self: Path, pattern: str) -> object:
             walks.append(self)
             return old(self, pattern)
-    
+
         monkeypatch.setattr(Path, "rglob", walking)
         await history.restore(taken)
 >       assert (
@@ -35,7 +35,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd00510>
             (repo / "node_modules" / "dependency").read_text(),
         ) == (stable, [], False, "keep")
 E       AssertionError: assert (179186824924... True, 'keep') == (179186824924...False, 'keep')
-E         
+E
 E         At index 2 diff: True != False
 E         Use -v to get more diff
 

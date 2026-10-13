@@ -1,0 +1,11 @@
+{
+  "browse": {
+    "startup_and_interaction_s": 1.1235402500024065,
+    "snapshot_median_s": 0.004986646003089845,
+    "snapshot_bytes": 354,
+    "daemon_rss_bytes": 147046400,
+    "daemon_cpu_s_10_snapshots": 0.026125536000000005,
+    "screenshot": true,
+    "refs": 35
+  }
+}

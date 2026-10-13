@@ -1,0 +1,119 @@
+...F.F.F..........                                                       [100%]
+=================================== FAILURES ===================================
+_ test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio-agent-browser] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10edad710>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-589/test_navigation_reports_http_f1/ca.pem'))
+
+    async def test_navigation_reports_http_failures_and_preserves_upstream_tls_verification(
+        apps: Any,
+    ) -> None:
+        first, second, *_ = apps
+        engine = PlaywrightEngine(
+            policy=OriginPolicy((first.origin, second.origin), allow_localhost=False),
+            install_browser=False,
+        )
+        try:
+>           bad = await completed(engine, "open", {"url": first.origin + "/bad"})
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/browser/test_real_browser.py:304:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+engine = <shadow_hdk.adapters.browser.agent_engine.AgentBrowserEngine object at 0x10ecf7250>
+action = 'open', inputs = {'url': 'http://127.0.0.1:58036/bad'}, scope = 'app'
+
+    async def completed(
+        engine: PlaywrightEngine, action: str, inputs: Any, scope: str = "app"
+    ) -> Completed:
+        result = await engine.execute(action, inputs, scope)
+>       assert isinstance(result, Completed), result
+E       AssertionError: Failed(error='browser open failed: Navigation failed: net::ERR_HTTP_RESPONSE_CODE_FAILURE', kind='failed')
+E       assert False
+E        +  where False = isinstance(Failed(error='browser open failed: Navigation failed: net::ERR_HTTP_RESPONSE_CODE_FAILURE', kind='failed'), Completed)
+
+tests/adapters/browser/test_real_browser.py:224: AssertionError
+_ test_page_webrtc_does_not_contact_an_unapproved_udp_server[asyncio-agent-browser] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10f235300>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-589/test_page_webrtc_does_not_cont1/ca.pem'))
+
+    async def test_page_webrtc_does_not_contact_an_unapproved_udp_server(apps: Any) -> None:
+        from playwright.async_api import async_playwright
+
+        first, *_ = apps
+        packets: list[bytes] = []
+
+        class Stun(asyncio.DatagramProtocol):
+            def datagram_received(self, data: bytes, address: Any) -> None:
+                packets.append(data)
+
+        transport, _ = await asyncio.get_running_loop().create_datagram_endpoint(
+            Stun, local_addr=("127.0.0.1", 0)
+        )
+        first.stun_port = transport.get_extra_info("sockname")[1]
+        engine = engine_for(apps)
+        try:
+            # An unconstrained Chromium really sends UDP to this probe. An empty capture alone
+            # would otherwise prove neither the fixture nor the engine's network boundary.
+            async with async_playwright() as driver:
+                control = await driver.chromium.launch(headless=True)
+                try:
+                    page = await control.new_page()
+                    await page.goto(first.origin + "/rtc")
+                    await page.get_by_text("Finished", exact=True).wait_for()
+                    assert packets, "the positive STUN control must contact the probe"
+                finally:
+                    await control.close()
+            packets.clear()
+            await completed(engine, "open", {"url": first.origin + "/rtc"})
+>           await completed(engine, "wait", {"selector": "#done:text-is('Finished')"})
+
+tests/adapters/browser/test_real_browser.py:343:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+engine = <shadow_hdk.adapters.browser.agent_engine.AgentBrowserEngine object at 0x10ecf5f90>
+action = 'wait', inputs = {'selector': "#done:text-is('Finished')"}
+scope = 'app'
+
+    async def completed(
+        engine: PlaywrightEngine, action: str, inputs: Any, scope: str = "app"
+    ) -> Completed:
+        result = await engine.execute(action, inputs, scope)
+>       assert isinstance(result, Completed), result
+E       AssertionError: Failed(error='browser wait failed: ', kind='failed')
+E       assert False
+E        +  where False = isinstance(Failed(error='browser wait failed: ', kind='failed'), Completed)
+
+tests/adapters/browser/test_real_browser.py:224: AssertionError
+__ test_http_subresource_denial_precedes_a_connection[asyncio-agent-browser] ___
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10f648ae0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-589/test_http_subresource_denial_p1/ca.pem'))
+
+    async def test_http_subresource_denial_precedes_a_connection(apps: Any) -> None:
+        first, _, denied, *_ = apps
+        engine = engine_for(apps)
+        try:
+            await completed(engine, "open", {"url": first.origin + "/network-boundary"})
+>           await completed(engine, "wait", {"selector": "#done:text-is('Finished')"})
+
+tests/adapters/browser/test_real_browser.py:355:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+engine = <shadow_hdk.adapters.browser.agent_engine.AgentBrowserEngine object at 0x10ecfe9e0>
+action = 'wait', inputs = {'selector': "#done:text-is('Finished')"}
+scope = 'app'
+
+    async def completed(
+        engine: PlaywrightEngine, action: str, inputs: Any, scope: str = "app"
+    ) -> Completed:
+        result = await engine.execute(action, inputs, scope)
+>       assert isinstance(result, Completed), result
+E       AssertionError: Failed(error='browser wait failed: ', kind='failed')
+E       assert False
+E        +  where False = isinstance(Failed(error='browser wait failed: ', kind='failed'), Completed)
+
+tests/adapters/browser/test_real_browser.py:224: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio-agent-browser]
+FAILED tests/adapters/browser/test_real_browser.py::test_page_webrtc_does_not_contact_an_unapproved_udp_server[asyncio-agent-browser]
+FAILED tests/adapters/browser/test_real_browser.py::test_http_subresource_denial_precedes_a_connection[asyncio-agent-browser]
+3 failed, 15 passed in 159.35s (0:02:39)

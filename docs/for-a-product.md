@@ -247,15 +247,19 @@ Two things a host must get right, and one is easy to miss:
 
 **Not published, and the observation is structural, not a bug.** The registry's direction is *ours
 → the CLI* (D42): the kit offers the run's tools to Codex through the socket; a CLI's own tools, MCP
-servers and plugins never come back. Codex's record says `tool_path = "uncontrolled"` because its
-**own** reads cannot be refused — there is no flag for that, so they stay outside this run's registry
-and unjudged by the mode, confined only by `--sandbox read-only`.
+servers and plugins never come back. In the unreleased, paused 0.48.0 candidate, the governed Codex path disables its native
+shell, image, browser and agent tools and launches the SDK in a private directory. Repository
+instructions and skill discovery cannot read the component workspace at startup. Its injected
+file reads appear on the ordinary kit act record. This is measured on Codex CLI 0.154.0,
+including resumed turns for gpt-5.4, gpt-6-astra and gpt-6-sol. Catalogue mutation/edge verification
+and final release acceptance remain unfinished; these focused checks are not a released guarantee.
+Unknown explicit feature switches fail instead of enabling native
+reads. MCP resource discovery still exists, but the kit's relay offers no filesystem resources.
 
-Its *configured* MCP servers **are** excluded, since 0.45.0: `codex exec --ignore-user-config` drops
-`$CODEX_HOME/config.toml` while auth still uses `CODEX_HOME`, so a governed run keeps its login and
-loses the person's own servers (H23). Until then they joined ungoverned, and this document said the
-axis was `uncontrolled` for that reason — which was the reason we could not fix, and it turned out
-there was a flag all along.
+`--ignore-user-config` excludes the person's configured MCP servers while authentication keeps
+using `CODEX_HOME`. A launch without injected tools keeps the CLI's normal configuration and
+working directory. The read-only OS sandbox remains a second boundary; this is a tool-governance
+claim, not process confinement. Products upgrading the CLI should re-run the SDK catalogue gate.
 
 What the kit publishes: `ProviderCapabilities` with evidence per axis — tool path, session,
 interruptibility, streaming, reasoning, usage tokens, cost (Phase 31) — through `providers/list`

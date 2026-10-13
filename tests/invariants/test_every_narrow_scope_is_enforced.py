@@ -29,6 +29,12 @@ ADAPTERS = ROOT / "src" / "shadow_hdk" / "adapters"
 RUNTIME = ROOT / "src" / "shadow_hdk" / "runtime"
 
 ENFORCED_BY: dict[str, tuple[str, str]] = {
+    "browser": (
+        "isolated per-scope profiles and a local origin gateway inspect every HTTP(S) request "
+        "before upstream connection; the browser has no arbitrary evaluation, upload or personal "
+        "profile door; real denied HTTP/TLS and UDP endpoints observe zero contacts",
+        "tests/adapters/browser/test_real_browser.py",
+    ),
     "agent": (
         "`mint_skill` declares `writes: {record}` and nothing else, and what it does is *propose* "
         "through the sink — the runtime has no write path, so there is no way for it to reach "

@@ -111,12 +111,18 @@ async def test_images_reach_the_model_and_the_run_closes_resources() -> None:
 
 def test_langchain_and_mcp_preserve_image_blocks() -> None:
     message = Message("tool", "page", "c1", images=(PNG,))
-    native = _to_langchain((message,))[0]
+    native = _to_langchain((message,))
     wire = _as_result(Completed({"caption": "page"}, images=(PNG,)))
-    assert (native.content, [(b.type, getattr(b, "data", None)) for b in wire.content]) == (
+    assert (
+        [m.content for m in native],
+        [(b.type, getattr(b, "data", None)) for b in wire.content],
+    ) == (
         [
-            {"type": "text", "text": "page"},
-            {"type": "image_url", "image_url": {"url": "data:image/png;base64," + PNG.data}},
+            "page",
+            [
+                {"type": "text", "text": "Images returned by tool call c1."},
+                {"type": "image_url", "image_url": {"url": "data:image/png;base64," + PNG.data}},
+            ],
         ],
         [("text", None), ("image", PNG.data)],
     )

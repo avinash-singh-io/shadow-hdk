@@ -6,7 +6,7 @@
 # packaging boundary (D78).
 [project]
 name = "shadow-hdk"
-version = "0.47.3"
+version = "0.48.0"
 description = "Shadow HDK — a Harness Development Kit: an effect-governed agent runtime, its components, and the wire."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -37,7 +37,7 @@ dependencies = [
     # The Linux confinement helper (Epic 0010, D123/D133): Landlock + seccomp applied before exec,
     # a bin-only platform wheel built from `native/sandbox`, in lockstep with this version. On the
     # two architectures it is built for; elsewhere on Linux the environment falls back to bwrap.
-    "shadow-hdk-linux-sandbox==0.47.3; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
+    "shadow-hdk-linux-sandbox==0.48.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 
 [project.optional-dependencies]
@@ -58,7 +58,15 @@ search = ["ddgs>=9"]
 # The record on Postgres: the store, the threads and the checkpointer over one url (D79).
 postgres = ["psycopg[binary,pool]>=3.2", "langgraph-checkpoint-postgres>=3.0"]
 # Everything.
-all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search,postgres]"]
+all = ["shadow-hdk[openai,anthropic,ollama,huggingface,mqtt,otel,sandbox,search,postgres,browser,workbench]"]
+browser = [
+    "playwright>=1.63,<2",
+    "uv>=0.10,<1",
+]
+workbench = [
+    "defusedxml>=0.7,<1",
+    "psutil>=7.2,<8",
+]
 
 [project.scripts]
 shadow-hdk = "shadow_hdk.serve.__main__:main"
@@ -101,6 +109,8 @@ dev = [
     "pytest-timeout>=2.3",
     "amqtt>=0.12.0",
     "twine>=6",
+    "types-psutil>=7.2.2.20260906",
+    "types-defusedxml>=0.7.0.20260504",
 ]
 
 [tool.uv]
@@ -160,6 +170,7 @@ addopts = "-m 'not live and not benchmark'"
 # healthy here (the whole suite runs in under twenty) and far below "nobody noticed".
 timeout = 60
 markers = [
+    "browser: real local browser and origin gateway; requires provisioned Chromium",
     "live: calls a real provider; costs money; opt in with -m live",
     "benchmark: asserts on wall-clock time; opt in with -m benchmark; CI runs it on a quiet runner",
 ]

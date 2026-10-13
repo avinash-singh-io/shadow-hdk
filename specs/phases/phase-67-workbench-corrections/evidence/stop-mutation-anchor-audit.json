@@ -1,0 +1,50 @@
+[
+  {
+    "label": "g8-private-launch-disabled",
+    "file": "src/shadow_hdk/adapters/jsonl/session.py",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-uninjected-launch-changed",
+    "file": "src/shadow_hdk/adapters/jsonl/session.py",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-private-launch-not-cleaned",
+    "file": "src/shadow_hdk/adapters/jsonl/session.py",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 67
+  },
+  {
+    "label": "g8-shell-enabled",
+    "file": "src/shadow_hdk/providers/library/codex.toml",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-native-image-enabled",
+    "file": "src/shadow_hdk/providers/library/codex.toml",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-repository-discovery-restored",
+    "file": "src/shadow_hdk/providers/library/codex.toml",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-tool-capability-false",
+    "file": "src/shadow_hdk/providers/library/codex.toml",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  },
+  {
+    "label": "g8-close-not-settled",
+    "file": "src/shadow_hdk/adapters/jsonl/session.py",
+    "original_anchor_count": 1,
+    "mutant_anchor_count": 0
+  }
+]

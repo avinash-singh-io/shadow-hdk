@@ -6,10 +6,10 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 
     async def test_cancelling_thread_close_releases_resources_and_the_store_hold(tmp_path: Any) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         port = Managed(wait=True)
         store = InMemoryThreads()
         thread = await Thread.open(
@@ -29,7 +29,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             [thread.id], True, None,
         )
 E       AssertionError: assert (['id-0001'], True, 'owner') == (['id-0001'], True, None)
-E         
+E
 E         At index 2 diff: 'owner' != None
 E         Use -v to get more diff
 
@@ -40,10 +40,10 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 
     async def test_a_thread_cleanup_failure_releases_the_hold_and_tries_every_port(tmp_path: Any) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         first, broken = Managed(), Managed(fail=True)
         store = InMemoryThreads()
         thread = await Thread.open(
@@ -58,7 +58,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             [thread.id], [thread.id], None,
         )
 E       AssertionError: assert (['id-0001'],...01'], 'owner') == (['id-0001'],...-0001'], None)
-E         
+E
 E         At index 2 diff: 'owner' != None
 E         Use -v to get more diff
 

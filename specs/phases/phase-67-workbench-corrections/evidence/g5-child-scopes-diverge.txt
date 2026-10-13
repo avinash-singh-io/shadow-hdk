@@ -39,11 +39,11 @@ ___________ test_images_reach_the_model_and_the_run_closes_resources ___________
             events[-1].kind,
         ) == ([(PNG,), (PNG,)], True, 1, [picture.scopes[0]], "ended")
 E       AssertionError: assert ([(Image(mime...01'], 'ended') == ([(Image(mime...02'], 'ended')
-E         
+E
 E         At index 2 diff: 2 != 1
 E         Use -v to get more diff
 
 tests/adapters/browser/test_images_reach_the_model_and_wire.py:103: AssertionError
 =========================== short test summary info ============================
 FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
-1 failed in 0.37s
+1 failed in 0.40s

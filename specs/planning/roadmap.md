@@ -27,6 +27,13 @@ It spans one deterministic workflow with a few tools, model-assisted workflows, 
 and dynamic multi-agent work acting on software or the physical world. It grows by data, adapters,
 patterns and host-owned components, never by runtime branches on a provider, product or use case.
 
+## Owner-authorized maintenance expansion — 2026-10-13
+Phase 67 prepares 0.48.0: socket/worktree/search/history corrections plus optional browser and
+workbench packs and governed Codex reads. **Paused by owner**: selected browser candidate has
+three failing real controls; Codex catalogue verification and exact-tree acceptance are unfinished.
+Commit/push only; merge, tag and publication are prohibited. Product pins and bridge retirement
+are product-owned.
+
 ## Current roadmap — 2026-09-21
 
 **Native foundation first.** [Epic 0010](../epics/0010-cross-platform.md) now owns the Rust

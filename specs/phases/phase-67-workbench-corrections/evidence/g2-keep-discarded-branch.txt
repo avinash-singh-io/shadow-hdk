@@ -10,7 +10,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         await close_worktree(tree, keep_branch=False)
 >       assert (await worktrees(repo), git(repo, "branch", "--list", "feature/discard")) == ([], "")
 E       AssertionError: assert ([], 'feature/discard') == ([], '')
-E         
+E
 E         At index 1 diff: 'feature/discard' != ''
 E         Use -v to get more diff
 

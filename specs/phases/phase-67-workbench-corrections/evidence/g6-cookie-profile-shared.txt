@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_overlapping_runs_have_isolated_cookies_and_close_independently[asyncio] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10e6cd7f0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-505/test_overlapping_runs_have_iso0/ca.pem'))
+
+    async def test_overlapping_runs_have_isolated_cookies_and_close_independently(apps: Any) -> None:
+        first, *_ = apps
+        engine = engine_for(apps)
+        try:
+            await completed(engine, "open", {"url": first.origin + "/cookie/set"}, "a")
+            await completed(engine, "open", {"url": first.origin + "/cookie"}, "b")
+>           assert "anonymous" in str((await completed(engine, "snapshot", {}, "b")).output)
+E           assert 'anonymous' in '{\'tab\': \'tab-1\', \'url\': \'http://127.0.0.1:63474/cookie\', \'snapshot\': \'- heading "private=owner-a" [level=1]\', \'truncated\': False}'
+E            +  where '{\'tab\': \'tab-1\', \'url\': \'http://127.0.0.1:63474/cookie\', \'snapshot\': \'- heading "private=owner-a" [level=1]\', \'truncated\': False}' = str({'tab': 'tab-1', 'url': 'http://127.0.0.1:63474/cookie', 'snapshot': '- heading "private=owner-a" [level=1]', 'truncated': False})
+E            +    where {'tab': 'tab-1', 'url': 'http://127.0.0.1:63474/cookie', 'snapshot': '- heading "private=owner-a" [level=1]', 'truncated': False} = Completed(output={'tab': 'tab-1', 'url': 'http://127.0.0.1:63474/cookie', 'snapshot': '- heading "private=owner-a" [level=1]', 'truncated': False}, kind='completed', images=()).output
+
+tests/adapters/browser/test_real_browser.py:412: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_overlapping_runs_have_isolated_cookies_and_close_independently[asyncio]
+1 failed in 2.79s

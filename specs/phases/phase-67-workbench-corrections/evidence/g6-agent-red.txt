@@ -1,0 +1,16 @@
+
+==================================== ERRORS ====================================
+___ ERROR collecting tests/adapters/browser/test_agent_browser_references.py ___
+ImportError while importing test module '/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/adapters/browser/test_agent_browser_references.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/adapters/browser/test_agent_browser_references.py:8: in <module>
+    from shadow_hdk.adapters.browser import AgentBrowserEngine, OriginPolicy
+E   ImportError: cannot import name 'AgentBrowserEngine' from 'shadow_hdk.adapters.browser' (/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/adapters/browser/__init__.py)
+=========================== short test summary info ============================
+ERROR tests/adapters/browser/test_agent_browser_references.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.21s

@@ -4,11 +4,11 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
 
     async def test_a_park_keeps_the_resource_until_the_resumed_run_ends() -> None:
         from langgraph.checkpoint.memory import InMemorySaver
-    
+
         from shadow_hdk.kernel.observations import ApprovalRequest
         from shadow_hdk.kernel.ports import Allow
         from shadow_hdk.runtime import resume
-    
+
         class Asking(Managed):
             async def invoke(self, registration: str, inputs: Any) -> Any:
                 context = current_run()
@@ -16,7 +16,7 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
                 if await context.resumed() is None:
                     return ApprovalRequest(question="continue?", handle="approval")
                 return Completed({"closed_before_resume": list(self.closed)})
-    
+
         port = Asking()
         ports = Ports(components=(port,), governance=AllowAll(), sink=ListSink(), clock=FixedClock())
         options = RunOptions(
@@ -28,7 +28,7 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
         first = [e async for e in run(plan, ports, options=options)]
 >       assert (port.closed, [e.kind for e in first if e.kind == "ended"]) == ([], [])
 E       AssertionError: assert (['parked-resource'], []) == ([], [])
-E         
+E
 E         At index 0 diff: ['parked-resource'] != []
 E         Use -v to get more diff
 
@@ -39,11 +39,11 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 
     async def test_a_thread_owns_one_scope_across_turns_and_closes_it_once(tmp_path: Any) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.adapters.browser.test_images_reach_the_model_and_wire import Picture
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         port = Picture()
         agent = Agent([([("picture", {})], "first"), ([("picture", {})], "second")])
         thread = await Thread.open(
@@ -58,7 +58,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 >           assert port.released == [], "the conversation still owns its resources"
 E           AssertionError: the conversation still owns its resources
 E           assert ['id-0002'] == []
-E             
+E
 E             Left contains one more item: 'id-0002'
 E             Use -v to get more diff
 

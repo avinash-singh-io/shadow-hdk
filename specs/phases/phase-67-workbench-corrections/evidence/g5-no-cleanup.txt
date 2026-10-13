@@ -39,7 +39,7 @@ ___________ test_images_reach_the_model_and_the_run_closes_resources ___________
             events[-1].kind,
         ) == ([(PNG,), (PNG,)], True, 1, [picture.scopes[0]], "ended")
 E       AssertionError: assert ([(Image(mime..., [], 'ended') == ([(Image(mime...01'], 'ended')
-E         
+E
 E         At index 3 diff: [] != ['id-0001']
 E         Use -v to get more diff
 
@@ -55,7 +55,7 @@ ____________ test_a_cleanup_failure_is_a_failed_run_with_its_reason ____________
             [events[0].run_id],
         )
 E       AssertionError: assert ('completed', None, []) == ('failed', 'r..., ['id-0001'])
-E         
+E
 E         At index 0 diff: 'completed' != 'failed'
 E         Use -v to get more diff
 
@@ -63,4 +63,4 @@ tests/runtime/test_run_resources.py:71: AssertionError
 =========================== short test summary info ============================
 FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
 FAILED tests/runtime/test_run_resources.py::test_a_cleanup_failure_is_a_failed_run_with_its_reason
-2 failed in 0.26s
+2 failed in 0.28s

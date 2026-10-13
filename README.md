@@ -10,6 +10,11 @@ Use it when you want an agent system whose tools, environments, authority, state
 history are explicit and controllable. Start with the shipped `Harness` and `ServeHost` facade, or
 drop to ports and runtime primitives when your product needs to own more of the design.
 
+Optional [browser components](docs/browser.md) provide local, governed browser actions and image
+observations. Optional [workbench components](docs/workbench.md) expose background jobs, test
+report data and the person's direct command/file door. Install the extras and register only the
+packs your product needs; ordinary installation downloads no browser binary.
+
 ```bash
 pip install shadow-hdk
 ```

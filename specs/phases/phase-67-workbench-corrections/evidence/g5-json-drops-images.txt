@@ -12,7 +12,7 @@ ____________ test_image_contracts_roundtrip_with_old_empty_defaults ____________
             Message("user", "text").images,
         ) == (observation, ModelRequest((message,)), (), ())
 E       AssertionError: assert (Completed(ou...None), (), ()) == (Completed(ou...None), (), ())
-E         
+E
 E         At index 0 diff: Completed(output={'caption': 'page'}, kind='completed', images=()) != Completed(output={'caption': 'page'}, kind='completed', images=(Image(mime_type='image/png', data='iVBORw0KGgo='),))
 E         Use -v to get more diff
 

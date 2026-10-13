@@ -1,0 +1,28 @@
+................F....                                                    [100%]
+=================================== FAILURES ===================================
+_ test_configuration_requires_an_origin_without_credentials_or_paths[http://localhost/#part] _
+
+origin = 'http://localhost/#part'
+
+    @pytest.mark.parametrize(
+        "origin",
+        [
+            "http://user:secret@localhost",
+            "http://localhost/path",
+            "http://localhost/?x=y",
+            "http://localhost/#part",
+            "file:///tmp",
+            "https://example.com:99999",
+            "http://localhost:0",
+            "http://[broken",
+        ],
+    )
+    def test_configuration_requires_an_origin_without_credentials_or_paths(origin: str) -> None:
+>       with pytest.raises(ValueError, match="origin"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/adapters/browser/test_browser_origin_policy.py:66: Failed
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_origin_policy.py::test_configuration_requires_an_origin_without_credentials_or_paths[http://localhost/#part]
+1 failed, 20 passed in 0.17s

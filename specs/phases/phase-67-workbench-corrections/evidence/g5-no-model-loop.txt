@@ -33,9 +33,9 @@ ___________ test_images_reach_the_model_and_the_run_closes_resources ___________
 E       AssertionError: [Started(run_id='id-0001', seq=0, at='2026-01-01T00:00:00+00:00', lease=Lease(ceiling=Ceiling(max_steps=40, max_wall_s...run_id='id-0001', seq=4, at='2026-01-01T00:00:00+00:00', reason='completed', steps_taken=1, detail=None, kind='ended')]
 E       assert 0 == 3
 E        +  where 0 = len([])
-E        +    where [] = <shadow_hdk.runtime.testing.doubles.ScriptedModel object at 0x1101a3cb0>.requests
+E        +    where [] = <shadow_hdk.runtime.testing.doubles.ScriptedModel object at 0x10b9b7b60>.requests
 
 tests/adapters/browser/test_images_reach_the_model_and_wire.py:101: AssertionError
 =========================== short test summary info ============================
 FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
-1 failed in 0.37s
+1 failed in 0.39s

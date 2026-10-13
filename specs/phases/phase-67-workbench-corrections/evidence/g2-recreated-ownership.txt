@@ -15,7 +15,7 @@ branch = 'feature/recreated'
         git(repo, "worktree", "add", str(tree.path), tree.branch)
 >       assert await worktrees(repo) == []
 E       AssertionError: assert [Worktree(pat...ath_0/repo'))] == []
-E         
+E
 E         Left contains one more item: Worktree(path=PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-423/test_re...te/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-423/test_recreating_the_same_path_0/repo'))
 E         Use -v to get more diff
 
@@ -35,7 +35,7 @@ branch = None
         git(repo, "worktree", "add", str(tree.path), tree.branch)
 >       assert await worktrees(repo) == []
 E       AssertionError: assert [Worktree(pat...ath_1/repo'))] == []
-E         
+E
 E         Left contains one more item: Worktree(path=PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-423/test_re...te/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-423/test_recreating_the_same_path_1/repo'))
 E         Use -v to get more diff
 

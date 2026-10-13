@@ -16,7 +16,7 @@ check = 'listed'
         if check == "listed":
 >           assert listed == [(tree.path, "intent/task-1234")]
 E           AssertionError: assert [] == [(PosixPath('...t/task-1234')]
-E             
+E
 E             Right contains one more item: (PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-418/test_custom_branch_lifecycle_a0/.repo-agent'), 'intent/task-1234')
 E             Use -v to get more diff
 

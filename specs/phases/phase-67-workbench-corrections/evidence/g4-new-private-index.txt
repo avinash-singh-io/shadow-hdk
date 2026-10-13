@@ -11,13 +11,13 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cad4510>
         repo = a_repository(tmp_path)
         used: list[str] = []
         original = asyncio.create_subprocess_exec
-    
+
         async def launched(*args: object, **kw: object) -> asyncio.subprocess.Process:
             env = kw.get("env")
             if args[:3] == ("git", "add", "-A") and isinstance(env, dict):
                 used.append(str(env.get("GIT_INDEX_FILE")))
             return await original(*args, **kw)  # type: ignore[arg-type]
-    
+
         monkeypatch.setattr(asyncio, "create_subprocess_exec", launched)
         before = await GitHistory(repo).snapshot()
         (repo / "app.py").write_text("external edit")
@@ -35,7 +35,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cad4510>
             before != after,
         ) == (1, True, "external edit", "external new", True)
 E       AssertionError: assert (4, True, 'ex...al new', True) == (1, True, 'ex...al new', True)
-E         
+E
 E         At index 0 diff: 4 != 1
 E         Use -v to get more diff
 

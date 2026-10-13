@@ -20,6 +20,7 @@ import asyncio
 import contextlib
 import json
 import math
+import tempfile
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -89,6 +90,9 @@ class JsonlSession(AgentSession):
         self._env = dict(env)
         self._workspace = workspace
         self._tools = tools
+        self._private_workspace: tempfile.TemporaryDirectory[str] | None = None
+        self._catalogue_workspace: tempfile.TemporaryDirectory[str] | None = None
+        self._catalogue_args: tuple[str, ...] = ()
         asked = behaviour.silence_seconds if behaviour is not None else None
         self.silence_s = float(asked if asked else (timeout_s if timeout_s else silence_s))
         """How long this CLI may say nothing (D182). The mode's own where it set one — it travels
@@ -138,7 +142,7 @@ class JsonlSession(AgentSession):
     # ------------------------------------------------------------------ the process
 
     def _argv(self) -> list[str]:
-        argv = [str(self._binary), *self._provider.launch_args]
+        argv = [str(self._binary), *self._provider.launch_args, *self._catalogue_args]
         dialect = self._dialect
         if self._session_id and dialect.resume_args:
             argv += [*dialect.resume_args, self._session_id]
@@ -147,12 +151,35 @@ class JsonlSession(AgentSession):
     async def _start(self) -> asyncio.subprocess.Process:
         from shadow_hdk.runtime.processes import start_held
 
+        workspace = self._workspace
+        if self._tools and self._dialect.private_working_directory:
+            if self._private_workspace is None:
+                self._private_workspace = tempfile.TemporaryDirectory(prefix="shadow-hdk-sdk-")
+                (Path(self._private_workspace.name) / ".git").mkdir()
+            workspace = Path(self._private_workspace.name)
+
+        if self._tools and self._dialect.launch_catalogue and not self._catalogue_args:
+            from shadow_hdk.adapters.jsonl.catalogue import prepare_catalogue
+
+            self._catalogue_workspace = tempfile.TemporaryDirectory(prefix="shadow-hdk-catalogue-")
+            try:
+                self._catalogue_args = await prepare_catalogue(
+                    self._dialect.launch_catalogue,
+                    binary=self._binary,
+                    env=self._env,
+                    directory=Path(self._catalogue_workspace.name),
+                )
+            except BaseException:
+                self._catalogue_workspace.cleanup()
+                self._catalogue_workspace = None
+                raise
+
         # A session leader the runtime holds (D35, D53): closing the session ends the tree it
         # started — a coding CLI spawns compilers, language servers and test runners — and it
         # dies with this process, whatever ends it (BUG-019).
         process = await start_held(
             *self._argv(),
-            cwd=str(self._workspace) if self._workspace else None,
+            cwd=str(workspace) if workspace else None,
             env=self._env,
             stdin=asyncio.subprocess.PIPE,
         )
@@ -392,6 +419,26 @@ class JsonlSession(AgentSession):
 
     async def close(self) -> None:
         """Ending the session ends the tree it started (D35)."""
+        from shadow_hdk.runtime.resources import settle_resources
+
+        _, cancelled = await settle_resources(asyncio.create_task(self._close()))
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _close(self) -> None:
+        try:
+            await self._close_process()
+        finally:
+            if self._private_workspace is not None:
+                self._private_workspace.cleanup()
+                self._private_workspace = None
+
+            if self._catalogue_workspace is not None:
+                self._catalogue_workspace.cleanup()
+                self._catalogue_workspace = None
+                self._catalogue_args = ()
+
+    async def _close_process(self) -> None:
         process, self._process = self._process, None
         self._interrupted = False
         if process is None or process.returncode is not None:

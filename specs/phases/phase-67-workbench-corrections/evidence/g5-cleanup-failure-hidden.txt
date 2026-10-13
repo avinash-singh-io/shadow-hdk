@@ -11,11 +11,11 @@ ____________ test_a_cleanup_failure_is_a_failed_run_with_its_reason ____________
             [events[0].run_id],
         )
 E       AssertionError: assert ('completed',..., ['id-0001']) == ('failed', 'r..., ['id-0001'])
-E         
+E
 E         At index 0 diff: 'completed' != 'failed'
 E         Use -v to get more diff
 
 tests/runtime/test_run_resources.py:71: AssertionError
 =========================== short test summary info ============================
 FAILED tests/runtime/test_run_resources.py::test_a_cleanup_failure_is_a_failed_run_with_its_reason
-1 failed in 0.07s
+1 failed in 0.08s

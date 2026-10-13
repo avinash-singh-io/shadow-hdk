@@ -22,7 +22,7 @@ ____ test_a_wire_host_owns_one_scope_across_runs_and_releases_aliases_once _____
     |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/wire/test_images_and_resources.py", line 94, in test_a_wire_host_owns_one_scope_across_runs_and_releases_aliases_once
     |     assert (picture.scopes, picture.released) == (["host-session"] * 2, [])
     | AssertionError: assert (['id-0001', ...', 'id-0002']) == (['host-sessi...session'], [])
-    |   
+    |
     |   At index 0 diff: ['id-0001', 'id-0002'] != ['host-session', 'host-session']
     |   Use -v to get more diff
     +------------------------------------

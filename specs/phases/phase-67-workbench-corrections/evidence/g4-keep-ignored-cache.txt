@@ -15,7 +15,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         await history.restore(taken)
 >       assert (repo / "cache.tmp").read_text() == "ignored now"
 E       AssertionError: assert 'untracked' == 'ignored now'
-E         
+E
 E         - ignored now
 E         + untracked
 

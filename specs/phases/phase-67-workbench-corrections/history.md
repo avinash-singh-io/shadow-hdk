@@ -40,3 +40,34 @@ Affects-specs: specs/decisions/0001-optional-workbench-packs.md
 Detail: Two new controls failed because cleanup ran at park and at each turn. RunOptions now accepts a host-owned opaque scope; root defaults retain resources during a park, while Conversation/Thread hold their scope across turns and settlement. Scope crosses run and resume callbacks. Resource aliases release once, every port is attempted after an error, and close settles before delivering cancellation. Additional failing controls reproduced leaked Thread store holds after cancellation/failure and repeated cancellation (BUG-241); the complete close now settles resource and store teardown together. Fourteen focused lifecycle/wire controls pass, with broader conversation/park/restart controls passing; mutation verification is in progress. Browser, workbench packs, Codex read correction and publication remain pending.
 
 ---
+
+### [FEATURE] 2026-10-13 — Optional browser candidate verified
+Topics: browser, images, origins, installation, optional-packs
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/browser.md, specs/decisions/0001-optional-workbench-packs.md
+Detail: The direct Playwright engine uses an isolated pinned mitmproxy SDK process with per-profile TLS interception before upstream connection, retaining upstream certificate verification. Restored controls pass 41 tests including first-use binary installation, real multi-turn images, allowed TLS/sockets, denied HTTP/TLS zero connections and a positive/negative UDP probe. All 32 browser mutants and the rechecked 14 generic image/wire mutants are detected. The installed base wheel exposes 17 declarations without SDK imports and includes its gateway resource. Two independent CI browser legs are added. Group 7 has initial host/job/report controls and new red proofs for split UTF-8 and descendants of exited leaders; its implementation is still in progress. Codex correction and final release acceptance remain pending; 0.47.3 is latest published.
+
+---
+
+### [FEATURE] 2026-10-13 — Workbench and governed Codex controls pass
+Topics: background-jobs, host-access, test-results, codex, resources, wire
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/workbench.md, docs/for-a-product.md, specs/architecture/adapters.md, specs/architecture/runtime.md, specs/architecture/wire.md
+Detail: Twenty-six workbench mutations detect independent-cursor, metadata, listener, file-door and report regressions. BUG-242/243 fix split UTF-8 and owned children surviving exited leaders. Eight Codex mutants detect private bootstrap, uninjected defaults, cleanup, native shell/image exposure and capability drift. A real Codex 0.154.0 SDK uses a local deterministic Responses model, crosses the real MCP socket and records the file read, then resumes with the same governed catalogue. MCP resource discovery remains; the kit relay exposes no filesystem resources. Teardown is explicitly negotiated so older TypeScript clients retain the no-resource default; five built-client mutations detect scope loss, duplicate owners, hidden failure, missing raw owner and missing negotiation. Restored combined controls pass 23 cases; full release acceptance remains Group 9.
+
+### [ARCH_CHANGE] 2026-10-13 — Synchronize accepted additive contracts at release preparation
+Topics: resources, images, codex, browser, workbench, spec-drift
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/architecture/file-structure.md, specs/architecture/runtime.md, specs/architecture/adapters.md, specs/architecture/wire.md
+Detail: Record the accepted ADR's optional image observations, resource scope/cleanup negotiation, private CLI bootstrap directory and optional browser/workbench adapter map. No product or native successor specification is edited. All implementation groups have candidate evidence; release preparation now performs the documentation sync and final gate.
+
+### [VERIFY] 2026-10-13 — Local release acceptance passes
+Topics: acceptance, packaging, benchmark, landing
+Affects-specs: specs/status.md
+Detail: Full expanded local suite: 2,357 passed, 29 skipped, 25 deselected; lint/format/strict types pass over 552 files. All five benchmark cases pass. Installed 0.48.0 wheel controls outside source on Python 3.12: 69 passed, one first-use control skipped (that control passes in the full source gate). Base-wheel no-engine/no-browser catalogue and explicit missing-extra behavior pass. Pinned CPython smoke passes. Exact-head CI, landing and publication remain pending.
+
+
+### [PAUSE] 2026-10-13 — Owner stops implementation and release
+Topics: pause, browser-selection, codex, checkpoint, release-gates
+Affects-specs: specs/status.md, specs/decisions/0001-optional-workbench-packs.md
+Detail: Owner requests all Phase 67 work committed and pushed, then goal paused; explicitly forbids merge, tag and publication. Preserve comparison and unfinished Codex verification, with inline handoff only. Pinned local comparison favors agent-browser 0.39.0 for references/observations and small daemon footprint, but it is not accepted: combined real browser gate completes 15 passed / 3 failed, all candidate failures (HTTP error navigation and two Playwright-specific wait-selector cases). Original Playwright remains default. Three recognized-model actual Codex 0.154.0 controls pass (gpt-5.4, gpt-6-astra, gpt-6-sol, including resume); new catalogue mutations/edge controls remain pending. Earlier 2,357-pass suite, types and installed-wheel controls predate these changes. No active mutation runner or owned browser/test process remains; earlier exact restoration and restored controls are preserved. No new mutation or acceptance run is started after stop. Checkpoint is not release acceptance.

@@ -1,0 +1,9 @@
+installed package: /tmp/hdk67-release-extras/lib/python3.12/site-packages/shadow_hdk/__init__.py
+....................................s.................................   [100%]
+=============================== warnings summary ===============================
+tests/adapters/browser/test_real_browser.py:22
+  /private/tmp/hdk67-installed-controls/tests/adapters/browser/test_real_browser.py:22: PytestUnknownMarkWarning: Unknown pytest.mark.browser - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = [pytest.mark.anyio, pytest.mark.browser, pytest.mark.timeout(180)]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+69 passed, 1 skipped, 1 warning in 36.25s

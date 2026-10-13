@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_redirects_subresources_workers_and_websockets_cannot_reach_denied_origins[asyncio] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10a1256a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-502/test_redirects_subresources_wo0/ca.pem'))
+
+    async def test_redirects_subresources_workers_and_websockets_cannot_reach_denied_origins(
+        apps: Any,
+    ) -> None:
+        first, second, denied_http, denied_tls, _ = apps
+        engine = engine_for(apps)
+        try:
+            await completed(engine, "open", {"url": first.origin})
+            await completed(engine, "wait", {"selector": "h1"})
+            await completed(engine, "open", {"url": second.origin})
+            await completed(engine, "wait", {"selector": "h1"})
+            chain = await engine.execute("open", {"url": first.origin + "/chain"}, "app")
+            assert isinstance(chain, Failed) and "blocked" in chain.error, chain
+            # Image/script requests are asynchronous; a second allowed navigation is a load barrier.
+            await completed(engine, "open", {"url": second.origin + "/next"})
+>           assert (denied_http.hits, denied_tls.hits, denied_http.accepted, denied_tls.accepted) == (
+                [],
+                [],
+                0,
+                0,
+            )
+E           AssertionError: assert ([], ['/pixel...pixel'], 0, 6) == ([], [], 0, 0)
+E
+E             At index 1 diff: ['/pixel', '/fetch', '/socket', '/worker-fetch', '/exfil', '/pixel'] != []
+E             Use -v to get more diff
+
+tests/adapters/browser/test_real_browser.py:394: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_redirects_subresources_workers_and_websockets_cannot_reach_denied_origins[asyncio]
+1 failed in 1.88s

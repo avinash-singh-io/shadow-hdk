@@ -1,0 +1,65 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_edit_navigate_debug_and_take_real_images[asyncio] ____________
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10e9b96a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-500/test_edit_navigate_debug_and_t0/ca.pem'))
+
+    async def test_edit_navigate_debug_and_take_real_images(apps: Any) -> None:
+        first, *_ = apps
+        engine = engine_for(apps)
+        try:
+            opened = await completed(engine, "open", {"url": first.origin})
+            assert cast(dict[str, Any], opened.output).get("status") == 200
+            tab = cast(dict[str, Any], opened.output)["tab"]
+            await completed(engine, "type", {"role": "textbox", "name": "Title", "value": "Scoped app"})
+            await completed(engine, "press", {"role": "button", "name": "Save", "key": "Enter"})
+            await completed(
+                engine, "select", {"role": "combobox", "name": "Language", "values": ["py"]}
+            )
+            await completed(engine, "wait", {"role": "heading", "name": "Scoped app"})
+            snapshot = await completed(engine, "snapshot", {})
+            assert "Scoped app" in str(snapshot.output) and "py" in str(snapshot.output)
+            found = await completed(engine, "find", {"role": "button", "name": "Save"})
+            assert cast(dict[str, Any], found.output)["count"] == 1
+            before = await completed(engine, "screenshot", {})
+            assert base64.b64decode(before.images[0].data).startswith(b"\x89PNG\r\n\x1a\n")
+            await completed(engine, "scroll", {"y": 1600})
+            after = await completed(engine, "screenshot", {})
+            assert after.images != before.images, "scroll must change the rendered viewport"
+            await completed(engine, "click", {"role": "link", "name": "Next"})
+            assert "Next page" in str((await completed(engine, "snapshot", {})).output)
+            await completed(engine, "back", {})
+            assert "Save" in str((await completed(engine, "snapshot", {})).output)
+            await completed(engine, "forward", {})
+            assert "Next page" in str((await completed(engine, "snapshot", {})).output)
+            await completed(engine, "new_tab", {"url": first.origin})
+            tabs = await completed(engine, "tabs", {})
+            assert len(cast(dict[str, Any], tabs.output)["tabs"]) == 2
+            selected = await completed(engine, "console", {"tab": tab})
+            assert all(
+                entry["tab"] == tab for entry in cast(dict[str, Any], selected.output)["entries"]
+            )
+            closing = engine._profiles["app"].tabs[cast(dict[str, Any], tabs.output)["active"]]
+            await completed(engine, "close_tab", {})
+            assert closing.is_closed(), "close_tab must close the underlying page"
+            assert (
+                cast(dict[str, Any], await_out := (await completed(engine, "tabs", {})).output)[
+                    "active"
+                ]
+                == tab
+            ), await_out
+            assert len(cast(dict[str, Any], await_out)["tabs"]) == 1
+            console = await completed(engine, "console", {})
+            errors = await completed(engine, "requests", {})
+            assert "workbench ready" in str(console.output) and "socket ready" in str(console.output)
+>           assert "/bad" in str(errors.output) and "503" in str(errors.output)
+E           assert ('/bad' in "{'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...:ERR_FAILED'}, {'tab': 'tab-2', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}" and '503' in "{'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...:ERR_FAILED'}, {'tab': 'tab-2', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}")
+E            +  where "{'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...:ERR_FAILED'}, {'tab': 'tab-2', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}" = str({'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, {...}, {'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/worker-fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...]})
+E            +    where {'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, {...}, {'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/worker-fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...]} = Completed(output={'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net...', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}, kind='completed', images=()).output
+E            +  and   "{'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...:ERR_FAILED'}, {'tab': 'tab-2', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}" = str({'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, {...}, {'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/worker-fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...]})
+E            +    where {'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, {...}, {'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/worker-fetch', 'method': 'GET', 'failure': 'net::ERR_FAILED'}, ...]} = Completed(output={'entries': [{'tab': 'tab-1', 'url': 'http://127.0.0.1:63363/fetch', 'method': 'GET', 'failure': 'net...', 'url': 'http://127.0.0.1:63361/bad', 'method': 'GET', 'failure': 'net::ERR_ABORTED'}]}, kind='completed', images=()).output
+
+tests/adapters/browser/test_real_browser.py:263: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_edit_navigate_debug_and_take_real_images[asyncio]
+1 failed in 2.83s

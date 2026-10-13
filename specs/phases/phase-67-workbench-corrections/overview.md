@@ -1,11 +1,13 @@
 ---
 type: Phase
-status: in-progress
-tags: [maintenance, socket, worktrees, search, snapshots]
+status: paused
+tags: [maintenance, socket, worktrees, search, snapshots, browser, background-jobs, host-access, test-results, codex, component-packs, images, resources]
 ---
 # Phase 67 — Workbench corrections
 
-Owner approved implementation and publication as 0.48.0 on 2026-10-13.
+Owner originally approved implementation and publication as 0.48.0 on 2026-10-13.
+**Superseded by owner stop instruction:** checkpoint all Phase 67 work, commit/push the feature
+branch, then pause. No implementation, merge, tag or publication is currently authorized.
 Latest published version stays 0.47.3 until publication is verified.
 
 ## Scope
@@ -40,3 +42,11 @@ Acceptance additionally requires real browser integration, denied-origin/redirec
 
 ## Out
 Product pins/UI/bridges, native implementation, interactive PTY, product-specific test runners and personal browser profile access.
+
+## Stop checkpoint — 2026-10-13
+Groups 0–5 and 7 have focused evidence; Groups 6, 8 and 9 remain incomplete. Preserve the
+agent-browser candidate and browser comparison, retaining the Playwright default. The real
+combined browser gate finished 15 passed / 3 failed; no test runner or mutation runner remains.
+The three recognized-model Codex controls pass, but catalogue edge/mutation verification is
+unfinished. Earlier full-suite and wheel evidence is historical, preceding these source changes.
+Resume only on owner instruction; pending gates are recorded in tasks, retrospective and ADR.

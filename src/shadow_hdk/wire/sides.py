@@ -95,6 +95,7 @@ class RuntimeSide:
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
+        self.run_resources = False
         self._clock = clock
         self._observer = observer
         """The process serving the runtime may hand in an observer — an `ActivityObserver` hears
@@ -287,6 +288,7 @@ class RuntimeSide:
                 f"this runtime speaks protocol {PROTOCOL_VERSION!r}, not {offered!r}"
             )
         self.initialized = True
+        self.run_resources = params.get("run_resources") is True
         from shadow_hdk import __version__
 
         return {"protocol_version": PROTOCOL_VERSION, "version": __version__}
@@ -369,7 +371,9 @@ class HostSide:
         from shadow_hdk.wire.peer import RemoteError
 
         try:
-            answered = await self.peer.call(INITIALIZE, {"protocol_version": protocol_version})
+            answered = await self.peer.call(
+                INITIALIZE, {"protocol_version": protocol_version, "run_resources": True}
+            )
         except RemoteError as refused:
             if isinstance(refused.data, dict) and refused.data.get("kind") == "version_mismatch":
                 raise VersionMismatch(str(refused)) from refused

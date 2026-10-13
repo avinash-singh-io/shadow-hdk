@@ -6,11 +6,11 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 
     async def test_a_thread_owns_one_scope_across_turns_and_closes_it_once(tmp_path: Any) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.adapters.browser.test_images_reach_the_model_and_wire import Picture
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         port = Picture()
         agent = Agent([([("picture", {})], "first"), ([("picture", {})], "second")])
         thread = await Thread.open(
@@ -34,7 +34,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 >       assert port.released == [thread.id], "aliases and repeated close must not duplicate teardown"
 E       AssertionError: aliases and repeated close must not duplicate teardown
 E       assert [] == ['id-0001']
-E         
+E
 E         Right contains one more item: 'id-0001'
 E         Use -v to get more diff
 

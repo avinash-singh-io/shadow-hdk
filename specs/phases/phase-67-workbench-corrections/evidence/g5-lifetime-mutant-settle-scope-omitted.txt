@@ -21,7 +21,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             [e async for e in thread.turn("look", on_question="park")]
 >           assert (port.scopes, port.released, len(thread.pending)) == ([thread.id], [], 1)
 E           AssertionError: assert (['id-0002'], ['id-0002'], 1) == (['id-0001'], [], 1)
-E             
+E
 E             At index 0 diff: ['id-0002'] != ['id-0001']
 E             Use -v to get more diff
 

@@ -1,0 +1,31 @@
+....F................                                                    [100%]
+=================================== FAILURES ===================================
+_ test_default_policy_denies_other_origins_and_unsafe_urls[http://localhost.example.com/] _
+
+url = 'http://localhost.example.com/'
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://example.com/",
+            "http://localhost.example.com/",
+            "file:///etc/passwd",
+            "data:text/html,hello",
+            "ftp://localhost/x",
+            "http://user:secret@localhost/",
+            "http://0.0.0.0/",
+            "http://169.254.169.254/",
+            "javascript:alert(1)",
+        ],
+    )
+    def test_default_policy_denies_other_origins_and_unsafe_urls(url: str) -> None:
+>       assert not OriginPolicy().allows(url)
+E       AssertionError: assert not True
+E        +  where True = allows('http://localhost.example.com/')
+E        +    where allows = OriginPolicy(origins=(), allow_localhost=True).allows
+E        +      where OriginPolicy(origins=(), allow_localhost=True) = OriginPolicy()
+
+tests/adapters/browser/test_browser_origin_policy.py:35: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_origin_policy.py::test_default_policy_denies_other_origins_and_unsafe_urls[http://localhost.example.com/]
+1 failed, 20 passed in 0.17s

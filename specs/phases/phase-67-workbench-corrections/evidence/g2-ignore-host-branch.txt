@@ -33,7 +33,7 @@ check = 'branch'
         if check != "listed":
 >           assert actual[check] == expected[check]
 E           AssertionError: assert 'shadow-hdk/agent' == 'intent/task-1234'
-E             
+E
 E             - intent/task-1234
 E             + shadow-hdk/agent
 
@@ -71,7 +71,7 @@ check = 'head'
         if check != "listed":
 >           assert actual[check] == expected[check]
 E           AssertionError: assert 'shadow-hdk/agent' == 'intent/task-1234'
-E             
+E
 E             - intent/task-1234
 E             + shadow-hdk/agent
 

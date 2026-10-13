@@ -11,7 +11,7 @@ type: Status
 > 8 skipped and 24 live cases deselected; lint, formatting and strict types pass.
 > Product pins remain owned by the product lane. TD-021 remains separate tooling work.
 
-**Current Phase: 67 — workbench corrections and optional packs**, branch `phase-67-workbench-corrections`. Owner authorized implementation and release 2026-10-13. Groups 0–5 have focused controls and mutations. Conversation resources survive turns and approval settlement; 225 related regression controls and strict types pass. Browser, workbench packs, Codex audited reads and final release acceptance remain in progress. Latest published release remains v0.47.3.
+**Current Phase: 67 — paused by owner, 2026-10-13**, branch `phase-67-workbench-corrections`, unreleased 0.48.0 checkpoint. Implementation and release work are stopped; commit/push of this checkpoint is authorized, but merge, tag and publication are prohibited. Groups 0–5 and 7 have focused implementation/control evidence. Browser selection is reopened: agent-browser 0.39.0 is the preferred candidate, while Playwright remains the default. The combined real browser gate finished with **15 passed, 3 failed** (all failures on the candidate). Codex 0.154.0 recognized-model controls pass for gpt-5.4, gpt-6-astra and gpt-6-sol, including resume; catalogue mutation/edge verification and exact-current-tree acceptance remain unfinished. Earlier 2,357-pass suite and built artifacts predate these changes and do not accept this checkpoint. Latest published release remains **v0.47.3**.
 
 **Historical checkpoint notes follow; their pending-release statements describe preparation.**
 

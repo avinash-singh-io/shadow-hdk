@@ -14,11 +14,11 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         env = await LocalEnvironment.open(root, mode="full")
         try:
             import asyncio
-    
+
             answer = await asyncio.wait_for(env._walk("."), 2)
 >           assert answer == ["keep.py"]
 E           AssertionError: assert ['escape.py', 'keep.py'] == ['keep.py']
-E             
+E
 E             At index 0 diff: 'escape.py' != 'keep.py'
 E             Left contains one more item: 'keep.py'
 E             Use -v to get more diff

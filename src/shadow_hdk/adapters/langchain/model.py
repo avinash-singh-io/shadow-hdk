@@ -186,24 +186,29 @@ def _as_tool(interface: Interface) -> dict[str, JsonValue]:
     }
 
 
+def _image_blocks(message: Message) -> list[dict[str, Any]]:
+    return [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:{image.mime_type};base64,{image.data}"},
+        }
+        for image in message.images
+    ]
+
+
 def _content_of(message: Message) -> str | list[str | dict[str, Any]]:
     if not message.images:
         return message.content
-    return [
-        {"type": "text", "text": message.content},
-        *[
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:{image.mime_type};base64,{image.data}"},
-            }
-            for image in message.images
-        ],
-    ]
+    return [{"type": "text", "text": message.content}, *_image_blocks(message)]
 
 
 def _to_langchain(messages: tuple[Message, ...]) -> list[BaseMessage]:
     out: list[BaseMessage] = []
+    images: list[str | dict[str, Any]] = []
     for message in messages:
+        if message.role != "tool" and images:
+            out.append(HumanMessage(content=images))
+            images = []
         match message.role:
             case "system":
                 out.append(SystemMessage(content=_content_of(message)))
@@ -217,10 +222,24 @@ def _to_langchain(messages: tuple[Message, ...]) -> list[BaseMessage]:
                 )
             case "tool":
                 out.append(
-                    ToolMessage(
-                        content=_content_of(message), tool_call_id=message.tool_call_id or ""
-                    )
+                    ToolMessage(content=message.content, tool_call_id=message.tool_call_id or "")
                 )
+                if message.images:
+                    # Chat APIs require text tool results and every outstanding result before
+                    # another role. Image observations follow the whole batch in a supported
+                    # image carrier, associated with their tool IDs, without duplicating bytes
+                    # into text or inventing human instructions.
+                    images.extend(
+                        [
+                            {
+                                "type": "text",
+                                "text": f"Images returned by tool call {message.tool_call_id}.",
+                            },
+                            *_image_blocks(message),
+                        ]
+                    )
+    if images:
+        out.append(HumanMessage(content=images))
     return out
 
 

@@ -1,0 +1,52 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_workbench_reads_are_governed_and_reports_use_the_same_confined_file_door _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-545/test_workbench_reads_are_gover0')
+
+    async def test_workbench_reads_are_governed_and_reports_use_the_same_confined_file_door(
+        tmp_path: Path,
+    ) -> None:
+        from shadow_hdk.adapters.basic import AllowAll
+        from shadow_hdk.kernel import Binding, Ceiling, Composition, Floor, Invoke, Lease
+        from shadow_hdk.runtime import Ports, RunOptions, run
+        from shadow_hdk.runtime.testing import FixedClock, ListSink
+
+        environment = await LocalEnvironment.open(tmp_path, mode="full")
+        door = HostDoor(environment)
+        pack = WorkbenchComponents(door)
+        (tmp_path / "report.xml").write_text('<testsuite tests="1"><testcase name="real"/></testsuite>')
+        try:
+            events = [
+                e
+                async for e in run(
+                    Composition(
+                        (Invoke("tests", "test_results", (Binding("path", value="report.xml"),)),)
+                    ),
+                    Ports(
+                        components=(pack,), governance=AllowAll(), sink=ListSink(), clock=FixedClock()
+                    ),
+                    options=RunOptions(lease=Lease(Ceiling(10, 60, 0), Floor(0))),
+                )
+            ]
+            observed = [e.observation for e in events if e.kind == "observed"]
+            assert data(observed[0])["passed"] == 1 and events[-1].reason == "completed"
+            assert [(e.component, e.inputs) for e in events if e.kind == "invoked"] == [
+                ("test_results", {"path": "report.xml"})
+            ]
+            assert isinstance(await pack.invoke("test_results", {"path": "../outside.xml"}), Refused)
+            for operation, inputs in (
+                ("list_jobs", {"ignored": True}),
+                ("read_job", {"job": "missing", "cursor": True}),
+                ("read_job", {"job": "missing", "ignored": True}),
+                ("test_results", {"path": "report.xml", "ignored": True}),
+                ("unknown", {}),
+            ):
+>               assert isinstance(await pack.invoke(operation, inputs), Refused)
+E               AssertionError: assert False
+E                +  where False = isinstance(Completed(output={'format': 'junit', 'total': 1, 'passed': 1, 'failed': 0, 'skipped': 0, 'failing_names': [], 'cases':...ures': [], 'skip_reason': None, 'stdout': '', 'stderr': ''}], 'stdout': [], 'stderr': []}, kind='completed', images=()), Refused)
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:238: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_workbench_reads_are_governed_and_reports_use_the_same_confined_file_door
+1 failed in 0.22s

@@ -1,0 +1,23 @@
+{
+  "browser-engine-comparison/README.md": "9f0705c0f880cfef73ff552586d67809c9bf49573fe8602c14802a3463b56877",
+  "browser-engine-comparison/browse-direct.mjs": "0571e70d2025cd90fb0dd1cd364b2aadb0f5e08c94717b08aab1e4523ce85106",
+  "browser-engine-comparison/browse-local-comparison.json": "38c806c5fa7650c151d0930f6682079aa02ba7fb5a7f0a10aa313968494492d8",
+  "browser-engine-comparison/browse-local.mjs": "9b607b492b7c6719be3efae6ce1b6d0884415b986f048342f67cb691c7ae66c5",
+  "browser-engine-comparison/browser-use-direct.py": "1942bb4a8641ffcd5fdd5aeaa6045994e5e705e0fb2a299029a3bd4ae933b310",
+  "browser-engine-comparison/compare-browse-local.py": "f7f64abf4b4b730f7af1537cd51f5a7eebc83d299f1035631d52e9690e343acb",
+  "browser-engine-comparison/compare-browse.py": "5d935c7c1794f012d55a8a6928cbc452e42c421bda0d787e4a8ee22eacc7bec4",
+  "browser-engine-comparison/compare.py": "4bd7dff693cd21290fb969b951690c709c275c8ee02fadd19f75fc03aa0b7056",
+  "browser-engine-comparison/comparison.json": "60a830682115862344ae8e0e91e4341bd82f74ac10694a92cffb2ea1f97645d1",
+  "browser-engine-comparison/probe-agent.py": "1471171a65475ebee8d72b493c1e5fb7e42e88636948481edef366ba9a12a519",
+  "g6-agent-probe.txt": "953b73da090eeadfea43f62b6beb1e081545f9ac38fafcff703d286b12f7bef3",
+  "g6-agent-red.txt": "60a442ded32ac13db40326c6c982d9a5485f2350b62879afe58e1b79459772df",
+  "g6-agent-reference-controls.txt": "b386809d7b125f98f6cb5826d99b874f692772269c1077be7bf07f3ab5974e48",
+  "g6-browse-local-output.txt": "f7b4eb8c1b3299fdbc78a355428afea6a4102d12580b910925ec1f76a52b118e",
+  "g6-comparison-output.txt": "de9e3c0129d85ac4608d01d7449a57c198d589b57306c43a9ed58bab38b4216d",
+  "g6-selected-real-controls.txt": "ae22044a58b3fd43b2eb2a7124f4f505a23cbd06d29dc7888280dc474f367b36",
+  "g8-catalogue-green.txt": "f557f5527d1a681dbf651864203d5e6ff5d8487660088a79ae3daa4517d5aae0",
+  "g8-catalogue-red.txt": "e825fef56c9e2df8b8e58fecbbe56e41a240be760e34ec9bec9f2591f954b1cd",
+  "g8-catalogue-restored.txt": "474e163c17028fcb22cc2fb4695138008a0287a0fbb42d69f90f1bc4f70f3d80",
+  "g8-pre-agent-types.txt": "abeb82969b3a630d6f41a0baec2f99779404bc3ef8f45eac65c031d853d75b85",
+  "g8-recognized-model-controls.txt": "0eb9b9d74ef55d9357016a7aee76f5d02c69dc81f9a22b0328ea4d1f0fc19070"
+}

@@ -1,0 +1,37 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_edit_navigate_debug_and_take_real_images[asyncio] ____________
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10bef56a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-493/test_edit_navigate_debug_and_t0/ca.pem'))
+
+    async def test_edit_navigate_debug_and_take_real_images(apps: Any) -> None:
+        first, *_ = apps
+        engine = engine_for(apps)
+        try:
+            opened = await completed(engine, "open", {"url": first.origin})
+            assert cast(dict[str, Any], opened.output).get("status") == 200
+            tab = cast(dict[str, Any], opened.output)["tab"]
+            await completed(engine, "type", {"role": "textbox", "name": "Title", "value": "Scoped app"})
+            await completed(engine, "press", {"role": "button", "name": "Save", "key": "Enter"})
+            await completed(
+                engine, "select", {"role": "combobox", "name": "Language", "values": ["py"]}
+            )
+            await completed(engine, "wait", {"role": "heading", "name": "Scoped app"})
+            snapshot = await completed(engine, "snapshot", {})
+            assert "Scoped app" in str(snapshot.output) and "py" in str(snapshot.output)
+            found = await completed(engine, "find", {"role": "button", "name": "Save"})
+            assert cast(dict[str, Any], found.output)["count"] == 1
+            before = await completed(engine, "screenshot", {})
+            assert base64.b64decode(before.images[0].data).startswith(b"\x89PNG\r\n\x1a\n")
+            await completed(engine, "scroll", {"y": 1600})
+            after = await completed(engine, "screenshot", {})
+>           assert after.images != before.images, "scroll must change the rendered viewport"
+E           AssertionError: scroll must change the rendered viewport
+E           assert (Image(mime_type='image/png', data='iVBORw0KGgoAAAANSUhEUgAABQAAAALQCAIAAABAH0oBAAAQAElEQVR4nOzdCbhdg7nw8XUipkyiEkmNRW...JCCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),) != (Image(mime_type='image/png', data='iVBORw0KGgoAAAANSUhEUgAABQAAAALQCAIAAABAH0oBAAAQAElEQVR4nOzdCbhdg7nw8XUipkyiEkmNRW...JCCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),)
+E            +  where (Image(mime_type='image/png', data='iVBORw0KGgoAAAANSUhEUgAABQAAAALQCAIAAABAH0oBAAAQAElEQVR4nOzdCbhdg7nw8XUipkyiEkmNRW...JCCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),) = Completed(output={'tab': 'tab-1', 'url': 'http://127.0.0.1:63133/', 'bytes': 13487}, kind='completed', images=(Image(m...CCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),)).images
+E            +  and   (Image(mime_type='image/png', data='iVBORw0KGgoAAAANSUhEUgAABQAAAALQCAIAAABAH0oBAAAQAElEQVR4nOzdCbhdg7nw8XUipkyiEkmNRW...JCCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),) = Completed(output={'tab': 'tab-1', 'url': 'http://127.0.0.1:63133/', 'bytes': 13487}, kind='completed', images=(Image(m...CCAAYAACAFAQwAAEAKAhgAAIAUBDAAAAApCGAAAABSEMAAAACkIIABAABI4f8DAAD//wja1bsAAAAGSURBVAMA4f9/vXtO09YAAAAASUVORK5CYII='),)).images
+
+tests/adapters/browser/test_real_browser.py:236: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_edit_navigate_debug_and_take_real_images[asyncio]
+1 failed in 2.76s

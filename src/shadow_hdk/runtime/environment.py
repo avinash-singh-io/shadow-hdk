@@ -227,23 +227,50 @@ class _Job:
     read_to: int = 0
     """How far a caller has already been told, so a poll is billed for new bytes only."""
     lost: bool = False
+    start: int = 0
+    """Absolute character offset of the oldest retained output; independent of agent reads."""
     """Whether the buffer overflowed and the earliest output is gone."""
     reader: Any = None
 
     def start_reading(self, cap: int) -> None:
         import asyncio
+        import codecs
+
+        def append(text: str) -> None:
+            self.said += text
+            if len(self.said) > cap:
+                cut = len(self.said) - cap
+                self.said = self.said[cut:]
+                self.read_to = max(0, self.read_to - cut)
+                self.start += cut
+                self.lost = True
 
         async def drain(stream: Any) -> None:
+            decoder = codecs.getincrementaldecoder("utf-8")("replace")
             while chunk := await stream.read(4096):
-                self.said += chunk.decode("utf-8", "replace")
-                if len(self.said) > cap:
-                    cut = len(self.said) - cap
-                    self.said = self.said[cut:]
-                    self.read_to = max(0, self.read_to - cut)
-                    self.lost = True
+                append(decoder.decode(chunk))
+            append(decoder.decode(b"", final=True))
 
         streams = [s for s in (self.process.stdout, self.process.stderr) if s is not None]
         self.reader = asyncio.gather(*(drain(s) for s in streams)) if streams else None
+
+    def observe(self, cursor: int, limit: int) -> dict[str, JsonValue]:
+        """A non-consuming window. A coding tool, support desk and researcher each watch jobs."""
+        first = max(cursor, self.start)
+        output = self.said[first - self.start : first - self.start + limit]
+        end = first + len(output)
+        return {
+            "job": self.name,
+            "command": self.command,
+            "pid": self.process.pid,
+            "running": self.process.returncode is None,
+            "exit_code": self.process.returncode,
+            "output": output,
+            "start": first,
+            "cursor": end,
+            "truncated": cursor < self.start,
+            "more": end < self.start + len(self.said),
+        }
 
     def told(self) -> dict[str, JsonValue]:
         fresh = self.said[self.read_to :]
@@ -263,12 +290,16 @@ class _Job:
         """`True` if it was still running and had to be ended."""
         from shadow_hdk.runtime.processes import end_the_group
 
-        if self.process.returncode is not None:
-            return False
+        running = self.process.returncode is None
         end_the_group(self.process)
+        return running
+
+    async def settle(self) -> None:
+        import asyncio
+
+        await self.process.wait()
         if self.reader is not None:
-            self.reader.cancel()
-        return True
+            await asyncio.gather(self.reader, return_exceptions=True)
 
 
 def edited_by(path: str, content: str, edits: JsonValue) -> str | Refused:
@@ -962,11 +993,38 @@ class Environment(ComponentPort):
             return Refused(f"no job called {str(name)!r} was started here")
         return _completed(job.told())
 
+    def observe_processes(self) -> tuple[dict[str, JsonValue], ...]:
+        """Host inspection of owned processes; no output reader's position is advanced."""
+        return tuple(
+            {
+                k: v
+                for k, v in job.observe(job.start, 0).items()
+                if k in ("job", "command", "pid", "running", "exit_code")
+            }
+            for job in self._jobs.values()
+        )
+
+    def observe_process(self, name: str, *, cursor: int = 0, limit: int = 64000) -> Observation:
+        job = self._jobs.get(name)
+        if job is None:
+            return Refused(f"no job called {name!r} was started here")
+        if (
+            isinstance(cursor, bool)
+            or not isinstance(cursor, int)
+            or not 0 <= cursor <= job.start + len(job.said)
+        ):
+            return Refused("output cursor is outside this process's character stream")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 1_000_000:
+            return Refused("output limit must be between 1 and 1000000 characters")
+        return _completed(job.observe(cursor, limit))
+
     async def _kill(self, name: JsonValue) -> Observation:
         job = self._jobs.get(str(name))
         if job is None:
             return Refused(f"no job called {str(name)!r} was started here")
-        return _completed({"job": job.name, "killed": job.end()})
+        killed = job.end()
+        await job.settle()
+        return _completed({"job": job.name, "killed": killed})
 
     async def _end_every_job(self) -> None:
         """Every job this environment started, ended (D157). Called by `close`, so a subclass
@@ -975,6 +1033,7 @@ class Environment(ComponentPort):
         bookkeeping."""
         for job in list(self._jobs.values()):
             job.end()
+            await job.settle()
         self._jobs.clear()
 
     # ------------------------------------------------------- undo (D161-D163)

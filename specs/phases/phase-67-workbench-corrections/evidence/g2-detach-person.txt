@@ -33,7 +33,7 @@ check = 'person'
         if check != "listed":
 >           assert actual[check] == expected[check]
 E           AssertionError: assert (True, '') == (True, 'main')
-E             
+E
 E             At index 1 diff: '' != 'main'
 E             Use -v to get more diff
 

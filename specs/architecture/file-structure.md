@@ -38,6 +38,7 @@ shadow-hdk/
       items.py  replay.py            the fold: events → items (D46); replay determinism
       environment.py  leash.py       an environment has a mode and a workspace (D48, D76); the leash
       processes.py  lines.py         start_held — the one place a session leader starts (D77); LineBuffer
+      resources.py                  deduplicated scoped cleanup, settled before propagating cancellation
       threads.py  offer.py           Thread (D62); the registry offered to an agent that owns its loop
       store.py  switched.py          InMemoryStore (D66); a port minus what the store switches off
       acting.py  devices.py  trust.py  clock.py  errors.py
@@ -69,7 +70,9 @@ shadow-hdk/
       langchain/                     one ModelPort over every LangChain provider; stream  [langchain]  Phase 1
       mcp/                           MCP servers as components; held.py — the server's process ours  Phase 1 · 28
       acp/                           an agent over ACP — OpenCode, anything Zed-compatible           Phase 4
-      jsonl/                         a CLI answering in line-delimited JSON — Claude Code, Codex     Phase 20
+      jsonl/                         a CLI answering in line-delimited JSON; owned launch-catalogue preparation — Claude Code, Codex     Phase 20/67
+      browser/                       optional governed Playwright default, agent-browser candidate/ref/assets and isolated origin gateway [browser] Phase 67
+      workbench/                     direct host command/file access, job observation and JUnit reports [workbench] Phase 67
       recording/                     our registry as an MCP server over an authenticated socket     Phase 5 · 23
       modes/                         ModeSpec · ModeRegistry · ActRules; rules as rows; mode files   Phase 1 · 10 · 25
       environment/                   local on the OS sandbox; a box (OpenSandbox)  [sandbox]; one or many roots  Phase 22 · 28

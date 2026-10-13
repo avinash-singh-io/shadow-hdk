@@ -1,0 +1,29 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_the_person_runs_and_reads_in_the_same_copy_without_an_agent _______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-541/test_the_person_runs_and_reads0')
+
+    async def test_the_person_runs_and_reads_in_the_same_copy_without_an_agent(tmp_path: Path) -> None:
+        environment = await LocalEnvironment.open(tmp_path, mode="full")
+        door = HostDoor(environment)
+        try:
+            data(await door.run("printf 'from the person' > person.txt"))
+>           assert data(await door.read("person.txt")) == "from the person"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:97:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = Failed(error="FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-541/test_the_person_runs_and_reads0/person.txt'", kind='failed')
+
+    def data(result: Any) -> Any:
+>       assert isinstance(result, Completed), result
+E       AssertionError: Failed(error="FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-541/test_the_person_runs_and_reads0/person.txt'", kind='failed')
+E       assert False
+E        +  where False = isinstance(Failed(error="FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-541/test_the_person_runs_and_reads0/person.txt'", kind='failed'), Completed)
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:17: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_the_person_runs_and_reads_in_the_same_copy_without_an_agent
+1 failed in 0.19s

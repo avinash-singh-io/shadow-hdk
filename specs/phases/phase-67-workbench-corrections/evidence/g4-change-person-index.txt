@@ -24,7 +24,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             [git(repo, "rev-parse", "HEAD"), git(repo, "write-tree"), git(repo, "stash", "list")],
         ] == ["tracked", True, state]
 E       AssertionError: assert ['tracked', T...8059a93', '']] == ['tracked', T...c03b284', '']]
-E         
+E
 E         At index 2 diff: ['dec9e2c44e8e5786d8bf4df6d76bdc526105c7ca', 'f9268e58bbf2f46cf63ec43fc0922aafd8059a93', ''] != ['dec9e2c44e8e5786d8bf4df6d76bdc526105c7ca', 'd49abc79de126c4ac6e28f155ceb5c887c03b284', '']
 E         Use -v to get more diff
 

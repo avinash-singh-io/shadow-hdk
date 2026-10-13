@@ -67,15 +67,38 @@ async def test_an_older_host_has_the_no_resource_default() -> None:
     from shadow_hdk.wire.remote import RemoteComponents
 
     class Older:
+        calls = 0
+
         async def call(self, method: str, params: Any) -> Any:
-            raise RemoteError(-32601, "unknown method")
+            self.calls += 1
+            raise RemoteError(-32000, "legacy client reports missing callbacks non-standardly")
 
     answer: int | None = None
+    older = Older()
     try:
-        await RemoteComponents(cast(Peer, Older())).release_run("root")
+        await RemoteComponents(cast(Peer, older)).release_run("root")
     except RemoteError as error:
         answer = error.code
-    assert answer is None
+    assert (answer, older.calls) == (None, 0), "an unadvertised extension must not be called"
+
+
+async def test_an_advertised_resource_failure_is_not_hidden() -> None:
+    from typing import Any, cast
+
+    import pytest
+
+    from shadow_hdk.wire.peer import Peer, RemoteError
+    from shadow_hdk.wire.remote import RemoteComponents
+
+    class Host:
+        run_resources = True
+
+        async def call(self, method: str, params: Any) -> Any:
+            raise RemoteError(-32000, "owner teardown failed")
+
+    host = Host()
+    with pytest.raises(RemoteError, match="owner teardown failed"):
+        await RemoteComponents(cast(Peer, host), holder=host).release_run("root")
 
 
 async def test_a_wire_host_owns_one_scope_across_runs_and_releases_aliases_once() -> None:

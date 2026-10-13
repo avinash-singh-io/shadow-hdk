@@ -11,13 +11,13 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a264510>
         repo = a_repository(tmp_path)
         used: list[str] = []
         original = asyncio.create_subprocess_exec
-    
+
         async def launched(*args: object, **kw: object) -> asyncio.subprocess.Process:
             env = kw.get("env")
             if args[:3] == ("git", "add", "-A") and isinstance(env, dict):
                 used.append(str(env.get("GIT_INDEX_FILE")))
             return await original(*args, **kw)  # type: ignore[arg-type]
-    
+
         monkeypatch.setattr(asyncio, "create_subprocess_exec", launched)
         before = await GitHistory(repo).snapshot()
         (repo / "app.py").write_text("external edit")
@@ -62,7 +62,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             [git(repo, "rev-parse", "HEAD"), git(repo, "write-tree"), git(repo, "stash", "list")],
         ] == ["tracked", True, state]
 E       AssertionError: assert ['changed', F...c03b284', '']] == ['tracked', T...c03b284', '']]
-E         
+E
 E         At index 0 diff: 'changed' != 'tracked'
 E         Use -v to get more diff
 

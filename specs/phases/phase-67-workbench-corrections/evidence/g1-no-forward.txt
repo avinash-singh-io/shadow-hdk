@@ -10,15 +10,15 @@ check = 'seen'
         tmp_path: Path, check: str
     ) -> None:
         ran: list[str] = []
-    
+
         async def read(_: Any) -> Completed:
             ran.append("read")
             return Completed("read")
-    
+
         async def write(_: Any) -> Completed:
             ran.append("write")
             return Completed("write")
-    
+
         cli = SocketCli()
         thread = await Thread.open(
             agent=cast(Any, cli),
@@ -71,7 +71,7 @@ check = 'seen'
         }
 >       assert actual[check] == expected[check]
 E       AssertionError: assert [['read_it', ...e, False, ...] == [['read_it'],...e, False, ...]
-E         
+E
 E         At index 0 diff: ['read_it', 'write_it'] != ['read_it']
 E         Use -v to get more diff
 
@@ -86,15 +86,15 @@ check = 'ran'
         tmp_path: Path, check: str
     ) -> None:
         ran: list[str] = []
-    
+
         async def read(_: Any) -> Completed:
             ran.append("read")
             return Completed("read")
-    
+
         async def write(_: Any) -> Completed:
             ran.append("write")
             return Completed("write")
-    
+
         cli = SocketCli()
         thread = await Thread.open(
             agent=cast(Any, cli),
@@ -147,7 +147,7 @@ check = 'ran'
         }
 >       assert actual[check] == expected[check]
 E       AssertionError: assert ['read', 'wri...ead', 'write'] == ['read', 'wri...ead', 'write']
-E         
+E
 E         Left contains 2 more items, first extra item: 'read'
 E         Use -v to get more diff
 

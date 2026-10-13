@@ -6,21 +6,21 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 
     async def test_repeated_cancellation_waits_for_the_thread_hold_to_release(tmp_path: Any) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         class WaitingStore(InMemoryThreads):
             def __init__(self) -> None:
                 super().__init__()
                 self.releasing = asyncio.Event()
                 self.finish = asyncio.Event()
-    
+
             async def release(self, thread_id: str, holder: str) -> None:
                 self.releasing.set()
                 await self.finish.wait()
                 await super().release(thread_id, holder)
-    
+
         port, store = Managed(wait=True), WaitingStore()
         thread = await Thread.open(
             agent=cast(Any, Agent([])),
@@ -40,7 +40,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             await asyncio.wait_for(closing, 2)
 >       assert (port.closed, await store.held_by(thread.id)) == ([thread.id], None)
 E       AssertionError: assert (['id-0001'], 'owner') == (['id-0001'], None)
-E         
+E
 E         At index 1 diff: 'owner' != None
 E         Use -v to get more diff
 

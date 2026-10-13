@@ -1,0 +1,27 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10a4756a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-501/test_navigation_reports_http_f0/ca.pem'))
+
+    async def test_navigation_reports_http_failures_and_preserves_upstream_tls_verification(
+        apps: Any,
+    ) -> None:
+        first, second, *_ = apps
+        engine = PlaywrightEngine(
+            policy=OriginPolicy((first.origin, second.origin), allow_localhost=False),
+            install_browser=False,
+        )
+        try:
+            bad = await completed(engine, "open", {"url": first.origin + "/bad"})
+>           assert cast(dict[str, Any], bad.output).get("status") == 503
+E           AssertionError: assert None == 503
+E            +  where None = <built-in method get of dict object at 0x10abca300>('status')
+E            +    where <built-in method get of dict object at 0x10abca300> = {'tab': 'tab-1', 'url': 'http://127.0.0.1:63394/bad', 'status': None}.get
+E            +      where {'tab': 'tab-1', 'url': 'http://127.0.0.1:63394/bad', 'status': None} = cast(dict[str, typing.Any], {'tab': 'tab-1', 'url': 'http://127.0.0.1:63394/bad', 'status': None})
+E            +        where {'tab': 'tab-1', 'url': 'http://127.0.0.1:63394/bad', 'status': None} = Completed(output={'tab': 'tab-1', 'url': 'http://127.0.0.1:63394/bad', 'status': None}, kind='completed', images=()).output
+
+tests/adapters/browser/test_real_browser.py:292: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio]
+1 failed in 2.23s

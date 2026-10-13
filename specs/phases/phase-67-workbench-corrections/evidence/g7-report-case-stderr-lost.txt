@@ -1,0 +1,40 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_nested_suites_count_cases_once_and_preserve_failures_skips_and_output __
+
+    def test_nested_suites_count_cases_once_and_preserve_failures_skips_and_output() -> None:
+        report = """<testsuites tests="4"><testsuite tests="4"><testsuite tests="4">
+          <testcase classname="app.api" name="works"/>
+          <testcase classname="app.api" name="fails"><failure message="wrong">assert 1 == 2</failure>
+            <system-out>debug detail</system-out><system-err>stderr detail</system-err></testcase>
+          <testcase classname="app.api" name="errors"><error type="RuntimeError">boom</error></testcase>
+          <testcase classname="app.api" name="later"><skipped message="requires database"/></testcase>
+          </testsuite><system-out>suite output</system-out></testsuite></testsuites>"""
+        result = junit_results(report)
+        assert isinstance(result, Completed), result
+        assert isinstance(result.output, dict)
+        assert {k: result.output[k] for k in ("total", "passed", "failed", "skipped")} == {
+            "total": 4,
+            "passed": 1,
+            "failed": 2,
+            "skipped": 1,
+        }
+        assert result.output["failing_names"] == ["app.api.fails", "app.api.errors"]
+>       assert all(
+            word in str(result.output)
+            for word in (
+                "assert 1 == 2",
+                "debug detail",
+                "stderr detail",
+                "boom",
+                "requires database",
+                "suite output",
+            )
+        )
+E       assert False
+E        +  where False = all(<generator object test_nested_suites_count_cases_once_and_preserve_failures_skips_and_output.<locals>.<genexpr> at 0x10a3296c0>)
+
+tests/adapters/environment/test_test_reports_are_data.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_test_reports_are_data.py::test_nested_suites_count_cases_once_and_preserve_failures_skips_and_output
+1 failed in 0.21s

@@ -4,11 +4,11 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
 
     async def test_a_park_keeps_the_resource_until_the_resumed_run_ends() -> None:
         from langgraph.checkpoint.memory import InMemorySaver
-    
+
         from shadow_hdk.kernel.observations import ApprovalRequest
         from shadow_hdk.kernel.ports import Allow
         from shadow_hdk.runtime import resume
-    
+
         class Asking(Managed):
             async def invoke(self, registration: str, inputs: Any) -> Any:
                 context = current_run()
@@ -16,7 +16,7 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
                 if await context.resumed() is None:
                     return ApprovalRequest(question="continue?", handle="approval")
                 return Completed({"closed_before_resume": list(self.closed)})
-    
+
         port = Asking()
         ports = Ports(components=(port,), governance=AllowAll(), sink=ListSink(), clock=FixedClock())
         options = RunOptions(
@@ -28,7 +28,7 @@ __________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
         first = [e async for e in run(plan, ports, options=options)]
 >       assert (port.closed, [e.kind for e in first if e.kind == "ended"]) == ([], [])
 E       AssertionError: assert (['parked-resource'], []) == ([], [])
-E         
+E
 E         At index 0 diff: ['parked-resource'] != []
 E         Use -v to get more diff
 

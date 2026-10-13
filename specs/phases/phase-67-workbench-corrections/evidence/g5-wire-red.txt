@@ -24,7 +24,7 @@ ___ test_a_crossed_component_sees_its_resource_scope_and_closes_with_the_run ___
     |     ...<3 lines>...
     |     )
     | AssertionError: assert ([Failed(erro...ed')], [], []) == ([Completed(o..., ['id-0001'])
-    |   
+    |
     |   At index 0 diff: [Failed(error="RemoteError: AttributeError: 'WireRunContext' object has no attribute '_resource_scope'", kind='failed'), Failed(error="RemoteError: AttributeError: 'WireRunContext' object has no attribute '_resource_scope'", kind='failed')] != [Completed(output={'caption': 'page'}, kind='completed', images=(Image(mime_type='image/png', data='iVBORw0KGgo='),)), Completed(output={'caption': 'page'}, kind='completed', images=(Image(mime_type='image/png', data='iVBORw0KGgo='),))]
     |   Use -v to get more diff
     +------------------------------------

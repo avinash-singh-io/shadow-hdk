@@ -195,12 +195,9 @@ class RemoteComponents(ComponentPort):
         return observation
 
     async def release_run(self, resource_scope: str) -> None:
-        try:
-            await self._peer.call(RELEASE_RUN, {"resource_scope": resource_scope})
-        except RemoteError as error:
-            if error.code != -32601:
-                raise
-            # An older host has no run-resource extension; the backwards-compatible default.
+        if not getattr(self._holder, "run_resources", False):
+            return
+        await self._peer.call(RELEASE_RUN, {"resource_scope": resource_scope})
 
 
 class RemoteSink(SinkPort):

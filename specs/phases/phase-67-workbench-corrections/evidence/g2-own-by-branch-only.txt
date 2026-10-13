@@ -12,7 +12,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         git(repo, "worktree", "add", str(personal), "feature/reused")
 >       assert await worktrees(repo) == []
 E       AssertionError: assert [Worktree(pat...h_is0/repo'))] == []
-E         
+E
 E         Left contains one more item: Worktree(path=PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-422/test_a_...te/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-422/test_a_reused_custom_branch_is0/repo'))
 E         Use -v to get more diff
 

@@ -8,10 +8,10 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         tmp_path: Any,
     ) -> None:
         from typing import cast
-    
+
         from shadow_hdk.runtime.threads import InMemoryThreads, Thread
         from tests.runtime.test_a_conversation_without_a_record import Agent
-    
+
         first, broken = Managed(), Managed(fail=True)
         store = InMemoryThreads()
         thread = await Thread.open(
@@ -34,7 +34,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
             None,
         )
 E       AssertionError: assert (['id-0001'],...01'], 'owner') == (['id-0001'],...-0001'], None)
-E         
+E
 E         At index 2 diff: 'owner' != None
 E         Use -v to get more diff
 

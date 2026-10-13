@@ -1,0 +1,47 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_page_webrtc_does_not_contact_an_unapproved_udp_server[asyncio] ______
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10a6cd6a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-504/test_page_webrtc_does_not_cont0/ca.pem'))
+
+    async def test_page_webrtc_does_not_contact_an_unapproved_udp_server(apps: Any) -> None:
+        from playwright.async_api import async_playwright
+
+        first, *_ = apps
+        packets: list[bytes] = []
+
+        class Stun(asyncio.DatagramProtocol):
+            def datagram_received(self, data: bytes, address: Any) -> None:
+                packets.append(data)
+
+        transport, _ = await asyncio.get_running_loop().create_datagram_endpoint(
+            Stun, local_addr=("127.0.0.1", 0)
+        )
+        first.stun_port = transport.get_extra_info("sockname")[1]
+        engine = engine_for(apps)
+        try:
+            # An unconstrained Chromium really sends UDP to this probe. An empty capture alone
+            # would otherwise prove neither the fixture nor the engine's network boundary.
+            async with async_playwright() as driver:
+                control = await driver.chromium.launch(headless=True)
+                try:
+                    page = await control.new_page()
+                    await page.goto(first.origin + "/rtc")
+                    await page.get_by_text("Finished", exact=True).wait_for()
+                    assert packets, "the positive STUN control must contact the probe"
+                finally:
+                    await control.close()
+            packets.clear()
+            await completed(engine, "open", {"url": first.origin + "/rtc"})
+            await completed(engine, "wait", {"selector": "#done:text-is('Finished')"})
+>           assert packets == [], "a page must not bypass the host's origin gateway using WebRTC"
+E           AssertionError: a page must not bypass the host's origin gateway using WebRTC
+E           assert [b'\x00\x01\x...aShhW4sL1HTs'] == []
+E
+E             Left contains 4 more items, first extra item: b'\x00\x01\x00\x00!\x12\xa4BaShhW4sL1HTs'
+E             Use -v to get more diff
+
+tests/adapters/browser/test_real_browser.py:331: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_page_webrtc_does_not_contact_an_unapproved_udp_server[asyncio]
+1 failed in 6.80s

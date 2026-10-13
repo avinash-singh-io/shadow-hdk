@@ -33,7 +33,7 @@ check = 'kept'
         if check != "listed":
 >           assert actual[check] == expected[check]
 E           AssertionError: assert '' == 'intent/task-1234'
-E             
+E
 E             - intent/task-1234
 
 tests/adapters/environment/test_the_host_names_its_branch.py:44: AssertionError

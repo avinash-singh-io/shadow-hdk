@@ -38,7 +38,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
 >       assert cli.seen == [['read_it'], False, True, ['write_it'], True, False,
                             ['read_it', 'write_it'], False, False]
 E       AssertionError: assert [['read_it', ...e, False, ...] == [['read_it'],...e, False, ...]
-E         
+E
 E         At index 0 diff: ['read_it', 'write_it'] != ['read_it']
 E         Use -v to get more diff
 

@@ -27,7 +27,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a5a9350>
 >       assert ((repo/'stable.txt').stat().st_mtime_ns, walks, (repo/'new').exists(),
                 (repo/'node_modules'/'dependency').read_text()) == (stable, [], False, 'keep')
 E       AssertionError: assert (179186738283...False, 'keep') == (179186738261...False, 'keep')
-E         
+E
 E         At index 0 diff: 1791867382835199427 != 1791867382611654083
 E         Use -v to get more diff
 
@@ -58,7 +58,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a5d2450>
 >       assert (len(set(used)), Path(used[0]).exists(), (repo/'app.py').read_text(),
                 (repo/'external.txt').read_text(), before != after) == (1, True, 'external edit', 'external new', True)
 E       AssertionError: assert (3, False, 'e...al new', True) == (1, True, 'ex...al new', True)
-E         
+E
 E         At index 0 diff: 3 != 1
 E         Use -v to get more diff
 
@@ -83,12 +83,12 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 [git(repo, 'rev-parse', 'HEAD'), git(repo, 'write-tree'), git(repo, 'stash', 'list')]] == ['tracked', True, state]
 
-tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:68: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:68:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/pathlib/__init__.py:787: in read_text
     with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-364/test_tracked_ignored_files_and0/repo/tracked.secret')
 mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None

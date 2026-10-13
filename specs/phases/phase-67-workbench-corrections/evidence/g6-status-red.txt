@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio] _
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10a5557f0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-463/test_navigation_reports_http_f0/ca.pem'))
+
+    async def test_navigation_reports_http_failures_and_preserves_upstream_tls_verification(apps: Any) -> None:
+        first, second, *_ = apps
+        engine = PlaywrightEngine(policy=OriginPolicy((first.origin, second.origin), allow_localhost=False),
+                                  install_browser=False)
+        try:
+            bad = await completed(engine, "open", {"url": first.origin + "/bad"})
+>           assert cast(dict[str, Any], bad.output)["status"] == 503
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'status'
+
+tests/adapters/browser/test_real_browser.py:258: KeyError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_navigation_reports_http_failures_and_preserves_upstream_tls_verification[asyncio]
+1 failed, 4 deselected in 3.37s

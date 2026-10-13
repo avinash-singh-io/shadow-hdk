@@ -32,7 +32,7 @@ repository = True, operation = 'glob'
                 else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
             )
 E           AssertionError: assert ['node_module...'src/hide.py'] == ['src/keep.py']
-E             
+E
 E             At index 0 diff: 'node_modules/big.py' != 'src/keep.py'
 E             Left contains one more item: 'src/hide.py'
 E             Use -v to get more diff
@@ -70,7 +70,7 @@ repository = True, operation = 'grep'
                 else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
             )
 E           AssertionError: assert [{'path': 'no...t': 'needle'}] == [{'path': 'sr...t': 'needle'}]
-E             
+E
 E             At index 0 diff: {'path': 'node_modules/big.py', 'line': 1, 'text': 'needle'} != {'path': 'src/keep.py', 'line': 1, 'text': 'needle'}
 E             Left contains one more item: {'path': 'src/hide.py', 'line': 1, 'text': 'needle'}
 E             Use -v to get more diff
@@ -92,7 +92,7 @@ tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/p
         try:
 >           assert await env._walk(".") == [".gitignore", "tracked.tmp"]
 E           AssertionError: assert ['tracked.tmp...ntracked.tmp'] == ['.gitignore', 'tracked.tmp']
-E             
+E
 E             At index 0 diff: 'tracked.tmp' != '.gitignore'
 E             Use -v to get more diff
 

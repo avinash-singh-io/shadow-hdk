@@ -14,7 +14,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109fe4510>
         original = GitHistory._capture
         active = 0
         peak = 0
-    
+
         async def capturing(self: GitHistory, index: str) -> str:
             nonlocal active, peak
             active += 1
@@ -24,7 +24,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109fe4510>
                 return await original(self, index)
             finally:
                 active -= 1
-    
+
         monkeypatch.setattr(GitHistory, "_capture", capturing)
         taken = await asyncio.gather(*(h.snapshot() for h in histories), return_exceptions=True)
 >       assert peak == 1 and all(isinstance(t, str) for t in taken)

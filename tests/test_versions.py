@@ -18,8 +18,13 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.47.3"
-"""0.47.3 — H8/BUG-240: model-loop usage retains existing cache read/write counters
+EXPECTED = "0.48.0"
+"""0.48.0 — optional browser/workbench packs, image observations, owner-scoped resources and
+private CLI bootstrap; socket narrowing, host-named branches, ignore-aware search and incremental
+history. Codex native repository reads are governed. Additive contracts and named behavior changes,
+minor with a product Pins handoff (D9); protocol 3 unchanged. Product pins remain product-owned.
+
+0.47.3 — H8/BUG-240: model-loop usage retains existing cache read/write counters
 through aggregation, component output, model-session reconstruction and thread metering. Known
 zero and unknown remain distinct. Existing Usage contract repaired; patch, no Pins row (D9).
 

@@ -24,7 +24,7 @@ ______________ test_a_wire_resume_keeps_the_hosts_resource_scope _______________
     |     ...<3 lines>...
     |     )
     | AssertionError: assert (['host-sessi...re'], 'ended') == (['host-sessi..., [], 'ended')
-    |   
+    |
     |   At index 0 diff: ['host-session', 'park-on-wire'] != ['host-session', 'host-session']
     |   Use -v to get more diff
     +------------------------------------
