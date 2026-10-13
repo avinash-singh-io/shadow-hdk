@@ -1,0 +1,69 @@
+..FF                                                                     [100%]
+=================================== FAILURES ===================================
+__________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
+
+    async def test_a_park_keeps_the_resource_until_the_resumed_run_ends() -> None:
+        from langgraph.checkpoint.memory import InMemorySaver
+    
+        from shadow_hdk.kernel.observations import ApprovalRequest
+        from shadow_hdk.kernel.ports import Allow
+        from shadow_hdk.runtime import resume
+    
+        class Asking(Managed):
+            async def invoke(self, registration: str, inputs: Any) -> Any:
+                context = current_run()
+                assert context is not None
+                if await context.resumed() is None:
+                    return ApprovalRequest(question="continue?", handle="approval")
+                return Completed({"closed_before_resume": list(self.closed)})
+    
+        port = Asking()
+        ports = Ports(components=(port,), governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+        options = RunOptions(
+            lease=Lease(Ceiling(10, 3600, 100), Floor(0)),
+            run_id="parked-resource",
+            checkpointer=InMemorySaver(),
+        )
+        plan = Composition((Invoke("one", "held"),))
+        first = [e async for e in run(plan, ports, options=options)]
+>       assert (port.closed, [e.kind for e in first if e.kind == "ended"]) == ([], [])
+E       AssertionError: assert (['parked-resource'], []) == ([], [])
+E         
+E         At index 0 diff: ['parked-resource'] != []
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:114: AssertionError
+_________ test_a_thread_owns_one_scope_across_turns_and_closes_it_once _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-425/test_a_thread_owns_one_scope_a0')
+
+    async def test_a_thread_owns_one_scope_across_turns_and_closes_it_once(tmp_path: Any) -> None:
+        from typing import cast
+    
+        from shadow_hdk.runtime.threads import InMemoryThreads, Thread
+        from tests.adapters.browser.test_images_reach_the_model_and_wire import Picture
+        from tests.runtime.test_a_conversation_without_a_record import Agent
+    
+        port = Picture()
+        agent = Agent([([("picture", {})], "first"), ([("picture", {})], "second")])
+        thread = await Thread.open(
+            agent=cast(Any, agent),
+            ports=Ports(components=(port, port), governance=AllowAll(), sink=ListSink(), clock=FixedClock()),
+            store=InMemoryThreads(), root=tmp_path,
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+        )
+        agent.reach = thread.registry.call
+        try:
+            [e async for e in thread.turn("first")]
+>           assert port.released == [], "the conversation still owns its resources"
+E           AssertionError: the conversation still owns its resources
+E           assert ['id-0002'] == []
+E             
+E             Left contains one more item: 'id-0002'
+E             Use -v to get more diff
+
+tests/runtime/test_run_resources.py:140: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_run_resources.py::test_a_park_keeps_the_resource_until_the_resumed_run_ends
+FAILED tests/runtime/test_run_resources.py::test_a_thread_owns_one_scope_across_turns_and_closes_it_once
+2 failed, 2 passed in 0.34s

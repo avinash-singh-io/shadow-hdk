@@ -1,0 +1,31 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_a_parked_conversation_tool_reuses_its_scope_on_settle __________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-436/test_a_parked_conversation_too0')
+
+    async def test_a_parked_conversation_tool_reuses_its_scope_on_settle(tmp_path: Path) -> None:
+        port = PausedResource()
+        agent = Agent([([("picture", {})], "waiting")])
+        thread = await Thread.open(
+            agent=cast(Any, agent),
+            ports=Ports(components=(port,), governance=AllowAll(), sink=ListSink(), clock=FixedClock()),
+            store=InMemoryThreads(),
+            root=tmp_path,
+            lease=_lease(),
+            approvals=Approvals(),
+            checkpointer=InMemorySaver(),
+        )
+        agent.reach = thread.registry.call
+        try:
+            [e async for e in thread.turn("look", on_question="park")]
+>           assert (port.scopes, port.released, len(thread.pending)) == ([thread.id], [], 1)
+E           AssertionError: assert (['id-0002'], ['id-0002'], 1) == (['id-0001'], [], 1)
+E             
+E             At index 0 diff: ['id-0002'] != ['id-0001']
+E             Use -v to get more diff
+
+tests/runtime/test_conversation_resources_survive_approval.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_conversation_resources_survive_approval.py::test_a_parked_conversation_tool_reuses_its_scope_on_settle
+1 failed in 1.26s

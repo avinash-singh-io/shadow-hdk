@@ -319,6 +319,7 @@ class RuntimeSide:
             run_id=params.get("run_id"),
             checkpointer=self._checkpointer,
             approvals=self.approvals,
+            resource_scope=params.get("resource_scope"),
         )
         ports = self.ports()
         stream = (
@@ -387,6 +388,7 @@ class HostSide:
                 "context": dict(options.context),
                 "principal": options.principal,
                 "run_id": options.run_id,
+                "resource_scope": options.resource_scope,
             },
         )
 
@@ -404,6 +406,7 @@ class HostSide:
                 "context": dict(options.context),
                 "principal": options.principal,
                 "run_id": options.run_id,
+                "resource_scope": options.resource_scope,
                 "answer": answer,
             },
         )
@@ -462,17 +465,11 @@ class HostSide:
         return json.loads(dump(Failed(f"no component registered as {wanted!r}"), Observation))
 
     async def _release_run(self, params: dict[str, Any]) -> None:
-        from shadow_hdk.kernel.ports import RunResourcePort
+        from shadow_hdk.runtime.resources import release_resources
 
-        failures: list[str] = []
-        for port in self.ports.components:
-            if isinstance(port, RunResourcePort):
-                try:
-                    await port.release_run(str(params["resource_scope"]))
-                except Exception as error:
-                    failures.append(f"{type(error).__name__}: {error}")
-        if failures:
-            raise RuntimeError("; ".join(failures))
+        failure = await release_resources(self.ports.components, str(params["resource_scope"]))
+        if failure:
+            raise RuntimeError(failure)
 
     async def _propose(self, params: dict[str, Any]) -> Any:
         await self.ports.sink.propose(load(json.dumps(params["proposal"]), Proposal))

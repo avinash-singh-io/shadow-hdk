@@ -155,7 +155,10 @@ class RunResourcePort(Protocol):
 
     A component with no per-run resources implements nothing; the runtime does nothing.
     A component allocating such resources implements this structural extension beside
-    ComponentPort. Cleanup failures are run failures, never silently discarded.
+    ComponentPort. A root execution releases its scope when it ends; an explicitly
+    host-owned scope is released by that host. Conversation/Thread own their scope across
+    turns and approvals. Release must be idempotent. Cleanup failures are reported by the
+    owning run or host, never silently discarded.
     """
 
     async def release_run(self, resource_scope: str) -> None:

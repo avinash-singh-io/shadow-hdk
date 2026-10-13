@@ -11,7 +11,7 @@ type: Status
 > 8 skipped and 24 live cases deselected; lint, formatting and strict types pass.
 > Product pins remain owned by the product lane. TD-021 remains separate tooling work.
 
-**Current Phase: 67 — workbench corrections and optional packs**, branch `phase-67-workbench-corrections`. Owner authorized implementation and release 2026-10-13. Groups 0–4 have focused controls and mutations; initial image/resource contracts pass a full gate, with browser lifetime and packs still in progress. Latest published release remains v0.47.3.
+**Current Phase: 67 — workbench corrections and optional packs**, branch `phase-67-workbench-corrections`. Owner authorized implementation and release 2026-10-13. Groups 0–5 have focused controls and mutations. Conversation resources survive turns and approval settlement; 225 related regression controls and strict types pass. Browser, workbench packs, Codex audited reads and final release acceptance remain in progress. Latest published release remains v0.47.3.
 
 **Historical checkpoint notes follow; their pending-release statements describe preparation.**
 

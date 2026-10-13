@@ -7,7 +7,6 @@ proposes, reads what is left of its lease, and spawns children without any of th
 
 from __future__ import annotations
 
-import asyncio
 import json
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -111,6 +110,11 @@ class RunOptions:
     """The host's act-rule registry (D65), when it keeps one: an `ApproveAndAddRule` answer —
     live or on resume — adds its rule here the moment it is given, and governance reads it at
     the next judgement. A child inherits its parent's. `None` means rules are not kept."""
+    resource_scope: str | None = None
+    """Opaque identity for resources whose lifetime the host owns. The host releases this
+    scope through its resource ports when finished. `None` lets the root execution own and
+    release its resources when it ends, retaining them while it is parked. Children inherit
+    their parent's scope. A conversation supplies its own identity across all its turns."""
 
 
 @dataclass(frozen=True)
@@ -133,9 +137,17 @@ class RunContext:
         registry: Registry,
         checkpointer: Any = None,
         resource_owner: RunContext | None = None,
+        resource_scope: str | None = None,
     ) -> None:
         self._session = session
-        self._resource_scope = resource_owner.resource_scope if resource_owner else session.run_id
+        self._resource_scope = (
+            resource_owner.resource_scope
+            if resource_owner
+            else resource_scope
+            if resource_scope is not None
+            else session.run_id
+        )
+        self._owns_resources = resource_owner is None and resource_scope is None
         self._resources: dict[int, RunResourcePort] = (
             resource_owner._resources if resource_owner else {}
         )
@@ -166,15 +178,11 @@ class RunContext:
         return self._resource_scope
 
     async def _release_resources(self) -> str | None:
-        failures: list[str] = []
+        from shadow_hdk.runtime.resources import release_resources
+
         resources = list(self._resources.values())
         self._resources.clear()
-        for port in reversed(resources):
-            try:
-                await port.release_run(self.resource_scope)
-            except (Exception, asyncio.CancelledError) as error:
-                failures.append(f"{type(error).__name__}: {error}")
-        return "; ".join(failures) or None
+        return await release_resources(resources, self.resource_scope)
 
     @property
     def principal(self) -> str | None:

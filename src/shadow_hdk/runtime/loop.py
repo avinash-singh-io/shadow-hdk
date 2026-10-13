@@ -32,6 +32,7 @@ from shadow_hdk.runtime.compile import compile_composition
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import RuntimeStop
 from shadow_hdk.runtime.registry import Registry
+from shadow_hdk.runtime.resources import settle_resources
 from shadow_hdk.runtime.session import Session
 from shadow_hdk.runtime.state import initial_state, no_spend
 from shadow_hdk.runtime.step import StepExecutor
@@ -64,14 +65,7 @@ def _stop_reason(error: BaseException) -> tuple[EndReason, str | None] | None:
 
 async def _cleanup(context: RunContext) -> tuple[str | None, bool]:
     """Settle owned teardown even when the driver is cancelled while awaiting it."""
-    closing = asyncio.create_task(context._release_resources())
-    cancelled = False
-    while not closing.done():
-        try:
-            await asyncio.shield(closing)
-        except asyncio.CancelledError:
-            cancelled = True
-    return closing.result(), cancelled
+    return await settle_resources(asyncio.create_task(context._release_resources()))
 
 
 async def _drive(
@@ -90,6 +84,7 @@ async def _drive(
 ) -> None:
     token = _CURRENT.set(context)
     released = False
+    parked = False
     try:
         if not isinstance(payload, Command):
             await emitter.emit(
@@ -137,7 +132,7 @@ async def _drive(
                 # an Exception*, because `RuntimeStop` is a `BaseException` now (TD-006).
                 raise
 
-        if parent is None:
+        if context._owns_resources and not parked:
             cleanup, cancelled = await _cleanup(context)
             released = True
             if cancelled:
@@ -154,7 +149,7 @@ async def _drive(
             )
     finally:
         try:
-            if parent is None and not released:
+            if context._owns_resources and not released and not parked:
                 await _cleanup(context)
         finally:
             _CURRENT.reset(token)
@@ -295,7 +290,15 @@ async def _stream(
     )
     registry = Registry(ports.components, trust=ports.trust)
     checkpointer = options.checkpointer or InMemorySaver()
-    context = RunContext(session, emitter, ports, registry, checkpointer, resource_owner=parent)
+    context = RunContext(
+        session,
+        emitter,
+        ports,
+        registry,
+        checkpointer,
+        resource_owner=parent,
+        resource_scope=options.resource_scope,
+    )
     parked: list[tuple[str, dict[str, Any]]] = []
     if isinstance(payload, _Answer):
         # A resume continues a run; it does not start one (D33). The meter and the record's

@@ -32,3 +32,11 @@ Affects-specs: docs/developer-guide.md, specs/architecture/overview.md
 Detail: Host-named branch controls and seven ownership mutations pass; a recreated checkout with the same path/branch is distinguished by a private Git-administration birth marker, including the default-prefix path. Ignore-aware search and history mutations pass, with a 100k tracked + 100k ignored CI benchmark control below all budgets. The current generic image/wire/resource candidate passed a full suite of 2,293 tests (29 skipped, 25 deselected), with fresh lint/format/types; after the birth-marker correction, 24 worktree controls pass. Group 5 remains in progress: resource lifetime through parked approvals and multi-turn sessions still requires acceptance before the browser ships.
 
 ---
+
+### [FIX] 2026-10-13 — Resource lifetime follows a conversation across turns and approvals
+Topics: resources, approvals, conversation, wire, BUG-241
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md
+Detail: Two new controls failed because cleanup ran at park and at each turn. RunOptions now accepts a host-owned opaque scope; root defaults retain resources during a park, while Conversation/Thread hold their scope across turns and settlement. Scope crosses run and resume callbacks. Resource aliases release once, every port is attempted after an error, and close settles before delivering cancellation. Additional failing controls reproduced leaked Thread store holds after cancellation/failure and repeated cancellation (BUG-241); the complete close now settles resource and store teardown together. Fourteen focused lifecycle/wire controls pass, with broader conversation/park/restart controls passing; mutation verification is in progress. Browser, workbench packs, Codex read correction and publication remain pending.
+
+---

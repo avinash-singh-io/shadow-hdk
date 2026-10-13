@@ -1,0 +1,44 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_a_thread_owns_one_scope_across_turns_and_closes_it_once _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-441/test_a_thread_owns_one_scope_a0')
+
+    async def test_a_thread_owns_one_scope_across_turns_and_closes_it_once(tmp_path: Any) -> None:
+        from typing import cast
+    
+        from shadow_hdk.runtime.threads import InMemoryThreads, Thread
+        from tests.adapters.browser.test_images_reach_the_model_and_wire import Picture
+        from tests.runtime.test_a_conversation_without_a_record import Agent
+    
+        port = Picture()
+        agent = Agent([([("picture", {})], "first"), ([("picture", {})], "second")])
+        thread = await Thread.open(
+            agent=cast(Any, agent),
+            ports=Ports(
+                components=(port, port), governance=AllowAll(), sink=ListSink(), clock=FixedClock()
+            ),
+            store=InMemoryThreads(),
+            root=tmp_path,
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+        )
+        agent.reach = thread.registry.call
+        try:
+            [e async for e in thread.turn("first")]
+            assert port.released == [], "the conversation still owns its resources"
+            [e async for e in thread.turn("second")]
+            assert (port.scopes, port.released) == ([thread.id, thread.id], [])
+        finally:
+            await thread.close()
+        await thread.close()
+>       assert port.released == [thread.id], "aliases and repeated close must not duplicate teardown"
+E       AssertionError: aliases and repeated close must not duplicate teardown
+E       assert ['id-0001', 'id-0001'] == ['id-0001']
+E         
+E         Left contains one more item: 'id-0001'
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:149: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_run_resources.py::test_a_thread_owns_one_scope_across_turns_and_closes_it_once
+1 failed in 1.29s

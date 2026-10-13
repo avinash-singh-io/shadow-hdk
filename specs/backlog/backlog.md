@@ -29,6 +29,7 @@ type: Backlog
 
 | ID | Title | Priority | Status | Phase | Detail |
 |----|-------|----------|--------|-------|--------|
+| BUG-241 | Thread close leaves the store hold behind on cancellation or teardown failure | P1 | fixed in 0.48.0 candidate; publication pending | 67 | New resource teardown controls reproduced the held owner after cancelled close and cleanup failure; a second cancellation could interrupt hold release. Shield the complete close operation, attempt resource teardown before delivering cancellation, and release the store hold in a finally path. Focused red/green evidence is under phase 67 Group 5. |
 | BUG-240 | The key-backed model loop drops cache read/write tokens from usage | P1 | closed — published and verified v0.47.3, 2026-10-04 | 66 | Both loop aggregation/output and model-session reconstruction omit existing Usage cache counters; runtime meter already accepts them. Source evidence in phase 66. |
 | BUG-239 | Claude Code native interruption is advertised but closes the session; unread interrupted frames can contaminate the next turn | P1 | closed — published and verified v0.47.2, 2026-10-04 | 66 | Missing dialect interrupt line and cancellation leaves the old terminal result in the pipe; source evidence in phase 66. |
 | BUG-238 | Mode-document fragments stay dictionaries and crash prompt assembly | P1 | closed — published and verified v0.47.1, 2026-10-04 | 66 | Existing store/put transports mode rows; the decoder must produce typed fragments before shared assembly. Source evidence in phase 66. |

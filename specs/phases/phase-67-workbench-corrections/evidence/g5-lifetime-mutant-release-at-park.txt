@@ -1,0 +1,38 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_a_park_keeps_the_resource_until_the_resumed_run_ends ___________
+
+    async def test_a_park_keeps_the_resource_until_the_resumed_run_ends() -> None:
+        from langgraph.checkpoint.memory import InMemorySaver
+    
+        from shadow_hdk.kernel.observations import ApprovalRequest
+        from shadow_hdk.kernel.ports import Allow
+        from shadow_hdk.runtime import resume
+    
+        class Asking(Managed):
+            async def invoke(self, registration: str, inputs: Any) -> Any:
+                context = current_run()
+                assert context is not None
+                if await context.resumed() is None:
+                    return ApprovalRequest(question="continue?", handle="approval")
+                return Completed({"closed_before_resume": list(self.closed)})
+    
+        port = Asking()
+        ports = Ports(components=(port,), governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+        options = RunOptions(
+            lease=Lease(Ceiling(10, 3600, 100), Floor(0)),
+            run_id="parked-resource",
+            checkpointer=InMemorySaver(),
+        )
+        plan = Composition((Invoke("one", "held"),))
+        first = [e async for e in run(plan, ports, options=options)]
+>       assert (port.closed, [e.kind for e in first if e.kind == "ended"]) == ([], [])
+E       AssertionError: assert (['parked-resource'], []) == ([], [])
+E         
+E         At index 0 diff: ['parked-resource'] != []
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:114: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_run_resources.py::test_a_park_keeps_the_resource_until_the_resumed_run_ends
+1 failed in 0.30s

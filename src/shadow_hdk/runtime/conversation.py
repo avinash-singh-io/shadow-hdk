@@ -77,6 +77,7 @@ from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Narrowing, Offer
+from shadow_hdk.runtime.resources import release_resources, settle_resources
 from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
@@ -326,6 +327,7 @@ class Conversation:
         self._checkpointer = checkpointer
         self._session: AgentSession | None = None
         self._holder: asyncio.Task[None] | None = None
+        self._closing_resources: asyncio.Task[None] | None = None
         self._let_go: asyncio.Event = asyncio.Event()
         self._turning: asyncio.Lock = asyncio.Lock()
         self._sources: tuple[Any, ...] = ()
@@ -587,17 +589,33 @@ class Conversation:
         self._session = await self._open_provider()
 
     async def close(self) -> None:
+        if self._closing_resources is None:
+            self._closing_resources = asyncio.create_task(self._close())
+        _, cancelled = await settle_resources(self._closing_resources)
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _close(self) -> None:
         self._stop_idling()
-        if self._session is not None:
-            self._remember_session()
-            await self._session.close()
-            self._session = None
         holder = self._holder
-        if holder is not None:
-            self._let_go.set()
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                await holder
-            self._holder = None
+        self._holder = None
+        try:
+            if self._session is not None:
+                self._remember_session()
+                try:
+                    await self._session.close()
+                finally:
+                    self._session = None
+        finally:
+            try:
+                if holder is not None:
+                    self._let_go.set()
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await holder
+            finally:
+                failure = await release_resources(self._ports.components, self.id)
+                if failure:
+                    raise RuntimeError(f"resource cleanup failed: {failure}")
 
     @property
     def closed(self) -> bool:
@@ -785,6 +803,7 @@ class Conversation:
                 principal=self.principal or None,
                 context=self.context_for(turn_id),
                 plan_limits=self.plan_limits,
+                resource_scope=self.id,
             )
             if began is not None:
                 await began(TurnRecord(id=turn_id, run_id=run_id, prompt=text, at=at))
@@ -1001,6 +1020,7 @@ class Conversation:
             principal=self.principal or None,
             context=self.context_for(question.turn),
             plan_limits=self.plan_limits,
+            resource_scope=self.id,
         )
         events: list[Event] = []
         steps_taken = 0

@@ -76,3 +76,46 @@ async def test_an_older_host_has_the_no_resource_default() -> None:
     except RemoteError as error:
         answer = error.code
     assert answer is None
+
+
+async def test_a_wire_host_owns_one_scope_across_runs_and_releases_aliases_once() -> None:
+    picture = Picture()
+    ports = Ports(
+        components=(picture, picture), governance=AllowAll(), sink=ListSink(), clock=FixedClock()
+    )
+    async with loopback(ports) as (host, _):
+        await host.initialize()
+        options = RunOptions(
+            lease=Lease(Ceiling(10, 3600, 100), Floor(0)),
+            resource_scope="host-session",
+        )
+        for _ in range(2):
+            await host.run(Composition((Invoke("one", "picture"),)), options)
+        assert (picture.scopes, picture.released) == (["host-session"] * 2, [])
+        await host._release_run({"resource_scope": "host-session"})
+        assert picture.released == ["host-session"]
+
+
+async def test_a_wire_resume_keeps_the_hosts_resource_scope() -> None:
+    from tests.runtime.test_conversation_resources_survive_approval import PausedResource
+
+    picture = PausedResource()
+    ports = Ports(components=(picture,), governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+    async with loopback(ports) as (host, _):
+        await host.initialize()
+        options = RunOptions(
+            lease=Lease(Ceiling(10, 3600, 100), Floor(0)),
+            run_id="park-on-wire",
+            resource_scope="host-session",
+        )
+        plan = Composition((Invoke("one", "picture"),))
+        await host.run(plan, options)
+        assert (picture.scopes, picture.released) == (["host-session"], [])
+        await host.resume(plan, {"kind": "allow"}, options)
+        assert (picture.scopes, picture.released, host.events[-1].kind) == (
+            ["host-session"] * 2,
+            [],
+            "ended",
+        )
+        await host._release_run({"resource_scope": "host-session"})
+        assert picture.released == ["host-session"]

@@ -62,6 +62,7 @@ from shadow_hdk.runtime.conversation import (
     environment_mode_of,
 )
 from shadow_hdk.runtime.offer import InProcessOffer, Offer
+from shadow_hdk.runtime.resources import settle_resources
 from shadow_hdk.runtime.session import HOST_RESERVED
 
 HOLD_SECONDS = 30.0
@@ -172,6 +173,7 @@ class Thread:
         thread was opened without one, which takes no hold."""
         self._hold_seconds = hold_seconds
         self._renewing: asyncio.Task[None] | None = None
+        self._closing: asyncio.Task[None] | None = None
         self.execution: ExecutionSelection | None = None
 
         """The capability pair accepted by a composing host, when it supplied one."""
@@ -456,9 +458,20 @@ class Thread:
         await self._store.save(self._record)
 
     async def close(self) -> None:
-        await self.conversation.close()
-        await self._remember_session()
-        await self._let_go_of_hold()
+        if self._closing is None:
+            self._closing = asyncio.create_task(self._close())
+        _, cancelled = await settle_resources(self._closing)
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _close(self) -> None:
+        try:
+            await self.conversation.close()
+        finally:
+            try:
+                await self._remember_session()
+            finally:
+                await self._let_go_of_hold()
 
     async def _remember_session(self) -> None:
         """The provider's own session id, off the conversation, onto the record — what a resume
