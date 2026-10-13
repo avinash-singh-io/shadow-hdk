@@ -1,0 +1,8 @@
+g4-rewrite-stable BITES 1 failed in 0.43s
+g4-walk-ignored BITES 1 failed in 0.46s
+g4-keep-empty-directories BITES 1 failed in 0.54s
+g4-new-private-index BITES 1 failed in 0.74s
+g4-no-external-capture BITES 2 failed in 0.99s
+g4-change-person-index BITES 1 failed in 0.69s
+g4-keep-ignored-cache BITES 1 failed in 0.57s
+g4-no-lock BITES 1 failed in 0.37s

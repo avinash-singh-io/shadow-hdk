@@ -1,0 +1,73 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_snapshots_reuse_a_private_index_across_instances_and_capture_external_edits[asyncio] _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-395/test_snapshots_reuse_a_private0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a264510>
+
+    async def test_snapshots_reuse_a_private_index_across_instances_and_capture_external_edits(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = a_repository(tmp_path)
+        used: list[str] = []
+        original = asyncio.create_subprocess_exec
+    
+        async def launched(*args: object, **kw: object) -> asyncio.subprocess.Process:
+            env = kw.get("env")
+            if args[:3] == ("git", "add", "-A") and isinstance(env, dict):
+                used.append(str(env.get("GIT_INDEX_FILE")))
+            return await original(*args, **kw)  # type: ignore[arg-type]
+    
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", launched)
+        before = await GitHistory(repo).snapshot()
+        (repo / "app.py").write_text("external edit")
+        (repo / "external.txt").write_text("external new")
+        after = await GitHistory(repo).snapshot()
+        (repo / "app.py").write_text("later")
+        (repo / "external.txt").unlink()
+        await GitHistory(repo).restore(after)
+        await GitHistory(repo).snapshot()
+        assert (
+            len(set(used)),
+>           Path(used[0]).exists(),
+                 ^^^^^^^
+            (repo / "app.py").read_text(),
+            (repo / "external.txt").read_text(),
+            before != after,
+        ) == (1, True, "external edit", "external new", True)
+E       IndexError: list index out of range
+
+tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:69: IndexError
+_ test_tracked_ignored_files_and_file_modes_are_restored_without_touching_git[asyncio] _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-395/test_tracked_ignored_files_and0')
+
+    async def test_tracked_ignored_files_and_file_modes_are_restored_without_touching_git(
+        tmp_path: Path,
+    ) -> None:
+        repo = a_repository(tmp_path)
+        (repo / ".gitignore").write_text("*.secret\n")
+        (repo / "tracked.secret").write_text("tracked")
+        git(repo, "add", "-f", "tracked.secret")
+        (repo / "app.py").chmod(0o755)
+        state = [git(repo, "rev-parse", "HEAD"), git(repo, "write-tree"), git(repo, "stash", "list")]
+        history = GitHistory(repo)
+        taken = await history.snapshot()
+        (repo / "tracked.secret").write_text("changed")
+        (repo / "app.py").chmod(0o644)
+        await history.restore(taken)
+>       assert [
+            (repo / "tracked.secret").read_text(),
+            bool((repo / "app.py").stat().st_mode & 0o111),
+            [git(repo, "rev-parse", "HEAD"), git(repo, "write-tree"), git(repo, "stash", "list")],
+        ] == ["tracked", True, state]
+E       AssertionError: assert ['changed', F...c03b284', '']] == ['tracked', T...c03b284', '']]
+E         
+E         At index 0 diff: 'changed' != 'tracked'
+E         Use -v to get more diff
+
+tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:90: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_history_reuses_work_and_preserves_state.py::test_snapshots_reuse_a_private_index_across_instances_and_capture_external_edits[asyncio]
+FAILED tests/adapters/environment/test_history_reuses_work_and_preserves_state.py::test_tracked_ignored_files_and_file_modes_are_restored_without_touching_git[asyncio]
+2 failed in 0.99s

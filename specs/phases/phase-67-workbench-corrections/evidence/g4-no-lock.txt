@@ -1,0 +1,36 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_concurrent_history_instances_serialize_and_restart_after_cache_loss[asyncio] _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-398/test_concurrent_history_instan0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109fe4510>
+
+    async def test_concurrent_history_instances_serialize_and_restart_after_cache_loss(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        repo = a_repository(tmp_path)
+        histories = [GitHistory(repo), GitHistory(repo)]
+        original = GitHistory._capture
+        active = 0
+        peak = 0
+    
+        async def capturing(self: GitHistory, index: str) -> str:
+            nonlocal active, peak
+            active += 1
+            peak = max(peak, active)
+            try:
+                await asyncio.sleep(0.02)
+                return await original(self, index)
+            finally:
+                active -= 1
+    
+        monkeypatch.setattr(GitHistory, "_capture", capturing)
+        taken = await asyncio.gather(*(h.snapshot() for h in histories), return_exceptions=True)
+>       assert peak == 1 and all(isinstance(t, str) for t in taken)
+E       assert (2 == 1)
+
+tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:131: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_history_reuses_work_and_preserves_state.py::test_concurrent_history_instances_serialize_and_restart_after_cache_loss[asyncio]
+1 failed in 0.37s
