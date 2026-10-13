@@ -131,9 +131,6 @@ the same change shows all of it. The line counts beside it are computed from the
 they stay exact when the text is cut.
 """
 
-_WALK_CEILING = 50_000
-"""A walk this big is a workspace nobody meant to search whole; stop rather than hang."""
-
 
 def _as_limit(given: JsonValue, fallback: int) -> int:
     """A caller's limit, or the default. A nonsense one is the default rather than a refusal:
@@ -1069,32 +1066,69 @@ class Environment(ComponentPort):
 
     # ------------------------------------------------------- search, over the primitives
 
-    async def _walk(self, start: str) -> list[str]:
-        """Every file under `start`, as paths relative to the root, sorted.
+    async def _search_entries(self, path: str) -> list[str]:
+        """Adapter seam for search traversal; listing a directory keeps its existing semantics."""
+        return await self._list(path)
 
-        Built on `_list` alone, so **no environment has to implement anything** for search to
-        work — a sandbox, a remote root and a local directory all gain it at once. An adapter
-        that can do better (a real `find`, an index) can override `_glob` and `_grep`; none has
-        to. `_list` failing on one directory skips that directory rather than the walk: a tree
-        with one unreadable corner still searches.
+    async def _walk(self, start: str) -> list[str]:
+        """Searchable files, pruning nested .gitignore exclusions before descending (N-W3).
+
+        Built on the existing read/list primitives for contained and remote environments. A local
+        Git adapter can enumerate tracked and untracked files directly. Result limits are handled
+        by glob/grep; repository size must never silently truncate a search.
         """
+        from pathspec import GitIgnoreSpec
+
         base = "" if start in ("", ".") else start.strip("/")
+        rules: list[tuple[str, GitIgnoreSpec]] = []
+
+        async def rules_at(
+            here: str, inherited: list[tuple[str, GitIgnoreSpec]]
+        ) -> list[tuple[str, GitIgnoreSpec]]:
+            try:
+                content = await self._read(f"{here}/.gitignore" if here else ".gitignore")
+            except Exception:
+                return inherited
+            return [*inherited, (here, GitIgnoreSpec.from_lines(content.splitlines()))]
+
+        def ignored(path: str, inherited: list[tuple[str, GitIgnoreSpec]]) -> bool:
+            excluded = False
+            for directory, spec in inherited:
+                relative = path[len(directory) + 1 :] if directory else path
+                checked = spec.check_file(relative)
+                if checked.include is not None:
+                    excluded = checked.include
+            return excluded
+
+        # Starting inside a subtree must not discard its ancestors' rules.
+        if base:
+            rules = await rules_at("", rules)
+            parent = ""
+            for part in base.split("/"):
+                parent = f"{parent}/{part}" if parent else part
+                if part == ".git" or ignored(parent + "/", rules):
+                    return []
+                if parent != base:
+                    rules = await rules_at(parent, rules)
         found: list[str] = []
-        pending = [base]
+        pending = [(base, rules)]
         seen: set[str] = set()
         while pending:
-            here = pending.pop()
-            if here in seen or len(found) > _WALK_CEILING:
+            here, inherited = pending.pop()
+            if here in seen:
                 continue
             seen.add(here)
+            inherited = await rules_at(here, inherited)
             try:
-                entries = await self._list(here or ".")
+                entries = await self._search_entries(here or ".")
             except Exception:
-                continue  # an unreadable directory is not a failed search
+                continue
             for entry in entries:
                 joined = f"{here}/{entry}" if here else entry
+                if entry.rstrip("/") == ".git" or ignored(joined, inherited):
+                    continue
                 if entry.endswith("/"):
-                    pending.append(joined.rstrip("/"))
+                    pending.append((joined.rstrip("/"), inherited))
                 else:
                     found.append(joined)
         return sorted(found)

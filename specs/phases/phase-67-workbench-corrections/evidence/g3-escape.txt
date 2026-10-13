@@ -1,0 +1,29 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_non_git_search_does_not_follow_directory_cycles_or_escape[asyncio] ____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-387/test_non_git_search_does_not_f0')
+
+    async def test_non_git_search_does_not_follow_directory_cycles_or_escape(tmp_path: Path) -> None:
+        root = tmp_path / "root"
+        root.mkdir()
+        (root / "keep.py").write_text("needle")
+        (tmp_path / "outside.py").write_text("needle")
+        (root / "loop").symlink_to(root, target_is_directory=True)
+        (root / "escape.py").symlink_to(tmp_path / "outside.py")
+        env = await LocalEnvironment.open(root, mode="full")
+        try:
+            import asyncio
+    
+            answer = await asyncio.wait_for(env._walk("."), 2)
+>           assert answer == ["keep.py"]
+E           AssertionError: assert ['escape.py', 'keep.py'] == ['keep.py']
+E             
+E             At index 0 diff: 'escape.py' != 'keep.py'
+E             Left contains one more item: 'keep.py'
+E             Use -v to get more diff
+
+tests/adapters/environment/test_search_honours_ignores.py:126: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_search_honours_ignores.py::test_non_git_search_does_not_follow_directory_cycles_or_escape[asyncio]
+1 failed in 0.38s

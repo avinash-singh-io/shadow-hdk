@@ -1,0 +1,54 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_non_git_search_does_not_follow_directory_cycles_or_escape[asyncio] ____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-373/test_non_git_search_does_not_f0')
+
+    async def test_non_git_search_does_not_follow_directory_cycles_or_escape(tmp_path: Path) -> None:
+        root = tmp_path/'root'
+        root.mkdir()
+        (root/'keep.py').write_text('needle')
+        (tmp_path/'outside.py').write_text('needle')
+        (root/'loop').symlink_to(root, target_is_directory=True)
+        (root/'escape.py').symlink_to(tmp_path/'outside.py')
+        env = await LocalEnvironment.open(root, mode='full')
+        try:
+            import asyncio
+>           answer = await asyncio.wait_for(env._walk('.'), 2)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/environment/test_search_honours_ignores.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/asyncio/tasks.py:488: in wait_for
+    return await fut
+           ^^^^^^^^^
+src/shadow_hdk/adapters/environment/local.py:457: in _walk
+    return await super()._walk(start)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/shadow_hdk/runtime/environment.py:1119: in _walk
+    entries = await self._list(here or ".")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/shadow_hdk/adapters/environment/local.py:424: in _list
+    where = self.inside(path)
+            ^^^^^^^^^^^^^^^^^
+src/shadow_hdk/runtime/environment.py:1337: in inside
+    candidate = self._resolve(given)
+                ^^^^^^^^^^^^^^^^^^^^
+src/shadow_hdk/runtime/environment.py:1369: in _resolve
+    return (self.root / given).resolve()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/pathlib/__init__.py:938: in resolve
+    return self.with_segments(os.path.realpath(self, strict=strict))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+filename = '/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-373/test_non_git_search_does_not_f0...oop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop/loop'
+strict = False
+
+>   ???
+E   Failed: Timeout (>3.0s) from pytest-timeout.
+
+<frozen posixpath>:457: Failed
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_search_honours_ignores.py::test_non_git_search_does_not_follow_directory_cycles_or_escape[asyncio]
+1 failed, 8 deselected in 3.69s
