@@ -1,0 +1,6 @@
+# Tasks
+- [x] Group 0: a control lease, per scope — the agent drives until a person takes the keyboard, acts on the page are refused by name while they hold it, reading is never withheld, and the handover goes on the record. Eight controls, six mutations biting, including one for a write action escaping the lease.
+- [x] Group 1: frames out of an owned target — acknowledged as the backpressure, one slot with a superseded count, handed over once, and stopping idempotently with the session let go. Eight controls, seven mutations biting; two gaps closed that the first pass found, one of them a guard that could not be made to fail and was removed rather than kept.
+- [x] Group 2: a person's clicks and keys reach the page through its own debugging session, refused unless the keyboard is theirs and the name checked before the browser's state. Five controls, five mutations biting.
+- [x] Group 3: a job's verified listener becomes a url the default origin policy already allows — verified and loopback only, so the seam joins two halves rather than widening the boundary. Eight controls, three mutations biting after one that survived was pinned.
+- [ ] Group 4: full acceptance, exact-head CI, land and publish 0.50.0.
