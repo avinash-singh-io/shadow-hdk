@@ -99,3 +99,9 @@ tools anyway. The remaining case is TD-024, the provider's and not the kit's, at
 with its own controls because this kit's side is now complete and proven. In 0.48.0 the same shape
 of tolerance concealed a defect of ours; that is the difference, and it is why TD-024 is its own row
 rather than a reopening of TD-023.
+
+## Exact-head continuous integration — 2026-10-16, green
+
+All eighteen jobs green. Both governed-SDK jobs pass, which is the result that matters here: the
+one that had failed since before the 2026-10-13 checkpoint, through four attempts at the wrong fix,
+now passes with no tolerance for the case this phase removed.
