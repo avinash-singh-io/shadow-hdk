@@ -27,12 +27,17 @@ It spans one deterministic workflow with a few tools, model-assisted workflows, 
 and dynamic multi-agent work acting on software or the physical world. It grows by data, adapters,
 patterns and host-owned components, never by runtime branches on a provider, product or use case.
 
-## Owner-authorized maintenance expansion — 2026-10-13
+## Owner-authorized maintenance expansion — 2026-10-13, resumed 2026-10-15
 Phase 67 prepares 0.48.0: socket/worktree/search/history corrections plus optional browser and
-workbench packs and governed Codex reads. **Paused by owner**: selected browser candidate has
-three failing real controls; Codex catalogue verification and exact-tree acceptance are unfinished.
-Commit/push only; merge, tag and publication are prohibited. Product pins and bridge retirement
-are product-owned.
+workbench packs and governed Codex reads. Paused by the owner on 2026-10-13 and resumed on
+2026-10-15 with implementation and verification authorized, and landing authorized once the gates
+pass. Groups 6, 7 and 8 are closed — element handles landed on the owned browser engine and the
+replacement candidate was retired, and the catalogue's bounds and restricted model metadata are
+measured. Group 9 holds acceptance, packaging and release. Product pins and bridge retirement are
+product-owned.
+
+The browser pane — a person watching the agent's page and taking the keyboard — is **phase 68**,
+after this lands, recorded as ENH-053 with its transport already decided.
 
 ## Current roadmap — 2026-09-21
 

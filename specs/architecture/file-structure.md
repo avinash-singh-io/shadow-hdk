@@ -71,7 +71,7 @@ shadow-hdk/
       mcp/                           MCP servers as components; held.py — the server's process ours  Phase 1 · 28
       acp/                           an agent over ACP — OpenCode, anything Zed-compatible           Phase 4
       jsonl/                         a CLI answering in line-delimited JSON; owned launch-catalogue preparation — Claude Code, Codex     Phase 20/67
-      browser/                       optional governed Playwright default, agent-browser candidate/ref/assets and isolated origin gateway [browser] Phase 67
+      browser/                       optional governed Playwright engine, its element handles and an isolated origin gateway [browser] Phase 67
       workbench/                     direct host command/file access, job observation and JUnit reports [workbench] Phase 67
       recording/                     our registry as an MCP server over an authenticated socket     Phase 5 · 23
       modes/                         ModeSpec · ModeRegistry · ActRules; rules as rows; mode files   Phase 1 · 10 · 25

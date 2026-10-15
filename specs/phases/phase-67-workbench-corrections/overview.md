@@ -43,10 +43,16 @@ Acceptance additionally requires real browser integration, denied-origin/redirec
 ## Out
 Product pins/UI/bridges, native implementation, interactive PTY, product-specific test runners and personal browser profile access.
 
-## Stop checkpoint — 2026-10-13
-Groups 0–5 and 7 have focused evidence; Groups 6, 8 and 9 remain incomplete. Preserve the
-agent-browser candidate and browser comparison, retaining the Playwright default. The real
-combined browser gate finished 15 passed / 3 failed; no test runner or mutation runner remains.
-The three recognized-model Codex controls pass, but catalogue edge/mutation verification is
-unfinished. Earlier full-suite and wheel evidence is historical, preceding these source changes.
-Resume only on owner instruction; pending gates are recorded in tasks, retrospective and ADR.
+## Stop checkpoint — 2026-10-13, resumed 2026-10-15
+The checkpoint preserved Groups 0–5 and 7 with focused evidence while Groups 6, 8 and 9 remained
+incomplete, kept the replacement browser candidate and its comparison behind the Playwright
+default at a real gate of 15 passed / 3 failed, and left the Codex catalogue edge and mutation
+verification unfinished.
+
+Resumed on owner instruction. The comparison closed rather than completed: the candidate's one
+advantage — accessibility observations addressed by stable element handles — proved native to the
+engine already owned, and its three failures came from two structural causes rather than
+compatibility defects, so element handles landed on the owned engine and the candidate was
+retired (ADR 0001 amendment). Catalogue bounds and the restricted model metadata are now
+measured, the latter after a first control proved vacuous against the mutations it was written
+for. Groups 6, 7 and 8 are closed; Group 9 holds the acceptance, packaging and release steps.
