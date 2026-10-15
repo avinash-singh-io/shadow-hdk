@@ -28,3 +28,21 @@ and `bindings.py` is explicit that the listing and the executor must not drift a
 design change and not a line in a release.
 
 ---
+
+### [ARCH_CHANGE] 2026-10-15 — One predicate, two context sources
+Topics: catalogue-visibility, governance, offer-port
+Affects-phases: phase-68-catalogue-before-the-run
+Affects-specs: specs/architecture/runtime.md#the-governed-step
+Detail: The catalogue predicate — refresh, judge each registration, keep what is not refused — is
+lifted out of `RunContext` into one function, and a `Catalogue` reads it with no run attached from
+what is known at open: the components, the policy, the mode and the host's attributes. Deliberately
+one predicate rather than two implementations, because `bindings.py` is explicit that the listing
+and the executor must not drift apart and BUG-235 is what that drift looks like. A control asserts
+the pre-run and in-run listings are identical, which is the only reason the seam is safe to have.
+Where there is no run id the conversation's own identity is told instead of a sentinel, so a policy
+can still correlate a listing with the turns that follow. The first mutation pass found the D30 gap:
+dropping the registration's posture and id from the pre-run context changed nothing that was
+measured, which would have quietly reopened TD-007 on a new path. Now asserted, including that a
+host setting those names cannot speak for the policy.
+
+---
