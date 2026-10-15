@@ -170,12 +170,12 @@ Goal paused by owner. No new implementation, release gate, merge, tag or publish
 
 Supersedes the evidence above and the stop checkpoint below for the current tree. Every command
 was re-run from this checkout after the element handles landed, the replacement candidate was
-retired and the catalogue bound controls were added.
+retired, the catalogue bound controls were added and TD-023's barrier went in.
 
 SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0
 
 ```text
-2376 passed, 29 skipped, 25 deselected, 85 warnings in 304.35s (0:05:04)
+2382 passed, 29 skipped, 25 deselected, 85 warnings in 341.29s (0:05:41)
 ```
 
 uv run ruff check — exit 0 · uv run ruff format --check — exit 0 · uv run mypy — exit 0
