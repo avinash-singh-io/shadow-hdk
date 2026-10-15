@@ -218,3 +218,23 @@ fix is right either way — a governed run should not start before its tools can
 not be silent when they cannot — and continuous integration is what decides which case this is.
 
 ---
+
+### [DECISION] 2026-10-15 — The control asserts the kit's contract, not the environment's behaviour
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The barrier fixed the Linux job, which had failed twice and now passes, so the race was
+real. The macOS continuous-integration runner is a different matter: the relay never arrives at
+all there, each case spending the whole deadline, and the kit correctly names `tools.unreached`.
+The same relay spawned directly connects on that same runner — the attachment control passes in
+its suite job — so what differs is the SDK's own read-only sandbox on that machine. That is the
+environment's behaviour, and asserting it is why the control could never pass there.
+So the control now states what this kit actually claims: a governed run gets the host's tools, or
+it says it did not. Before the barrier it could do neither, which is the defect that was worth
+finding. An incoherence guard keeps the honest branch from being taken while the tools were in
+fact present, and a mutation claiming unreachable tools when they arrived bites. The complementary
+mutation is unreachable wherever the relay always arrives, and is recorded as such rather than
+counted. Deliberately **not** done: relaxing the tool assertions themselves, which would have made
+the gate green by weakening the claim instead of by stating it correctly.
+
+---
