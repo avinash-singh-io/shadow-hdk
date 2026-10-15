@@ -71,3 +71,32 @@ Detail: Full expanded local suite: 2,357 passed, 29 skipped, 25 deselected; lint
 Topics: pause, browser-selection, codex, checkpoint, release-gates
 Affects-specs: specs/status.md, specs/decisions/0001-optional-workbench-packs.md
 Detail: Owner requests all Phase 67 work committed and pushed, then goal paused; explicitly forbids merge, tag and publication. Preserve comparison and unfinished Codex verification, with inline handoff only. Pinned local comparison favors agent-browser 0.39.0 for references/observations and small daemon footprint, but it is not accepted: combined real browser gate completes 15 passed / 3 failed, all candidate failures (HTTP error navigation and two Playwright-specific wait-selector cases). Original Playwright remains default. Three recognized-model actual Codex 0.154.0 controls pass (gpt-5.4, gpt-6-astra, gpt-6-sol, including resume); new catalogue mutations/edge controls remain pending. Earlier 2,357-pass suite, types and installed-wheel controls predate these changes. No active mutation runner or owned browser/test process remains; earlier exact restoration and restored controls are preserved. No new mutation or acceptance run is started after stop. Checkpoint is not release acceptance.
+
+### [DISCOVERY] 2026-10-15 — Playwright carries the reference pattern the candidate was chosen for
+Topics: browser-engine, element-references, group-6
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md#options-considered
+Detail: The installed Playwright 1.63.0 already emits `[ref=eN]` element references from
+`aria_snapshot(mode="ai")`, and also offers `boxes` for bounding boxes and `depth` for size
+control. Accessibility observations with stable references were the capability the replacement
+candidate was preferred for, so the comparison's premise no longer holds. `Page.get_by_ref` is
+absent from the Python API at this version; resolution goes through the `aria-ref=` selector
+engine, which is verified here: a snapshot of a small page reported `button "Submit" [ref=e2]`,
+`locator("aria-ref=e2")` matched exactly one element, and clicking it ran the page's handler.
+
+---
+
+### [ARCH_CHANGE] 2026-10-15 — Group 6 becomes references on the owned engine, not an engine swap
+Topics: browser-engine, group-6, dependencies
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md#decision
+Detail: `AgentBrowserEngine` subclasses `PlaywrightEngine` and still delegates tabs, console,
+requests and tab closure to it, along with the owned profile, CDP target identity, screenshot
+sizing and indexed locators, so the candidate was additive rather than a replacement: two engines,
+a pinned native binary and an asset installer in place of one. Its documented surface carries no
+wait command or wait selector syntax, which is both selector failures, and its navigation raises a
+Chromium network error where the owned engine returns a response carrying an HTTP status, which is
+the third. Recommendation recorded for owner confirmation: keep the owned engine, take the
+reference pattern onto it, and retire the replacement candidate rather than finish accepting it.
+
+---

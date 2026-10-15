@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import re
 import sys
 import tempfile
 from dataclasses import dataclass, field
@@ -19,6 +20,30 @@ from shadow_hdk.kernel import Completed, Failed, Image, Observation, Refused
 from shadow_hdk.runtime import current_run
 from shadow_hdk.runtime.processes import start_held
 
+HANDLE = re.compile(r"\[ref=(e\d+)\]")
+"""How the engine marks an element in an `ai`-mode accessibility snapshot."""
+
+
+def handles_in(snapshot: str) -> dict[str, dict[str, JsonValue]]:
+    """Role and accessible name per handle, read from the engine's own snapshot.
+
+    The engine writes one element per line as `- role "name" [attributes] [ref=eN]`, so the role
+    is the first word before the quoted name and the attributes are bracketed rather than quoted.
+    A line carrying no handle — a text node, a URL — describes nothing addressable and is skipped.
+    """
+    found: dict[str, dict[str, JsonValue]] = {}
+    for line in snapshot.splitlines():
+        marked = HANDLE.search(line)
+        if marked is None:
+            continue
+        head = line[: marked.start()].lstrip().removeprefix("- ").strip()
+        if not head:
+            continue
+        name = head[head.index('"') + 1 : head.rindex('"')] if '"' in head else ""
+        role = head.split(" ", 1)[0].split(":", 1)[0]
+        found["@" + marked.group(1)] = {"role": role, "name": name}
+    return found
+
 
 @dataclass
 class _Profile:
@@ -33,6 +58,9 @@ class _Profile:
     next_tab: int = 0
     console: list[JsonValue] = field(default_factory=list)
     requests: list[JsonValue] = field(default_factory=list)
+    handles: dict[str, dict[str, dict[str, JsonValue]]] = field(default_factory=dict)
+    """Per tab, the handles its latest snapshot issued. A handle the engine would spend the whole
+    timeout failing to resolve is refused here instead, by name, as soon as it is asked for."""
 
     def record(self, destination: list[JsonValue], item: JsonValue) -> None:
         destination.append(item)
@@ -234,7 +262,21 @@ class PlaywrightEngine:
             except Exception as error:
                 return Failed(f"browser {action} failed: {error}"[-8000:])
 
-    async def _locator(self, page: Any, params: Inputs, *, many: bool = False) -> Any:
+    async def _locator(
+        self,
+        page: Any,
+        params: Inputs,
+        *,
+        many: bool = False,
+        handles: dict[str, dict[str, JsonValue]] | None = None,
+    ) -> Any:
+        if params.ref is not None:
+            if params.ref not in (handles or {}):
+                raise ValueError(
+                    f"{params.ref} is not a handle from this tab's latest snapshot; "
+                    "take a new snapshot and use a handle from it"
+                )
+            return page.locator(f"aria-ref={params.ref[1:]}")
         if bool(params.selector) == bool(params.role):
             raise ValueError("supply either selector or role")
         locator = (
@@ -282,6 +324,10 @@ class PlaywrightEngine:
         page.set_default_timeout(params.timeout_ms)
         page.set_default_navigation_timeout(params.timeout_ms)
         response = None
+        if action in ("open", "new_tab", "back", "forward"):
+            # A handle belongs to the document that issued it, so leaving that document retires
+            # every handle for this tab rather than letting one resolve against a new page.
+            profile.handles.pop(identity, None)
         if action in ("open", "new_tab"):
             response = await page.goto(params.url, wait_until="domcontentloaded")
         elif action in ("back", "forward"):
@@ -292,13 +338,19 @@ class PlaywrightEngine:
             profile.active = next(iter(profile.tabs), "")
             return Completed({"closed": identity})
         elif action == "snapshot":
-            text = await page.locator("body").aria_snapshot()
+            text = await page.aria_snapshot(mode="ai")
+            issued = handles_in(text)
+            profile.handles[identity] = issued
+            # The caller is shown the same `@eN` spelling the `ref` argument takes, so what it
+            # reads is what it can pass back; the engine's own form never leaves this method.
+            shown = HANDLE.sub(r"[@\1]", text)
             return Completed(
                 {
                     "tab": identity,
                     "url": page.url,
-                    "snapshot": text[:200000],
-                    "truncated": len(text) > 200000,
+                    "snapshot": shown[:200000],
+                    "refs": dict(list(issued.items())[:5000]),
+                    "truncated": len(shown) > 200000 or len(issued) > 5000,
                 }
             )
         elif action == "find":
@@ -329,12 +381,13 @@ class PlaywrightEngine:
         elif action == "scroll":
             await page.mouse.wheel(params.x, params.y)
         elif action == "wait":
-            if params.selector or params.role:
-                await (await self._locator(page, params)).wait_for(state="visible")
+            if params.selector or params.role or params.ref:
+                located = await self._locator(page, params, handles=profile.handles.get(identity))
+                await located.wait_for(state="visible")
             else:
                 await page.wait_for_load_state("domcontentloaded")
         elif action in ("click", "type", "select", "press"):
-            locator = await self._locator(page, params)
+            locator = await self._locator(page, params, handles=profile.handles.get(identity))
             if action == "click":
                 await locator.click()
             elif action == "type":
