@@ -3,6 +3,9 @@
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type Observation = (Completed | Refused | ApprovalRequest | InputRequest | Failed | Pending | Acted)
+export type Data = string
+export type MimeType = string
+export type Images = Image[]
 export type Kind = "completed"
 export type Kind1 = "refused"
 export type Reason = string
@@ -23,10 +26,21 @@ export type IdempotencyKey = string
 export type Kind6 = "acted"
 
 export interface Completed {
+images?: Images
 kind?: Kind
 output?: {
 [k: string]: unknown
 }
+}
+/**
+ * An inline tool image: base64 bytes and their media type, never a local pathname.
+ *
+ * A coding tool, support desk and research assistant each consume visual observations.
+ * The bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.
+ */
+export interface Image {
+data: Data
+mime_type: MimeType
 }
 export interface Refused {
 kind?: Kind1

@@ -1,0 +1,7 @@
+g2-ignore-host-branch BITES 8 failed in 1.30s
+g2-discovery-ignores-record BITES 1 failed in 0.33s
+g2-delete-kept-branch BITES 1 failed in 0.38s
+g2-detach-person BITES 1 failed in 0.44s
+g2-keep-discarded-branch BITES 1 failed in 0.36s
+g2-own-by-branch-only BITES 1 failed in 0.34s
+g2-recreated-ownership BITES 2 failed in 0.47s

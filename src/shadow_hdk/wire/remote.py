@@ -39,7 +39,7 @@ from shadow_hdk.kernel.ports import (
     SinkPort,
 )
 from shadow_hdk.wire.peer import GONE, Peer, RemoteError
-from shadow_hdk.wire.protocol import COMPLETE, INVOKE, JUDGE, PROPOSE, REGISTRATIONS
+from shadow_hdk.wire.protocol import COMPLETE, INVOKE, JUDGE, PROPOSE, REGISTRATIONS, RELEASE_RUN
 
 
 def _run_id_of(context: Any) -> str:
@@ -184,6 +184,7 @@ class RemoteComponents(ComponentPort):
                 "registration": registration,
                 "inputs": inputs,
                 "run_id": _run_id_of(self._live()),
+                "resource_scope": getattr(self._live(), "resource_scope", ""),
                 # The **step**, not the registration: a thought the component puts on the record
                 # has to fold under the step that was thinking, and the registration id is the
                 # tool's name rather than the step's (Phase 21, found by the projection).
@@ -192,6 +193,11 @@ class RemoteComponents(ComponentPort):
         )
         observation: Observation = load(json.dumps(answered), Observation)
         return observation
+
+    async def release_run(self, resource_scope: str) -> None:
+        if not getattr(self._holder, "run_resources", False):
+            return
+        await self._peer.call(RELEASE_RUN, {"resource_scope": resource_scope})
 
 
 class RemoteSink(SinkPort):

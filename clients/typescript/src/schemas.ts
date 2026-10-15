@@ -17,6 +17,7 @@ export type * as EnvironmentCapabilitiesSchema from "./schemas/EnvironmentCapabi
 export type * as EventSchema from "./schemas/Event.js";
 export type * as ExecutionRequirementsSchema from "./schemas/ExecutionRequirements.js";
 export type * as ExecutionSelectionSchema from "./schemas/ExecutionSelection.js";
+export type * as ImageSchema from "./schemas/Image.js";
 export type * as ItemSchema from "./schemas/Item.js";
 export type * as JudgementSchema from "./schemas/Judgement.js";
 export type * as LeaseSchema from "./schemas/Lease.js";

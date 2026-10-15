@@ -1,0 +1,27 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+___ test_the_catalogue_offers_only_consumed_fields_and_uses_dispatch_limits ____
+
+    async def test_the_catalogue_offers_only_consumed_fields_and_uses_dispatch_limits() -> None:
+        offered = {
+            r.id: cast(dict[str, Any], r.component.interface.input_schema)
+            for r in await BrowserComponents().registrations()
+        }
+        assert offered["browser_tabs"] == {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        }
+        assert offered["browser_new_tab"]["required"] == ["url"]
+        assert "tab" not in offered["browser_new_tab"]["properties"]
+        assert "nth" not in offered["browser_find"]["properties"]
+>       assert offered["browser_type"]["properties"]["value"].get("maxLength") == 1_000_000
+E       AssertionError: assert None == 1000000
+E        +  where None = <built-in method get of dict object at 0x10c678c80>('maxLength')
+E        +    where <built-in method get of dict object at 0x10c678c80> = {'type': 'string'}.get
+
+tests/adapters/browser/test_browser_inputs_match_the_catalogue.py:43: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_inputs_match_the_catalogue.py::test_the_catalogue_offers_only_consumed_fields_and_uses_dispatch_limits
+1 failed, 1 passed in 0.17s

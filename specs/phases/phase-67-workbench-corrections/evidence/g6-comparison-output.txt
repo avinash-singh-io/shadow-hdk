@@ -1,0 +1,39 @@
+{
+  "playwright": {
+    "snapshot_median_s": 0.0021598955063382164,
+    "snapshot_bytes": 151,
+    "adapter_runtime": "Playwright driver + shared Chromium",
+    "element_refs": false
+  },
+  "agent-browser": {
+    "startup_and_interaction_s": 0.12365145899821073,
+    "snapshot_median_s": 0.0010861250048037618,
+    "snapshot_bytes": 302,
+    "daemon_rss_bytes": 13008896,
+    "daemon_cpu_s_10_snapshots": 0.0028213740000000015,
+    "screenshot": true,
+    "refs": 6
+  },
+  "browser-use": {
+    "snapshots_s": [
+      0.008164790997398086,
+      0.007106167002348229,
+      0.007073542001307942,
+      0.00727641700359527,
+      0.007137124994187616,
+      0.0071588339924346656,
+      0.00694145800662227,
+      0.0072339580074185506,
+      0.01729329199588392,
+      0.007327790997806005
+    ],
+    "snapshot_bytes": 284,
+    "refs": 4,
+    "screenshot": true,
+    "process_peak_rss_bytes": 100433920,
+    "process_cpu_s": 0.41684
+  },
+  "browse": {
+    "error": "TimeoutError: "
+  }
+}

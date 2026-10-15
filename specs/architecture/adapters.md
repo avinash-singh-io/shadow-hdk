@@ -19,6 +19,8 @@ type: Architecture
 | `mcp` | component | 1 | an MCP server's tools become components; annotations fill half a profile |
 | `modes` | governance | 1 · 25 · 28 | a mode is a ceiling profile plus an ask line — data; since D64 a `ModeSpec` is policy + behaviour + presentation, and since D76 it names the environment mode it needs; four ship — `read-only`, `ask`, `workspace-write`, `full` — and the rest are files or store rows |
 | `environment` | component | 22 · 28 | where effects land, with a mode, on one or many roots — the `workspace` and `sandbox_subprocess` adapters of Phase 3 folded into it (D48–D50, D76) |
+| `browser` | component | 67 | optional headless Playwright engine with per-scope isolated profiles, host origins enforced through a local gateway, image observations and owner teardown; see `docs/browser.md` |
+| `workbench` | component + host door | 67 | optional job inspection with independent output cursors, local listener port and JUnit report data; direct person access reuses the host environment without a model; see `docs/workbench.md` |
 | `acp` | model + component | 4 | OpenCode, or anything Zed-compatible, driven over the Agent Client Protocol |
 | `jsonl` | agent | 20 | a CLI answering in line-delimited JSON — Claude Code, Codex — resident or per turn, resumed on its own session id (D76); its stderr read as it arrives (BUG-059); every quirk a value in the provider's file — where the cache tokens are, what a gone session says (`session_gone_matches`, D139), how a behaviour field is spelled after its flag (`BehaviourArg.template`) — never a code path (D40, held by `tests/invariants/test_a_provider_is_a_file.py`) |
 | `recording` | component | 5 · 20 · 23 | an MCP server exposing our registry to a child agent; every call an observation. Served over a loopback socket through a relay console script (D44), and **nothing reaches it without the token the serve minted** — first line, constant time, refusals counted and never logged (D52). A call the policy asks about runs as a held child and the question is put to the host **live** while the CLI waits (D58) |
@@ -166,7 +168,7 @@ denominator:
 | provider | tool path | session | interrupt | stream | reasoning | tokens | cost |
 |---|---|---|---|---|---|---|---|
 | Claude Code | controlled | resumable | native | live | yes | yes | yes |
-| Codex CLI | uncontrolled | resumable | terminate | live | unknown | yes | no |
+| Codex CLI | controlled | resumable | terminate | live | unknown | yes | no |
 | OpenCode | controlled | process | none | final | unknown | unknown | unknown |
 
 Those are facts measured or derived at the dates in the provider files, not promises about future

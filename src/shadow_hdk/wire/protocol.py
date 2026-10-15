@@ -28,6 +28,7 @@ JUDGE = "governance.judge"
 COMPLETE = "model.complete"
 REGISTRATIONS = "components.registrations"
 INVOKE = "components.invoke"
+RELEASE_RUN = "components.release_run"
 PROPOSE = "sink.propose"
 
 # host → runtime, from inside a component the host is running on the runtime's behalf
@@ -115,7 +116,7 @@ REQUEST_WITHDRAWN = "request_withdrawn"
 stopped waiting (D59) — so a client need not poll `approvals/pending`."""
 
 HOST_DRIVES = frozenset({INITIALIZE, RUN, RESUME, CONTEXT_PROPOSE, CONTEXT_REMAINING})
-RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE})
+RUNTIME_CALLS_BACK = frozenset({JUDGE, COMPLETE, REGISTRATIONS, INVOKE, PROPOSE, RELEASE_RUN})
 
 
 ERROR_KINDS: tuple[str, ...] = (
@@ -199,6 +200,7 @@ __all__ = [
     "HOST_DRIVES",
     "INITIALIZE",
     "INVOKE",
+    "RELEASE_RUN",
     "JUDGE",
     "PROPOSE",
     "PROVIDERS_LIST",

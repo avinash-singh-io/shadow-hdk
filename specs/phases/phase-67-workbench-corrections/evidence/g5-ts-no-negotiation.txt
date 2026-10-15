@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_a_typescript_tool_is_called_back_over_http[asyncio] ___________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-569/test_a_typescript_tool_is_call0')
+
+    async def test_a_typescript_tool_is_called_back_over_http(tmp_path: Path) -> None:
+        node = _node()
+        from shadow_hdk.wire import served_over_http
+
+        threads = ToolCallingThreads(tmp_path, [("greet", {"name": "typescript"})])
+        with anyio.fail_after(90):
+            async with served_over_http(threads=threads) as address:
+                finished = await asyncio.to_thread(
+                    subprocess.run,
+                    [node, str(SMOKE), "http", address],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    check=False,
+                )
+        seen = _saw(finished)
+        assert seen["source"] == "host"
+        assert len(seen["scopes"]) == 1 and seen["scopes"][0] != "missing"
+>       assert seen["released"] == seen["scopes"], "one owner releases once, including tool aliases"
+E       AssertionError: one owner releases once, including tool aliases
+E       assert [] == ['thread-id-0001']
+E
+E         Right contains one more item: 'thread-id-0001'
+E         Use -v to get more diff
+
+tests/serve/test_a_typescript_host_serves_tools.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/serve/test_a_typescript_host_serves_tools.py::test_a_typescript_tool_is_called_back_over_http[asyncio]
+1 failed in 0.67s

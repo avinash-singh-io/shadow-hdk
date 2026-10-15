@@ -1,0 +1,3 @@
+g1-no-forward BITES 2 failed in 19.16s
+restored control ..                                                                       [100%]
+2 passed in 17.56s

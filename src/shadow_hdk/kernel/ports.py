@@ -42,7 +42,7 @@ from shadow_hdk.kernel.authority import (
 from shadow_hdk.kernel.components import Interface, Registration, RegistrationId
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
-from shadow_hdk.kernel.observations import Observation, Proposal
+from shadow_hdk.kernel.observations import Image, Observation, Proposal
 from shadow_hdk.kernel.providers import Behaviour
 from shadow_hdk.kernel.questions import Request
 from shadow_hdk.kernel.threads import ThreadRecord
@@ -76,6 +76,7 @@ class Message:
     content: str
     tool_call_id: str | None = None
     tool_calls: tuple[ToolCall, ...] = ()
+    images: Annotated[tuple[Image, ...], Field(exclude_if=lambda value: not value)] = ()
 
 
 @dataclass(frozen=True)
@@ -146,6 +147,22 @@ class ComponentPort(Protocol):
     async def registrations(self) -> Sequence[Registration]: ...
 
     async def invoke(self, registration: RegistrationId, inputs: JsonValue) -> Observation: ...
+
+
+@runtime_checkable
+class RunResourcePort(Protocol):
+    """Optional cleanup for resources owned by an execution scope (ADR-0001).
+
+    A component with no per-run resources implements nothing; the runtime does nothing.
+    A component allocating such resources implements this structural extension beside
+    ComponentPort. A root execution releases its scope when it ends; an explicitly
+    host-owned scope is released by that host. Conversation/Thread own their scope across
+    turns and approvals. Release must be idempotent. Cleanup failures are reported by the
+    owning run or host, never silently discarded.
+    """
+
+    async def release_run(self, resource_scope: str) -> None:
+        return None
 
 
 # ---------------------------------------------------------------- governance

@@ -143,6 +143,32 @@ class Delta:
 
 
 @dataclass(frozen=True)
+class CatalogueField:
+    """One literal scalar field replacement in an SDK's own catalogue."""
+
+    name: str
+    value: str | int | float | bool | tuple[str, ...] | None = None
+    require_present: bool = True
+
+
+@dataclass(frozen=True)
+class LaunchCatalogue:
+    """Prepare governed SDK metadata before launch, with no expressions or vendor branches.
+
+    A coding tool, a support desk and a research assistant may each narrow an SDK's
+    own tool catalogue while preserving its model metadata. The default on Dialect is
+    absent: uninjected sessions never run this probe or change their native catalogue.
+    """
+
+    probe_args: tuple[str, ...]
+    entries_at: str
+    replace_fields: tuple[CatalogueField, ...]
+    config_arg: str
+    config_template: str
+    isolated_env_keys: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Dialect:
     """How to read one CLI's line-delimited JSON event stream (D40).
 
@@ -258,6 +284,23 @@ class Dialect:
     mcp_strict_args: tuple[str, ...] = ()
     """Flags that stop it loading MCP servers from anywhere else. Without them a user's own global
     configuration joins the run ungoverned."""
+
+    private_working_directory: bool = False
+    """Boot a tool-injected SDK in a disposable directory, retained until session close.
+
+    SDK bootstrap discovery must not read a host's repository outside its offered ports.
+    A coding tool, a support desk and a research assistant may each separate an SDK's launch
+    directory from the data its tools govern. Uninjected sessions keep their supplied directory.
+    This confines bootstrap discovery, not the process's OS authority.
+    """
+
+    launch_catalogue: LaunchCatalogue | None = None
+    """An optional bounded preflight, applied only when tools are injected.
+
+    Read bundled SDK metadata in an owned directory and replace named scalar fields.
+    Retain the generated catalogue for resumed turns; malformed probes fail visibly.
+    The actual turn keeps its original authentication environment.
+    """
 
     allow_arg: str = ""
     """The flag that pre-permits the tools we injected.

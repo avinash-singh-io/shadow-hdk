@@ -1,0 +1,60 @@
+"""Runs only inside the isolated mitmproxy SDK environment, not the HDK interpreter."""
+
+import base64
+import hashlib
+import json
+import os
+import socket
+from pathlib import Path
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from mitmproxy import ctx, http
+from policy import OriginPolicy
+
+
+class Origins:
+    def __init__(self):
+        config = json.loads(os.environ["SHADOW_HDK_BROWSER_POLICY"])
+        self.policy = OriginPolicy(tuple(config["origins"]), config["allow_localhost"])
+
+    def authority_allowed(self, host, port):
+        authority = f"[{host}]" if ":" in host else host
+        return any(self.policy.allows(f"{scheme}://{authority}:{port}")
+                   for scheme in ("http", "https"))
+
+    def running(self):
+        address = ctx.master.addons.get("proxyserver").listen_addrs()[0]
+        certificate = x509.load_pem_x509_certificate(
+            (Path(ctx.options.confdir) / "mitmproxy-ca-cert.pem").read_bytes()
+        )
+        key = certificate.public_key().public_bytes(
+            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        print(json.dumps({"port": address[1], "spki": base64.b64encode(
+            hashlib.sha256(key).digest()).decode()}), flush=True)
+
+    def http_connect(self, flow):
+        if not self.authority_allowed(flow.request.host, flow.request.port):
+            flow.response = http.Response.make(403, b"Browser origin denied by the host")
+
+    def requestheaders(self, flow):
+        # Lazy upstream connections and disabled certificate sniffing ensure refusal comes
+        # before contacting the application. This runs for every HTTP(S)/WebSocket request.
+        if not self.policy.allows(flow.request.url):
+            flow.response = http.Response.make(403, b"Browser origin denied by the host")
+
+    def server_connect(self, data):
+        host, port = data.server.address
+        if not self.authority_allowed(host, port):
+            data.server.error = "Browser origin denied by the host"
+        elif host == "localhost":
+            # A modified hosts/DNS entry must not turn the localhost default into remote access.
+            from ipaddress import ip_address
+
+            addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+            if not addresses or any(not ip_address(a[4][0]).is_loopback for a in addresses):
+                data.server.error = "Localhost did not resolve exclusively to loopback"
+
+
+addons = [Origins()]

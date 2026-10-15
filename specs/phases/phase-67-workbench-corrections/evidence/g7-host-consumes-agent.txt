@@ -1,0 +1,28 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_host_and_agent_readers_share_a_job_but_never_consume_each_others_output _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-531/test_host_and_agent_readers_sh0')
+
+    async def test_host_and_agent_readers_share_a_job_but_never_consume_each_others_output(
+        tmp_path: Path,
+    ) -> None:
+        environment = await LocalEnvironment.open(tmp_path, mode="full", output_limit=64)
+        door = HostDoor(environment)
+        try:
+            source = "import time; print('begin', flush=True); time.sleep(300)"
+            started = data(
+                await door.background(f"{shlex.quote(sys.executable)} -c {shlex.quote(source)}")
+            )
+            job = started["job"]
+            first = await eventually_output(door, job, "begin")
+            assert (first["output"], first["cursor"], first["truncated"]) == ("begin\n", 6, False)
+>           assert data(await environment.invoke("job_output", {"job": job}))["output"] == "begin\n"
+E           AssertionError: assert '' == 'begin\n'
+E
+E             - begin
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_host_and_agent_readers_share_a_job_but_never_consume_each_others_output
+1 failed in 0.24s

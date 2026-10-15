@@ -18,7 +18,7 @@ from contextlib import AsyncExitStack
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
-from mcp.types import Tool
+from mcp.types import ImageContent, Tool
 from pydantic import JsonValue
 
 from shadow_hdk.adapters.mcp.held import held_stdio_client
@@ -30,7 +30,7 @@ from shadow_hdk.kernel.components import (
     RegistrationId,
 )
 from shadow_hdk.kernel.effects import EffectProfile
-from shadow_hdk.kernel.observations import Completed, Failed, Observation
+from shadow_hdk.kernel.observations import Completed, Failed, Image, Observation
 from shadow_hdk.kernel.ports import ComponentPort
 
 
@@ -125,10 +125,15 @@ class McpComponents(ComponentPort):
             return Failed(f"{type(exc).__name__}: {exc}")
         if getattr(result, "is_error", False):
             return Failed(f"{name}: {_text_of(result)}")
+        images = tuple(
+            Image(mime_type=b.mime_type, data=b.data)
+            for b in result.content
+            if isinstance(b, ImageContent)
+        )
         structured = getattr(result, "structured_content", None)
         if structured is not None:
-            return Completed(structured)
-        return Completed(_as_json(_text_of(result)))
+            return Completed(structured, images=images)
+        return Completed(_as_json(_text_of(result)), images=images)
 
     # ------------------------------------------------------------------ derivation
 

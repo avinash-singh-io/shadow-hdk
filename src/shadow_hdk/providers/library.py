@@ -20,9 +20,11 @@ from pydantic import TypeAdapter, ValidationError
 
 from shadow_hdk.kernel import (
     BehaviourArg,
+    CatalogueField,
     Delta,
     Dialect,
     EnvVar,
+    LaunchCatalogue,
     Provider,
     ProviderCapabilities,
     ProviderKind,
@@ -133,6 +135,36 @@ def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
             isinstance(m, str) and m for m in spoken["session_gone_matches"]
         ):
             raise MalformedProvider(f"{where}: dialect.session_gone_matches is a list of strings")
+        if "launch_catalogue" in spoken:
+            catalogue = spoken["launch_catalogue"]
+            if not isinstance(catalogue, dict):
+                raise MalformedProvider(f"{where}: dialect.launch_catalogue must be a table")
+            if extra := sorted(set(catalogue) - {f.name for f in fields(LaunchCatalogue)}):
+                raise MalformedProvider(f"{where}: unknown launch_catalogue field(s) {extra}")
+            for replacement in catalogue.get("replace_fields", ()):
+                if not isinstance(replacement, dict) or set(replacement) - {
+                    f.name for f in fields(CatalogueField)
+                }:
+                    raise MalformedProvider(f"{where}: invalid catalogue field replacement")
+            try:
+                prepared = TypeAdapter(LaunchCatalogue).validate_python(catalogue, strict=False)
+            except ValidationError as wrong:
+                raise MalformedProvider(f"{where}: invalid launch_catalogue: {wrong}") from wrong
+            if (
+                not prepared.probe_args
+                or not prepared.entries_at
+                or not prepared.replace_fields
+                or not prepared.config_arg
+                or prepared.config_template.count("{path}") != 1
+                or "{" in prepared.config_template.replace("{path}", "")
+                or "}" in prepared.config_template.replace("{path}", "")
+                or any(not f.name for f in prepared.replace_fields)
+                or len({f.name for f in prepared.replace_fields}) != len(prepared.replace_fields)
+            ):
+                raise MalformedProvider(
+                    f"{where}: launch_catalogue needs literal fields and {{path}}"
+                )
+            spoken["launch_catalogue"] = prepared
         made["dialect"] = Dialect(**spoken)
     if "set_env" in made:
         try:

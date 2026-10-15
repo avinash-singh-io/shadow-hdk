@@ -12,6 +12,13 @@ return already round-trips through JSON (`tests/kernel/test_contracts_round_trip
 
 ## Two forms
 
+Phase 67 adds optional native image observations and an opaque invocation resource scope.
+Empty image collections are omitted to preserve old JSON payloads. Hosts implementing owner
+teardown advertise `run_resources: true` in `initialize`; only those hosts receive the
+`components.release_run` callback. An advertised cleanup failure remains a failure. Old hosts
+retain the no-resource default without speculative callbacks or error-code guessing. See
+ADR `0001-optional-workbench-packs` and `docs/migrations/0.48.md`; protocol 3 is unchanged.
+
 | form | transport | for |
 |---|---|---|
 | `shadow-hdk serve` | JSON-RPC 2.0 over **HTTP/1.1** (uvicorn; HTTP/2 was the design's word and is not what is served), events over SSE | a host in another process or another language |

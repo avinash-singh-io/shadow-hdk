@@ -1,0 +1,14 @@
+g5-model-drops-image BITES 1 failed in 0.40s
+g5-image-becomes-text BITES 1 failed in 0.41s
+g5-child-scopes-diverge BITES 1 failed in 0.40s
+g5-no-cleanup BITES 2 failed in 0.28s
+g5-json-drops-images BITES 1 failed in 0.37s
+g5-langchain-drops-images BITES 1 failed in 0.37s
+g5-mcp-drops-egress-image BITES 1 failed in 0.37s
+g5-mcp-drops-ingress-image BITES 1 failed in 0.37s
+g5-cleanup-failure-hidden BITES 1 failed in 0.08s
+g5-no-model-loop BITES 1 failed in 0.39s
+g5-message-json-drops-images BITES 1 failed in 0.38s
+g5-wire-drops-scope BITES 1 failed in 0.39s
+g5-wire-no-cleanup BITES 1 failed in 0.37s
+g5-wire-no-default BITES 1 failed in 0.38s

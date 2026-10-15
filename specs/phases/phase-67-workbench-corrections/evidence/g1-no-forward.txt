@@ -1,0 +1,158 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio-seen] __
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-367/test_socket_narrows_listing_an0')
+check = 'seen'
+
+    @pytest.mark.parametrize("check", ["seen", "ran"])
+    async def test_socket_narrows_listing_and_calls_again_after_mode_switch(
+        tmp_path: Path, check: str
+    ) -> None:
+        ran: list[str] = []
+
+        async def read(_: Any) -> Completed:
+            ran.append("read")
+            return Completed("read")
+
+        async def write(_: Any) -> Completed:
+            ran.append("write")
+            return Completed("write")
+
+        cli = SocketCli()
+        thread = await Thread.open(
+            agent=cast(Any, cli),
+            registry=SocketOffer(withhold={"turn"}),
+            ports=Ports(
+                model=None,
+                components=(
+                    InMemoryComponents(
+                        [(make_registration("read_it"), read), (make_registration("write_it"), write)]
+                    ),
+                ),
+                governance=AllowAll(),
+                sink=ListSink(),
+                clock=FixedClock(),
+            ),
+            store=InMemoryThreads(),
+            root=tmp_path,
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+            modes=ModeRegistry(
+                (
+                    ModeSpec.of("read", behaviour=Behaviour(tools_offered=("read_it",))),
+                    ModeSpec.of("write", behaviour=Behaviour(tools_offered=("write_it",))),
+                    ModeSpec.of("all"),
+                )
+            ),
+            mode="read",
+        )
+        try:
+            for mode in ("read", "write", "all"):
+                if mode != "read":
+                    await thread.set_mode(mode)
+                async for _ in thread.turn("go"):
+                    pass
+        finally:
+            await thread.close()
+        actual = {"seen": cli.seen, "ran": ran}
+        expected = {
+            "seen": [
+                ["read_it"],
+                False,
+                True,
+                ["write_it"],
+                True,
+                False,
+                ["read_it", "write_it"],
+                False,
+                False,
+            ],
+            "ran": ["read", "write", "read", "write"],
+        }
+>       assert actual[check] == expected[check]
+E       AssertionError: assert [['read_it', ...e, False, ...] == [['read_it'],...e, False, ...]
+E
+E         At index 0 diff: ['read_it', 'write_it'] != ['read_it']
+E         Use -v to get more diff
+
+tests/adapters/recording/test_a_socket_offer_honours_modes.py:112: AssertionError
+__ test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio-ran] __
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-367/test_socket_narrows_listing_an1')
+check = 'ran'
+
+    @pytest.mark.parametrize("check", ["seen", "ran"])
+    async def test_socket_narrows_listing_and_calls_again_after_mode_switch(
+        tmp_path: Path, check: str
+    ) -> None:
+        ran: list[str] = []
+
+        async def read(_: Any) -> Completed:
+            ran.append("read")
+            return Completed("read")
+
+        async def write(_: Any) -> Completed:
+            ran.append("write")
+            return Completed("write")
+
+        cli = SocketCli()
+        thread = await Thread.open(
+            agent=cast(Any, cli),
+            registry=SocketOffer(withhold={"turn"}),
+            ports=Ports(
+                model=None,
+                components=(
+                    InMemoryComponents(
+                        [(make_registration("read_it"), read), (make_registration("write_it"), write)]
+                    ),
+                ),
+                governance=AllowAll(),
+                sink=ListSink(),
+                clock=FixedClock(),
+            ),
+            store=InMemoryThreads(),
+            root=tmp_path,
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+            modes=ModeRegistry(
+                (
+                    ModeSpec.of("read", behaviour=Behaviour(tools_offered=("read_it",))),
+                    ModeSpec.of("write", behaviour=Behaviour(tools_offered=("write_it",))),
+                    ModeSpec.of("all"),
+                )
+            ),
+            mode="read",
+        )
+        try:
+            for mode in ("read", "write", "all"):
+                if mode != "read":
+                    await thread.set_mode(mode)
+                async for _ in thread.turn("go"):
+                    pass
+        finally:
+            await thread.close()
+        actual = {"seen": cli.seen, "ran": ran}
+        expected = {
+            "seen": [
+                ["read_it"],
+                False,
+                True,
+                ["write_it"],
+                True,
+                False,
+                ["read_it", "write_it"],
+                False,
+                False,
+            ],
+            "ran": ["read", "write", "read", "write"],
+        }
+>       assert actual[check] == expected[check]
+E       AssertionError: assert ['read', 'wri...ead', 'write'] == ['read', 'wri...ead', 'write']
+E
+E         Left contains 2 more items, first extra item: 'read'
+E         Use -v to get more diff
+
+tests/adapters/recording/test_a_socket_offer_honours_modes.py:112: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/recording/test_a_socket_offer_honours_modes.py::test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio-seen]
+FAILED tests/adapters/recording/test_a_socket_offer_honours_modes.py::test_socket_narrows_listing_and_calls_again_after_mode_switch[asyncio-ran]
+2 failed in 19.16s

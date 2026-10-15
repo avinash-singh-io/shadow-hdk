@@ -1,0 +1,44 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_a_thread_cleanup_failure_releases_the_hold_and_tries_every_port _____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-440/test_a_thread_cleanup_failure_0')
+
+    async def test_a_thread_cleanup_failure_releases_the_hold_and_tries_every_port(
+        tmp_path: Any,
+    ) -> None:
+        from typing import cast
+
+        from shadow_hdk.runtime.threads import InMemoryThreads, Thread
+        from tests.runtime.test_a_conversation_without_a_record import Agent
+
+        first, broken = Managed(), Managed(fail=True)
+        store = InMemoryThreads()
+        thread = await Thread.open(
+            agent=cast(Any, Agent([])),
+            ports=Ports(
+                components=(first, broken), governance=AllowAll(), sink=ListSink(), clock=FixedClock()
+            ),
+            store=store,
+            root=tmp_path,
+            holder="owner",
+            lease=Lease(Ceiling(40, 600, None), Floor(0)),
+        )
+        with pytest.raises(
+            RuntimeError, match="resource cleanup failed: RuntimeError: cleanup sentinel"
+        ):
+            await thread.close()
+>       assert (first.closed, broken.closed, await store.held_by(thread.id)) == (
+            [thread.id],
+            [thread.id],
+            None,
+        )
+E       AssertionError: assert (['id-0001'],...01'], 'owner') == (['id-0001'],...-0001'], None)
+E
+E         At index 2 diff: 'owner' != None
+E         Use -v to get more diff
+
+tests/runtime/test_run_resources.py:206: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_run_resources.py::test_a_thread_cleanup_failure_releases_the_hold_and_tries_every_port
+1 failed in 0.38s

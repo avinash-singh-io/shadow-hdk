@@ -1,0 +1,8 @@
+g8-private-launch-disabled BITES 1 failed in 0.56s
+g8-uninjected-launch-changed BITES 1 failed in 0.41s
+g8-private-launch-not-cleaned BITES 1 failed in 0.46s
+g8-shell-enabled BITES 1 failed in 2.19s
+g8-native-image-enabled BITES 1 failed in 1.46s
+g8-repository-discovery-restored BITES 1 failed in 1.49s
+g8-tool-capability-false BITES 1 failed in 0.09s
+g8-close-not-settled BITES 1 failed in 0.38s

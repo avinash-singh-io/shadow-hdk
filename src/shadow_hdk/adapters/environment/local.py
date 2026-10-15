@@ -33,6 +33,7 @@ lies.
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import json
 import os
@@ -54,6 +55,7 @@ from shadow_hdk.runtime.environment import (
     Environment,
     Isolation,
     Mode,
+    OutsideTheRoot,
     output_activity,
     requires,
     resolved,
@@ -421,6 +423,71 @@ class LocalEnvironment(Environment):
     async def _list(self, path: str) -> list[str]:
         where = self.inside(path)
         return sorted(f"{p.name}/" if p.is_dir() else p.name for p in where.iterdir())
+
+    async def _search_entries(self, path: str) -> list[str]:
+        where = self.inside(path)
+        found: list[str] = []
+        for target in where.iterdir():
+            if target.is_symlink():
+                if target.is_dir():
+                    continue  # a directory alias can cycle forever or duplicate the entire root
+                joined = str(Path(path) / target.name)
+                try:
+                    self.inside(joined)
+                except (OutsideTheRoot, ValueError, OSError):
+                    continue
+            found.append(f"{target.name}/" if target.is_dir() else target.name)
+        return sorted(found)
+
+    async def _walk(self, start: str) -> list[str]:
+        """Git's tracked and untracked-unignored files, including linked worktrees (N-W3).
+
+        No filesystem walk through dependencies or Git metadata. Enumeration is read-only and
+        uses the root already confined by inside(); content reads still pass through _read.
+        Non-Git roots retain the portable nested-ignore implementation.
+        """
+        where = self.inside(start or ".")
+        if not where.is_dir():
+            return []
+        environment = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "git",
+                "ls-files",
+                "-z",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+                "--",
+                ".",
+                cwd=where,
+                env=environment,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            return await super()._walk(start)
+        out, _ = await process.communicate()
+        if process.returncode != 0:
+            return await super()._walk(start)
+        base = "" if start in ("", ".") else start.rstrip("/")
+        found: set[str] = set()
+        for raw in out.split(b"\0"):
+            if not raw:
+                continue
+            relative = os.fsdecode(raw)
+            target = where / relative
+            # Git may list a deleted tracked file or a submodule. Neither is a searchable file.
+            if not target.is_file():
+                continue
+            joined = f"{base}/{relative}" if base else relative
+            if target.is_symlink():
+                try:
+                    self.inside(joined)
+                except (OutsideTheRoot, ValueError, OSError):
+                    continue
+            found.add(joined)
+        return sorted(found)
 
     async def _run(self, argv: list[str]) -> Observation:
         wrapped = self._box.wrap(argv, root=self.workspace, mode=self.mode) if self._box else argv

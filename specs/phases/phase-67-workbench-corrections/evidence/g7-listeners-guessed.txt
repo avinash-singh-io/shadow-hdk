@@ -1,0 +1,30 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_a_silent_server_has_a_verified_listener_instead_of_a_guessed_url _____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-543/test_a_silent_server_has_a_ver0')
+
+    async def test_a_silent_server_has_a_verified_listener_instead_of_a_guessed_url(
+        tmp_path: Path,
+    ) -> None:
+        environment = await LocalEnvironment.open(tmp_path, mode="full")
+        door = HostDoor(environment, listeners=LocalProcessListeners())
+        try:
+            source = (
+                "from http.server import HTTPServer, SimpleHTTPRequestHandler; "
+                "s=HTTPServer(('127.0.0.1',0),SimpleHTTPRequestHandler); "
+                "print('ready',flush=True); s.serve_forever()"
+            )
+            job = data(
+                await door.background(f"{shlex.quote(sys.executable)} -c {shlex.quote(source)}")
+            )["job"]
+            await eventually_output(door, job, "ready")
+            addresses = data(await door.jobs())["jobs"][0]["addresses"]
+>           assert len(addresses) == 1 and addresses[0]["verified"] is True
+E           AssertionError: assert (1 == 1 and False is True)
+E            +  where 1 = len([{'host': '127.0.0.1', 'port': 62331, 'protocol': 'tcp', 'source': 'listener', ...}])
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:125: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_a_silent_server_has_a_verified_listener_instead_of_a_guessed_url
+1 failed in 0.27s

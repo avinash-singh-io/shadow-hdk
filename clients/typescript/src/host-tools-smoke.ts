@@ -16,15 +16,20 @@ const client =
     : new HarnessClient({ address: process.argv[3] });
 
 const greeted: unknown[] = [];
+const scopes: string[] = [];
+const released: string[] = [];
+const releaseRun = (scope: string): void => { released.push(scope); };
 client.components.serve([
   tool(
     "greet",
-    { description: "Greet someone by name.", effects: {}, input: { type: "object", properties: { name: { type: "string" } } } },
-    async ({ name }: { name?: string }) => {
+    { releaseRun, description: "Greet someone by name.", effects: {}, input: { type: "object", properties: { name: { type: "string" } } } },
+    async ({ name }: { name?: string }, invocation) => {
       greeted.push(name);
+      scopes.push(invocation.resource_scope ?? "missing");
       return { greeting: `hello, ${String(name)} — from typescript` };
     },
   ),
+  tool("alias", { description: "Same resource owner.", effects: {}, releaseRun }, () => ({})),
 ]);
 
 if (how !== "stdio") await client.connect();
@@ -43,4 +48,4 @@ for await (const line of client.turn.start(started.thread_id, "greet typescript"
 }
 await client.thread.close(started.thread_id);
 await client.close();
-console.log(JSON.stringify({ how, source: greet?.source ?? null, greeted, observed, text }));
+console.log(JSON.stringify({ how, source: greet?.source ?? null, greeted, observed, text, scopes, released }));

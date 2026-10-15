@@ -11,6 +11,12 @@ The [current phase index](index.md#upcoming--native-foundation-and-onward) lists
 IDs below are unchanged. Planned overviews contain outcomes and dependencies only. Detailed
 plan/tasks/history files are created when implementation starts.
 
+## Active maintenance
+
+| Phase | Name | Status | Directory |
+|---|---|---|---|
+| 67 | Workbench corrections | In Progress | `phase-67-workbench-corrections` |
+
 ## Completed phases
 
 | Phase | Name | Status | Directory |

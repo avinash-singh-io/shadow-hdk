@@ -21,10 +21,9 @@ subscription login survives it too. Verified by parsing on the installed CLI, wi
 as the control — `codex exec --no-such-flag-at-all --help` is rejected, so acceptance means
 something.
 
-What it does **not** fix, and what this therefore does not claim: Codex has no flag to refuse its
-*own* tools. Its native reads stay its own, confined by `--sandbox read-only` but outside the
-registry. So `tool_path` stays `uncontrolled` — the honest reason has simply changed, and the record
-now says which part is controlled and which is not.
+Phase 67 extends that controlled path: native world tools are disabled and repository discovery
+is isolated in a private startup directory. The SDK proof exercises actual catalogues and MCP
+reads with a deterministic local model; the original strict-user-config controls remain here.
 """
 
 from __future__ import annotations
@@ -55,7 +54,7 @@ def test_the_codex_record_names_a_strict_flag() -> None:
     dialect = record.dialect
     assert dialect is not None
 
-    assert dialect.mcp_strict_args == (STRICT,), dialect.mcp_strict_args
+    assert STRICT in dialect.mcp_strict_args, dialect.mcp_strict_args
 
 
 def test_a_governed_launch_carries_it() -> None:
@@ -127,11 +126,11 @@ def test_the_installed_codex_accepts_the_flag() -> None:
 
 def test_the_records_evidence_no_longer_claims_the_servers_cannot_be_excluded() -> None:
     """The prose was the claim, and it is the thing that was false. `tool_path` stays
-    `uncontrolled` — Codex's own reads are still its own — but for the right reason now."""
+    `controlled` after the Phase 67 native-tool and bootstrap correction."""
     record = codex_record()
     capabilities = record.capabilities
     said = " ".join(e.source for e in capabilities.evidence if e.axis == "tool_path").lower()
 
-    assert capabilities.tool_path == "uncontrolled", capabilities.tool_path
+    assert capabilities.tool_path == "controlled", capabilities.tool_path
     assert "cannot be disabled" not in said, said
     assert "native" in said, f"the reason must now be the native reads: {said!r}"

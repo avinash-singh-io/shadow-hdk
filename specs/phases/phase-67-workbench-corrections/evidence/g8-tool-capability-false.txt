@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_shipped_capabilities_say_only_what_the_measurements_support _______
+
+    def test_shipped_capabilities_say_only_what_the_measurements_support() -> None:
+        found = shipped()
+
+        assert found["claude-code"].capabilities.tool_path == "controlled"
+        assert found["claude-code"].capabilities.session == "resumable"
+        assert found["claude-code"].capabilities.interrupt == "native"
+        assert found["claude-code"].capabilities.streaming == "live"
+        assert found["claude-code"].capabilities.reasoning == "yes"
+        assert found["claude-code"].capabilities.usage_tokens == "yes"
+        assert found["claude-code"].capabilities.usage_cost == "yes"
+
+>       assert found["codex"].capabilities.tool_path == "controlled"
+E       AssertionError: assert 'uncontrolled' == 'controlled'
+E
+E         - controlled
+E         + uncontrolled
+E         ? ++
+
+tests/providers/test_library.py:182: AssertionError
+=========================== short test summary info ============================
+FAILED tests/providers/test_library.py::test_shipped_capabilities_say_only_what_the_measurements_support
+1 failed in 0.09s

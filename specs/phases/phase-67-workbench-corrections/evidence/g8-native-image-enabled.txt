@@ -1,0 +1,152 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_native_tools_and_repository_discovery_are_absent_and_read_uses_the_kit __
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-565/test_native_tools_and_reposito0')
+
+    async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_the_kit(
+        tmp_path: Path,
+    ) -> None:
+        binary = shutil.which("codex")
+        assert binary is not None, "this SDK gate requires Codex 0.154.0"
+        captures: list[dict[str, Any]] = []
+        failures: list[str] = []
+
+        class Model(BaseHTTPRequestHandler):
+            def log_message(self, *args: Any) -> None:
+                pass
+
+            def do_POST(self) -> None:
+                try:
+                    payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                    captures.append(payload)
+                    number = len(captures)
+                    if number == 1:
+                        namespace = next(t for t in payload["tools"] if t["type"] == "namespace")
+                        name = next(t["name"] for t in namespace["tools"] if t["name"] == "read_file")
+                        item = {
+                            "type": "function_call",
+                            "id": "fc_1",
+                            "call_id": "call_1",
+                            "name": name,
+                            "namespace": namespace["name"],
+                            "arguments": '{"path":"proof.txt"}',
+                            "status": "completed",
+                        }
+                    else:
+                        item = {
+                            "type": "message",
+                            "id": "msg_1",
+                            "role": "assistant",
+                            "status": "completed",
+                            "content": [
+                                {
+                                    "type": "output_text",
+                                    "text": "Read through the kit.",
+                                    "annotations": [],
+                                }
+                            ],
+                        }
+                    response = {
+                        "id": f"resp_{number}",
+                        "object": "response",
+                        "status": "completed",
+                        "output": [item],
+                        "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15},
+                    }
+                    events: list[dict[str, Any]] = [
+                        {
+                            "type": "response.created",
+                            "response": {**response, "status": "in_progress", "output": []},
+                        },
+                        {"type": "response.output_item.added", "output_index": 0, "item": item},
+                        {"type": "response.output_item.done", "output_index": 0, "item": item},
+                        {"type": "response.completed", "response": response},
+                    ]
+                    body = "".join(
+                        f"event: {e['type']}\ndata: {json.dumps(e)}\n\n" for e in events
+                    ).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                except Exception as error:
+                    failures.append(str(error))
+                    self.send_error(500)
+
+        server = HTTPServer(("127.0.0.1", 0), Model)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        root = tmp_path / "repository"
+        root.mkdir()
+        (root / "proof.txt").write_text("HDK_AUDITED_FILE_TOKEN")
+        (root / "AGENTS.md").write_text("HDK_UNAUDITED_DOCUMENT_SENTINEL")
+        skill = root / ".agents/skills/unjudged"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\nname: unjudged\ndescription: HDK_UNAUDITED_SKILL_SENTINEL\n---\nHidden procedure.\n"
+        )
+        home = tmp_path / "sdk-home"
+        home.mkdir()
+        codex = shipped()["codex"]
+        config = [
+            'model_provider="local_proof"',
+            'model_providers.local_proof.name="HDK local proof"',
+            f'model_providers.local_proof.base_url="http://127.0.0.1:{server.server_port}/v1"',
+            'model_providers.local_proof.wire_api="responses"',
+            "model_providers.local_proof.requires_openai_auth=false",
+        ]
+        provider = replace(
+            codex, launch_args=(*codex.launch_args, *(arg for c in config for arg in ("-c", c)))
+        )
+        environment = await LocalEnvironment.open(root, mode="full")
+        sink = ListSink()
+        thread = None
+        try:
+            thread = await Thread.open(
+                agent=JsonlProvider(
+                    provider, binary=Path(binary), env={**os.environ, "CODEX_HOME": str(home)}
+                ),
+                registry=SocketOffer(withhold={"turn"}),
+                ports=Ports(
+                    components=(environment,), governance=AllowAll(), sink=sink, clock=FixedClock()
+                ),
+                store=InMemoryThreads(),
+                root=root,
+                lease=Lease(Ceiling(40, 90, None), Floor(0)),
+                modes=ModeRegistry(
+                    (
+                        ModeSpec.of(
+                            "read", behaviour=Behaviour(model="gpt-6-sol", tools_offered=("read_file",))
+                        ),
+                    )
+                ),
+                mode="read",
+            )
+            async with asyncio.timeout(45):
+                seen = [e async for e in thread.turn("Read proof.txt with read_file.")]
+            assert not failures, (failures, getattr(thread.conversation._session, "stderr", ""))
+            assert len(captures) == 2, thread.record.turns[-1].text
+            names = {t["name"] for t in captures[0]["tools"]}
+>           assert names == {
+                "mcp__shadow_hdk",
+                "list_mcp_resources",
+                "list_mcp_resource_templates",
+                "read_mcp_resource",
+                "request_user_input",
+                "get_goal",
+                "create_goal",
+                "update_goal",
+            }, names
+E           AssertionError: {'create_goal', 'get_goal', 'list_mcp_resource_templates', 'list_mcp_resources', 'mcp__shadow_hdk', 'read_mcp_resource', ...}
+E           assert {'create_goal...esource', ...} == {'create_goal...esource', ...}
+E
+E             Extra items in the left set:
+E             'view_image'
+E             Use -v to get more diff
+
+tests/adapters/jsonl/test_real_codex_governance.py:158: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_real_codex_governance.py::test_native_tools_and_repository_discovery_are_absent_and_read_uses_the_kit
+1 failed in 1.46s

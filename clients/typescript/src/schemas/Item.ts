@@ -17,6 +17,9 @@ export type StageDigest = string
 export type Status = ("staged" | "authorized" | "executing" | "receipt" | "refused" | "failed" | "unknown" | "reconciled")
 export type Step = string
 export type Observation = ((Completed | Refused | ApprovalRequest | InputRequest | Failed | Pending | Acted) | null)
+export type Data = string
+export type MimeType = string
+export type Images = Image[]
 export type Kind1 = "completed"
 export type Kind2 = "refused"
 export type Reason = string
@@ -122,10 +125,21 @@ status: Status
 step: Step
 }
 export interface Completed {
+images?: Images
 kind?: Kind1
 output?: {
 [k: string]: unknown
 }
+}
+/**
+ * An inline tool image: base64 bytes and their media type, never a local pathname.
+ *
+ * A coding tool, support desk and research assistant each consume visual observations.
+ * The bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.
+ */
+export interface Image {
+data: Data
+mime_type: MimeType
 }
 export interface Refused {
 kind?: Kind2

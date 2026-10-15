@@ -23,6 +23,8 @@ attaches each turn's run and detaches after.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
@@ -60,12 +62,51 @@ class RecordingServer(Routing):
         self.refused_connections = 0
         """Connections that presented the wrong token, or none (D52). A count, never a credential:
         what was presented is not kept. Hand `refuse` to `serve_over_socket` to keep it."""
+        self.reached_connections = 0
+        """Connections let in. The other half of the door's count (TD-023)."""
+        self._arrived = asyncio.Event()
+        """Set by the first connection let in, so a caller can wait for one rather than poll."""
+        self._offered = asyncio.Event()
+        """Set when a listing is first answered — the event that means the tools actually reached
+        whoever asked, rather than merely that something connected (TD-023)."""
+        self.last_offered: tuple[str, ...] = ()
+        """The names in the listing most recently answered. What the kit last said it had, which is
+        the other half of any argument about why a provider is not using a tool: an empty listing
+        answered is this side's problem, and a full one ignored is the provider's."""
         self._notifiers: set[Callable[[str], Awaitable[None]]] = set()
         """One per live connection: how to send that connection a notification (BUG-032)."""
 
     def refuse(self) -> None:
         """One more connection turned away at the door."""
         self.refused_connections += 1
+
+    def reach(self) -> None:
+        """One more connection let in. Hand `reach` to `serve_over_socket` to keep it.
+
+        What this makes answerable is whether the agent was ever given its tools at all (TD-023):
+        a relay that never arrived leaves this at zero, and a run that reached the door and called
+        nothing does not. Those two were the same observation before, and one of them is a
+        governance failure while the other is an ordinary turn."""
+        self.reached_connections += 1
+        self._arrived.set()
+
+    async def offered_once(self, within: float) -> bool:
+        """Wait up to `within` seconds for a listing that carried tools; say whether one did.
+
+        **Three things were tried here and only the third means anything.** A connection proves
+        the relay started and authenticated. Any listing at all proves nothing either, because the
+        honest answer before a run attaches is empty — which is what a provider asking at startup
+        receives, and what made the earlier wait pass instantly while the run went on to have no
+        tools. A listing that came back carrying tools is the only one of the three that says the
+        catalogue reached whoever asked.
+
+        The caller is the one that knows a relay was asked for, so the decision about a run with no
+        tools belongs there and not here."""
+        if self._offered.is_set():
+            return True
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(self._offered.wait(), within)
+        return self._offered.is_set()
 
     # ------------------------------------------------------------------ what it offers
 
@@ -80,10 +121,19 @@ class RecordingServer(Routing):
         stayed open is the mirror of it. Pinned by a test, because the first version of the
         narrowing did exactly the first of those (BUG-235).
         """
+        # **Answering a listing is what "the tools reached the agent" means** (TD-023). A
+        # connection at the door proves the relay started and authenticated, and nothing more: a
+        # provider that connected and then never asked still composes its first request without
+        # these tools. This is the event a run waits for before writing a prompt.
         context = self.context
         if context is None:
+            # **An honest empty answer, and deliberately not an arrival** (TD-023). A listing is
+            # served out of the attached run, and a run attaches inside the turn, so a provider
+            # that asks before then is correctly told there is nothing yet. Treating that as the
+            # catalogue having been read is what made the first version of this wait vacuous.
+            self.last_offered = ()
             return []
-        return [
+        offering = [
             types.Tool(
                 name=registration.component.interface.name,
                 description=registration.component.interface.description or None,
@@ -93,6 +143,10 @@ class RecordingServer(Routing):
             for registration in await context.visible()
             if self.shows(registration.component.interface.name)
         ]
+        self.last_offered = tuple(tool.name for tool in offering)
+        if offering:
+            self._offered.set()
+        return offering
 
     # ------------------------------------------------------------------ what it does
 
@@ -156,9 +210,15 @@ def _as_result(observation: Observation | None) -> types.CallToolResult:
     text says which, so an agent can tell "you may not" from "it broke" and choose differently.
     """
     match observation:
-        case Completed(output=output):
+        case Completed(output=output, images=images):
             return types.CallToolResult(
-                content=[types.TextContent(type="text", text=json.dumps(output))]
+                content=[
+                    types.TextContent(type="text", text=json.dumps(output)),
+                    *[
+                        types.ImageContent(type="image", data=i.data, mime_type=i.mime_type)
+                        for i in images
+                    ],
+                ]
             )
         case Refused(reason=reason):
             return _error(f"refused: {reason}")

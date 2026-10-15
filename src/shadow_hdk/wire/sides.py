@@ -63,6 +63,7 @@ from shadow_hdk.wire.protocol import (
     PROPOSE,
     PROTOCOL_VERSION,
     REGISTRATIONS,
+    RELEASE_RUN,
     RESUME,
     RUN,
     Agreed,
@@ -94,6 +95,7 @@ class RuntimeSide:
     ) -> None:
         self.peer = Peer(channel, name="runtime", timeout=timeout)
         self.initialized = False
+        self.run_resources = False
         self._clock = clock
         self._observer = observer
         """The process serving the runtime may hand in an observer — an `ActivityObserver` hears
@@ -286,6 +288,7 @@ class RuntimeSide:
                 f"this runtime speaks protocol {PROTOCOL_VERSION!r}, not {offered!r}"
             )
         self.initialized = True
+        self.run_resources = params.get("run_resources") is True
         from shadow_hdk import __version__
 
         return {"protocol_version": PROTOCOL_VERSION, "version": __version__}
@@ -318,6 +321,7 @@ class RuntimeSide:
             run_id=params.get("run_id"),
             checkpointer=self._checkpointer,
             approvals=self.approvals,
+            resource_scope=params.get("resource_scope"),
         )
         ports = self.ports()
         stream = (
@@ -358,6 +362,7 @@ class HostSide:
         self.peer.serves(COMPLETE, self._complete)
         self.peer.serves(REGISTRATIONS, self._registrations)
         self.peer.serves(INVOKE, self._invoke)
+        self.peer.serves(RELEASE_RUN, self._release_run)
         self.peer.serves(PROPOSE, self._propose)
         self.peer.hears(EVENT, self._event)
         self.peer.hears(ITEM, self._item)
@@ -366,7 +371,9 @@ class HostSide:
         from shadow_hdk.wire.peer import RemoteError
 
         try:
-            answered = await self.peer.call(INITIALIZE, {"protocol_version": protocol_version})
+            answered = await self.peer.call(
+                INITIALIZE, {"protocol_version": protocol_version, "run_resources": True}
+            )
         except RemoteError as refused:
             if isinstance(refused.data, dict) and refused.data.get("kind") == "version_mismatch":
                 raise VersionMismatch(str(refused)) from refused
@@ -385,6 +392,7 @@ class HostSide:
                 "context": dict(options.context),
                 "principal": options.principal,
                 "run_id": options.run_id,
+                "resource_scope": options.resource_scope,
             },
         )
 
@@ -402,6 +410,7 @@ class HostSide:
                 "context": dict(options.context),
                 "principal": options.principal,
                 "run_id": options.run_id,
+                "resource_scope": options.resource_scope,
                 "answer": answer,
             },
         )
@@ -449,6 +458,7 @@ class HostSide:
                         self.ports,
                         str(params.get("run_id", "")),
                         str(params.get("step") or wanted),
+                        resource_scope=params.get("resource_scope"),
                     )
                 )
                 try:
@@ -457,6 +467,13 @@ class HostSide:
                     _CURRENT.reset(token)
                 return json.loads(dump(observation, Observation))
         return json.loads(dump(Failed(f"no component registered as {wanted!r}"), Observation))
+
+    async def _release_run(self, params: dict[str, Any]) -> None:
+        from shadow_hdk.runtime.resources import release_resources
+
+        failure = await release_resources(self.ports.components, str(params["resource_scope"]))
+        if failure:
+            raise RuntimeError(failure)
 
     async def _propose(self, params: dict[str, Any]) -> Any:
         await self.ports.sink.propose(load(json.dumps(params["proposal"]), Proposal))

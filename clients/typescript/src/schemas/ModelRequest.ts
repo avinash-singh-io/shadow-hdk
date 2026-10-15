@@ -3,6 +3,9 @@
 // tests/invariants/test_the_typescript_client_is_current.py diffs these files.
 /* eslint-disable */
 export type Content = string
+export type Data = string
+export type MimeType = string
+export type Images = Image[]
 export type Role = ("system" | "user" | "assistant" | "tool")
 export type ToolCallId = (string | null)
 export type JsonValue = unknown
@@ -30,9 +33,20 @@ tools?: Tools
  */
 export interface Message {
 content: Content
+images?: Images
 role: Role
 tool_call_id?: ToolCallId
 tool_calls?: ToolCalls
+}
+/**
+ * An inline tool image: base64 bytes and their media type, never a local pathname.
+ *
+ * A coding tool, support desk and research assistant each consume visual observations.
+ * The bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.
+ */
+export interface Image {
+data: Data
+mime_type: MimeType
 }
 export interface ToolCall {
 arguments: JsonValue

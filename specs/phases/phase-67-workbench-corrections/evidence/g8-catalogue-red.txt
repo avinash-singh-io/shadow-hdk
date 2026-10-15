@@ -1,0 +1,295 @@
+....FFFF                                                                 [100%]
+=================================== FAILURES ===================================
+___ test_launch_catalogue_is_restricted_once_retained_for_resume_and_removed ___
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-576/test_launch_catalogue_is_restr0')
+
+    async def test_launch_catalogue_is_restricted_once_retained_for_resume_and_removed(tmp_path: Path) -> None:
+        import os
+        from shadow_hdk.providers.library import provider_from_data
+
+        cli = tmp_path / "cli"
+        cli.write_text(
+            "#!/usr/bin/env python3\nimport sys,pathlib,json,os\n"
+            "if sys.argv[1:] == ['metadata']:\n"
+            " pathlib.Path(" + repr(str(tmp_path / "probes")) + ").open('a').write(os.environ['SDK_HOME']+'\\n')\n"
+            " print(json.dumps({'models':[{'native':True,'patch':'freeform','context':777,'role':'unchanged'}]}))\n"
+            "else:\n"
+            " sys.stdin.read()\n"
+            " file=pathlib.Path(sys.argv[sys.argv.index('--catalogue')+1])\n"
+            " print(json.dumps({'type':'done','session':'kept','text':json.dumps({'path':str(file),'data':json.loads(file.read_text()),'home':os.environ['SDK_HOME']})}))\n"
+        )
+        cli.chmod(0o755)
+>       provider = provider_from_data({
+            'id':'catalogue-cli', 'kind':'agent', 'bin':'cli', 'transport':'jsonl',
+            'dialect':{'done_on':['done'], 'done_at':'text', 'session_id_at':'session', 'resume_args':['resume'],
+                'launch_catalogue':{'probe_args':['metadata'], 'entries_at':'models',
+                    'replace_fields':[{'name':'native','value':False},{'name':'patch'}],
+                    'config_arg':'--catalogue', 'config_template':'{path}', 'isolated_env_keys':['SDK_HOME']}}
+        }, where='fixture')
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:180:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+raw = {'id': 'catalogue-cli', 'kind': 'agent', 'bin': 'cli', 'transport': 'jsonl', ...}
+where = 'fixture'
+
+    def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
+        """A provider from the document a file or a store row carries (D66) — the same checks."""
+        raw = dict(raw)
+        if unknown := sorted(set(raw) - KNOWN):
+            raise MalformedProvider(
+                f"{where}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
+                f"that loads and does not work"
+            )
+        for required in ("id", "kind", "bin"):
+            if not raw.get(required):
+                raise MalformedProvider(f"{where}: {required} is required")
+        if raw["kind"] not in KINDS:
+            raise MalformedProvider(
+                f"{where}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
+            )
+
+        made = dict(raw)
+        for name in TUPLE_FIELDS:
+            if name in made:
+                made[name] = tuple(made[name])
+        if "capabilities" in made:
+            spoken = made["capabilities"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: capabilities must be a table")
+            if unknown_here := sorted(set(spoken) - CAPABILITY_FIELDS):
+                names = ", ".join(f"capabilities.{name}" for name in unknown_here)
+                raise MalformedProvider(f"{where}: unknown field(s) {names}")
+            try:
+                made["capabilities"] = CAPABILITIES.validate_python(spoken)
+            except ValidationError as wrong:
+                first = wrong.errors()[0]
+                loc = ".".join(str(part) for part in first["loc"])
+                if not loc and "evidence" in str(first["msg"]):
+                    loc = "evidence"
+                path = f"capabilities.{loc}" if loc else "capabilities"
+                raise MalformedProvider(f"{where}: {path}: {first['msg']}") from wrong
+        if "dialect" in made:
+            spoken = made["dialect"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: dialect must be a table")
+            unknown_here = sorted(set(spoken) - {f.name for f in fields(Dialect)})
+            if unknown_here:
+>               raise MalformedProvider(f"{where}: unknown dialect field(s) {', '.join(unknown_here)}")
+E               shadow_hdk.providers.library.MalformedProvider: fixture: unknown dialect field(s) launch_catalogue
+
+src/shadow_hdk/providers/library.py:103: MalformedProvider
+_______ test_a_bad_launch_catalogue_is_refused_before_sdk_turn[not json] _______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-576/test_a_bad_launch_catalogue_is0')
+payload = 'not json'
+
+    @pytest.mark.parametrize('payload', ['not json', '{"models":[]}', '{"models":[{"native":true}]}'])
+    async def test_a_bad_launch_catalogue_is_refused_before_sdk_turn(tmp_path: Path, payload: str) -> None:
+        import os
+        from shadow_hdk.providers.library import provider_from_data
+
+        cli=tmp_path/'cli'
+        marker=tmp_path/'launched'
+        cli.write_text('#!/usr/bin/env python3\nimport sys,pathlib\nif sys.argv[1:]==["metadata"]: print('+repr(payload)+')\nelse: pathlib.Path('+repr(str(marker))+').touch()\n')
+        cli.chmod(0o755)
+>       provider=provider_from_data({'id':'fake','kind':'agent','bin':'cli','transport':'jsonl','dialect':{'launch_catalogue':{'probe_args':['metadata'],'entries_at':'models','replace_fields':[{'name':'native','value':False},{'name':'patch'}],'config_arg':'--catalogue','config_template':'{path}'}}},where='fixture')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:213:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+raw = {'id': 'fake', 'kind': 'agent', 'bin': 'cli', 'transport': 'jsonl', ...}
+where = 'fixture'
+
+    def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
+        """A provider from the document a file or a store row carries (D66) — the same checks."""
+        raw = dict(raw)
+        if unknown := sorted(set(raw) - KNOWN):
+            raise MalformedProvider(
+                f"{where}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
+                f"that loads and does not work"
+            )
+        for required in ("id", "kind", "bin"):
+            if not raw.get(required):
+                raise MalformedProvider(f"{where}: {required} is required")
+        if raw["kind"] not in KINDS:
+            raise MalformedProvider(
+                f"{where}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
+            )
+
+        made = dict(raw)
+        for name in TUPLE_FIELDS:
+            if name in made:
+                made[name] = tuple(made[name])
+        if "capabilities" in made:
+            spoken = made["capabilities"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: capabilities must be a table")
+            if unknown_here := sorted(set(spoken) - CAPABILITY_FIELDS):
+                names = ", ".join(f"capabilities.{name}" for name in unknown_here)
+                raise MalformedProvider(f"{where}: unknown field(s) {names}")
+            try:
+                made["capabilities"] = CAPABILITIES.validate_python(spoken)
+            except ValidationError as wrong:
+                first = wrong.errors()[0]
+                loc = ".".join(str(part) for part in first["loc"])
+                if not loc and "evidence" in str(first["msg"]):
+                    loc = "evidence"
+                path = f"capabilities.{loc}" if loc else "capabilities"
+                raise MalformedProvider(f"{where}: {path}: {first['msg']}") from wrong
+        if "dialect" in made:
+            spoken = made["dialect"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: dialect must be a table")
+            unknown_here = sorted(set(spoken) - {f.name for f in fields(Dialect)})
+            if unknown_here:
+>               raise MalformedProvider(f"{where}: unknown dialect field(s) {', '.join(unknown_here)}")
+E               shadow_hdk.providers.library.MalformedProvider: fixture: unknown dialect field(s) launch_catalogue
+
+src/shadow_hdk/providers/library.py:103: MalformedProvider
+____ test_a_bad_launch_catalogue_is_refused_before_sdk_turn[{"models":[]}] _____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-576/test_a_bad_launch_catalogue_is1')
+payload = '{"models":[]}'
+
+    @pytest.mark.parametrize('payload', ['not json', '{"models":[]}', '{"models":[{"native":true}]}'])
+    async def test_a_bad_launch_catalogue_is_refused_before_sdk_turn(tmp_path: Path, payload: str) -> None:
+        import os
+        from shadow_hdk.providers.library import provider_from_data
+
+        cli=tmp_path/'cli'
+        marker=tmp_path/'launched'
+        cli.write_text('#!/usr/bin/env python3\nimport sys,pathlib\nif sys.argv[1:]==["metadata"]: print('+repr(payload)+')\nelse: pathlib.Path('+repr(str(marker))+').touch()\n')
+        cli.chmod(0o755)
+>       provider=provider_from_data({'id':'fake','kind':'agent','bin':'cli','transport':'jsonl','dialect':{'launch_catalogue':{'probe_args':['metadata'],'entries_at':'models','replace_fields':[{'name':'native','value':False},{'name':'patch'}],'config_arg':'--catalogue','config_template':'{path}'}}},where='fixture')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:213:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+raw = {'id': 'fake', 'kind': 'agent', 'bin': 'cli', 'transport': 'jsonl', ...}
+where = 'fixture'
+
+    def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
+        """A provider from the document a file or a store row carries (D66) — the same checks."""
+        raw = dict(raw)
+        if unknown := sorted(set(raw) - KNOWN):
+            raise MalformedProvider(
+                f"{where}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
+                f"that loads and does not work"
+            )
+        for required in ("id", "kind", "bin"):
+            if not raw.get(required):
+                raise MalformedProvider(f"{where}: {required} is required")
+        if raw["kind"] not in KINDS:
+            raise MalformedProvider(
+                f"{where}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
+            )
+
+        made = dict(raw)
+        for name in TUPLE_FIELDS:
+            if name in made:
+                made[name] = tuple(made[name])
+        if "capabilities" in made:
+            spoken = made["capabilities"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: capabilities must be a table")
+            if unknown_here := sorted(set(spoken) - CAPABILITY_FIELDS):
+                names = ", ".join(f"capabilities.{name}" for name in unknown_here)
+                raise MalformedProvider(f"{where}: unknown field(s) {names}")
+            try:
+                made["capabilities"] = CAPABILITIES.validate_python(spoken)
+            except ValidationError as wrong:
+                first = wrong.errors()[0]
+                loc = ".".join(str(part) for part in first["loc"])
+                if not loc and "evidence" in str(first["msg"]):
+                    loc = "evidence"
+                path = f"capabilities.{loc}" if loc else "capabilities"
+                raise MalformedProvider(f"{where}: {path}: {first['msg']}") from wrong
+        if "dialect" in made:
+            spoken = made["dialect"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: dialect must be a table")
+            unknown_here = sorted(set(spoken) - {f.name for f in fields(Dialect)})
+            if unknown_here:
+>               raise MalformedProvider(f"{where}: unknown dialect field(s) {', '.join(unknown_here)}")
+E               shadow_hdk.providers.library.MalformedProvider: fixture: unknown dialect field(s) launch_catalogue
+
+src/shadow_hdk/providers/library.py:103: MalformedProvider
+_ test_a_bad_launch_catalogue_is_refused_before_sdk_turn[{"models":[{"native":true}]}] _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-576/test_a_bad_launch_catalogue_is2')
+payload = '{"models":[{"native":true}]}'
+
+    @pytest.mark.parametrize('payload', ['not json', '{"models":[]}', '{"models":[{"native":true}]}'])
+    async def test_a_bad_launch_catalogue_is_refused_before_sdk_turn(tmp_path: Path, payload: str) -> None:
+        import os
+        from shadow_hdk.providers.library import provider_from_data
+
+        cli=tmp_path/'cli'
+        marker=tmp_path/'launched'
+        cli.write_text('#!/usr/bin/env python3\nimport sys,pathlib\nif sys.argv[1:]==["metadata"]: print('+repr(payload)+')\nelse: pathlib.Path('+repr(str(marker))+').touch()\n')
+        cli.chmod(0o755)
+>       provider=provider_from_data({'id':'fake','kind':'agent','bin':'cli','transport':'jsonl','dialect':{'launch_catalogue':{'probe_args':['metadata'],'entries_at':'models','replace_fields':[{'name':'native','value':False},{'name':'patch'}],'config_arg':'--catalogue','config_template':'{path}'}}},where='fixture')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:213:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+raw = {'id': 'fake', 'kind': 'agent', 'bin': 'cli', 'transport': 'jsonl', ...}
+where = 'fixture'
+
+    def provider_from_data(raw: dict[str, Any], *, where: str) -> Provider:
+        """A provider from the document a file or a store row carries (D66) — the same checks."""
+        raw = dict(raw)
+        if unknown := sorted(set(raw) - KNOWN):
+            raise MalformedProvider(
+                f"{where}: unknown field(s) {', '.join(unknown)} — a typo here produces a provider "
+                f"that loads and does not work"
+            )
+        for required in ("id", "kind", "bin"):
+            if not raw.get(required):
+                raise MalformedProvider(f"{where}: {required} is required")
+        if raw["kind"] not in KINDS:
+            raise MalformedProvider(
+                f"{where}: kind {raw['kind']!r} is neither seam — it is 'model' or 'agent' (D39)"
+            )
+
+        made = dict(raw)
+        for name in TUPLE_FIELDS:
+            if name in made:
+                made[name] = tuple(made[name])
+        if "capabilities" in made:
+            spoken = made["capabilities"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: capabilities must be a table")
+            if unknown_here := sorted(set(spoken) - CAPABILITY_FIELDS):
+                names = ", ".join(f"capabilities.{name}" for name in unknown_here)
+                raise MalformedProvider(f"{where}: unknown field(s) {names}")
+            try:
+                made["capabilities"] = CAPABILITIES.validate_python(spoken)
+            except ValidationError as wrong:
+                first = wrong.errors()[0]
+                loc = ".".join(str(part) for part in first["loc"])
+                if not loc and "evidence" in str(first["msg"]):
+                    loc = "evidence"
+                path = f"capabilities.{loc}" if loc else "capabilities"
+                raise MalformedProvider(f"{where}: {path}: {first['msg']}") from wrong
+        if "dialect" in made:
+            spoken = made["dialect"]
+            if not isinstance(spoken, dict):
+                raise MalformedProvider(f"{where}: dialect must be a table")
+            unknown_here = sorted(set(spoken) - {f.name for f in fields(Dialect)})
+            if unknown_here:
+>               raise MalformedProvider(f"{where}: unknown dialect field(s) {', '.join(unknown_here)}")
+E               shadow_hdk.providers.library.MalformedProvider: fixture: unknown dialect field(s) launch_catalogue
+
+src/shadow_hdk/providers/library.py:103: MalformedProvider
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_launch_catalogue_is_restricted_once_retained_for_resume_and_removed
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_a_bad_launch_catalogue_is_refused_before_sdk_turn[not json]
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_a_bad_launch_catalogue_is_refused_before_sdk_turn[{"models":[]}]
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_a_bad_launch_catalogue_is_refused_before_sdk_turn[{"models":[{"native":true}]}]
+4 failed, 4 passed in 2.17s

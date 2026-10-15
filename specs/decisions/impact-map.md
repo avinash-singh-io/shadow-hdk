@@ -34,6 +34,10 @@ entry carries matching `Topics:`.
 | behaviour, session, langgraph, questions | specs/architecture/adapters.md; specs/architecture/runtime.md | The modes adapter; Modules |
 | mypy, ci, landing | specs/architecture/testing.md | Layers |
 | spec-drift | specs/architecture/file-structure.md | (whole file) |
+| browser-engine, element-references, dependencies | specs/decisions/0001-optional-workbench-packs.md; specs/architecture/file-structure.md | Options considered; Decision; the adapters listing |
+| live-view, control-lease | specs/backlog/backlog.md; specs/planning/roadmap.md | ENH-053; the maintenance expansion |
+| launch-catalogue, restricted-metadata, governed-launch | specs/decisions/0001-optional-workbench-packs.md; src/shadow_hdk/providers/library/ | Decision; the provider files |
+| mutation-discipline, test-hermeticity, installed-controls | specs/project-rules.md; specs/backlog/backlog.md | Test-driven development; the debt rows |
 | posture | specs/epics/0007-the-environment.md | Decisions |
 | mqtt | specs/architecture/adapters.md | The map |
 | devices | specs/architecture/adapters.md | The map |
