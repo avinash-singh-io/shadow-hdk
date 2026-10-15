@@ -59,6 +59,7 @@ async def serve_over_socket(
     *,
     host: str = "127.0.0.1",
     refused: Callable[[], None] | None = None,
+    reached: Callable[[], None] | None = None,
     watch: Any = None,
 ) -> AsyncIterator[tuple[int, str]]:
     """Listen on an ephemeral loopback port and serve `server` to whoever presents the token.
@@ -66,7 +67,14 @@ async def serve_over_socket(
     Yields `(port, token)`. Loopback only, and not negotiable here: a registry bound to a routable
     interface is a way for anyone on the network to act inside somebody else's run. The token is
     the second half of the same argument (D52). `refused` is called once per connection turned
-    away — the holder counts; this module keeps nothing about what was presented.
+    away, and `reached` once per connection let in — the holder counts; this module keeps nothing
+    about what was presented.
+
+    **Both directions are counted, because only one of them was knowable** (TD-023). Refusals were
+    already reported; nothing reported the connections that succeed, so a run whose relay never
+    arrived could not be told apart from a run whose agent chose to call nothing — which is what
+    this transport's own refusal message warns of, and what let a governed run begin with none of
+    the host's tools while the SDK said nothing about it.
     """
     listener = await anyio.create_tcp_listener(local_host=host, local_port=0)
     port = int(listener.extra(SocketAttribute.local_address)[1])
@@ -90,6 +98,8 @@ async def serve_over_socket(
                 if refused is not None:
                     refused()
                 return
+            if reached is not None:
+                reached()
             try:
                 await serve_over_pipes(server, stream, stream, watch=watch)
             except BaseExceptionGroup as group:

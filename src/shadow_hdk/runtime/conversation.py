@@ -82,6 +82,14 @@ from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
 
+TOOLS_REACHABLE_SECONDS = 15.0
+"""How long a run waits for a provider's relay to reach its registry before starting (TD-023).
+
+Generous on purpose. The cost of waiting is a slow open; the cost of not waiting was a turn that
+ran with none of the host's tools, which a loaded continuous-integration runner produced and a
+developer's machine never did. Only ever paid by a provider that was handed tool sources, and only
+until the first connection arrives."""
+
 TURN_EFFECTS = EffectProfile(
     reads=ScopeSet(everything=True),
     # What holding a turn *itself* writes: the provider's own state — a transcript under its
@@ -508,9 +516,38 @@ class Conversation:
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
         self.unmapped_behaviour += tuple(getattr(self._agent_carries, "unhonoured", ()))
+        await self._wait_for_the_tools_to_be_reachable(session)
         self._give_the_transcript_back(session)
         self._let_the_provider_wait_for_us(session)
         return session
+
+    async def _wait_for_the_tools_to_be_reachable(self, session: AgentSession) -> None:
+        """Do not write a prompt before the tools handed over can be reached (TD-023).
+
+        A provider given tool sources launches a relay of its own and connects it back to this
+        run's registry. Nothing waited for that connection, so on a slow machine the provider
+        composed its tool list first and the turn ran with none of the host's tools — and since a
+        provider says nothing about a server it gave up on, that was indistinguishable from an
+        agent that chose to call nothing. This is the missing barrier, and it is placed here
+        because this is the last moment before the first prompt.
+
+        Both ends are asked by name, so this costs nothing where it buys nothing (D14). An offer
+        predating the question has no door to watch. And a session that never launched a relay has
+        nobody to wait for — every key-backed one, and every double in the suite, which is not a
+        detail: waiting on sources alone made each of those pay the whole deadline and turned a
+        five-minute suite into a crawl before this condition was added.
+
+        A wait that ends with nobody there is named on the session's own report rather than
+        refused: the run is the host's to abandon, and a product that treats missing tools as fatal
+        can now see it, where before there was nothing to see.
+        """
+        if not self._sources or not getattr(session, "launched_tool_servers", False):
+            return
+        arrived = getattr(self.registry, "reached_once", None)
+        if arrived is None:
+            return
+        if not await arrived(TOOLS_REACHABLE_SECONDS):
+            self.unmapped_behaviour += ("tools.unreached",)
 
     def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
         """Wire the offer's *how long that call took* to the session's patience (D182, BUG-233).

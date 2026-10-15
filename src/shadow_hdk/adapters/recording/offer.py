@@ -104,7 +104,9 @@ class SocketOffer:
         holder = self._holder
         async with (
             holder.served() as server,
-            serve_over_socket(server, refused=holder.refuse, watch=holder.watch) as (
+            serve_over_socket(
+                server, refused=holder.refuse, reached=holder.reach, watch=holder.watch
+            ) as (
                 port,
                 token,
             ),

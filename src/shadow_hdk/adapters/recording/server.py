@@ -23,6 +23,8 @@ attaches each turn's run and detaches after.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
@@ -60,12 +62,37 @@ class RecordingServer(Routing):
         self.refused_connections = 0
         """Connections that presented the wrong token, or none (D52). A count, never a credential:
         what was presented is not kept. Hand `refuse` to `serve_over_socket` to keep it."""
+        self.reached_connections = 0
+        """Connections let in. The other half of the door's count (TD-023)."""
+        self._arrived = asyncio.Event()
+        """Set by the first connection let in, so a caller can wait for one rather than poll."""
         self._notifiers: set[Callable[[str], Awaitable[None]]] = set()
         """One per live connection: how to send that connection a notification (BUG-032)."""
 
     def refuse(self) -> None:
         """One more connection turned away at the door."""
         self.refused_connections += 1
+
+    def reach(self) -> None:
+        """One more connection let in. Hand `reach` to `serve_over_socket` to keep it.
+
+        What this makes answerable is whether the agent was ever given its tools at all (TD-023):
+        a relay that never arrived leaves this at zero, and a run that reached the door and called
+        nothing does not. Those two were the same observation before, and one of them is a
+        governance failure while the other is an ordinary turn."""
+        self.reached_connections += 1
+        self._arrived.set()
+
+    async def reached_once(self, within: float) -> bool:
+        """Wait up to `within` seconds for the first relay to get in; say whether one did.
+
+        The caller is the one that knows a relay was asked for, so the decision about a run with
+        no tools belongs there and not here."""
+        if self.reached_connections:
+            return True
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(self._arrived.wait(), within)
+        return bool(self.reached_connections)
 
     # ------------------------------------------------------------------ what it offers
 

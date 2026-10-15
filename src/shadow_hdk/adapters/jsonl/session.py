@@ -139,6 +139,15 @@ class JsonlSession(AgentSession):
         opener from the record's `behaviour_args`, carried here so the thread can say it."""
         return self._unmapped
 
+    @property
+    def launched_tool_servers(self) -> bool:
+        """Whether this session gave the CLI tool servers of its own to start (TD-023).
+
+        The run waits for those to connect back before writing a prompt, and only a session that
+        launched some has anybody to wait for. Read by name, so a key-backed session and a double
+        answer nothing and are never waited on."""
+        return bool(self._tools)
+
     # ------------------------------------------------------------------ the process
 
     def _argv(self) -> list[str]:

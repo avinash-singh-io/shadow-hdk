@@ -194,3 +194,27 @@ and refuse by name rather than run toolless, and surface the relay's own failure
 letting the SDK discard it. Both are deterministically testable without reproducing the race.
 
 ---
+
+### [ARCH_CHANGE] 2026-10-15 — The run waits for its tool server, and says so when it never arrives
+Topics: codex, governed-launch, tool-attachment, honesty-fields, offer-port, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/architecture/adapters.md#batteries, specs/architecture/runtime.md#modules
+Detail: TD-023's fix, in two parts, both mechanism and neither branching on a provider's name.
+The door now counts **both** ways. It already reported connections turned away — a count, never a
+credential — and nothing reported the ones let in, so a run whose relay never arrived was the same
+observation as a run whose agent chose to call nothing. One of those is a governance failure. The
+offer gained `reach` beside `refuse` and a wait for the first arrival.
+Then the missing barrier: a provider handed tool sources launches a relay and connects it back,
+and nothing waited in between, so on a slow machine the provider composed its tool list before the
+relay arrived. The conversation now waits at the last moment before the first prompt, asked of the
+offer by name so an in-process offer and any offer predating the question are untouched (D14). A
+wait that ends with nobody there is named `tools.unreached` on the session's own report rather than
+refused: abandoning the run is the host's call, and a product that treats missing tools as fatal can
+now see it where before there was nothing to see.
+**What this does not yet establish.** Whether the barrier alone turns the gate green depends on
+when the provider composes its tool list. If it waits for the prompt, the barrier is the fix; if it
+gave up on its own earlier, the barrier cannot undo that and the honesty field is what remains. The
+fix is right either way — a governed run should not start before its tools can be reached, and must
+not be silent when they cannot — and continuous integration is what decides which case this is.
+
+---
