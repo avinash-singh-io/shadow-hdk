@@ -7,6 +7,7 @@ import base64
 import re
 import sys
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -15,10 +16,30 @@ from pydantic import JsonValue
 
 from shadow_hdk.adapters.browser.arguments import Inputs, parse
 from shadow_hdk.adapters.browser.gateway import Gateway, stop_process
+from shadow_hdk.adapters.browser.person_input import PersonInput
 from shadow_hdk.adapters.browser.policy import OriginPolicy
 from shadow_hdk.kernel import Completed, Failed, Image, Observation, Refused
 from shadow_hdk.runtime import current_run
 from shadow_hdk.runtime.processes import start_held
+
+PERSON_HOLDS = (
+    "open",
+    "back",
+    "forward",
+    "new_tab",
+    "close_tab",
+    "click",
+    "type",
+    "select",
+    "press",
+    "scroll",
+)
+"""What a person at the keyboard withholds from the agent (ENH-053): everything that acts on the
+page, and nothing that reads it.
+
+**Named, not derived from the write list.** A new action that acts on the page must be added here
+deliberately, and a control fails if the two ever disagree — deriving it would let a widening of
+the contract escape the lease silently, which is this repository's most frequent defect."""
 
 HANDLE = re.compile(r"\[ref=(e\d+)\]")
 """How the engine marks an element in an `ai`-mode accessibility snapshot."""
@@ -164,6 +185,9 @@ class PlaywrightEngine:
         self._profiles: dict[str, _Profile] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self._closed: set[str] = set()
+        self._people: set[str] = set()
+        """Scopes whose keyboard a person holds (ENH-053). Per scope, so one person taking over one
+        pane cannot freeze another conversation's agent."""
         self._installing = asyncio.Lock()
 
     @property
@@ -237,11 +261,72 @@ class PlaywrightEngine:
             await profile.close()
             raise
 
+    def driver(self, resource_scope: str) -> str:
+        """Who holds the keyboard for this scope — `agent` unless a person has taken it."""
+        return "person" if resource_scope in self._people else "agent"
+
+    async def hand_to_person(self, resource_scope: str) -> None:
+        """A person takes the keyboard. The agent's acts on the page are refused until it is given
+        back, because while somebody else is driving the agent's governance is not what gates this
+        page, and a run that cannot tell the difference cannot be trusted about what it did."""
+        self._people.add(resource_scope)
+        await self._say_who_drives(resource_scope)
+
+    async def hand_back(self, resource_scope: str) -> None:
+        """The keyboard returns to the agent."""
+        self._people.discard(resource_scope)
+        await self._say_who_drives(resource_scope)
+
+    async def _say_who_drives(self, resource_scope: str) -> None:
+        """Put the handover on the record, where a product that treats a person's input as consent
+        can find it afterwards. A host taking over between turns has no run to tell, and that is
+        not a reason to refuse the handover — the lease is the kit's own state."""
+        context = current_run()
+        if context is None:
+            return
+        await context.activity(
+            "browser_driver",
+            f"The {self.driver(resource_scope)} is now driving the browser in this scope.",
+        )
+
+    async def person_acts(
+        self, resource_scope: str, what: str, arguments: Mapping[str, Any]
+    ) -> Observation:
+        """A person's own click or keystroke into the page they are watching (ENH-053).
+
+        Refused unless the keyboard is theirs, asked before anything is dispatched — the lease is
+        the whole point, and a product that could send input without holding it would have a pane
+        that bypasses the thing the pane exists to make visible.
+
+        Sent through the page's own debugging session, which is what keeps a person inside the
+        governed browser: the page they type into is the page whose traffic passes the gateway.
+        """
+        if self.driver(resource_scope) != "person":
+            return Refused(
+                "the agent is driving this browser; take the keyboard before sending input"
+            )
+        # The name first: a person cannot `levitate` a page whether or not one is open, and
+        # answering about the browser's state would hide the caller's own mistake behind it.
+        if what.startswith("_") or what not in {"click", "move", "type", "key"}:
+            return Refused(f"a person cannot {what!r} a page; try click, move, type or key")
+        profile = self._profiles.get(resource_scope)
+        page = profile.tabs.get(profile.active) if profile is not None else None
+        if profile is None or page is None or page.is_closed():
+            return Refused("no browser page is open in this scope")
+        doing = getattr(PersonInput(await profile.context.new_cdp_session(page)), what)
+        await doing(**arguments)
+        return Completed({"did": what})
+
     async def execute(self, action: str, inputs: JsonValue, resource_scope: str) -> Observation:
         try:
             params = parse(action, inputs)
         except ValueError as error:
             return Refused(f"invalid browser inputs: {error}")
+        if action in PERSON_HOLDS and resource_scope in self._people:
+            return Refused(
+                "a person is driving this browser; the agent may read the page but not act on it "
+                "until the keyboard is handed back"
+            )
         async with self._locks.setdefault(resource_scope, asyncio.Lock()):
             if resource_scope in self._closed:
                 return Refused("this browser resource scope is closed")
