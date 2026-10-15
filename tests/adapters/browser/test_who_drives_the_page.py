@@ -101,7 +101,6 @@ def test_every_write_action_is_covered_by_the_lease() -> None:
     adding one to the contract and not to this list is a failure here.
     """
     from shadow_hdk.adapters.browser.arguments import READ_ACTIONS, WRITE_ACTIONS
-
     from shadow_hdk.adapters.browser.engine import PERSON_HOLDS
 
     assert set(PERSON_HOLDS) == set(WRITE_ACTIONS), (set(WRITE_ACTIONS) - set(PERSON_HOLDS),)

@@ -38,3 +38,24 @@ also decided before any browser is provisioned, so a product can rely on it with
 Chromium. Six mutations bite.
 
 ---
+
+### [FEATURE] 2026-10-16 — Frames out of an owned tab
+Topics: browser-pane, screencast, cdp, backpressure
+Affects-phases: phase-69-the-browser-pane
+Affects-specs: specs/architecture/adapters.md#batteries
+Detail: Verified against a real Chromium before anything was written on top of it: a debugging
+session opened through the engine's own context delivers frames carrying the image, the browser's
+metadata and the session id an acknowledgement needs. The acknowledgement *is* the backpressure —
+without it the stream dries up after a few frames — and it is deferred out of the browser's
+synchronous handler to the moment a viewer actually takes the frame, so the browser is told to
+continue exactly when somebody is ready for more.
+One slot, not a queue, with a count of what was superseded, because a viewer that falls behind wants
+the page as it is rather than a record of how it was. The slot is consumed on handover: leaving a
+frame in place would show the same image until a new one arrived, which reads as a stalled page
+rather than an unchanged one, and those want different reactions.
+The first mutation pass found two gaps. Nothing asserted that a frame is handed over once. And the
+running-guard in `next` could not be made to fail, because stopping already empties the slot — so it
+was removed rather than kept, since unprovable code is the kind that gets believed. Seven mutations
+bite now.
+
+---
