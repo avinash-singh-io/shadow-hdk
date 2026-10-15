@@ -15,6 +15,13 @@ class Ceiling:
     max_steps: int
     max_wall_seconds: int
     max_cost_cents: int | None = None
+    max_tokens: int | None = None
+    """How many tokens this run may spend before it is exhausted (ENH-052); `None` is uncapped.
+
+    Steps, seconds and cents were capped and this was not, so a product that budgets in tokens
+    could not cap a run and a long thread walked into the model's context window with nothing to
+    stop it. Enforced only against numbers a provider actually reported, because a ceiling applied
+    to unknowns would stop runs for arithmetic nobody did."""
     """``None`` is *unmetered*, never *free*: a host that cannot price a step must say so."""
 
     def within(self, other: Ceiling) -> bool:
