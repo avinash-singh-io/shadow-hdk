@@ -121,17 +121,16 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
                 self.end_headers()
                 self.wfile.write(body)
             except Exception as error:
+                # Compact on purpose: the previous form printed each tool's nested names as a
+                # list, and the one failure that mattered was truncated by the assertion repr on
+                # CI, which cost a run to diagnose. Type, name and nested count per tool fit, and
+                # the count is the whole question — a server listed with zero nested tools means
+                # the governed tools never reached the model.
                 failures.append(
                     f"{type(error).__name__}: {error}; tools: "
-                    + str(
-                        [
-                            (
-                                t.get("type"),
-                                t.get("name"),
-                                [f.get("name") for f in t.get("tools", [])],
-                            )
-                            for t in captures[-1].get("tools", [])
-                        ]
+                    + ", ".join(
+                        f"{t.get('type')}:{t.get('name')}/{len(t.get('tools') or [])}"
+                        for t in captures[-1].get("tools", [])
                     )
                 )
                 self.send_error(500)
