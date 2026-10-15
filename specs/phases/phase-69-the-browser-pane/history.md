@@ -76,3 +76,20 @@ would under real hands. And an unknown action is refused by name before the brow
 consulted, so a caller's mistake is not hidden behind "no page is open". Five mutations bite.
 
 ---
+
+### [FEATURE] 2026-10-16 — A served job is browsable
+Topics: browser-pane, preview, origin-boundary, workbench
+Affects-phases: phase-69-the-browser-pane
+Affects-specs: none
+Detail: Both halves already existed and nothing joined them: the workbench reports a job's verified
+listeners and the browser's origin policy allows loopback by default. The join turns one into the
+other, and its control asserts the policy would let the url through — a url the gateway refuses is
+no use. Verified listeners only, because a url scraped from a process's output is a guess at where
+it listens and the pane must not open a page nobody confirmed. Loopback only, because a job bound to
+a routable interface is somebody else's reach into this run: not offered at all rather than offered
+and refused, so the seam widens nothing.
+The first mutation pass found the `verified` gate unpinned — the fixture used for it had no host or
+port, so it was rejected for being incomplete and the flag was never what refused it. A control now
+offers something complete in every respect but confirmed.
+
+---
