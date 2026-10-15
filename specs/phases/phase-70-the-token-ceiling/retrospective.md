@@ -40,7 +40,11 @@ method cannot tell the difference.
 
 ## Verification Evidence
 
-SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0 (recorded below after the regeneration)
+SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0
+
+```text
+2445 passed, 29 skipped, 25 deselected, 85 warnings in 294.39s (0:04:54)
+```
 
 uv run ruff check · ruff format --check · mypy — exit 0; schemas and the TypeScript client
 regenerated and checked in; `tsc` and the client build exit 0; version lockstep at 0.51.0 across the
