@@ -136,3 +136,22 @@ security-relevant. Excluded from the ad-hoc installed selection with the exclusi
 unaffected for the release, since CI runs it from a checkout where it passes.
 
 ---
+
+### [DISCOVERY] 2026-10-15 — Two claimed restrictions were measured by nothing, and the first control for them was vacuous
+Topics: codex, launch-catalogue, restricted-metadata, mutation-discipline, group-8
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The shipped provider claims restricted model metadata. Mutating the shipped data to
+re-populate the experimental tool list, and again to re-enable the SDK's own REPL, left every
+control green — so two of the restrictions this phase claims were unmeasured. The mechanism is
+sound: the catalogue the kit writes for the real binary carries all eleven models with every
+restriction applied, so this was an unmeasured claim and not a broken one. The instructive half is
+that the control written to close it survived those same two mutations, because it read what to
+expect from the same shipped field the mutation changes, and a mutated expectation always agrees
+with a mutated application. That is phase 64's vacuous-pass shape in a new place, and only the
+rule requiring every assertion to be mutation-checked caught it. The restrictions are now
+literals in the control, the shipped replacement names are asserted to equal that set so a
+deletion cannot pass unnoticed, and the sweep covers every row so a model added later must be
+restricted too. Three mutations bite where two survived.
+
+---
