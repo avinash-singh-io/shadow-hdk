@@ -66,6 +66,9 @@ class RecordingServer(Routing):
         """Connections let in. The other half of the door's count (TD-023)."""
         self._arrived = asyncio.Event()
         """Set by the first connection let in, so a caller can wait for one rather than poll."""
+        self._offered = asyncio.Event()
+        """Set when a listing is first answered — the event that means the tools actually reached
+        whoever asked, rather than merely that something connected (TD-023)."""
         self._notifiers: set[Callable[[str], Awaitable[None]]] = set()
         """One per live connection: how to send that connection a notification (BUG-032)."""
 
@@ -84,15 +87,21 @@ class RecordingServer(Routing):
         self._arrived.set()
 
     async def reached_once(self, within: float) -> bool:
-        """Wait up to `within` seconds for the first relay to get in; say whether one did.
+        """Wait up to `within` seconds for the tools to reach somebody; say whether they did.
+
+        **The listing, not the connection.** Waiting on a connection was not enough and the gate
+        said so: a provider connected its relay, never asked for a listing, and composed its first
+        request with none of these tools — in under ten seconds, so the wait had not even expired.
+        What a caller needs to know is whether the tools were handed over, and the only proof of
+        that is a listing answered.
 
         The caller is the one that knows a relay was asked for, so the decision about a run with
         no tools belongs there and not here."""
-        if self.reached_connections:
+        if self._offered.is_set():
             return True
         with contextlib.suppress(TimeoutError):
-            await asyncio.wait_for(self._arrived.wait(), within)
-        return bool(self.reached_connections)
+            await asyncio.wait_for(self._offered.wait(), within)
+        return self._offered.is_set()
 
     # ------------------------------------------------------------------ what it offers
 
@@ -107,6 +116,11 @@ class RecordingServer(Routing):
         stayed open is the mirror of it. Pinned by a test, because the first version of the
         narrowing did exactly the first of those (BUG-235).
         """
+        # **Answering a listing is what "the tools reached the agent" means** (TD-023). A
+        # connection at the door proves the relay started and authenticated, and nothing more: a
+        # provider that connected and then never asked still composes its first request without
+        # these tools. This is the event a run waits for before writing a prompt.
+        self._offered.set()
         context = self.context
         if context is None:
             return []

@@ -238,3 +238,19 @@ counted. Deliberately **not** done: relaxing the tool assertions themselves, whi
 the gate green by weakening the claim instead of by stating it correctly.
 
 ---
+
+### [ARCH_CHANGE] 2026-10-15 — The barrier waits for a listing answered, not a connection accepted
+Topics: codex, governed-launch, tool-attachment, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The first barrier waited for a relay to reach the door, and the gate proved that
+insufficient on its next run: the Linux job failed again in under ten seconds, so the wait had
+not expired — the provider connected its relay, never asked for a listing, and composed its first
+request with none of these tools. A connection proves the relay started and authenticated and
+nothing more. What a caller needs to know is whether the tools were handed over, and the only
+proof of that is a listing answered, so the wait is now on the registry's own first answer. The
+connection count stays, because the two observations are different and both are worth having.
+Recorded as a correction to the entry above rather than a tidy single step, since the first
+version looked right, passed its controls, and was wrong about which event meant the thing.
+
+---
