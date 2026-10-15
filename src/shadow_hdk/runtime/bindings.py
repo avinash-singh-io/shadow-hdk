@@ -8,7 +8,7 @@ proposes, reads what is left of its lease, and spawns children without any of th
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Awaitable, Callable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
@@ -126,6 +126,99 @@ class Resumed:
     kept: JsonValue | None = None
 
 
+async def shown_of(
+    registry: Registry,
+    judged: Callable[[EffectProfile, Context], Awaitable[Judgement]],
+    context_of: Callable[[str, Registration], Context],
+) -> list[Registration]:
+    """The catalogue: every registration the policy does not refuse, refreshed first.
+
+    **One predicate, however it is asked.** The listing and the executor resolve against the same
+    registry so that *what the model was offered* and *what the runtime will let it invoke* cannot
+    drift apart; BUG-235 is what it looks like when a narrowing reaches one and not the other. This
+    is that single predicate, taken out of `RunContext` so a catalogue can also be read **before a
+    run attaches** (TD-023) without a second copy of the rule growing beside it. What a caller
+    supplies is where the judged context comes from — a run's, or an open conversation's — and
+    nothing else.
+    """
+    await registry.refresh()
+    shown = []
+    for registration in registry.all():
+        judgement = await judged(
+            registration.component.effects, context_of("<catalogue>", registration)
+        )
+        if not isinstance(judgement, Refuse):
+            shown.append(registration)
+    return shown
+
+
+async def judged_by(ports: Ports, effects: EffectProfile, context: Context) -> Judgement:
+    """Ask the policy, and let a **port** failure be one (TD-006, D7).
+
+    Shared with the run's own asking for the same reason the predicate is: a policy service that is
+    down must stop a run, not surface as *that component failed*, which is an agent's cue to try
+    something else.
+    """
+    from shadow_hdk.runtime.errors import PortFailure, RuntimeStop
+
+    try:
+        return await ports.governance.judge(effects, context)
+    except RuntimeStop:
+        raise
+    except Exception as exc:
+        raise PortFailure("governance", exc) from exc
+
+
+class Catalogue:
+    """The run's catalogue, readable before there is a run (TD-023).
+
+    A listing is served out of the attached run, and a run attaches inside the turn — so a resident
+    provider that asks for its tools at startup was told, correctly, that there were none, and
+    nothing then corrected it in time to matter. Everything the answer needs is known at open
+    except the run itself: the components, the policy, the mode and the host's attributes.
+
+    It judges through the same predicate a run does, so this is not a second rule and not a bypass:
+    a component the policy would refuse is absent here exactly as it is inside a turn. The context
+    it judges with is missing the turn's own keys, which is the one way the two could differ, and
+    is why `shown_of` has a control asserting they agree.
+    """
+
+    def __init__(
+        self,
+        ports: Ports,
+        registry: Registry,
+        *,
+        identity: str = "",
+        attributes: Mapping[str, JsonValue] | None = None,
+    ) -> None:
+        self._ports = ports
+        self._registry = registry
+        self._identity = identity
+        """What the policy is told asked instead of a run id, because there is no run yet: the
+        conversation's own identity. A sentinel would have been easier and would have cost a policy
+        the ability to correlate the listing with the turns that follow it."""
+        self._attributes: dict[str, JsonValue] = dict(attributes or {})
+
+    def context(
+        self, step: str = "<catalogue>", registration: Registration | None = None
+    ) -> Context:
+        """What the policy is told with no run to tell it about — the conversation's own
+        attributes, and the registration's posture and id, which are what D30 requires be the
+        policy's and not the host's."""
+        attributes = dict(self._attributes)
+        if registration is not None:
+            attributes["posture"] = registration.component.provenance.posture
+            attributes["component"] = registration.id
+        return Context(run_id=self._identity, step=step, attributes=attributes)
+
+    async def visible(self) -> list[Registration]:
+        return await shown_of(
+            self._registry,
+            lambda effects, context: judged_by(self._ports, effects, context),
+            self.context,
+        )
+
+
 class RunContext:
     """What a component sees of the run it is inside. Returned by `current_run()`."""
 
@@ -203,14 +296,7 @@ class RunContext:
         the runtime will let it invoke* cannot drift apart. A component the policy would refuse for
         every input is absent rather than greyed out (`09` §4).
         """
-        await self._registry.refresh()
-        shown = []
-        for registration in self._registry.all():
-            context = self.context("<catalogue>", registration)
-            judgement = await self._judged(registration.component.effects, context)
-            if not isinstance(judgement, Refuse):
-                shown.append(registration)
-        return shown
+        return await shown_of(self._registry, self._judged, self.context)
 
     async def registered(self) -> list[Registration]:
         """Everything the registry holds, refreshed — what admission checks existence against.

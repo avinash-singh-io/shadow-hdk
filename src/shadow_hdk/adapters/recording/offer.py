@@ -14,6 +14,7 @@ import sys
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from pydantic import JsonValue
 
@@ -98,6 +99,13 @@ class SocketOffer:
 
     async def changed(self) -> None:
         await self._holder.changed()
+
+    def reads_from(self, catalogue: Any) -> None:
+        """Give the registry a catalogue it can answer from before a run attaches (TD-023).
+
+        Delegated because the run holds the offer and not the server behind it — the same reason
+        `offered_once` is here, and the same mistake if it were not."""
+        self._holder.reads_from(catalogue)
 
     async def offered_once(self, within: float) -> bool:
         """Whether a listing has come back carrying tools; the run waits on this (TD-023).
