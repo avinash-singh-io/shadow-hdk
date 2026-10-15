@@ -1,5 +1,9 @@
 name = "reflect-until"
-meta_tools = ["compose", "propose", "done"]
+# `compact` is offered here because this is the pattern whose transcript grows: it iterates until
+# it is satisfied, so it is the one that reaches a model's window (ENH-052, the audit's H34 — it
+# was offered by no shipped pattern at all, which made the one way compaction could happen
+# unavailable everywhere a product starts from).
+meta_tools = ["compose", "propose", "done", "compact"]
 max_turns = 20
 system = """
 You are trying until something holds, and the thing that decides is not you.

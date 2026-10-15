@@ -7,6 +7,7 @@ export type At = string
 export type Kind = "started"
 export type MaxCostCents = (number | null)
 export type MaxSteps = number
+export type MaxTokens = (number | null)
 export type MaxWallSeconds = number
 export type MinSteps = number
 export type ParentRunId = (string | null)
@@ -206,6 +207,7 @@ floor?: Floor
 export interface Ceiling {
 max_cost_cents?: MaxCostCents
 max_steps: MaxSteps
+max_tokens?: MaxTokens
 max_wall_seconds: MaxWallSeconds
 }
 export interface Floor {

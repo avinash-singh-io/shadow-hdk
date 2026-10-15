@@ -40,6 +40,7 @@ KEYS = frozenset(
         "max_turns",
         "nudge",
         "catalogue_threshold",
+        "compact_under_tokens",
     }
 )
 REQUIRED = ("name", "system")
@@ -81,6 +82,8 @@ def pattern_from(data: dict[str, Any], *, where: str) -> Pattern:
         pattern = replace(pattern, max_turns=int(data["max_turns"]))
     if "catalogue_threshold" in data:
         pattern = replace(pattern, catalogue_threshold=int(data["catalogue_threshold"]))
+    if "compact_under_tokens" in data:
+        pattern = replace(pattern, compact_under_tokens=int(data["compact_under_tokens"]))
     if "nudge" in data:
         pattern = replace(pattern, nudge=str(data["nudge"]).strip())
     return pattern

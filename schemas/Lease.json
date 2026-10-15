@@ -18,6 +18,18 @@
           "title": "Max Steps",
           "type": "integer"
         },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Tokens"
+        },
         "max_wall_seconds": {
           "title": "Max Wall Seconds",
           "type": "integer"

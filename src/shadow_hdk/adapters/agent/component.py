@@ -44,6 +44,7 @@ from shadow_hdk.kernel.composition import Await, Binding, Composition, FanOut, I
 from shadow_hdk.kernel.contracts import dump, load
 from shadow_hdk.kernel.effects import EffectProfile
 from shadow_hdk.kernel.events import Event
+from shadow_hdk.kernel.leases import Lease
 from shadow_hdk.kernel.observations import (
     Acted,
     ApprovalRequest,
@@ -77,6 +78,19 @@ BRIEF_SCHEMA: dict[str, JsonValue] = {
     "properties": {"brief": {"type": "string"}},
     "required": ["brief"],
 }
+
+
+def a_fold_is_due(left: Lease, under: int | None) -> bool:
+    """Whether the transcript should be folded before the model is asked again (ENH-052).
+
+    Never without a threshold, and never on an unknown count: a provider that reports nothing must
+    not trigger a lossy fold any more than it exhausts a run, which is the same rule the ceiling
+    itself follows.
+    """
+    if under is None:
+        return False
+    remaining = left.ceiling.max_tokens
+    return remaining is not None and remaining <= under
 
 
 class AgentComponent(ComponentPort):
@@ -256,6 +270,9 @@ class _Turnwise:
                 return self.finished("lease_exhausted")
             self.turns = turn + 1
             self._fold_in_steers()
+            # Before the request is built, which is the only moment a fold helps: afterwards there
+            # is no room left to send what it produced (ENH-052).
+            await self._fold_if_due()
             # Built outside the catch on purpose: `catalogue()` refuses a tool named like a
             # meta-tool (BUG-001), and that is our refusal, not a provider's failure.
             # The mode's model, where it asked for one (BUG-229): `ModelRequest` has the field,
@@ -502,6 +519,16 @@ class _Turnwise:
             return "released"
         events = await self.ctx.children.send(handle, str(arguments.get("message", "")))
         return f"answered: {_last_observation(events)}"
+
+    async def _fold_if_due(self) -> None:
+        """Fold the transcript when the token budget is nearly gone, before asking again.
+
+        Before, not after: a fold is only useful while there is still room to send what it
+        produced. The model can still ask to compact itself — this is the kit doing it when nobody
+        asked and the window is close, which is what a thread walking into it needed.
+        """
+        if a_fold_is_due(await self.ctx.remaining_now(), self.pattern.compact_under_tokens):
+            await self.compact(None)  # type: ignore[arg-type]
 
     async def compact(self, call: ToolCall) -> None:
         """The model summarises its own transcript (`09` §5).

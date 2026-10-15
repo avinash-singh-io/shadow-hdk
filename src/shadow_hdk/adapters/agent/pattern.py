@@ -67,6 +67,12 @@ class Pattern:
         )
     )
 
+    compact_under_tokens: int | None = None
+    """Fold the transcript when this many tokens or fewer remain (ENH-052); `None` never folds.
+
+    Off unless a product asks for it. Folding a history is lossy, and a kit that did it uninvited
+    would be discarding a thread's past on a number nobody chose. When to act is mechanism; how much
+    room to leave is the product's."""
     skill: str | None = None
     """An opaque procedure name resolved by the host, never a permission."""
 
