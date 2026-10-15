@@ -174,3 +174,23 @@ absent from a copied tree would explain one pair and not the other. Recorded bec
 entry would have sent the next reader after a security bug that the evidence does not support.
 
 ---
+
+### [DISCOVERY] 2026-10-15 — A governed run can start with the host's tool server missing, and nothing says so
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: TD-023 settled, after two wrong readings recorded above. Made legible, the failing run's
+tool list on CI holds only the SDK's own native tools and `mcp__shadow_hdk` is absent entirely, so
+the turn began with none of the tools the host granted and the model could not have called the one
+it was asked to use. The SDK reports no error and the kit checks nothing. This is the hazard the
+transport already names in its own refusal message — a provider launched without its tools looks
+exactly like one that chose not to use any — and the symptom BUG-226 recorded from another cause.
+It is **pre-existing**: the checkpoint's own CI run failed both SDK jobs with this signature on
+2026-10-13, so the exact-head gate has never been green here, which the checkpoint itself listed
+as outstanding. Ruled out: a differing SDK build, warm local state, the tracked project-local
+configuration, and a heavy relay start. Intermittent, which is why ten local runs never show it.
+Two fixes stand independent of the cause: require the server names the transport already computes
+and refuse by name rather than run toolless, and surface the relay's own failure instead of
+letting the SDK discard it. Both are deterministically testable without reproducing the race.
+
+---
