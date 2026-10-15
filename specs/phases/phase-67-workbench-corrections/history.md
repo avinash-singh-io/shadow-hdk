@@ -155,3 +155,22 @@ deletion cannot pass unnoticed, and the sweep covers every row so a model added 
 restricted too. Three mutations bite where two survived.
 
 ---
+
+### [NOTE] 2026-10-15 — Correcting the previous entry: tool shape, not a leak
+Topics: codex, governed-launch, nested-tools, test-hermeticity
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The entry above read the failing governance control wrongly, and the correction changes
+what is being chased. It took three goal-shaped tool names in the failure text for a product's
+tools reaching a governed launch, and raised a possible private-bootstrap isolation gap. Those
+three are the SDK's own native tools and the control expects them by name in its asserted set;
+nothing leaked. The failure is the next line, where the control takes the one tool of type
+`namespace` and reads the governed tools nested inside it: in the failing environments every
+captured tool is type `function`, the lookup raises, and the whole flat list is printed, which is
+what made it look like a leak. The claim at risk is the kit's own exact-nested-tools claim, which
+holds from this checkout and on CI's Linux runner and fails from a copied tree and on CI's macOS
+runner. The trigger is unconfirmed: a `.codex/` directory present in the repository root and
+absent from a copied tree would explain one pair and not the other. Recorded because the earlier
+entry would have sent the next reader after a security bug that the evidence does not support.
+
+---

@@ -258,7 +258,9 @@ async def test_the_restricted_model_metadata_reaches_every_row_of_the_actual_cat
 
     binary = shutil.which("codex")
     assert binary is not None, "this SDK gate requires Codex 0.154.0"
-    spec = shipped()["codex"].dialect.launch_catalogue
+    dialect = shipped()["codex"].dialect
+    assert dialect is not None, "the shipped codex provider must declare a dialect"
+    spec = dialect.launch_catalogue
     assert spec is not None, "the shipped codex provider must prepare a catalogue"
     # The shipped data must still ask for each restriction; a field deleted from it would
     # otherwise leave the rows below untouched and this control agreeing with the omission.

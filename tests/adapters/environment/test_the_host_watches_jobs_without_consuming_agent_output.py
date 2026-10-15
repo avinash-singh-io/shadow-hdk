@@ -26,7 +26,12 @@ async def eventually_output(door: HostDoor, job: str, text: str) -> dict[str, An
                 return result
             await asyncio.sleep(0.01)
 
-    return await asyncio.wait_for(wait(), 5)
+    # No inner deadline (TD-018, sixth instance). This waits on a fresh interpreter starting,
+    # importing and binding a socket, which took longer than five seconds on a loaded macOS
+    # runner and failed a release gate for being slow rather than wrong. The suite's own
+    # per-test timeout is the hang guard and is far above anything healthy here, so a second
+    # tighter clock only converts a busy machine into a red run.
+    return await wait()
 
 
 async def test_host_and_agent_readers_share_a_job_but_never_consume_each_others_output(
