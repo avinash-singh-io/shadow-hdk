@@ -58,3 +58,44 @@ tests/adapters/jsonl + tests/runtime — 638 passed, 1 skipped
 
 Version lockstep at 0.49.0 across all four places the tree holds it — the distribution, the kit's
 dependency line on the helper, the crate, and the helper's own distribution.
+
+## Acceptance — 2026-10-16
+
+schema and TypeScript client: generation produced no diff, so the committed contracts match this
+source; `tsc --noEmit` and the build both exit 0.
+
+```text
+wrote 29 contracts under clients/typescript/src/schemas and clients/typescript/src/schemas.ts
+git status --short clients/typescript/ — empty
+npm run check — exit 0 · npm run build — exit 0
+```
+
+uv run pytest -m benchmark -q -s — exit 0
+
+```text
+5 passed, 2441 deselected in 51.77s
+```
+
+installed wheel: Python 3.12, outside the checkout — exit 0. Asserted against the artifact rather
+than the tree: the pre-run catalogue ships, and the offer delegates both of the questions the run
+asks it, which is the pair that was unreachable in 0.48.0 until the gate caught it.
+
+```text
+installed: /tmp/v490venv/lib/python3.12/site-packages/shadow_hdk/__init__.py
+version: 0.49.0
+Catalogue and shown_of ship: True
+the offer delegates reads_from: True · offered_once: True
+684 passed, 1 skipped, 4 deselected in 122.94s
+```
+
+One exclusion, stated: the real-SDK governance proof, which needs the SDK on PATH and is run from a
+checkout by its own continuous-integration job.
+
+## What changed after the first acceptance run
+
+A `tools.read_late` report was written and withdrawn the same hour. It fired on correct behaviour —
+prompted, then list, then compose is the ordinary flow, and two real models read late and used their
+tools anyway. The remaining case is TD-024, the provider's and not the kit's, attributed narrowly
+with its own controls because this kit's side is now complete and proven. In 0.48.0 the same shape
+of tolerance concealed a defect of ours; that is the difference, and it is why TD-024 is its own row
+rather than a reopening of TD-023.
