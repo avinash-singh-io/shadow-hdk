@@ -30,6 +30,7 @@ from shadow_hdk.kernel import (
     ExecutionSelection,
     FanOut,
     Floor,
+    Image,
     Interface,
     Invoke,
     Invoked,
@@ -98,6 +99,7 @@ PROVIDER = Provider(
 """A provider crosses the wire because a host in another language reads the library too."""
 
 EXAMPLES = {
+    "Image": (Image("image/png", "iVBORw0KGgo="), Image),
     "ProviderCapabilities": (ProviderCapabilities(), ProviderCapabilities),
     "EnvironmentCapabilities": (EnvironmentCapabilities(), EnvironmentCapabilities),
     "ExecutionRequirements": (ExecutionRequirements(), ExecutionRequirements),

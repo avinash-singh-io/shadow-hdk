@@ -1,0 +1,136 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+__ test_private_bootstrap_survives_turns_then_closes_even_after_process_exit ___
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-519/test_private_bootstrap_survive0')
+
+    async def test_private_bootstrap_survives_turns_then_closes_even_after_process_exit(
+        tmp_path: Path,
+    ) -> None:
+>       dialect = replace(
+            Dialect(done_on=("done",), done_at="text", session_id_at="session", resume_args=("resume",)),
+            private_working_directory=True,
+        )
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:17:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/dataclasses.py:1778: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Dialect(resident=False, resume_args=('resume',), session_id_at='session', prompt_shape='text', instructions_in_prompt=...', input_tokens_at='', output_tokens_at='', session_gone_matches=(), cache_read_tokens_at='', cache_write_tokens_at='')
+changes = {'private_working_directory': True, 'resident': False, 'resume_args': ('resume',), 'session_id_at': 'session', ...}
+
+    def _replace(self, /, **changes):
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(self, **my_changes)'.
+
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided 'self'.
+
+        for f in getattr(self, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise TypeError(f'field {f.name} is declared with '
+                                    f'init=False, it cannot be specified with '
+                                    f'replace()')
+                continue
+
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise TypeError(f"InitVar {f.name!r} "
+                                    f'must be specified with replace()')
+                changes[f.name] = getattr(self, f.name)
+
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return self.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Dialect.__init__() got an unexpected keyword argument 'private_working_directory'
+
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/dataclasses.py:1812: TypeError
+______________ test_an_uninjected_cli_keeps_its_working_directory ______________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-519/test_an_uninjected_cli_keeps_i0')
+
+    async def test_an_uninjected_cli_keeps_its_working_directory(tmp_path: Path) -> None:
+        from tests.adapters.jsonl.test_a_turn import a_fake_cli, a_provider
+
+        cli = a_fake_cli(tmp_path, [{"type": "result", "result": "done"}])
+        session = JsonlSession(
+>           replace(a_provider(), dialect=replace(a_provider().dialect, private_working_directory=True)),
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            binary=cli, env={"PATH": "/usr/bin:/bin"}, workspace=tmp_path,
+        )
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:56:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/dataclasses.py:1778: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Dialect(resident=True, resume_args=(), session_id_at='', prompt_shape='stream-json-user', instructions_in_prompt=False...s', output_tokens_at='usage.output_tokens', session_gone_matches=(), cache_read_tokens_at='', cache_write_tokens_at='')
+changes = {'private_working_directory': True, 'resident': True, 'resume_args': (), 'session_id_at': '', ...}
+
+    def _replace(self, /, **changes):
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(self, **my_changes)'.
+
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided 'self'.
+
+        for f in getattr(self, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise TypeError(f'field {f.name} is declared with '
+                                    f'init=False, it cannot be specified with '
+                                    f'replace()')
+                continue
+
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise TypeError(f"InitVar {f.name!r} "
+                                    f'must be specified with replace()')
+                changes[f.name] = getattr(self, f.name)
+
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return self.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Dialect.__init__() got an unexpected keyword argument 'private_working_directory'
+
+../../../../.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/dataclasses.py:1812: TypeError
+_ test_the_codex_record_disables_native_world_tools_only_when_tools_are_injected _
+
+    def test_the_codex_record_disables_native_world_tools_only_when_tools_are_injected() -> None:
+        from shadow_hdk.adapters.jsonl.transport import argv_for
+
+        codex = shipped()["codex"]
+>       assert codex.dialect is not None and codex.dialect.private_working_directory
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Dialect' object has no attribute 'private_working_directory'
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:70: AttributeError
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_private_bootstrap_survives_turns_then_closes_even_after_process_exit
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_an_uninjected_cli_keeps_its_working_directory
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_the_codex_record_disables_native_world_tools_only_when_tools_are_injected
+3 failed in 0.55s

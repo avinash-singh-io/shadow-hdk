@@ -28,12 +28,15 @@ export interface ToolOptions {
   /** The interface's display name; defaults to the id. */
   name?: string;
   labels?: string[];
+  /** Release this owner's resources for an execution scope; idempotent, optional. */
+  releaseRun?: (resourceScope: string) => Promise<void> | void;
 }
 
 /** What a tool's function is told beside its inputs: the run and the step it acts inside. */
 export interface Invocation {
   run_id: string;
   step: string;
+  resource_scope?: string;
 }
 
 export type ToolHandler<I = { [key: string]: JsonValue }> = (
@@ -53,6 +56,7 @@ export class Refusal extends Error {
 export interface Tool {
   registration: Registration;
   handler: ToolHandler;
+  releaseRun?: ToolOptions["releaseRun"];
 }
 
 function scopes(given: string[] | "everything" | undefined): { names: string[]; everything: boolean } | undefined {
@@ -90,16 +94,16 @@ export function tool<I = { [key: string]: JsonValue }>(id: string, options: Tool
       ...(options.labels ? { labels: options.labels } : {}),
     },
   };
-  return { registration, handler: handler as ToolHandler };
+  return { registration, handler: handler as ToolHandler, ...(options.releaseRun ? { releaseRun: options.releaseRun } : {}) };
 }
 
 /** The two callbacks, answered from a list of tools. Returns the handler map the client installs. */
-export function serveComponents(tools: Tool[]): Map<string, (params: JsonValue) => Promise<JsonValue>> {
+export function serveComponents(tools: Tool[], owners: Array<(scope: string) => Promise<void> | void> = []): Map<string, (params: JsonValue) => Promise<JsonValue>> {
   const byId = new Map(tools.map((t) => [t.registration.id, t]));
   const handlers = new Map<string, (params: JsonValue) => Promise<JsonValue>>();
   handlers.set("components.registrations", async () => tools.map((t) => t.registration as unknown as JsonValue));
   handlers.set("components.invoke", async (params) => {
-    const p = (params ?? {}) as { registration?: string; inputs?: JsonValue; run_id?: string; step?: string };
+    const p = (params ?? {}) as { registration?: string; inputs?: JsonValue; run_id?: string; step?: string; resource_scope?: string };
     const found = byId.get(String(p.registration));
     let observation: Observation;
     if (!found) {
@@ -109,6 +113,7 @@ export function serveComponents(tools: Tool[]): Map<string, (params: JsonValue) 
         const output = await found.handler((p.inputs ?? {}) as { [key: string]: JsonValue }, {
           run_id: String(p.run_id ?? ""),
           step: String(p.step ?? ""),
+          ...(p.resource_scope === undefined ? {} : { resource_scope: p.resource_scope }),
         });
         observation = { kind: "completed", output: (output ?? {}) as { [k: string]: unknown } };
       } catch (error) {
@@ -119,6 +124,17 @@ export function serveComponents(tools: Tool[]): Map<string, (params: JsonValue) 
       }
     }
     return observation as unknown as JsonValue;
+  });
+  handlers.set("components.release_run", async (params) => {
+    const p = (params ?? {}) as { resource_scope?: string };
+    const callbacks = [...new Set([...owners, ...tools.map(t => t.releaseRun).filter((f): f is NonNullable<ToolOptions["releaseRun"]> => f !== undefined)])];
+    const failures: string[] = [];
+    for (const callback of callbacks.reverse()) {
+      try { await callback(String(p.resource_scope ?? "")); }
+      catch (error) { failures.push(String(error)); }
+    }
+    if (failures.length) throw new Error(`resource cleanup failed: ${failures.join("; ")}`);
+    return null;
   });
   return handlers;
 }

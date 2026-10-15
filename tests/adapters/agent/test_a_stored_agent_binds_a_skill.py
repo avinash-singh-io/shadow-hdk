@@ -131,7 +131,7 @@ async def test_the_session_report_keeps_provider_and_binding_limitations(
         async def open(self, **kwargs: Any) -> Any:
             return SimpleNamespace(unmapped=("temperature",))
 
-    conversation = SimpleNamespace(
+    conversation: Any = SimpleNamespace(
         session_id="",
         _agent=Provider(),
         _sources=(),

@@ -1,0 +1,104 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+______________ test_nested_ignore_and_negation[asyncio-glob-True] ______________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-386/test_nested_ignore_and_negatio0')
+repository = True, operation = 'glob'
+
+    @pytest.mark.parametrize("repository", [False, True])
+    @pytest.mark.parametrize("operation", ["glob", "grep"])
+    async def test_nested_ignore_and_negation(tmp_path: Path, repository: bool, operation: str) -> None:
+        if repository:
+            git(tmp_path, "init", "-q")
+        (tmp_path / ".gitignore").write_text("node_modules/\n*.tmp\n")
+        (tmp_path / "node_modules").mkdir()
+        (tmp_path / "node_modules" / "big.py").write_text("needle\n")
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / ".gitignore").write_text("*.py\n!keep.py\n")
+        for name in ("keep.py", "hide.py", "hide.tmp"):
+            (tmp_path / "src" / name).write_text("needle\n")
+        env = await LocalEnvironment.open(tmp_path, mode="full")
+        try:
+            args: dict[str, Any] = (
+                {"pattern": "**/*.py"}
+                if operation == "glob"
+                else {"pattern": "needle", "glob": "**/*.py"}
+            )
+            answer = await env.invoke(operation, args)
+            value: Any = answer.output if isinstance(answer, Completed) else answer
+>           assert value == (
+                ["src/keep.py"]
+                if operation == "glob"
+                else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
+            )
+E           AssertionError: assert ['node_module...'src/hide.py'] == ['src/keep.py']
+E
+E             At index 0 diff: 'node_modules/big.py' != 'src/keep.py'
+E             Left contains one more item: 'src/hide.py'
+E             Use -v to get more diff
+
+tests/adapters/environment/test_search_honours_ignores.py:37: AssertionError
+______________ test_nested_ignore_and_negation[asyncio-grep-True] ______________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-386/test_nested_ignore_and_negatio1')
+repository = True, operation = 'grep'
+
+    @pytest.mark.parametrize("repository", [False, True])
+    @pytest.mark.parametrize("operation", ["glob", "grep"])
+    async def test_nested_ignore_and_negation(tmp_path: Path, repository: bool, operation: str) -> None:
+        if repository:
+            git(tmp_path, "init", "-q")
+        (tmp_path / ".gitignore").write_text("node_modules/\n*.tmp\n")
+        (tmp_path / "node_modules").mkdir()
+        (tmp_path / "node_modules" / "big.py").write_text("needle\n")
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / ".gitignore").write_text("*.py\n!keep.py\n")
+        for name in ("keep.py", "hide.py", "hide.tmp"):
+            (tmp_path / "src" / name).write_text("needle\n")
+        env = await LocalEnvironment.open(tmp_path, mode="full")
+        try:
+            args: dict[str, Any] = (
+                {"pattern": "**/*.py"}
+                if operation == "glob"
+                else {"pattern": "needle", "glob": "**/*.py"}
+            )
+            answer = await env.invoke(operation, args)
+            value: Any = answer.output if isinstance(answer, Completed) else answer
+>           assert value == (
+                ["src/keep.py"]
+                if operation == "glob"
+                else [{"path": "src/keep.py", "line": 1, "text": "needle"}]
+            )
+E           AssertionError: assert [{'path': 'no...t': 'needle'}] == [{'path': 'sr...t': 'needle'}]
+E
+E             At index 0 diff: {'path': 'node_modules/big.py', 'line': 1, 'text': 'needle'} != {'path': 'src/keep.py', 'line': 1, 'text': 'needle'}
+E             Left contains one more item: {'path': 'src/hide.py', 'line': 1, 'text': 'needle'}
+E             Use -v to get more diff
+
+tests/adapters/environment/test_search_honours_ignores.py:37: AssertionError
+_ test_tracked_ignored_files_remain_searchable_and_metadata_does_not[asyncio] __
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-386/test_tracked_ignored_files_rem0')
+
+    async def test_tracked_ignored_files_remain_searchable_and_metadata_does_not(
+        tmp_path: Path,
+    ) -> None:
+        git(tmp_path, "init", "-q")
+        (tmp_path / "tracked.tmp").write_text("needle")
+        git(tmp_path, "add", "tracked.tmp")
+        (tmp_path / ".gitignore").write_text("*.tmp\n")
+        (tmp_path / "untracked.tmp").write_text("needle")
+        env = await LocalEnvironment.open(tmp_path, mode="full")
+        try:
+>           assert await env._walk(".") == [".gitignore", "tracked.tmp"]
+E           AssertionError: assert ['tracked.tmp...ntracked.tmp'] == ['.gitignore', 'tracked.tmp']
+E
+E             At index 0 diff: 'tracked.tmp' != '.gitignore'
+E             Use -v to get more diff
+
+tests/adapters/environment/test_search_honours_ignores.py:70: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_search_honours_ignores.py::test_nested_ignore_and_negation[asyncio-glob-True]
+FAILED tests/adapters/environment/test_search_honours_ignores.py::test_nested_ignore_and_negation[asyncio-grep-True]
+FAILED tests/adapters/environment/test_search_honours_ignores.py::test_tracked_ignored_files_remain_searchable_and_metadata_does_not[asyncio]
+3 failed in 0.50s

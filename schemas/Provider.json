@@ -59,6 +59,52 @@
       "title": "CapabilityEvidence",
       "type": "object"
     },
+    "CatalogueField": {
+      "description": "One literal scalar field replacement in an SDK's own catalogue.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "require_present": {
+          "default": true,
+          "title": "Require Present",
+          "type": "boolean"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CatalogueField",
+      "type": "object"
+    },
     "Delta": {
       "description": "One kind of streamed piece a CLI emits (D63): which value of the delta-kind field it is,\nwhat activity kind it becomes, and where its text sits in the event.",
       "properties": {
@@ -196,6 +242,17 @@
           "title": "Interrupt Line",
           "type": "string"
         },
+        "launch_catalogue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LaunchCatalogue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "mcp_config_arg": {
           "default": "",
           "title": "Mcp Config Arg",
@@ -218,6 +275,11 @@
           "default": "",
           "title": "Output Tokens At",
           "type": "string"
+        },
+        "private_working_directory": {
+          "default": false,
+          "title": "Private Working Directory",
+          "type": "boolean"
         },
         "prompt_shape": {
           "default": "text",
@@ -312,6 +374,54 @@
         "value"
       ],
       "title": "EnvVar",
+      "type": "object"
+    },
+    "LaunchCatalogue": {
+      "description": "Prepare governed SDK metadata before launch, with no expressions or vendor branches.\n\nA coding tool, a support desk and a research assistant may each narrow an SDK's\nown tool catalogue while preserving its model metadata. The default on Dialect is\nabsent: uninjected sessions never run this probe or change their native catalogue.",
+      "properties": {
+        "config_arg": {
+          "title": "Config Arg",
+          "type": "string"
+        },
+        "config_template": {
+          "title": "Config Template",
+          "type": "string"
+        },
+        "entries_at": {
+          "title": "Entries At",
+          "type": "string"
+        },
+        "isolated_env_keys": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Isolated Env Keys",
+          "type": "array"
+        },
+        "probe_args": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Probe Args",
+          "type": "array"
+        },
+        "replace_fields": {
+          "items": {
+            "$ref": "#/$defs/CatalogueField"
+          },
+          "title": "Replace Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "probe_args",
+        "entries_at",
+        "replace_fields",
+        "config_arg",
+        "config_template"
+      ],
+      "title": "LaunchCatalogue",
       "type": "object"
     },
     "ProviderCapabilities": {

@@ -44,10 +44,20 @@ export type FailedTextAt = string
 export type InputTokensAt = string
 export type InstructionsInPrompt = boolean
 export type InterruptLine = string
+export type ConfigArg = string
+export type ConfigTemplate = string
+export type EntriesAt = string
+export type IsolatedEnvKeys = string[]
+export type ProbeArgs = string[]
+export type Name = string
+export type RequirePresent = boolean
+export type Value = (string | number | boolean | string[] | null)
+export type ReplaceFields = CatalogueField[]
 export type McpConfigArg = string
 export type McpConfigShape = string
 export type McpStrictArgs = string[]
 export type OutputTokensAt = string
+export type PrivateWorkingDirectory = boolean
 export type PromptShape = string
 export type Resident = boolean
 export type ResumeArgs = string[]
@@ -67,9 +77,9 @@ export type InstallHint = string
 export type Kind2 = ("model" | "agent")
 export type LaunchArgs = string[]
 export type MinimumVersion = (string | null)
-export type Name = string
 export type Name1 = string
-export type Value = string
+export type Name2 = string
+export type Value1 = string
 export type SetEnv = EnvVar[]
 export type StripEnv = string[]
 export type Transport = (string | null)
@@ -96,7 +106,7 @@ install_hint?: InstallHint
 kind: Kind2
 launch_args?: LaunchArgs
 minimum_version?: MinimumVersion
-name?: Name
+name?: Name1
 set_env?: SetEnv
 strip_env?: StripEnv
 transport?: Transport
@@ -161,10 +171,12 @@ failed_text_at?: FailedTextAt
 input_tokens_at?: InputTokensAt
 instructions_in_prompt?: InstructionsInPrompt
 interrupt_line?: InterruptLine
+launch_catalogue?: (LaunchCatalogue | null)
 mcp_config_arg?: McpConfigArg
 mcp_config_shape?: McpConfigShape
 mcp_strict_args?: McpStrictArgs
 output_tokens_at?: OutputTokensAt
+private_working_directory?: PrivateWorkingDirectory
 prompt_shape?: PromptShape
 resident?: Resident
 resume_args?: ResumeArgs
@@ -196,9 +208,32 @@ kind: Kind1
 on: On
 }
 /**
+ * Prepare governed SDK metadata before launch, with no expressions or vendor branches.
+ *
+ * A coding tool, a support desk and a research assistant may each narrow an SDK's
+ * own tool catalogue while preserving its model metadata. The default on Dialect is
+ * absent: uninjected sessions never run this probe or change their native catalogue.
+ */
+export interface LaunchCatalogue {
+config_arg: ConfigArg
+config_template: ConfigTemplate
+entries_at: EntriesAt
+isolated_env_keys?: IsolatedEnvKeys
+probe_args: ProbeArgs
+replace_fields: ReplaceFields
+}
+/**
+ * One literal scalar field replacement in an SDK's own catalogue.
+ */
+export interface CatalogueField {
+name: Name
+require_present?: RequirePresent
+value?: Value
+}
+/**
  * One name and one value, for the environment a provider is launched with.
  */
 export interface EnvVar {
-name: Name1
-value: Value
+name: Name2
+value: Value1
 }

@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_reports_do_not_expand_entities_or_claim_incomplete_or_malformed_results _
+
+    def test_reports_do_not_expand_entities_or_claim_incomplete_or_malformed_results() -> None:
+        for report in (
+            '<!DOCTYPE testsuite [<!ENTITY secret SYSTEM "file:///etc/passwd">]><testsuite>&secret;</testsuite>',
+            '<testsuite tests="2"><testcase name="only one"/></testsuite>',
+            '<other><testcase name="unrelated XML"/></other>',
+            "<testsuite>",
+        ):
+            result = junit_results(report)
+>           assert isinstance(result, Refused), result
+E           AssertionError: Completed(output={'format': 'junit', 'total': 1, 'passed': 1, 'failed': 0, 'skipped': 0, 'failing_names': [], 'cases':...ures': [], 'skip_reason': None, 'stdout': '', 'stderr': ''}], 'stdout': [], 'stderr': []}, kind='completed', images=())
+E           assert False
+E            +  where False = isinstance(Completed(output={'format': 'junit', 'total': 1, 'passed': 1, 'failed': 0, 'skipped': 0, 'failing_names': [], 'cases':...ures': [], 'skip_reason': None, 'stdout': '', 'stderr': ''}], 'stdout': [], 'stderr': []}, kind='completed', images=()), Refused)
+
+tests/adapters/environment/test_test_reports_are_data.py:46: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_test_reports_are_data.py::test_reports_do_not_expand_entities_or_claim_incomplete_or_malformed_results
+1 failed in 0.21s

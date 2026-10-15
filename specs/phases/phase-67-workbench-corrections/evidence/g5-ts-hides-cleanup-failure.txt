@@ -1,0 +1,53 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_typescript_cleanup_attempts_every_owner_and_reports_failures _______
+
+    def test_typescript_cleanup_attempts_every_owner_and_reports_failures() -> None:
+        node = _node()
+        source = """
+          import { HarnessClient } from './dist/client.js';
+          import { tool } from './dist/components.js';
+          const frames = [], calls = [];
+          let receive;
+          const transport = {
+            open: async handler => {receive = handler;},
+            send: async frame => {
+              frames.push(frame);
+              if (frame.method === 'initialize') await receive({id:frame.id,result:{}});
+            }, close: () => {},
+          };
+          const raw = scope => {calls.push(['raw',scope]);};
+          const client = new HarnessClient({transport,onReleaseRun:raw});
+          await client.connect();
+          await receive({id:80,method:'components.release_run',params:{resource_scope:'raw'}});
+          const fail = scope => {calls.push(['fail',scope]);throw new Error('engine did not close');};
+          client.components.serve([
+            tool('a',{description:'a',effects:{},releaseRun:fail}, () => null),
+            tool('alias',{description:'b',effects:{},releaseRun:fail}, () => null),
+          ]);
+          await receive({id:81,method:'components.release_run',params:{resource_scope:'all'}});
+          client.close();
+          console.log(JSON.stringify({frames,calls}));
+        """
+        finished = subprocess.run(
+            [node, "--input-type=module", "-e", source],
+            cwd=CLIENT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        seen = _saw(finished)
+        assert seen["frames"][0]["params"]["run_resources"] is True
+        assert seen["calls"] == [["raw", "raw"], ["fail", "all"], ["raw", "all"]]
+        assert seen["frames"][1] == {"jsonrpc": "2.0", "id": 80, "result": None}
+        failure = seen["frames"][2].get("error", {})
+>       assert failure.get("code") == -32000 and "engine did not close" in failure.get("message", "")
+E       AssertionError: assert (None == -32000)
+E        +  where None = <built-in method get of dict object at 0x109c16180>('code')
+E        +    where <built-in method get of dict object at 0x109c16180> = {}.get
+
+tests/serve/test_a_typescript_host_serves_tools.py:132: AssertionError
+=========================== short test summary info ============================
+FAILED tests/serve/test_a_typescript_host_serves_tools.py::test_typescript_cleanup_attempts_every_owner_and_reports_failures
+1 failed in 0.33s

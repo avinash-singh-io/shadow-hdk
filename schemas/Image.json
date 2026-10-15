@@ -1,0 +1,19 @@
+{
+  "description": "An inline tool image: base64 bytes and their media type, never a local pathname.\n\nA coding tool, support desk and research assistant each consume visual observations.\nThe bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.",
+  "properties": {
+    "data": {
+      "title": "Data",
+      "type": "string"
+    },
+    "mime_type": {
+      "title": "Mime Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mime_type",
+    "data"
+  ],
+  "title": "Image",
+  "type": "object"
+}

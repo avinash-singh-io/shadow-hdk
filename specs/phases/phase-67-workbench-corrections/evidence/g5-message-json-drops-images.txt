@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_image_contracts_roundtrip_with_old_empty_defaults ____________
+
+    def test_image_contracts_roundtrip_with_old_empty_defaults() -> None:
+        observation = Completed({"caption": "page"}, images=(PNG,))
+        message = Message("tool", "page", "c1", images=(PNG,))
+>       assert (
+            round_trip(observation, Observation),
+            round_trip(ModelRequest((message,)), ModelRequest),
+            Completed().images,
+            Message("user", "text").images,
+        ) == (observation, ModelRequest((message,)), (), ())
+E       AssertionError: assert (Completed(ou...None), (), ()) == (Completed(ou...None), (), ())
+E
+E         At index 1 diff: ModelRequest(messages=(Message(role='tool', content='page', tool_call_id='c1', tool_calls=(), images=()),), tools=(), model=None) != ModelRequest(messages=(Message(role='tool', content='page', tool_call_id='c1', tool_calls=(), images=(Image(mime_type='image/png', data='iVBORw0KGgo='),)),), tools=(), model=None)
+E         Use -v to get more diff
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:66: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_image_contracts_roundtrip_with_old_empty_defaults
+1 failed in 0.38s

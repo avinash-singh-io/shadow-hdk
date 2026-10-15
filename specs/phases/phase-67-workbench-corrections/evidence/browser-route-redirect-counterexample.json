@@ -1,0 +1,47 @@
+{
+  "routed": [
+    "http://127.0.0.1:63333/direct",
+    "http://127.0.0.1:63333/chain",
+    "http://127.0.0.1:63333/page",
+    "http://127.0.0.1:63335/pixel",
+    "http://127.0.0.1:63335/fetch"
+  ],
+  "hits": [
+    [
+      0,
+      "/direct"
+    ],
+    [
+      0,
+      "/chain"
+    ],
+    [
+      1,
+      "/chain"
+    ],
+    [
+      2,
+      "/exfil"
+    ],
+    [
+      0,
+      "/page"
+    ]
+  ],
+  "sockets": [
+    "ws://127.0.0.1:63335/socket"
+  ],
+  "errors": [
+    "Page.goto: net::ERR_BLOCKED_BY_CLIENT at http://127.0.0.1:63333/direct",
+    "Page.goto: Navigation to \"http://127.0.0.1:63333/chain\" is interrupted by another navigation to \"chrome-error://chromewebdata/\"",
+    "Page.goto: Navigation to \"http://127.0.0.1:63333/page\" is interrupted by another navigation to \"http://127.0.0.1:63335/exfil\""
+  ],
+  "snapshot": "- heading \"Local app\" [level=1]\n- img",
+  "image_bytes": 7688,
+  "blocked_hits": [
+    [
+      2,
+      "/exfil"
+    ]
+  ]
+}

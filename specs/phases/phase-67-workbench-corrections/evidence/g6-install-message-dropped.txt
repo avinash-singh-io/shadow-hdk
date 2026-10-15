@@ -1,0 +1,46 @@
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+__ test_cancelling_first_use_installation_stops_the_installer_and_reports_it ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c564e20>
+
+    async def test_cancelling_first_use_installation_stops_the_installer_and_reports_it(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        started = asyncio.Event()
+        processes: list[asyncio.subprocess.Process] = []
+        commands: list[tuple[Any, ...]] = []
+        activities: list[tuple[str, str]] = []
+        real_spawn = asyncio.create_subprocess_exec
+
+        class Context:
+            async def activity(self, kind: str, text: str) -> None:
+                activities.append((kind, text))
+
+        async def spawn(*args: Any, **kwargs: Any) -> asyncio.subprocess.Process:
+            commands.append(args)
+            process = await real_spawn(sys.executable, "-c", "import time; time.sleep(300)", **kwargs)
+            processes.append(process)
+            started.set()
+            return process
+
+        monkeypatch.setattr(implementation, "current_run", Context)
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", spawn)
+        task = asyncio.create_task(PlaywrightEngine()._install())
+        await started.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+>       assert (commands, activities) == (
+            [(sys.executable, "-I", "-m", "playwright", "install", "chromium")],
+            [("install", "Installing Chromium for the optional browser component.")],
+        )
+E       AssertionError: assert ([('/Users/av...nstall', '')]) == ([('/Users/av...component.')])
+E
+E         At index 1 diff: [('install', '')] != [('install', 'Installing Chromium for the optional browser component.')]
+E         Use -v to get more diff
+
+tests/adapters/browser/test_browser_provisioning_and_cleanup.py:92: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_provisioning_and_cleanup.py::test_cancelling_first_use_installation_stops_the_installer_and_reports_it
+1 failed, 2 passed in 0.22s

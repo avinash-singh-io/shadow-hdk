@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_stopping_an_exited_leader_still_ends_its_owned_child ___________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-540/test_stopping_an_exited_leader0')
+
+    async def test_stopping_an_exited_leader_still_ends_its_owned_child(tmp_path: Path) -> None:
+        import psutil
+
+        environment = await LocalEnvironment.open(tmp_path, mode="full")
+        door = HostDoor(environment)
+        child = None
+        try:
+            source = (
+                "import subprocess; p=subprocess.Popen(['sleep','300'], "
+                "stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); print(p.pid,flush=True)"
+            )
+            job = data(
+                await door.background(f"{shlex.quote(sys.executable)} -c {shlex.quote(source)}")
+            )["job"]
+            process = environment._jobs[job].process
+            await process.wait()
+            await environment._jobs[job].reader
+            child = psutil.Process(int(data(await door.output(job))["output"].strip()))
+            assert child.is_running() and child.status() != psutil.STATUS_ZOMBIE
+            stopped = data(await door.stop(job))
+            assert stopped["killed"] is False, "the leader was already done"
+
+            async def gone() -> bool:
+                for _ in range(100):
+                    if not child.is_running() or child.status() == psutil.STATUS_ZOMBIE:
+                        return True
+                    await asyncio.sleep(0.01)
+                return False
+
+>           assert await gone(), "stop must also end descendants after the leader exits"
+E           AssertionError: stop must also end descendants after the leader exits
+E           assert False
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:192: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_stopping_an_exited_leader_still_ends_its_owned_child
+1 failed in 1.40s

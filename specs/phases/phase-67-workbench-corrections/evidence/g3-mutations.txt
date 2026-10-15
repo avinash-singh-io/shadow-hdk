@@ -1,0 +1,4 @@
+g3-ignore-rules BITES 4 failed in 0.54s
+g3-git-unignored BITES 3 failed in 0.50s
+g3-ceiling BITES 1 failed in 0.32s
+g3-escape BITES 1 failed in 0.38s

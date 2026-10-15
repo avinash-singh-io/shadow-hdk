@@ -1,0 +1,32 @@
+g6-no-loopback BITES 2 failed, 19 passed in 0.17s
+g6-host-prefix-grant BITES 1 failed, 20 passed in 0.17s
+g6-ignore-localhost-disabled BITES 1 failed, 20 passed in 0.17s
+g6-ignore-origin-port BITES 1 failed, 20 passed in 0.18s
+g6-ignore-origin-path BITES 1 failed, 20 passed in 0.17s
+g6-ignore-origin-query BITES 1 failed, 20 passed in 0.17s
+g6-ignore-origin-fragment BITES 1 failed, 20 passed in 0.17s
+g6-null-accepted BITES 1 failed, 1 passed in 0.18s
+g6-ignored-fields-accepted BITES 1 failed, 1 passed in 0.17s
+g6-name-ignored BITES 1 failed, 1 passed in 0.17s
+g6-schema-drops-required BITES 1 failed, 1 passed in 0.17s
+g6-schema-drops-limits BITES 1 failed, 1 passed in 0.17s
+g6-no-fill BITES 1 failed in 12.35s
+g6-no-select BITES 1 failed in 2.39s
+g6-no-scroll BITES 1 failed in 2.76s
+g6-false-find-count BITES 1 failed in 2.80s
+g6-false-image BITES 1 failed in 2.79s
+g6-drop-tab BITES 1 failed in 2.32s
+g6-closed-tab-retained BITES 1 failed in 2.28s
+g6-console-ignored-filter BITES 1 failed in 2.35s
+g6-console-discarded BITES 1 failed in 2.28s
+g6-http-failures-discarded BITES 1 failed in 2.83s
+g6-navigation-status-dropped BITES 1 failed in 2.23s
+g6-scheme-boundary-dropped BITES 1 failed in 1.88s
+g6-localhost-proxy-bypass BITES 1 failed in 2.31s
+g6-webrtc-bypass BITES 1 failed in 6.80s
+g6-cookie-profile-shared BITES 1 failed in 2.79s
+g6-driver-not-closed-on-failure BITES 1 failed, 2 passed in 0.21s
+g6-install-message-dropped BITES 1 failed, 2 passed in 0.22s
+g6-closed-scope-reopened BITES 1 failed in 3.29s
+g6-image-carrier-early BITES 1 failed in 0.73s
+g6-image-source-lost BITES 1 failed in 0.61s

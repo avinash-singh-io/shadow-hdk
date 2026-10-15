@@ -1,0 +1,32 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_image_carrier_follows_all_tool_results_and_fits_the_native_protocol ___
+
+    def test_image_carrier_follows_all_tool_results_and_fits_the_native_protocol() -> None:
+        messages = (
+            Message(
+                "assistant", "", tool_calls=(ToolCall("a", "picture", {}), ToolCall("b", "picture", {}))
+            ),
+            Message("tool", "first caption", "a", images=(PNG,)),
+            Message("tool", "second caption", "b", images=(PNG,)),
+            Message("assistant", "seen"),
+        )
+        native = _to_langchain(messages)
+        payload: list[Any] = [_convert_message_to_dict(message) for message in native]
+>       assert [message["role"] for message in payload] == [
+            "assistant",
+            "tool",
+            "tool",
+            "user",
+            "assistant",
+        ]
+E       AssertionError: assert ['assistant',..., 'assistant'] == ['assistant',..., 'assistant']
+E
+E         At index 2 diff: 'user' != 'tool'
+E         Left contains one more item: 'assistant'
+E         Use -v to get more diff
+
+tests/adapters/browser/test_tool_images_fit_native_chat_protocols.py:26: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_tool_images_fit_native_chat_protocols.py::test_image_carrier_follows_all_tool_results_and_fits_the_native_protocol
+1 failed in 0.73s

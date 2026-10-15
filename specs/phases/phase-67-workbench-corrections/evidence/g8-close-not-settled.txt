@@ -1,0 +1,56 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_cancelled_close_settles_before_removing_the_private_directory ______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-567/test_cancelled_close_settles_b0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e37d350>
+
+    async def test_cancelled_close_settles_before_removing_the_private_directory(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from tests.adapters.jsonl.test_a_turn import a_fake_cli, a_provider
+
+        provider = replace(
+            a_provider(),
+            dialect=Dialect(
+                done_on=("result",),
+                done_at="result",
+                private_working_directory=True,
+            ),
+        )
+        session = JsonlSession(
+            provider,
+            binary=a_fake_cli(tmp_path, [{"type": "result", "result": "done"}]),
+            env={"PATH": "/usr/bin:/bin"},
+            workspace=tmp_path,
+            tools=(ToolSource(kind="mcp", address="/host/registry"),),
+        )
+        await session.turn("go")
+        assert session._private_workspace is not None
+        directory = Path(session._private_workspace.name)
+        entered, finish = asyncio.Event(), asyncio.Event()
+        original = session._close_process
+
+        async def slow() -> None:
+            entered.set()
+            await finish.wait()
+            await original()
+
+        monkeypatch.setattr(session, "_close_process", slow)
+        task = asyncio.create_task(session.close())
+        try:
+            await entered.wait()
+            task.cancel()
+            await asyncio.sleep(0)
+            task.cancel()
+            await asyncio.sleep(0)
+>           assert not task.done() and directory.exists()
+E           AssertionError: assert (not True)
+E            +  where True = <built-in method done of _asyncio.Task object at 0x10e3b0220>()
+E            +    where <built-in method done of _asyncio.Task object at 0x10e3b0220> = <Task cancelled name='Task-4' coro=<JsonlSession.close() done, defined at /Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/adapters/jsonl/session.py:402>>.done
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:155: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_cancelled_close_settles_before_removing_the_private_directory
+1 failed in 0.38s

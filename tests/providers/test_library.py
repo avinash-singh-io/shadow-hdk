@@ -179,7 +179,7 @@ def test_shipped_capabilities_say_only_what_the_measurements_support() -> None:
     assert found["claude-code"].capabilities.usage_tokens == "yes"
     assert found["claude-code"].capabilities.usage_cost == "yes"
 
-    assert found["codex"].capabilities.tool_path == "uncontrolled"
+    assert found["codex"].capabilities.tool_path == "controlled"
     assert found["codex"].capabilities.session == "resumable"
     assert found["codex"].capabilities.interrupt == "terminate"
     assert found["codex"].capabilities.streaming == "live"

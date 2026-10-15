@@ -59,6 +59,9 @@ export type Step2 = string
 export type At4 = string
 export type Kind9 = "observed"
 export type Observation = (Completed | Refused | ApprovalRequest | InputRequest | Failed | Pending | Acted)
+export type Data = string
+export type MimeType = string
+export type Images = Image[]
 export type Kind10 = "completed"
 export type Kind11 = "refused"
 export type Reason = string
@@ -323,10 +326,21 @@ seq: Seq4
 step: Step3
 }
 export interface Completed {
+images?: Images
 kind?: Kind10
 output?: {
 [k: string]: unknown
 }
+}
+/**
+ * An inline tool image: base64 bytes and their media type, never a local pathname.
+ *
+ * A coding tool, support desk and research assistant each consume visual observations.
+ * The bytes cross checkpoints and model/MCP boundaries without becoming textual tokens.
+ */
+export interface Image {
+data: Data
+mime_type: MimeType
 }
 export interface Refused {
 kind?: Kind11

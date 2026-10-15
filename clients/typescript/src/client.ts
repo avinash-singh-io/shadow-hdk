@@ -25,12 +25,15 @@ export type JsonValue = null | boolean | number | string | JsonValue[] | { [key:
 export interface ClientOptions extends HttpTransportOptions {
   /** Answer the runtime's own requests beyond what `components.serve` installs (rare). */
   onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
+  /** Optional owner cleanup for raw components supplied through onRequest. */
+  onReleaseRun?: (resourceScope: string) => Promise<void> | void;
 }
 
 /** The client over any transport — a spawned runtime's stdio (`shadow-hdk-client/node`), or your own. */
 export interface TransportClientOptions {
   transport: Transport;
   onRequest?: (method: string, params: JsonValue) => Promise<JsonValue>;
+  onReleaseRun?: (resourceScope: string) => Promise<void> | void;
 }
 
 export interface ApprovalRequest {
@@ -224,12 +227,15 @@ export class HarnessClient {
   private nextId = 1;
   private readonly pending = new Map<number, Pending>();
   private readonly listeners = new Map<string, Set<(params: JsonValue) => void>>();
+  private readonly resourceOwners: Array<(scope: string) => Promise<void> | void>;
 
   /** Over HTTP (`{ address, token?, … }`) — the served shape — or over any `Transport`
    *  (`{ transport }`): a spawned runtime's stdio is in `shadow-hdk-client/node`. */
   constructor(options: ClientOptions | TransportClientOptions) {
     this.transport = "transport" in options ? options.transport : new HttpTransport(options);
     this.onRequest = options.onRequest;
+    this.resourceOwners = options.onReleaseRun ? [options.onReleaseRun] : [];
+    this.handlers.set("components.release_run", serveComponents([], this.resourceOwners).get("components.release_run")!);
     this.transport.onLost = (reason) => {
       for (const waiting of this.pending.values()) waiting.reject(new Error(reason));
       this.pending.clear();
@@ -241,7 +247,7 @@ export class HarnessClient {
   /** Open the transport (over HTTP the SSE stream *is* the session) and complete the handshake. */
   async connect(): Promise<void> {
     await this.transport.open((frame) => this.onFrame(frame));
-    await this.call("initialize", { protocol_version: PROTOCOL_VERSION });
+    await this.call("initialize", { protocol_version: PROTOCOL_VERSION, run_resources: true });
   }
 
   close(): void {
@@ -468,7 +474,7 @@ export class HarnessClient {
    *  offers them beside the served composition's, judged and recorded exactly the same. */
   readonly components = {
     serve: (tools: Tool[]): void => {
-      for (const [method, handler] of serveComponents(tools)) this.handlers.set(method, handler);
+      for (const [method, handler] of serveComponents(tools, this.resourceOwners)) this.handlers.set(method, handler);
     },
   };
   /** The skills the composition carries — shipped, from the store, minted — with their sources. */

@@ -9,9 +9,10 @@ developer reads. A kit that left entries in `git stash list`, or commits on some
 kit a developer stops trusting with their repository — and rightly, because a snapshot taken for an
 agent's convenience is not a thing they asked to have in their history.
 
-So a snapshot is built the plumbing way:
+A private index per worktree retains stat information between snapshots (N-W4).
+A cross-process lock serializes its updates. Snapshots are built the plumbing way:
 
-    GIT_INDEX_FILE=<temporary>  git add -A          # a scratch index, never theirs
+    GIT_INDEX_FILE=<private>    git add -A          # a scratch index, never theirs
                                 git write-tree      # the tree that index describes
                                 git commit-tree     # a commit object, parented on nothing
                                 git update-ref refs/shadow-hdk/snapshots/<id>
@@ -30,10 +31,13 @@ from __future__ import annotations
 
 import asyncio
 import os
-import tempfile
+import shutil
 import time
 import uuid
+from contextlib import suppress
 from pathlib import Path
+
+from filelock import AsyncFileLock
 
 from shadow_hdk.kernel.ports import Snapshot
 
@@ -58,7 +62,7 @@ class GitHistory:
 
     # ------------------------------------------------------------------ the plumbing
 
-    async def _git(self, *args: str, index: str | None = None) -> str:
+    async def _git(self, *args: str, index: str | None = None, input: bytes | None = None) -> str:
         """One git command, with an optional scratch index. Never inherits a caller's git
         environment, so a `GIT_INDEX_FILE` or `GIT_DIR` already set cannot redirect this."""
         environment = dict(os.environ)
@@ -71,16 +75,17 @@ class GitHistory:
             *args,
             cwd=self.root,
             env=environment,
+            stdin=asyncio.subprocess.PIPE if input is not None else None,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        out, err = await process.communicate()
+        out, err = await process.communicate(input)
         if process.returncode != 0:
             raise NoHistory(
                 f"git {' '.join(args)} failed in {self.root}: "
                 f"{err.decode('utf-8', 'replace').strip() or 'no output'}"
             )
-        return out.decode("utf-8", "replace").strip()
+        return out.decode("utf-8", "surrogateescape").rstrip("\n")
 
     async def _must_be_a_repository(self) -> None:
         try:
@@ -93,6 +98,85 @@ class GitHistory:
         if inside != "true":
             raise NoHistory(f"{self.root} is not a git work tree")
 
+    async def _state(self) -> Path:
+        """Git's private directory is per linked worktree; the person's index is never reused."""
+        where = Path(await self._git("rev-parse", "--git-path", "shadow-hdk-history"))
+        if not where.is_absolute():
+            where = self.root / where
+        where.mkdir(parents=True, exist_ok=True)
+        return where.resolve()
+
+    async def _capture(self, index: str) -> str:
+        """Update a private index with external edits, reusing unchanged-file stat information.
+
+        Git's real index supplies tracking eligibility, never staged content. A file captured when
+        untracked and later ignored must be evicted from our cache; tracked ignored files stay.
+        """
+        if not Path(index).exists():
+            real_index = Path(await self._git("rev-parse", "--git-path", "index"))
+            if not real_index.is_absolute():
+                real_index = self.root / real_index
+            if real_index.exists():
+                shutil.copy2(real_index, index)
+            else:
+                await self._git("read-tree", "--empty", index=index)
+        eligible = set(
+            (await self._git("ls-files", "-z", "--cached", "--others", "--exclude-standard")).split(
+                "\0"
+            )
+        )
+        cached = set((await self._git("ls-files", "-z", "--cached", index=index)).split("\0"))
+        # Newly staged ignored files may be absent from our older cache. Seed their tracking,
+        # then add -A reads working content, never taking a person's staged content as a snapshot.
+        staged = await self._git("ls-files", "--stage", "-z")
+        added = [
+            entry for entry in staged.split("\0") if entry and entry.split("\t", 1)[1] not in cached
+        ]
+        if added:
+            await self._git(
+                "update-index",
+                "-z",
+                "--index-info",
+                index=index,
+                input=os.fsencode("\0".join(added) + "\0"),
+            )
+        tracked = [entry.split("\t", 1)[1] for entry in staged.split("\0") if entry]
+        if tracked:
+            await self._git(
+                "update-index",
+                "--no-assume-unchanged",
+                "--no-skip-worktree",
+                "-z",
+                "--stdin",
+                index=index,
+                input=os.fsencode("\0".join(tracked) + "\0"),
+            )
+        removed = cached - eligible
+        if removed:
+            await self._git(
+                "update-index",
+                "--force-remove",
+                "-z",
+                "--stdin",
+                index=index,
+                input=os.fsencode("\0".join(sorted(removed)) + "\0"),
+            )
+        await self._git("add", "-A", index=index)
+        return await self._git("write-tree", index=index)
+
+    def _path(self, relative: str) -> Path:
+        """Do not let a symlink directory redirect a restore outside its workspace."""
+        path = Path(relative)
+        if path.is_absolute() or ".." in path.parts or ".git" in path.parts:
+            raise NoHistory(f"{relative!r} is not a restorable workspace path")
+        where = self.root / path
+        for parent in where.parents:
+            if parent == self.root:
+                break
+            if parent.is_symlink():
+                raise NoHistory(f"{relative!r} has a symlink parent; nothing was restored")
+        return where
+
     # ------------------------------------------------------------------ the port
 
     async def snapshot(self, label: str = "") -> str:
@@ -102,10 +186,9 @@ class GitHistory:
         disturbed (D165) — an agent snapshotting mid-review must not unstage a developer's work.
         """
         await self._must_be_a_repository()
-        with tempfile.TemporaryDirectory() as scratch:
-            index = str(Path(scratch) / "index")
-            await self._git("add", "-A", index=index)
-            tree = await self._git("write-tree", index=index)
+        state = await self._state()
+        async with AsyncFileLock(str(state / "operation.lock"), timeout=60):
+            tree = await self._capture(str(state / "index"))
         # Parentless on purpose: a snapshot is not a point in the project's history and must not
         # look like one to anything that walks commits.
         commit = await self._git("commit-tree", tree, "-m", label or "snapshot")
@@ -130,27 +213,44 @@ class GitHistory:
                 f"{snapshot!r} is not a snapshot taken here — nothing was restored"
             ) from unknown
 
-        held = set((await self._git("ls-tree", "-r", "--name-only", commit)).splitlines())
-
-        # Anything git tracks or would add, that the snapshot does not hold, goes. Asked of git
-        # rather than of the filesystem, so `.gitignore` decides and `node_modules` survives.
-        listed = await self._git("ls-files", "--cached", "--others", "--exclude-standard")
-        for relative in listed.splitlines():
-            if relative and relative not in held:
-                where = self.root / relative
-                if where.is_file() or where.is_symlink():
+        state = await self._state()
+        async with AsyncFileLock(str(state / "operation.lock"), timeout=60):
+            index = str(state / "index")
+            current = await self._capture(index)
+            held = set((await self._git("ls-tree", "-r", "--name-only", "-z", commit)).split("\0"))
+            changed = [
+                p
+                for p in (
+                    await self._git(
+                        "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", current, commit
+                    )
+                ).split("\0")
+                if p
+            ]
+            paths = {p: self._path(p) for p in changed}
+            emptied: set[Path] = set()
+            for relative, where in paths.items():
+                if relative not in held and (where.is_file() or where.is_symlink()):
                     where.unlink()
-
-        with tempfile.TemporaryDirectory() as scratch:
-            index = str(Path(scratch) / "index")
-            await self._git("read-tree", commit, index=index)
-            await self._git("checkout-index", "-a", "-f", index=index)
-
-        # Directories the removals emptied. A restore that left a tree of empty folders behind
-        # would make "put it back" a claim a person can see is not quite true.
-        for where in sorted(self.root.rglob("*"), key=lambda p: -len(p.parts)):
-            if where.is_dir() and ".git" not in where.parts and not any(where.iterdir()):
-                where.rmdir()
+                    emptied.update(
+                        p for p in where.parents if p != self.root and p.is_relative_to(self.root)
+                    )
+            # Only ancestors of removed files can have become empty. Never enumerate dependencies.
+            for where in sorted(emptied, key=lambda p: -len(p.parts)):
+                # Nonempty, already gone, or somebody else's directory stays.
+                with suppress(OSError):
+                    where.rmdir()
+            await self._git("read-tree", "-m", commit, index=index)
+            checkout = [p for p in changed if p in held]
+            if checkout:
+                await self._git(
+                    "checkout-index",
+                    "-f",
+                    "-z",
+                    "--stdin",
+                    index=index,
+                    input=os.fsencode("\0".join(checkout) + "\0"),
+                )
 
     async def snapshots(self) -> list[Snapshot]:
         """Every snapshot taken here, newest first."""

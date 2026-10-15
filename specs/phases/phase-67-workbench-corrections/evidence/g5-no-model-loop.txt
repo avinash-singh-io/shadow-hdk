@@ -1,0 +1,41 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_images_reach_the_model_and_the_run_closes_resources ___________
+
+    async def test_images_reach_the_model_and_the_run_closes_resources() -> None:
+        picture = Picture()
+        agent = AgentComponent(pattern=Pattern(name="a", system="Look"), effects=EffectProfile())
+        model = ScriptedModel(
+            [
+                ModelResponse(tool_calls=(ToolCall("c1", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("c2", "picture", {}),)),
+                ModelResponse(tool_calls=(ToolCall("d", "done", {"summary": "seen"}),)),
+            ]
+        )
+        ports = Ports(
+            model=model,
+            components=(picture, agent),
+            governance=AllowAll(),
+            sink=ListSink(),
+            clock=FixedClock(),
+        )
+        events = [
+            e
+            async for e in run(
+                Composition(
+                    (Invoke("a", agent.registration_id, (Binding(name="brief", value="look"),)),)
+                ),
+                ports,
+                options=RunOptions(lease=Lease(Ceiling(40, 3600, 10_000), Floor(0))),
+            )
+        ]
+>       assert len(model.requests) == 3, events
+E       AssertionError: [Started(run_id='id-0001', seq=0, at='2026-01-01T00:00:00+00:00', lease=Lease(ceiling=Ceiling(max_steps=40, max_wall_s...run_id='id-0001', seq=4, at='2026-01-01T00:00:00+00:00', reason='completed', steps_taken=1, detail=None, kind='ended')]
+E       assert 0 == 3
+E        +  where 0 = len([])
+E        +    where [] = <shadow_hdk.runtime.testing.doubles.ScriptedModel object at 0x10b9b7b60>.requests
+
+tests/adapters/browser/test_images_reach_the_model_and_wire.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_images_reach_the_model_and_wire.py::test_images_reach_the_model_and_the_run_closes_resources
+1 failed in 0.39s

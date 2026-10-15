@@ -11,6 +11,7 @@ type: Guide
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | [0000](0000-template.md) | ADR Template | template | — |
+| [0001](0001-optional-workbench-packs.md) | Optional workbench packs and generic image/resource contracts | accepted | 2026-10-13 |
 
 ## Process
 

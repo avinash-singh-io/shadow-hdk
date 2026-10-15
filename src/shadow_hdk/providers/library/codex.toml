@@ -19,10 +19,9 @@
 # no text (the final text is what was said). There is no price in the stream: a subscription turn is
 # unpriced, and `cost_usd_at` is left blank so the meter says *unknown* rather than zero. Tools go in
 # as repeated `-c mcp_servers.<name>.<field>=<toml>` overrides (`-c` takes a dotted TOML override).
-# `--sandbox read-only` keeps the CLI's *own* shell from writing anywhere: it has no flag to refuse
-# its tools outright, so its reads stay its own (declared: the converse step reads everything) and
-# every write has to come through this run's registry. Under `exec` the approval policy is `never`,
-# and an injected tool that is not read-only is refused with *MCP tool call requires approval* —
+# Native world tools are disabled when the kit injects tools (Phase 67, 2026-10-13).
+# The read-only OS sandbox remains a second boundary; kit components are judged by the host.
+# Under `exec`, injected tools need approval unless the server is pre-permitted —
 # measured — unless the server is pre-permitted: `default_tools_approval_mode = "approve"` (the
 # accepted values are `auto`, `prompt`, `writes`, `approve`; the CLI names them itself when handed
 # any other). That is `allow_override` below, the same argument as Claude Code's `--allowedTools`.
@@ -47,11 +46,12 @@
 # one. For a governed run that is the right way round — the mode decides, or nothing does — but it is
 # a change, and `-m` is how a mode says otherwise (`behaviour_args` below).
 #
-# **What it still cannot do**: refuse Codex's *own* tools. There is no flag for that, so its native
-# reads stay its own — confined by `--sandbox read-only`, which stops its shell writing anywhere, but
-# outside this run's registry and so unjudged by the mode. That is why `tool_path` stays
-# `uncontrolled`: the reason has changed, not the answer. Re-measuring the axis properly needs a
-# live, model-accepting Codex account (TD-020).
+# Governed startup also ignores rules, disables automatic repository documents and launches
+# in a private directory. Disabling shell alone does not stop native image/browser/agent tools
+# or project skill discovery. Exact SDK catalogue and actual MCP invocation are release gates.
+# Older CLIs rejecting one of these explicit options fail visibly; there is no permissive retry.
+# Uninjected CLI use retains its normal tools and directory. This is tool governance, not a claim
+# of process confinement or deletion of the CLI's authentication/session storage.
 #
 # A failed turn, measured (the owner's free-tier limit, hit by these very measurements):
 #
@@ -129,7 +129,8 @@ session_gone_matches = ["no rollout found for thread id"]
 mcp_config_arg = "-c"
 mcp_config_shape = "overrides"
 allow_override = 'mcp_servers.{name}.default_tools_approval_mode="approve"'
-mcp_strict_args = ["--ignore-user-config"]
+private_working_directory = true
+mcp_strict_args = ["--ignore-user-config", "--ignore-rules", "-c", "web_search=\"disabled\"", "-c", "project_doc_max_bytes=0", "--enable", "skip_host_skill_discovery", "--disable", "shell_tool", "--disable", "unified_exec", "--disable", "view_image", "--disable", "browser_use", "--disable", "browser_use_external", "--disable", "browser_use_full_cdp_access", "--disable", "computer_use", "--disable", "code_mode_host", "--disable", "apps", "--disable", "plugins", "--disable", "multi_agent", "--disable", "multi_agent_v2", "--disable", "memories", "--disable", "skill_search", "--disable", "skill_mcp_dependency_install", "--disable", "workspace_dependencies", "--disable", "hooks", "--disable", "sleep_tool", "--disable", "tool_suggest", "--disable", "shell_snapshot"]
 disallow_arg = ""
 disallow = []
 
@@ -153,8 +154,45 @@ field = "effort"
 flag = "-c"
 template = 'model_reasoning_effort="{value}"'
 
+# Bundled metadata is local and deterministic; cache refresh and personal config are excluded.
+[dialect.launch_catalogue]
+probe_args = ["debug", "models", "--bundled"]
+entries_at = "models"
+config_arg = "-c"
+config_template = 'model_catalog_json="{path}"'
+isolated_env_keys = ["CODEX_HOME"]
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "apply_patch_tool_type"
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "supports_search_tool"
+value = false
+
+# Code-mode-only models need direct governed tools, not a disabled SDK REPL.
+[[dialect.launch_catalogue.replace_fields]]
+name = "tool_mode"
+value = "direct"
+require_present = false
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "use_responses_lite"
+value = false
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "node_repl_disabled"
+value = true
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "experimental_supported_tools"
+value = []
+
+[[dialect.launch_catalogue.replace_fields]]
+name = "multi_agent_version"
+require_present = false
+
 [capabilities]
-tool_path = "uncontrolled"
+tool_path = "controlled"
 session = "resumable"
 interrupt = "terminate"
 streaming = "live"
@@ -165,8 +203,8 @@ usage_cost = "no"
 [[capabilities.evidence]]
 axis = "tool_path"
 kind = "measured"
-source = "native reads cannot be refused and stay outside the registry; configured MCP servers are excluded by --ignore-user-config since 2026-10-03"
-at = "2026-10-03"
+source = "Codex 0.154.0: native world tools disabled, private bootstrap excludes repository discovery; actual local Responses catalogue and MCP read on the kit act record, including resume (Phase 67)"
+at = "2026-10-13"
 
 [[capabilities.evidence]]
 axis = "session"

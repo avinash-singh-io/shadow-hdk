@@ -32,6 +32,7 @@ from shadow_hdk.runtime.compile import compile_composition
 from shadow_hdk.runtime.emit import Emitter
 from shadow_hdk.runtime.errors import RuntimeStop
 from shadow_hdk.runtime.registry import Registry
+from shadow_hdk.runtime.resources import settle_resources
 from shadow_hdk.runtime.session import Session
 from shadow_hdk.runtime.state import initial_state, no_spend
 from shadow_hdk.runtime.step import StepExecutor
@@ -62,6 +63,11 @@ def _stop_reason(error: BaseException) -> tuple[EndReason, str | None] | None:
     return None
 
 
+async def _cleanup(context: RunContext) -> tuple[str | None, bool]:
+    """Settle owned teardown even when the driver is cancelled while awaiting it."""
+    return await settle_resources(asyncio.create_task(context._release_resources()))
+
+
 async def _drive(
     composition: Composition,
     ports: Ports,
@@ -77,6 +83,8 @@ async def _drive(
     replays: dict[str, int] | None = None,
 ) -> None:
     token = _CURRENT.set(context)
+    released = False
+    parked = False
     try:
         if not isinstance(payload, Command):
             await emitter.emit(
@@ -124,6 +132,14 @@ async def _drive(
                 # an Exception*, because `RuntimeStop` is a `BaseException` now (TD-006).
                 raise
 
+        if context._owns_resources and not parked:
+            cleanup, cancelled = await _cleanup(context)
+            released = True
+            if cancelled:
+                raise asyncio.CancelledError
+            if cleanup:
+                reason, detail, parked = "failed", f"resource cleanup failed: {cleanup}", False
+
         # A parked run has not ended. `Ended` waits for whoever resumes it.
         if not parked:
             await emitter.emit(
@@ -132,20 +148,24 @@ async def _drive(
                 )
             )
     finally:
-        _CURRENT.reset(token)
-        if parent is not None:
-            # Always paired with the carve, including when the run ended badly: a reservation held
-            # by a run that has stopped is budget lost to nobody.
-            parent.settle(
-                session.meter.lease.ceiling,
-                steps=session.meter.steps,
-                cost_cents=session.meter.cost_cents,
-                cost_known=session.meter.cost_is_known,
-                tokens=session.meter.tokens,
-                tokens_known=session.meter.tokens_are_known,
-                cache_tokens=session.meter.cache_tokens,
-            )
-        emitter.close()
+        try:
+            if context._owns_resources and not released and not parked:
+                await _cleanup(context)
+        finally:
+            _CURRENT.reset(token)
+            if parent is not None:
+                # Always paired with the carve, including a failed run: a reservation held
+                # by a stopped run is budget lost to nobody.
+                parent.settle(
+                    session.meter.lease.ceiling,
+                    steps=session.meter.steps,
+                    cost_cents=session.meter.cost_cents,
+                    cost_known=session.meter.cost_is_known,
+                    tokens=session.meter.tokens,
+                    tokens_known=session.meter.tokens_are_known,
+                    cache_tokens=session.meter.cache_tokens,
+                )
+            emitter.close()
 
 
 async def _carried(
@@ -270,7 +290,15 @@ async def _stream(
     )
     registry = Registry(ports.components, trust=ports.trust)
     checkpointer = options.checkpointer or InMemorySaver()
-    context = RunContext(session, emitter, ports, registry, checkpointer)
+    context = RunContext(
+        session,
+        emitter,
+        ports,
+        registry,
+        checkpointer,
+        resource_owner=parent,
+        resource_scope=options.resource_scope,
+    )
     parked: list[tuple[str, dict[str, Any]]] = []
     if isinstance(payload, _Answer):
         # A resume continues a run; it does not start one (D33). The meter and the record's

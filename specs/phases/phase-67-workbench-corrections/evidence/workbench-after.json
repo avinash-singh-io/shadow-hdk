@@ -1,0 +1,16 @@
+{
+  "fixture": "workbench-v1",
+  "files": 100000,
+  "ignored_files": 100000,
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "git": "git version 2.54.0 (Apple Git-157)",
+  "seconds": {
+    "glob": 0.7473,
+    "grep": 0.8395,
+    "snapshot_cold": 0.9638,
+    "snapshot_unchanged": 1.0122,
+    "snapshot_one_edit": 1.1204,
+    "restore": 1.1348
+  }
+}

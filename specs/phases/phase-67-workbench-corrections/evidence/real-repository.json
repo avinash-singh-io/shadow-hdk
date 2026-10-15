@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/python/cpython",
+  "tag": "v3.14.0",
+  "commit": "ebf955df7a89ed0c7968f79faec1de49f61ed7cb",
+  "tracked_files": 5220,
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "seconds": {
+    "glob": 0.04,
+    "grep": 0.0412,
+    "snapshot_cold": 0.117,
+    "snapshot_unchanged": 0.116,
+    "snapshot_one_edit": 0.1158,
+    "restore": 0.1496
+  },
+  "restored": true,
+  "head_and_user_index_unchanged": true
+}

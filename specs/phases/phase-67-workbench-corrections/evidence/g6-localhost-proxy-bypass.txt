@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_http_subresource_denial_precedes_a_connection[asyncio] __________
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10de656a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-503/test_http_subresource_denial_p0/ca.pem'))
+
+    async def test_http_subresource_denial_precedes_a_connection(apps: Any) -> None:
+        first, _, denied, *_ = apps
+        engine = engine_for(apps)
+        try:
+            await completed(engine, "open", {"url": first.origin + "/network-boundary"})
+            await completed(engine, "wait", {"selector": "#done:text-is('Finished')"})
+>           assert (denied.hits, denied.accepted) == ([], 0)
+E           AssertionError: assert (['/boundary'], 1) == ([], 0)
+E
+E             At index 0 diff: ['/boundary'] != []
+E             Use -v to get more diff
+
+tests/adapters/browser/test_real_browser.py:343: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_http_subresource_denial_precedes_a_connection[asyncio]
+1 failed in 2.31s

@@ -39,7 +39,10 @@ async def with_a_child(*, token_env: str | None) -> dict[str, Any]:
         holder = RecordingServer(context)
         async with (
             holder.served() as server,
-            serve_over_socket(server, refused=holder.refuse) as (port, token),
+            serve_over_socket(server, refused=holder.refuse, reached=holder.reach) as (
+                port,
+                token,
+            ),
         ):
             env = {PORT_VARIABLE: str(port)}
             if token_env == "right":
@@ -58,9 +61,14 @@ async def with_a_child(*, token_env: str | None) -> dict[str, Any]:
                         return {
                             "tools": sorted(t.name for t in listed.tools),
                             "refused": server_refused(holder),
+                            "reached": server_reached(holder),
                         }
             except (TimeoutError, Exception):  # noqa: BLE001 — a refused relay looks like a dead server
-                return {"tools": None, "refused": server_refused(holder)}
+                return {
+                    "tools": None,
+                    "refused": server_refused(holder),
+                    "reached": server_reached(holder),
+                }
 
     found, _ = await with_a_run(drive, steps=40)
     return found
@@ -68,6 +76,10 @@ async def with_a_child(*, token_env: str | None) -> dict[str, Any]:
 
 def server_refused(holder: Any) -> int:
     return int(getattr(holder, "refused_connections", 0))
+
+
+def server_reached(holder: Any) -> int:
+    return int(getattr(holder, "reached_connections", 0))
 
 
 @pytest.mark.anyio
@@ -149,3 +161,20 @@ def test_the_token_is_a_secret_shaped_secret() -> None:
 
     assert one != two
     assert len(one) >= 32
+
+
+async def test_a_relay_that_gets_in_is_counted_so_a_toolless_run_can_be_told_apart() -> None:
+    """The door counts both ways, because only one of them is currently knowable.
+
+    A refused connection is counted already. Nothing counted the connections that succeed, so a
+    run whose relay never arrived was indistinguishable from one whose agent chose to call
+    nothing — which is what the transport's own refusal message warns about, and what let a
+    governed run begin with none of the host's tools (TD-023).
+    """
+    got_in = await with_a_child(token_env="right")
+    assert got_in["tools"] is not None, got_in
+    assert (got_in["reached"], got_in["refused"]) == (1, 0), got_in
+
+    turned_away = await with_a_child(token_env="wrong")
+    assert turned_away["tools"] is None, turned_away
+    assert (turned_away["reached"], turned_away["refused"]) == (0, 1), turned_away

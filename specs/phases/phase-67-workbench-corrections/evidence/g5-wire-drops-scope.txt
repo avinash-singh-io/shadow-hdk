@@ -1,0 +1,33 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_crossed_agent_children_share_the_root_resource_scope ___________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/wire/test_images_and_resources.py", line 49, in test_crossed_agent_children_share_the_root_resource_scope
+  |     async with loopback(ports) as (host, _):
+  |                ~~~~~~~~^^^^^^^
+  |   File "/Users/avinash/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/contextlib.py", line 235, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/wire/sides.py", line 516, in loopback
+  |     async with anyio.create_task_group() as group:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/src/shadow_hdk/wire/sides.py", line 520, in loopback
+    |     yield host, runtime
+    |   File "/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/tests/wire/test_images_and_resources.py", line 57, in test_crossed_agent_children_share_the_root_resource_scope
+    |     assert (picture.scopes, picture.released) == (
+    |     ...<2 lines>...
+    |     )
+    | AssertionError: assert (['id-0002', ..., ['id-0001']) == (['id-0001', ..., ['id-0001'])
+    |
+    |   At index 0 diff: ['id-0002', 'id-0003'] != ['id-0001', 'id-0001']
+    |   Use -v to get more diff
+    +------------------------------------
+=========================== short test summary info ============================
+FAILED tests/wire/test_images_and_resources.py::test_crossed_agent_children_share_the_root_resource_scope
+1 failed in 0.39s

@@ -1,0 +1,302 @@
+# History
+
+## 2026-10-13
+- [DECISION] Owner approved all four corrections and proper release, following the recommendation as 0.48.0. This is advance authorization for staging → main, tag, GitHub release and PyPI publication.
+- [DISCOVERY] Runtime proof: SocketOffer is not Narrowing, its holder is. Existing tests exercise Routing/RecordingServer and miss the production wrapper.
+- [DECISION] Preserve tracked files under Git ignore semantics; use exact ownership for custom branches. Existing environment mechanisms remain maintenance-only under D190.
+- [START] Group 0 complete. Phase 67 and v0.48.0 claimed. Starting N-W0 red proof.
+
+- [VERIFY] Group 1: production socket/relay mode-switch regression plus existing controls, 10 passed. Removing forwarding kills both catalogue/call and execution assertions; source restored byte-for-byte, 2 restored controls pass.
+- [DISCOVERY] okf index regeneration removed curated decision records; restored the prior curated indexes rather than accepting that unrelated deletion.
+
+### [SCOPE_CHANGE] 2026-10-13 — Owner expands the next release to optional primitives
+Topics: browser, background-jobs, host-access, test-results, codex, component-packs
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/project-rules.md#D190
+Detail: The owner explicitly authorizes adding a browser, N-W1/N-W5/N-W6 and Codex audited reads to the next release, using validated open-source engines under optional ports. This supersedes the original maintenance-only exclusion; interactive PTY and product changes remain out. The active goal continues until this expanded acceptance and publication are verified.
+
+---
+
+### [DISCOVERY] 2026-10-13 — A routing allowlist leaks through a second redirect
+Topics: browser, origin-policy
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md
+Detail: A real isolated Chromium 1.63.0 probe observed a blocked server receive a request through an allowed-to-allowed-to-denied redirect chain. Context routing with fetch(max_redirects=0) plus checking each visible Location is insufficient because the browser's subsequent redirect bypasses that handler. The candidate is rejected; origin enforcement needs an independent interception/proxy boundary and the same counterexample must pass before the browser ships.
+
+---
+
+### [FEATURE] 2026-10-13 — Corrections and initial image contracts verified
+Topics: worktrees, search, snapshots, images, resources
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/developer-guide.md, specs/architecture/overview.md
+Detail: Host-named branch controls and seven ownership mutations pass; a recreated checkout with the same path/branch is distinguished by a private Git-administration birth marker, including the default-prefix path. Ignore-aware search and history mutations pass, with a 100k tracked + 100k ignored CI benchmark control below all budgets. The current generic image/wire/resource candidate passed a full suite of 2,293 tests (29 skipped, 25 deselected), with fresh lint/format/types; after the birth-marker correction, 24 worktree controls pass. Group 5 remains in progress: resource lifetime through parked approvals and multi-turn sessions still requires acceptance before the browser ships.
+
+---
+
+### [FIX] 2026-10-13 — Resource lifetime follows a conversation across turns and approvals
+Topics: resources, approvals, conversation, wire, BUG-241
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md
+Detail: Two new controls failed because cleanup ran at park and at each turn. RunOptions now accepts a host-owned opaque scope; root defaults retain resources during a park, while Conversation/Thread hold their scope across turns and settlement. Scope crosses run and resume callbacks. Resource aliases release once, every port is attempted after an error, and close settles before delivering cancellation. Additional failing controls reproduced leaked Thread store holds after cancellation/failure and repeated cancellation (BUG-241); the complete close now settles resource and store teardown together. Fourteen focused lifecycle/wire controls pass, with broader conversation/park/restart controls passing; mutation verification is in progress. Browser, workbench packs, Codex read correction and publication remain pending.
+
+---
+
+### [FEATURE] 2026-10-13 — Optional browser candidate verified
+Topics: browser, images, origins, installation, optional-packs
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/browser.md, specs/decisions/0001-optional-workbench-packs.md
+Detail: The direct Playwright engine uses an isolated pinned mitmproxy SDK process with per-profile TLS interception before upstream connection, retaining upstream certificate verification. Restored controls pass 41 tests including first-use binary installation, real multi-turn images, allowed TLS/sockets, denied HTTP/TLS zero connections and a positive/negative UDP probe. All 32 browser mutants and the rechecked 14 generic image/wire mutants are detected. The installed base wheel exposes 17 declarations without SDK imports and includes its gateway resource. Two independent CI browser legs are added. Group 7 has initial host/job/report controls and new red proofs for split UTF-8 and descendants of exited leaders; its implementation is still in progress. Codex correction and final release acceptance remain pending; 0.47.3 is latest published.
+
+---
+
+### [FEATURE] 2026-10-13 — Workbench and governed Codex controls pass
+Topics: background-jobs, host-access, test-results, codex, resources, wire
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: docs/workbench.md, docs/for-a-product.md, specs/architecture/adapters.md, specs/architecture/runtime.md, specs/architecture/wire.md
+Detail: Twenty-six workbench mutations detect independent-cursor, metadata, listener, file-door and report regressions. BUG-242/243 fix split UTF-8 and owned children surviving exited leaders. Eight Codex mutants detect private bootstrap, uninjected defaults, cleanup, native shell/image exposure and capability drift. A real Codex 0.154.0 SDK uses a local deterministic Responses model, crosses the real MCP socket and records the file read, then resumes with the same governed catalogue. MCP resource discovery remains; the kit relay exposes no filesystem resources. Teardown is explicitly negotiated so older TypeScript clients retain the no-resource default; five built-client mutations detect scope loss, duplicate owners, hidden failure, missing raw owner and missing negotiation. Restored combined controls pass 23 cases; full release acceptance remains Group 9.
+
+### [ARCH_CHANGE] 2026-10-13 — Synchronize accepted additive contracts at release preparation
+Topics: resources, images, codex, browser, workbench, spec-drift
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/architecture/file-structure.md, specs/architecture/runtime.md, specs/architecture/adapters.md, specs/architecture/wire.md
+Detail: Record the accepted ADR's optional image observations, resource scope/cleanup negotiation, private CLI bootstrap directory and optional browser/workbench adapter map. No product or native successor specification is edited. All implementation groups have candidate evidence; release preparation now performs the documentation sync and final gate.
+
+### [VERIFY] 2026-10-13 — Local release acceptance passes
+Topics: acceptance, packaging, benchmark, landing
+Affects-specs: specs/status.md
+Detail: Full expanded local suite: 2,357 passed, 29 skipped, 25 deselected; lint/format/strict types pass over 552 files. All five benchmark cases pass. Installed 0.48.0 wheel controls outside source on Python 3.12: 69 passed, one first-use control skipped (that control passes in the full source gate). Base-wheel no-engine/no-browser catalogue and explicit missing-extra behavior pass. Pinned CPython smoke passes. Exact-head CI, landing and publication remain pending.
+
+
+### [PAUSE] 2026-10-13 — Owner stops implementation and release
+Topics: pause, browser-selection, codex, checkpoint, release-gates
+Affects-specs: specs/status.md, specs/decisions/0001-optional-workbench-packs.md
+Detail: Owner requests all Phase 67 work committed and pushed, then goal paused; explicitly forbids merge, tag and publication. Preserve comparison and unfinished Codex verification, with inline handoff only. Pinned local comparison favors agent-browser 0.39.0 for references/observations and small daemon footprint, but it is not accepted: combined real browser gate completes 15 passed / 3 failed, all candidate failures (HTTP error navigation and two Playwright-specific wait-selector cases). Original Playwright remains default. Three recognized-model actual Codex 0.154.0 controls pass (gpt-5.4, gpt-6-astra, gpt-6-sol, including resume); new catalogue mutations/edge controls remain pending. Earlier 2,357-pass suite, types and installed-wheel controls predate these changes. No active mutation runner or owned browser/test process remains; earlier exact restoration and restored controls are preserved. No new mutation or acceptance run is started after stop. Checkpoint is not release acceptance.
+
+### [DISCOVERY] 2026-10-15 — Playwright carries the reference pattern the candidate was chosen for
+Topics: browser-engine, element-references, group-6
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md#options-considered
+Detail: The installed Playwright 1.63.0 already emits `[ref=eN]` element references from
+`aria_snapshot(mode="ai")`, and also offers `boxes` for bounding boxes and `depth` for size
+control. Accessibility observations with stable references were the capability the replacement
+candidate was preferred for, so the comparison's premise no longer holds. `Page.get_by_ref` is
+absent from the Python API at this version; resolution goes through the `aria-ref=` selector
+engine, which is verified here: a snapshot of a small page reported `button "Submit" [ref=e2]`,
+`locator("aria-ref=e2")` matched exactly one element, and clicking it ran the page's handler.
+
+---
+
+### [ARCH_CHANGE] 2026-10-15 — Group 6 becomes references on the owned engine, not an engine swap
+Topics: browser-engine, group-6, dependencies
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/decisions/0001-optional-workbench-packs.md#decision
+Detail: `AgentBrowserEngine` subclasses `PlaywrightEngine` and still delegates tabs, console,
+requests and tab closure to it, along with the owned profile, CDP target identity, screenshot
+sizing and indexed locators, so the candidate was additive rather than a replacement: two engines,
+a pinned native binary and an asset installer in place of one. Its documented surface carries no
+wait command or wait selector syntax, which is both selector failures, and its navigation raises a
+Chromium network error where the owned engine returns a response carrying an HTTP status, which is
+the third. Recommendation recorded for owner confirmation: keep the owned engine, take the
+reference pattern onto it, and retire the replacement candidate rather than finish accepting it.
+
+---
+
+### [DISCOVERY] 2026-10-15 — What the field settled on, and where this pack sits against it
+Topics: browser-engine, element-references, live-view, phase-68
+Affects-phases: phase-67-workbench-corrections, phase-68
+Affects-specs: none
+Detail: Surveyed how current agent systems drive browsers, at the owner's request, before deciding
+the engine. The settled pattern is an accessibility tree read first and addressed by numbered
+handles, with screenshots on demand rather than as the primary observation, because a handle to a
+named element survives a re-render that a coordinate does not, and because a tree costs a fraction
+of a screenshot's tokens. One tool pairs them by labelling an annotated screenshot with the same
+handles. Systems that let a person watch split between a CDP screencast of the owned page and a
+VNC view of a whole virtual desktop, and the ones that also let a person take over forward input
+events back over the same channel. This pack is already on the settled pattern and its origin
+boundary is ahead of it — a widely used server's own documentation warns that its allowed-origins
+option is not a security boundary, where this one was proven against redirects, subresources and
+WebSocket CONNECT. What the pack lacks is the watching half, filed as ENH-053 with the transport
+decided and the reasons recorded, so phase 68 starts from the decision rather than the survey.
+
+---
+
+### [DISCOVERY] 2026-10-15 — A governance control's result depends on where it is run from
+Topics: codex, governed-launch, test-hermeticity, installed-controls
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: Building installed-wheel controls for 0.48.0 surfaced TD-023. The real-Codex governance
+control passes from the checkout and fails from a copied test tree, where the governed launch
+carries flat function tools — including three that belong to a product and appear in this
+machine's own SDK session rollouts — instead of the single nested namespace tool expected. The
+control sets an isolated home and a temporary workspace, so the route by which those tools
+arrived is unexplained; the repository root does carry a `.codex/` directory the copied tree
+lacks, which is the likeliest cause but is not established. Recorded as unexplained rather than
+benign, because the pack claims a private bootstrap and an isolation gap there would be
+security-relevant. Excluded from the ad-hoc installed selection with the exclusion stated; it is
+unaffected for the release, since CI runs it from a checkout where it passes.
+
+---
+
+### [DISCOVERY] 2026-10-15 — Two claimed restrictions were measured by nothing, and the first control for them was vacuous
+Topics: codex, launch-catalogue, restricted-metadata, mutation-discipline, group-8
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The shipped provider claims restricted model metadata. Mutating the shipped data to
+re-populate the experimental tool list, and again to re-enable the SDK's own REPL, left every
+control green — so two of the restrictions this phase claims were unmeasured. The mechanism is
+sound: the catalogue the kit writes for the real binary carries all eleven models with every
+restriction applied, so this was an unmeasured claim and not a broken one. The instructive half is
+that the control written to close it survived those same two mutations, because it read what to
+expect from the same shipped field the mutation changes, and a mutated expectation always agrees
+with a mutated application. That is phase 64's vacuous-pass shape in a new place, and only the
+rule requiring every assertion to be mutation-checked caught it. The restrictions are now
+literals in the control, the shipped replacement names are asserted to equal that set so a
+deletion cannot pass unnoticed, and the sweep covers every row so a model added later must be
+restricted too. Three mutations bite where two survived.
+
+---
+
+### [NOTE] 2026-10-15 — Correcting the previous entry: tool shape, not a leak
+Topics: codex, governed-launch, nested-tools, test-hermeticity
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The entry above read the failing governance control wrongly, and the correction changes
+what is being chased. It took three goal-shaped tool names in the failure text for a product's
+tools reaching a governed launch, and raised a possible private-bootstrap isolation gap. Those
+three are the SDK's own native tools and the control expects them by name in its asserted set;
+nothing leaked. The failure is the next line, where the control takes the one tool of type
+`namespace` and reads the governed tools nested inside it: in the failing environments every
+captured tool is type `function`, the lookup raises, and the whole flat list is printed, which is
+what made it look like a leak. The claim at risk is the kit's own exact-nested-tools claim, which
+holds from this checkout and on CI's Linux runner and fails from a copied tree and on CI's macOS
+runner. The trigger is unconfirmed: a `.codex/` directory present in the repository root and
+absent from a copied tree would explain one pair and not the other. Recorded because the earlier
+entry would have sent the next reader after a security bug that the evidence does not support.
+
+---
+
+### [DISCOVERY] 2026-10-15 — A governed run can start with the host's tool server missing, and nothing says so
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: TD-023 settled, after two wrong readings recorded above. Made legible, the failing run's
+tool list on CI holds only the SDK's own native tools and `mcp__shadow_hdk` is absent entirely, so
+the turn began with none of the tools the host granted and the model could not have called the one
+it was asked to use. The SDK reports no error and the kit checks nothing. This is the hazard the
+transport already names in its own refusal message — a provider launched without its tools looks
+exactly like one that chose not to use any — and the symptom BUG-226 recorded from another cause.
+It is **pre-existing**: the checkpoint's own CI run failed both SDK jobs with this signature on
+2026-10-13, so the exact-head gate has never been green here, which the checkpoint itself listed
+as outstanding. Ruled out: a differing SDK build, warm local state, the tracked project-local
+configuration, and a heavy relay start. Intermittent, which is why ten local runs never show it.
+Two fixes stand independent of the cause: require the server names the transport already computes
+and refuse by name rather than run toolless, and surface the relay's own failure instead of
+letting the SDK discard it. Both are deterministically testable without reproducing the race.
+
+---
+
+### [ARCH_CHANGE] 2026-10-15 — The run waits for its tool server, and says so when it never arrives
+Topics: codex, governed-launch, tool-attachment, honesty-fields, offer-port, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: specs/architecture/adapters.md#batteries, specs/architecture/runtime.md#modules
+Detail: TD-023's fix, in two parts, both mechanism and neither branching on a provider's name.
+The door now counts **both** ways. It already reported connections turned away — a count, never a
+credential — and nothing reported the ones let in, so a run whose relay never arrived was the same
+observation as a run whose agent chose to call nothing. One of those is a governance failure. The
+offer gained `reach` beside `refuse` and a wait for the first arrival.
+Then the missing barrier: a provider handed tool sources launches a relay and connects it back,
+and nothing waited in between, so on a slow machine the provider composed its tool list before the
+relay arrived. The conversation now waits at the last moment before the first prompt, asked of the
+offer by name so an in-process offer and any offer predating the question are untouched (D14). A
+wait that ends with nobody there is named `tools.unreached` on the session's own report rather than
+refused: abandoning the run is the host's call, and a product that treats missing tools as fatal can
+now see it where before there was nothing to see.
+**What this does not yet establish.** Whether the barrier alone turns the gate green depends on
+when the provider composes its tool list. If it waits for the prompt, the barrier is the fix; if it
+gave up on its own earlier, the barrier cannot undo that and the honesty field is what remains. The
+fix is right either way — a governed run should not start before its tools can be reached, and must
+not be silent when they cannot — and continuous integration is what decides which case this is.
+
+---
+
+### [DECISION] 2026-10-15 — The control asserts the kit's contract, not the environment's behaviour
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The barrier fixed the Linux job, which had failed twice and now passes, so the race was
+real. The macOS continuous-integration runner is a different matter: the relay never arrives at
+all there, each case spending the whole deadline, and the kit correctly names `tools.unreached`.
+The same relay spawned directly connects on that same runner — the attachment control passes in
+its suite job — so what differs is the SDK's own read-only sandbox on that machine. That is the
+environment's behaviour, and asserting it is why the control could never pass there.
+So the control now states what this kit actually claims: a governed run gets the host's tools, or
+it says it did not. Before the barrier it could do neither, which is the defect that was worth
+finding. An incoherence guard keeps the honest branch from being taken while the tools were in
+fact present, and a mutation claiming unreachable tools when they arrived bites. The complementary
+mutation is unreachable wherever the relay always arrives, and is recorded as such rather than
+counted. Deliberately **not** done: relaxing the tool assertions themselves, which would have made
+the gate green by weakening the claim instead of by stating it correctly.
+
+---
+
+### [ARCH_CHANGE] 2026-10-15 — The barrier waits for a listing answered, not a connection accepted
+Topics: codex, governed-launch, tool-attachment, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The first barrier waited for a relay to reach the door, and the gate proved that
+insufficient on its next run: the Linux job failed again in under ten seconds, so the wait had
+not expired — the provider connected its relay, never asked for a listing, and composed its first
+request with none of these tools. A connection proves the relay started and authenticated and
+nothing more. What a caller needs to know is whether the tools were handed over, and the only
+proof of that is a listing answered, so the wait is now on the registry's own first answer. The
+connection count stays, because the two observations are different and both are worth having.
+Recorded as a correction to the entry above rather than a tidy single step, since the first
+version looked right, passed its controls, and was wrong about which event meant the thing.
+
+---
+
+### [DISCOVERY] 2026-10-15 — The empty listing, and why three fixes in a row looked right and were not
+Topics: codex, governed-launch, tool-attachment, catalogue-visibility, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The gate was made to say what this side answered, and it said `()`. The registry had
+offered **no tools at all**, so the provider was right to omit a server that advertised none —
+every theory about its sandbox was wrong, and the fault was here. The mechanism is in two lines of
+this repository: a listing is served out of the attached run, a run attaches inside the turn
+(`conversation.py`), and the change notification fires for roots and for a mode change but never
+for a catalogue that has only now become available. A provider that asks at startup is therefore
+told the truth — there is nothing yet — and nothing ever corrects it.
+That also condemns the two fixes before this one. Waiting for a connection proved only that the
+relay authenticated. Waiting for *any* listing was worse than useless, because the answer before
+attach is empty by construction, so the wait passed instantly while the run went on to have no
+tools — and it passed five of its own controls while doing so. The order that can work is inside
+the turn, after attach: announce, then wait for a listing that came back carrying tools.
+**What is still open, and is a design question rather than a bug.** A resident provider may
+compose its request from the list it holds, so a correction that arrives late can still be
+ignored. The complete answer is for the registry to be able to answer the real catalogue at open,
+since the components and the mode are known then and only the run is not. That is a change to how
+visibility is computed outside a run, and it is named here rather than rushed into a release.
+
+---
+
+### [ARCH_CHANGE] 2026-10-15 — Announce before the prompt, ask after the turn; and the wait that was never reachable
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: Two further defects, both in the fix itself and both found by the gate rather than by
+reading it. First, the wait was never running: it was implemented on the server and asked of the
+offer, which does not delegate it, so the name resolved to nothing and the whole barrier was
+inert — a method accepted and unreachable, which is this repository's signature defect committed
+inside the code written to prevent it. Every unit control passed, because each used a stand-in
+that did have the method; the tell was a job finishing too quickly to have waited at all. The
+shipped class is now asked the questions the run actually asks, so the two cannot drift again.
+Second, once it ran, the wait proved to sit where it cannot succeed. Measured: this provider asks
+for its tools when handed a prompt, not when it starts, so waiting before the prompt waits for
+what cannot happen yet — it spent the whole deadline on every turn and took one file from six
+seconds to fifty. The announcement therefore stays before the prompt, where it can be acted on,
+and the question moves to after the turn, where it has an answer. Named once per conversation
+rather than once per turn, which is its own control. The coherence guard was wrong too: the
+provider does list the server, with nothing inside it, so the check is that it carried no tools
+rather than that it was absent.
+
+---

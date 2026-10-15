@@ -1,0 +1,25 @@
+............F........                                                    [100%]
+=================================== FAILURES ===================================
+__________ test_approved_origins_match_scheme_host_and_effective_port __________
+
+    def test_approved_origins_match_scheme_host_and_effective_port() -> None:
+        policy = OriginPolicy(origins=("https://Example.com:443",), allow_localhost=False)
+>       assert [
+            policy.allows(url)
+            for url in (
+                "https://example.com/app",
+                "https://example.com:444/app",
+                "http://example.com/app",
+                "https://sub.example.com/",
+                "http://localhost/",
+            )
+        ] == [True, False, False, False, False]
+E       assert [True, True, ... False, False] == [True, False,... False, False]
+E
+E         At index 1 diff: True != False
+E         Use -v to get more diff
+
+tests/adapters/browser/test_browser_origin_policy.py:40: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_origin_policy.py::test_approved_origins_match_scheme_host_and_effective_port
+1 failed, 20 passed in 0.18s

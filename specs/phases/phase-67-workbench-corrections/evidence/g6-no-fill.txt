@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_edit_navigate_debug_and_take_real_images[asyncio] ____________
+
+apps = (<tests.adapters.browser.test_real_browser.AppServer object at 0x10ca3d6a0>, <tests.adapters.browser.test_real_browser.../var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-491/test_edit_navigate_debug_and_t0/ca.pem'))
+
+    async def test_edit_navigate_debug_and_take_real_images(apps: Any) -> None:
+        first, *_ = apps
+        engine = engine_for(apps)
+        try:
+            opened = await completed(engine, "open", {"url": first.origin})
+            assert cast(dict[str, Any], opened.output).get("status") == 200
+            tab = cast(dict[str, Any], opened.output)["tab"]
+            await completed(engine, "type", {"role": "textbox", "name": "Title", "value": "Scoped app"})
+            await completed(engine, "press", {"role": "button", "name": "Save", "key": "Enter"})
+            await completed(
+                engine, "select", {"role": "combobox", "name": "Language", "values": ["py"]}
+            )
+>           await completed(engine, "wait", {"role": "heading", "name": "Scoped app"})
+
+tests/adapters/browser/test_real_browser.py:227:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+engine = <shadow_hdk.adapters.browser.engine.PlaywrightEngine object at 0x10ca3dfd0>
+action = 'wait', inputs = {'role': 'heading', 'name': 'Scoped app'}
+scope = 'app'
+
+    async def completed(
+        engine: PlaywrightEngine, action: str, inputs: Any, scope: str = "app"
+    ) -> Completed:
+        result = await engine.execute(action, inputs, scope)
+>       assert isinstance(result, Completed), result
+E       AssertionError: Failed(error='browser wait failed: Locator.wait_for: Timeout 10000ms exceeded.
+E         Call log:
+E           - waiting for get_by_role("heading", name="Scoped app", exact=True) to be visible
+E         ', kind='failed')
+E       assert False
+E        +  where False = isinstance(Failed(error='browser wait failed: Locator.wait_for: Timeout 10000ms exceeded.\nCall log:\n  - waiting for get_by_role("heading", name="Scoped app", exact=True) to be visible\n', kind='failed'), Completed)
+
+tests/adapters/browser/test_real_browser.py:211: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_real_browser.py::test_edit_navigate_debug_and_take_real_images[asyncio]
+1 failed in 12.35s

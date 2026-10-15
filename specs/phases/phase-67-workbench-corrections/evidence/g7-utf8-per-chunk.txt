@@ -1,0 +1,31 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_split_utf8_is_decoded_once_and_cursors_count_characters _________
+
+    async def test_split_utf8_is_decoded_once_and_cursors_count_characters() -> None:
+        class Stream:
+            chunks = iter((b"\xf0\x9f", b"\x98\x80!"))
+
+            async def read(self, size: int) -> bytes:
+                return next(self.chunks, b"")
+
+        class Process:
+            pid = 1
+            returncode = 0
+            stdout = Stream()
+            stderr = None
+
+        job = _Job("test", "unicode", Process())
+        job.start_reading(10)
+        await job.reader
+        result = job.observe(0, 10)
+>       assert (result["output"], result["cursor"]) == ("😀!", 2)
+E       AssertionError: assert ('���!', 4) == ('😀!', 2)
+E
+E         At index 0 diff: '���!' != '😀!'
+E         Use -v to get more diff
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:160: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_split_utf8_is_decoded_once_and_cursors_count_characters
+1 failed in 0.19s

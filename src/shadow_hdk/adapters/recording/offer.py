@@ -77,6 +77,14 @@ class SocketOffer:
     def holder(self) -> RecordingServer:
         return self._holder
 
+    @property
+    def narrowing(self) -> tuple[str, ...]:
+        """The mode's narrowing, on the server answering both listings and calls (N-W0)."""
+        return self._holder.narrowing
+
+    def narrow_to(self, names: tuple[str, ...]) -> None:
+        self._holder.narrow_to(names)
+
     def attach(self, context: RunContext) -> None:
         self._holder.attach(context)
 
@@ -91,12 +99,25 @@ class SocketOffer:
     async def changed(self) -> None:
         await self._holder.changed()
 
+    async def offered_once(self, within: float) -> bool:
+        """Whether a listing has come back carrying tools; the run waits on this (TD-023).
+
+        **Delegated here because the run holds the offer, not the server.** Without this the
+        question was asked of an object that could not answer it, the wait was skipped by name
+        resolution, and a governed turn went on with no tools — the same shape as a field accepted
+        and ignored, in the code written to prevent it. Only the gate caught it: the job was too
+        quick to have waited at all.
+        """
+        return await self._holder.offered_once(within)
+
     @asynccontextmanager
     async def served(self) -> AsyncIterator[tuple[ToolSource, ...]]:
         holder = self._holder
         async with (
             holder.served() as server,
-            serve_over_socket(server, refused=holder.refuse, watch=holder.watch) as (
+            serve_over_socket(
+                server, refused=holder.refuse, reached=holder.reach, watch=holder.watch
+            ) as (
                 port,
                 token,
             ),

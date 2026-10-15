@@ -1,0 +1,166 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_________________ test_custom_branch_lifecycle[asyncio-branch] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_custom_branch_lifecycle_a0')
+check = 'branch'
+
+    @pytest.mark.parametrize("check", ["branch", "head", "listed", "kept", "person"])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / "personal"
+        git(repo, "worktree", "add", "-b", "intent/person", str(theirs))
+        tree = await open_worktree(repo, "agent", branch="intent/task-1234")
+        listed = [(w.path, w.branch) for w in await worktrees(repo)]
+        head = git(tree.path, "branch", "--show-current")
+        if check == "listed":
+            assert listed == [(tree.path, "intent/task-1234")]
+        await close_worktree(tree)
+        actual = {
+            "branch": tree.branch,
+            "head": head,
+            "listed": listed,
+            "kept": git(repo, "branch", "--list", "intent/task-1234").strip(),
+            "person": (theirs.exists(), git(repo, "branch", "--show-current")),
+        }
+        expected = {
+            "branch": "intent/task-1234",
+            "head": "intent/task-1234",
+            "listed": [(tree.path, "intent/task-1234")],
+            "kept": "intent/task-1234",
+            "person": (True, "main"),
+        }
+        if check != "listed":
+>           assert actual[check] == expected[check]
+E           AssertionError: assert 'shadow-hdk/agent' == 'intent/task-1234'
+E
+E             - intent/task-1234
+E             + shadow-hdk/agent
+
+tests/adapters/environment/test_the_host_names_its_branch.py:44: AssertionError
+__________________ test_custom_branch_lifecycle[asyncio-head] __________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_custom_branch_lifecycle_a1')
+check = 'head'
+
+    @pytest.mark.parametrize("check", ["branch", "head", "listed", "kept", "person"])
+    async def test_custom_branch_lifecycle(tmp_path: Path, check: str) -> None:
+        repo = a_repository(tmp_path)
+        theirs = tmp_path / "personal"
+        git(repo, "worktree", "add", "-b", "intent/person", str(theirs))
+        tree = await open_worktree(repo, "agent", branch="intent/task-1234")
+        listed = [(w.path, w.branch) for w in await worktrees(repo)]
+        head = git(tree.path, "branch", "--show-current")
+        if check == "listed":
+            assert listed == [(tree.path, "intent/task-1234")]
+        await close_worktree(tree)
+        actual = {
+            "branch": tree.branch,
+            "head": head,
+            "listed": listed,
+            "kept": git(repo, "branch", "--list", "intent/task-1234").strip(),
+            "person": (theirs.exists(), git(repo, "branch", "--show-current")),
+        }
+        expected = {
+            "branch": "intent/task-1234",
+            "head": "intent/task-1234",
+            "listed": [(tree.path, "intent/task-1234")],
+            "kept": "intent/task-1234",
+            "person": (True, "main"),
+        }
+        if check != "listed":
+>           assert actual[check] == expected[check]
+E           AssertionError: assert 'shadow-hdk/agent' == 'intent/task-1234'
+E
+E             - intent/task-1234
+E             + shadow-hdk/agent
+
+tests/adapters/environment/test_the_host_names_its_branch.py:44: AssertionError
+__________ test_invalid_or_existing_branch_changes_nothing[asyncio-] ___________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc0')
+branch = ''
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+______ test_invalid_or_existing_branch_changes_nothing[asyncio-../escape] ______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc1')
+branch = '../escape'
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+______ test_invalid_or_existing_branch_changes_nothing[asyncio-bad name] _______
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc2')
+branch = 'bad name'
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+________ test_invalid_or_existing_branch_changes_nothing[asyncio-HEAD] _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc3')
+branch = 'HEAD'
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+________ test_invalid_or_existing_branch_changes_nothing[asyncio--flag] ________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc4')
+branch = '-flag'
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+________ test_invalid_or_existing_branch_changes_nothing[asyncio-main] _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-417/test_invalid_or_existing_branc5')
+branch = 'main'
+
+    @pytest.mark.parametrize("branch", ["", "../escape", "bad name", "HEAD", "-flag", "main"])
+    async def test_invalid_or_existing_branch_changes_nothing(tmp_path: Path, branch: str) -> None:
+        repo = a_repository(tmp_path)
+>       with pytest.raises(CannotIsolate):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE CannotIsolate
+
+tests/adapters/environment/test_the_host_names_its_branch.py:50: Failed
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-branch]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_lifecycle[asyncio-head]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-../escape]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-bad name]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-HEAD]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio--flag]
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_invalid_or_existing_branch_changes_nothing[asyncio-main]
+8 failed in 1.30s

@@ -1,0 +1,56 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_private_bootstrap_survives_turns_then_closes_even_after_process_exit ___
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-563/test_private_bootstrap_survive0')
+
+    async def test_private_bootstrap_survives_turns_then_closes_even_after_process_exit(
+        tmp_path: Path,
+    ) -> None:
+        dialect = replace(
+            Dialect(
+                done_on=("done",), done_at="text", session_id_at="session", resume_args=("resume",)
+            ),
+            private_working_directory=True,
+        )
+        cli = tmp_path / "cli"
+        cli.write_text(
+            "#!/usr/bin/env python3\nimport sys, pathlib, json\nsys.stdin.read()\n"
+            "root=pathlib.Path.cwd()\n"
+            "print(json.dumps({'type':'done','session':'remembered', 'text':json.dumps("
+            "{'cwd':str(root),'files':sorted(p.name for p in root.iterdir()),"
+            "'args':sys.argv[1:]})}),flush=True)\n"
+        )
+        cli.chmod(0o755)
+        (tmp_path / "AGENTS.md").write_text("private repository instructions")
+        provider = Provider(id="fake", kind="agent", bin="cli", transport="jsonl", dialect=dialect)
+        session = JsonlSession(
+            provider,
+            binary=cli,
+            env={"PATH": "/usr/bin:/bin"},
+            workspace=tmp_path,
+            tools=(ToolSource(kind="mcp", address="/host/registry"),),
+        )
+        bootstrap = None
+        try:
+            first = json.loads((await session.turn("go")).text)
+            bootstrap = Path(first["cwd"])
+            assert bootstrap != tmp_path and first["files"] == [".git"]
+            second = json.loads((await session.turn("again")).text)
+            assert (second["cwd"], second["args"], session.session_id) == (
+                str(bootstrap),
+                ["resume", "remembered"],
+                "remembered",
+            )
+            assert bootstrap.exists() and (tmp_path / "AGENTS.md").exists()
+        finally:
+            await session.close()
+>       assert bootstrap is not None and not bootstrap.exists()
+E       AssertionError: assert (PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-iodxmran') is not None and not True)
+E        +  where True = exists()
+E        +    where exists = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/shadow-hdk-sdk-iodxmran').exists
+
+tests/adapters/jsonl/test_governed_cli_bootstrap.py:57: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/jsonl/test_governed_cli_bootstrap.py::test_private_bootstrap_survives_turns_then_closes_even_after_process_exit
+1 failed in 0.46s

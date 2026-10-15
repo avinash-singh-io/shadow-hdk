@@ -1,0 +1,52 @@
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+________ test_missing_binary_is_explicit_and_closes_the_started_driver _________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-506/test_missing_binary_is_explici0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c9a70b0>
+
+    async def test_missing_binary_is_explicit_and_closes_the_started_driver(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from playwright import async_api
+
+        stopped: list[str] = []
+
+        class Driver:
+            chromium = type("Chromium", (), {"executable_path": str(tmp_path / "missing")})()
+
+            async def stop(self) -> None:
+                stopped.append("driver")
+
+        class Start:
+            async def start(self) -> Driver:
+                return Driver()
+
+        directories: list[Path] = []
+        original = tempfile.TemporaryDirectory
+
+        def directory(*args: Any, **kwargs: Any) -> Any:
+            value = original(*args, **kwargs)
+            directories.append(Path(value.name))
+            return value
+
+        monkeypatch.setattr(async_api, "async_playwright", Start)
+        monkeypatch.setattr(tempfile, "TemporaryDirectory", directory)
+        engine = PlaywrightEngine(install_browser=False)
+        result = await engine.execute("open", {"url": "http://localhost"}, "missing")
+        assert result.kind == "failed" and "playwright install chromium" in str(result)
+>       assert (stopped, [d.exists() for d in directories], engine._profiles) == (
+            ["driver"],
+            [False],
+            {},
+        )
+E       AssertionError: assert ([], [False], {}) == (['driver'], [False], {})
+E
+E         At index 0 diff: [] != ['driver']
+E         Use -v to get more diff
+
+tests/adapters/browser/test_browser_provisioning_and_cleanup.py:58: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/browser/test_browser_provisioning_and_cleanup.py::test_missing_binary_is_explicit_and_closes_the_started_driver
+1 failed, 2 passed in 0.21s

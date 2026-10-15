@@ -124,6 +124,65 @@ jobs:
   wheels:
     uses: ./.github/workflows/helper-wheels.yml
 
+  # The optional pack's boundary is exercised against actual local HTTP/TLS, redirects,
+  # workers, WebSockets and a UDP probe. Fake engines cannot establish it. The gateway SDK
+  # uses its default isolated, pinned environment on both operating systems.
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: macos-latest
+            python: "3.14"
+    runs-on: ${{ matrix.os }}
+    name: browser (${{ matrix.os }}, ${{ matrix.python }})
+    env:
+      SHADOW_HDK_BROWSER_TESTS: "1"
+      SHADOW_HDK_BROWSER_INSTALL_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: uv sync --all-extras
+      - run: uv run python -m playwright install --with-deps chromium
+      - name: real browser controls
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest -q tests/adapters/browser | tee browser-controls.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-controls-${{ matrix.os }}-${{ matrix.python }}
+          path: browser-controls.txt
+
+  codex:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    name: codex governed tools (${{ matrix.os }})
+    env:
+      SHADOW_HDK_TEST_CODEX: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --all-extras
+      - run: npm install -g @openai/codex@0.154.0
+      - name: actual SDK catalogue and audited MCP read, with a local deterministic model
+        run: uv run pytest -q tests/adapters/jsonl/test_real_codex_governance.py
+
   # The OS layer's native crate (Epic 0010, D123): formatted, clippy-clean at -D warnings, and its
   # tests run on a Linux kernel — `tests/confines.rs` watches the built helper deny a write outside
   # the root, allow one inside, refuse an internet socket and keep a unix one, refuse io_uring,

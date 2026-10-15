@@ -77,9 +77,18 @@ from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Narrowing, Offer
+from shadow_hdk.runtime.resources import release_resources, settle_resources
 from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
 TURN = "turn"
+
+TOOLS_REACHABLE_SECONDS = 15.0
+"""How long a run waits for a provider's relay to reach its registry before starting (TD-023).
+
+Generous on purpose. The cost of waiting is a slow open; the cost of not waiting was a turn that
+ran with none of the host's tools, which a loaded continuous-integration runner produced and a
+developer's machine never did. Only ever paid by a provider that was handed tool sources, and only
+until the first connection arrives."""
 
 TURN_EFFECTS = EffectProfile(
     reads=ScopeSet(everything=True),
@@ -326,6 +335,7 @@ class Conversation:
         self._checkpointer = checkpointer
         self._session: AgentSession | None = None
         self._holder: asyncio.Task[None] | None = None
+        self._closing_resources: asyncio.Task[None] | None = None
         self._let_go: asyncio.Event = asyncio.Event()
         self._turning: asyncio.Lock = asyncio.Lock()
         self._sources: tuple[Any, ...] = ()
@@ -510,6 +520,57 @@ class Conversation:
         self._let_the_provider_wait_for_us(session)
         return session
 
+    async def _let_the_catalogue_be_seen(self, session: AgentSession) -> None:
+        """Tell a resident provider the catalogue exists, then wait until it has actually read it.
+
+        **Where the first version of this went wrong, which is the whole lesson** (TD-023). The
+        registry answers a listing out of the *attached run*, and a run attaches inside the turn —
+        so before the first prompt there is nothing to list and an honest answer is empty. A
+        provider that asks at startup is therefore told, correctly, that there are no tools; and
+        nothing then told it otherwise, because the change notification fires for roots and for a
+        mode change and never for a catalogue that has only now become available. So a governed
+        run could begin with none of the host's tools while both sides behaved exactly as written.
+        The first fix waited before the prompt for "a listing", which is guaranteed to be the empty
+        one, and so proved nothing while looking right.
+
+        Here the order is the one that can work: the run is already attached, so the notification
+        has something to announce and a listing can come back with tools in it. The wait is for
+        that — a listing that carried tools — and not for a connection, nor for any listing at all.
+
+        Everything is asked by name so it costs nothing where it buys nothing (D14): a session that
+        launched no relay has nobody to tell, and an offer that cannot announce or cannot report is
+        left alone. A wait that ends with the catalogue still unread is named `tools.unreached` on
+        the session's report rather than refused — abandoning the run is the host's call, and
+        before this there was nothing for a host to see.
+        """
+        if not self._sources or not getattr(session, "launched_tool_servers", False):
+            return
+        if getattr(self.registry, "offered_once", None) is None:
+            return
+        await self.registry.changed()
+
+    async def _say_whether_the_catalogue_was_read(self, session: AgentSession) -> None:
+        """After the turn, name the case where the provider never read the catalogue.
+
+        **Checked afterwards, because it cannot be checked before.** Measured: this provider asks
+        for its tools when it is given a prompt, not when it starts — so waiting for a listing
+        before writing the prompt waits for something that cannot happen yet. The first version of
+        this did exactly that and deadlocked for the whole deadline on every turn, which the suite
+        showed as fifty seconds where it had been six.
+
+        So the announcement goes before the prompt, where it can be acted on, and the question is
+        asked after the turn, where it has an answer. A turn that never saw a listing carrying
+        tools ran without the host's tools, and that is named rather than left to look like an
+        agent that chose to call nothing.
+        """
+        if not self._sources or not getattr(session, "launched_tool_servers", False):
+            return
+        read_it = getattr(self.registry, "offered_once", None)
+        if read_it is None:
+            return
+        if not await read_it(0) and "tools.unreached" not in self.unmapped_behaviour:
+            self.unmapped_behaviour += ("tools.unreached",)
+
     def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
         """Wire the offer's *how long that call took* to the session's patience (D182, BUG-233).
 
@@ -587,17 +648,33 @@ class Conversation:
         self._session = await self._open_provider()
 
     async def close(self) -> None:
+        if self._closing_resources is None:
+            self._closing_resources = asyncio.create_task(self._close())
+        _, cancelled = await settle_resources(self._closing_resources)
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _close(self) -> None:
         self._stop_idling()
-        if self._session is not None:
-            self._remember_session()
-            await self._session.close()
-            self._session = None
         holder = self._holder
-        if holder is not None:
-            self._let_go.set()
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                await holder
-            self._holder = None
+        self._holder = None
+        try:
+            if self._session is not None:
+                self._remember_session()
+                try:
+                    await self._session.close()
+                finally:
+                    self._session = None
+        finally:
+            try:
+                if holder is not None:
+                    self._let_go.set()
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await holder
+            finally:
+                failure = await release_resources(self._ports.components, self.id)
+                if failure:
+                    raise RuntimeError(f"resource cleanup failed: {failure}")
 
     @property
     def closed(self) -> bool:
@@ -738,7 +815,11 @@ class Conversation:
                 prompt = str(inputs.get("prompt", "")) if isinstance(inputs, dict) else ""
                 registry.attach(context)
                 try:
+                    # Only now is there a catalogue to list, so only now can a resident provider
+                    # be told it exists (TD-023). Whether it read it is answerable after.
+                    await self._let_the_catalogue_be_seen(session)
                     done = await session.turn(prompt)
+                    await self._say_whether_the_catalogue_was_read(session)
                 finally:
                     registry.detach()
                 if done.reasoning and context.recorded("reasoning") == 0:
@@ -785,6 +866,7 @@ class Conversation:
                 principal=self.principal or None,
                 context=self.context_for(turn_id),
                 plan_limits=self.plan_limits,
+                resource_scope=self.id,
             )
             if began is not None:
                 await began(TurnRecord(id=turn_id, run_id=run_id, prompt=text, at=at))
@@ -1001,6 +1083,7 @@ class Conversation:
             principal=self.principal or None,
             context=self.context_for(question.turn),
             plan_limits=self.plan_limits,
+            resource_scope=self.id,
         )
         events: list[Event] = []
         steps_taken = 0

@@ -1,0 +1,45 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_restore_does_not_rewrite_unchanged_files_or_walk_ignored_folders[asyncio] _
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-391/test_restore_does_not_rewrite_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e24510>
+
+    async def test_restore_does_not_rewrite_unchanged_files_or_walk_ignored_folders(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = a_repository(tmp_path)
+        (repo / ".gitignore").write_text("node_modules/\n")
+        (repo / "stable.txt").write_text("stable")
+        (repo / "node_modules").mkdir()
+        (repo / "node_modules" / "dependency").write_text("keep")
+        history = GitHistory(repo)
+        taken = await history.snapshot()
+        stable = (repo / "stable.txt").stat().st_mtime_ns
+        (repo / "app.py").write_text("changed")
+        (repo / "new" / "deep").mkdir(parents=True)
+        (repo / "new" / "deep" / "created").write_text("new")
+        walks: list[Path] = []
+        old = Path.rglob
+
+        def walking(self: Path, pattern: str) -> object:
+            walks.append(self)
+            return old(self, pattern)
+
+        monkeypatch.setattr(Path, "rglob", walking)
+        await history.restore(taken)
+>       assert (
+            (repo / "stable.txt").stat().st_mtime_ns,
+            walks,
+            (repo / "new").exists(),
+            (repo / "node_modules" / "dependency").read_text(),
+        ) == (stable, [], False, "keep")
+E       AssertionError: assert (179186824783...False, 'keep') == (179186824765...False, 'keep')
+E
+E         At index 0 diff: 1791868247832032301 != 1791868247651948587
+E         Use -v to get more diff
+
+tests/adapters/environment/test_history_reuses_work_and_preserves_state.py:37: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_history_reuses_work_and_preserves_state.py::test_restore_does_not_rewrite_unchanged_files_or_walk_ignored_folders[asyncio]
+1 failed in 0.43s

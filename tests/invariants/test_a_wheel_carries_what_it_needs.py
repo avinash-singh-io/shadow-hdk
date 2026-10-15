@@ -35,6 +35,12 @@ WIRE = PACKAGES / "wire"
 
 #: import root → the distribution that provides it (the name a `pip install` line uses).
 PROVIDED_BY: dict[str, str] = {
+    "filelock": "filelock",
+    "pathspec": "pathspec",
+    "playwright": "playwright",
+    "uv": "uv",
+    "psutil": "psutil",
+    "defusedxml": "defusedxml",
     "pydantic": "pydantic",
     "langgraph": "langgraph",
     "mcp": "mcp",
@@ -57,6 +63,8 @@ PROVIDED_BY: dict[str, str] = {
 
 #: The part behind each extra: what may import that extra's SDKs, and nothing else may.
 BEHIND_AN_EXTRA: dict[str, tuple[str, ...]] = {
+    "adapters/browser": ("browser",),
+    "adapters/workbench": ("workbench",),
     "adapters/langchain": ("langchain",),
     "adapters/mqtt": ("mqtt",),
     "adapters/otel": ("otel",),

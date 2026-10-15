@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_custom_branch_can_be_discarded[asyncio] _________________
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-421/test_custom_branch_can_be_disc0')
+
+    async def test_custom_branch_can_be_discarded(tmp_path: Path) -> None:
+        repo = a_repository(tmp_path)
+        tree = await open_worktree(repo, "agent", branch="feature/discard")
+        await close_worktree(tree, keep_branch=False)
+>       assert (await worktrees(repo), git(repo, "branch", "--list", "feature/discard")) == ([], "")
+E       AssertionError: assert ([], 'feature/discard') == ([], '')
+E
+E         At index 1 diff: 'feature/discard' != ''
+E         Use -v to get more diff
+
+tests/adapters/environment/test_the_host_names_its_branch.py:59: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_names_its_branch.py::test_custom_branch_can_be_discarded[asyncio]
+1 failed in 0.36s

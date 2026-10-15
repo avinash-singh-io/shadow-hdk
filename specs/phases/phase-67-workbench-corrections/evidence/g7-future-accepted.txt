@@ -1,0 +1,38 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_output_cursors_survive_truncation_and_paginate_without_silent_loss ____
+
+tmp_path = PosixPath('/private/var/folders/v4/698_nt3j7mx_1bwlynrklkjr0000gn/T/pytest-of-avinash/pytest-537/test_output_cursors_survive_tr0')
+
+    async def test_output_cursors_survive_truncation_and_paginate_without_silent_loss(
+        tmp_path: Path,
+    ) -> None:
+        environment = await LocalEnvironment.open(tmp_path, mode="full", output_limit=10)
+        door = HostDoor(environment)
+        try:
+            source = "print('0123456789abcdef', end='', flush=True)"
+            job = data(
+                await door.background(f"{shlex.quote(sys.executable)} -c {shlex.quote(source)}")
+            )["job"]
+            first = await eventually_output(door, job, "abcdef")
+            assert (first["start"], first["cursor"], first["output"], first["truncated"]) == (
+                6,
+                16,
+                "6789abcdef",
+                True,
+            )
+            page = data(await door.output(job, cursor=8, limit=3))
+            assert (page["output"], page["cursor"], page["more"], page["truncated"]) == (
+                "89a",
+                11,
+                True,
+                False,
+            )
+>           assert isinstance(await door.output(job, cursor=1000), Refused)
+E           AssertionError: assert False
+E            +  where False = isinstance(Completed(output={'job': 'job-1', 'command': '/Users/avinash/Workspace/Projects/shadow-workspace/shadow-hdk/.venv/bin/...code': 0, 'output': '', 'start': 1000, 'cursor': 1000, 'truncated': False, 'more': False}, kind='completed', images=()), Refused)
+
+tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py:86: AssertionError
+=========================== short test summary info ============================
+FAILED tests/adapters/environment/test_the_host_watches_jobs_without_consuming_agent_output.py::test_output_cursors_survive_truncation_and_paginate_without_silent_loss
+1 failed in 0.22s

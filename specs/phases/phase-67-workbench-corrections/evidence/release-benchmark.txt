@@ -1,0 +1,9 @@
+{'fixture': 'workbench-v1', 'files': 100000, 'ignored_files': 100000, 'platform': 'macOS-27.0.1-arm64-arm-64bit-Mach-O', 'python': '3.14.6', 'git': 'git version 2.54.0 (Apple Git-157)', 'seconds': {'glob': 0.5668, 'grep': 0.5368, 'snapshot_cold': 0.6322, 'snapshot_unchanged': 0.6259, 'snapshot_one_edit': 0.6019, 'restore': 0.6753}}
+.
+  100 sequential steps: 76.4 ms (0.764 ms/step, best of 9), 203 events
+.
+  50-way fan-out: 32.3 ms (best of 9), 103 events
+..
+  100 steps in 10 nested subgraphs: 80.4 ms (0.804 ms/step, best of 9), 203 events
+.
+5 passed, 2406 deselected in 32.50s
