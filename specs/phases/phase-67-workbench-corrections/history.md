@@ -254,3 +254,27 @@ Recorded as a correction to the entry above rather than a tidy single step, sinc
 version looked right, passed its controls, and was wrong about which event meant the thing.
 
 ---
+
+### [DISCOVERY] 2026-10-15 — The empty listing, and why three fixes in a row looked right and were not
+Topics: codex, governed-launch, tool-attachment, catalogue-visibility, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: The gate was made to say what this side answered, and it said `()`. The registry had
+offered **no tools at all**, so the provider was right to omit a server that advertised none —
+every theory about its sandbox was wrong, and the fault was here. The mechanism is in two lines of
+this repository: a listing is served out of the attached run, a run attaches inside the turn
+(`conversation.py`), and the change notification fires for roots and for a mode change but never
+for a catalogue that has only now become available. A provider that asks at startup is therefore
+told the truth — there is nothing yet — and nothing ever corrects it.
+That also condemns the two fixes before this one. Waiting for a connection proved only that the
+relay authenticated. Waiting for *any* listing was worse than useless, because the answer before
+attach is empty by construction, so the wait passed instantly while the run went on to have no
+tools — and it passed five of its own controls while doing so. The order that can work is inside
+the turn, after attach: announce, then wait for a listing that came back carrying tools.
+**What is still open, and is a design question rather than a bug.** A resident provider may
+compose its request from the list it holds, so a correction that arrives late can still be
+ignored. The complete answer is for the registry to be able to answer the real catalogue at open,
+since the components and the mode are known then and only the run is not. That is a change to how
+visibility is computed outside a run, and it is named here rather than rushed into a release.
+
+---

@@ -516,37 +516,40 @@ class Conversation:
         unmapped = getattr(session, "unmapped", ())
         self.unmapped_behaviour = tuple(str(name) for name in unmapped) if unmapped else ()
         self.unmapped_behaviour += tuple(getattr(self._agent_carries, "unhonoured", ()))
-        await self._wait_for_the_tools_to_be_reachable(session)
         self._give_the_transcript_back(session)
         self._let_the_provider_wait_for_us(session)
         return session
 
-    async def _wait_for_the_tools_to_be_reachable(self, session: AgentSession) -> None:
-        """Do not write a prompt before the tools handed over can be reached (TD-023).
+    async def _let_the_catalogue_be_seen(self, session: AgentSession) -> None:
+        """Tell a resident provider the catalogue exists, then wait until it has actually read it.
 
-        A provider given tool sources launches a relay of its own and connects it back to this
-        run's registry. Nothing waited for that connection, so on a slow machine the provider
-        composed its tool list first and the turn ran with none of the host's tools — and since a
-        provider says nothing about a server it gave up on, that was indistinguishable from an
-        agent that chose to call nothing. This is the missing barrier, and it is placed here
-        because this is the last moment before the first prompt.
+        **Where the first version of this went wrong, which is the whole lesson** (TD-023). The
+        registry answers a listing out of the *attached run*, and a run attaches inside the turn —
+        so before the first prompt there is nothing to list and an honest answer is empty. A
+        provider that asks at startup is therefore told, correctly, that there are no tools; and
+        nothing then told it otherwise, because the change notification fires for roots and for a
+        mode change and never for a catalogue that has only now become available. So a governed
+        run could begin with none of the host's tools while both sides behaved exactly as written.
+        The first fix waited before the prompt for "a listing", which is guaranteed to be the empty
+        one, and so proved nothing while looking right.
 
-        Both ends are asked by name, so this costs nothing where it buys nothing (D14). An offer
-        predating the question has no door to watch. And a session that never launched a relay has
-        nobody to wait for — every key-backed one, and every double in the suite, which is not a
-        detail: waiting on sources alone made each of those pay the whole deadline and turned a
-        five-minute suite into a crawl before this condition was added.
+        Here the order is the one that can work: the run is already attached, so the notification
+        has something to announce and a listing can come back with tools in it. The wait is for
+        that — a listing that carried tools — and not for a connection, nor for any listing at all.
 
-        A wait that ends with nobody there is named on the session's own report rather than
-        refused: the run is the host's to abandon, and a product that treats missing tools as fatal
-        can now see it, where before there was nothing to see.
+        Everything is asked by name so it costs nothing where it buys nothing (D14): a session that
+        launched no relay has nobody to tell, and an offer that cannot announce or cannot report is
+        left alone. A wait that ends with the catalogue still unread is named `tools.unreached` on
+        the session's report rather than refused — abandoning the run is the host's call, and
+        before this there was nothing for a host to see.
         """
         if not self._sources or not getattr(session, "launched_tool_servers", False):
             return
-        arrived = getattr(self.registry, "reached_once", None)
-        if arrived is None:
+        read_it = getattr(self.registry, "offered_once", None)
+        if read_it is None:
             return
-        if not await arrived(TOOLS_REACHABLE_SECONDS):
+        await self.registry.changed()
+        if not await read_it(TOOLS_REACHABLE_SECONDS):
             self.unmapped_behaviour += ("tools.unreached",)
 
     def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
@@ -793,6 +796,9 @@ class Conversation:
                 prompt = str(inputs.get("prompt", "")) if isinstance(inputs, dict) else ""
                 registry.attach(context)
                 try:
+                    # Only now is there a catalogue to list, so only now can a resident provider
+                    # be told to read it and be waited for (TD-023).
+                    await self._let_the_catalogue_be_seen(session)
                     done = await session.turn(prompt)
                 finally:
                     registry.detach()

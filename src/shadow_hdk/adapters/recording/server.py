@@ -90,17 +90,18 @@ class RecordingServer(Routing):
         self.reached_connections += 1
         self._arrived.set()
 
-    async def reached_once(self, within: float) -> bool:
-        """Wait up to `within` seconds for the tools to reach somebody; say whether they did.
+    async def offered_once(self, within: float) -> bool:
+        """Wait up to `within` seconds for a listing that carried tools; say whether one did.
 
-        **The listing, not the connection.** Waiting on a connection was not enough and the gate
-        said so: a provider connected its relay, never asked for a listing, and composed its first
-        request with none of these tools — in under ten seconds, so the wait had not even expired.
-        What a caller needs to know is whether the tools were handed over, and the only proof of
-        that is a listing answered.
+        **Three things were tried here and only the third means anything.** A connection proves
+        the relay started and authenticated. Any listing at all proves nothing either, because the
+        honest answer before a run attaches is empty — which is what a provider asking at startup
+        receives, and what made the earlier wait pass instantly while the run went on to have no
+        tools. A listing that came back carrying tools is the only one of the three that says the
+        catalogue reached whoever asked.
 
-        The caller is the one that knows a relay was asked for, so the decision about a run with
-        no tools belongs there and not here."""
+        The caller is the one that knows a relay was asked for, so the decision about a run with no
+        tools belongs there and not here."""
         if self._offered.is_set():
             return True
         with contextlib.suppress(TimeoutError):
@@ -124,9 +125,12 @@ class RecordingServer(Routing):
         # connection at the door proves the relay started and authenticated, and nothing more: a
         # provider that connected and then never asked still composes its first request without
         # these tools. This is the event a run waits for before writing a prompt.
-        self._offered.set()
         context = self.context
         if context is None:
+            # **An honest empty answer, and deliberately not an arrival** (TD-023). A listing is
+            # served out of the attached run, and a run attaches inside the turn, so a provider
+            # that asks before then is correctly told there is nothing yet. Treating that as the
+            # catalogue having been read is what made the first version of this wait vacuous.
             self.last_offered = ()
             return []
         offering = [
@@ -140,6 +144,8 @@ class RecordingServer(Routing):
             if self.shows(registration.component.interface.name)
         ]
         self.last_offered = tuple(tool.name for tool in offering)
+        if offering:
+            self._offered.set()
         return offering
 
     # ------------------------------------------------------------------ what it does

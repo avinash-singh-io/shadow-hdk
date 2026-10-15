@@ -141,11 +141,5 @@ async def test_the_session_report_keeps_provider_and_binding_limitations(
         _let_the_provider_wait_for_us=lambda session: None,
         _agent_carries=carries,
     )
-    # The real barrier, bound to this stand-in. It returns at once here, because this conversation
-    # hands out no sources — but binding it rather than stubbing it keeps the control honest about
-    # what `_open_provider` actually does.
-    conversation._wait_for_the_tools_to_be_reachable = lambda session: (
-        Conversation._wait_for_the_tools_to_be_reachable(conversation, session)
-    )
     await Conversation._open_provider(cast(Conversation, conversation))
     assert conversation.unmapped_behaviour == expected
