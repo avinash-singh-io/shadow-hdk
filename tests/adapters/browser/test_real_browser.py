@@ -7,7 +7,6 @@ import base64
 import datetime
 import os
 import ssl
-import sys
 import threading
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -17,22 +16,10 @@ from typing import Any, cast
 
 import pytest
 
-from shadow_hdk.adapters.browser import (
-    AgentBrowserEngine,
-    BrowserComponents,
-    OriginPolicy,
-    PlaywrightEngine,
-)
+from shadow_hdk.adapters.browser import BrowserComponents, OriginPolicy, PlaywrightEngine
 from shadow_hdk.kernel import Completed, Failed, Image, ModelResponse, Refused
 
 pytestmark = [pytest.mark.anyio, pytest.mark.browser, pytest.mark.timeout(180)]
-
-
-@pytest.fixture(
-    autouse=True, params=(PlaywrightEngine, AgentBrowserEngine), ids=("playwright", "agent-browser")
-)
-def interaction_engine(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(sys.modules[__name__], "PlaywrightEngine", request.param)
 
 
 class AppServer(ThreadingHTTPServer):
