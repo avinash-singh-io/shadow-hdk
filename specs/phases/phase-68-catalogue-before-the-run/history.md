@@ -65,3 +65,23 @@ its narrowness controls are deleted rather than left as dead tolerance — a tol
 cause is how the next regression hides.
 
 ---
+
+### [DISCOVERY] 2026-10-16 — A false report, withdrawn, and the provider behaviour split out
+Topics: codex, honesty-fields, tool-attachment, provider-behaviour
+Affects-phases: phase-68-catalogue-before-the-run
+Affects-specs: none
+Detail: Two corrections worth keeping, both found by controls rather than by reading.
+A `tools.read_late` report was added on the reasoning that a provider which reads the catalogue
+only after being prompted must have composed without its tools. That is wrong: prompted, then
+list, then compose is the ordinary protocol flow, and two real models demonstrated it by reading
+late and using their tools anyway. A report that fires on correct behaviour is worse than no
+report, so it was withdrawn the same hour it was written.
+What remains is TD-024, split out rather than left inside TD-023 whose kit side is now closed. On
+one runner the SDK answered a listing carrying `read_file` and composed without it. The kit cannot
+see that request, so the control attributes it, narrowly and with its own controls. The attribution
+is only defensible because this kit's side is complete and proven: in 0.48.0 the same shape of
+tolerance hid a defect of ours, and that is the difference. Also recorded: a single local run
+failed two models and the next four passed, so that one was a flake and not this phase's doing —
+re-run rather than diagnosed, which is the cheaper order.
+
+---

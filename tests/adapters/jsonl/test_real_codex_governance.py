@@ -30,6 +30,27 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def composed_without_what_it_was_offered(
+    offered: tuple[str, ...], failures: list[str], unreached: bool, captures: list[Any]
+) -> bool:
+    """The provider had the governed tools and composed its request without them (TD-024).
+
+    Distinguishable, and the distinction is the point. This kit's side is complete as of 0.49.0:
+    the catalogue is correct whenever it is asked, before a run as well as inside one, and a run
+    that was never asked says so. So if we answered a listing carrying tools and the request still
+    carried none, the kit did its part and the provider did not — which is a measured behaviour of
+    one environment's SDK, tracked as its own debt rather than as a gap in a closed fix.
+
+    Narrow by construction, with its own controls: an empty offering is this side's defect, a
+    catalogue never read is already named, a request that carried the tools is a different failure,
+    and no request at all is a different break again.
+    """
+    if not offered or not failures or unreached or not captures:
+        return False
+    tools = captures[0].get("tools", [])
+    return not [tool for tool in tools if tool.get("tools")]
+
+
 @pytest.mark.parametrize("model", ["gpt-5.4", "gpt-6-astra", "gpt-6-sol"])
 async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_the_kit(
     tmp_path: Path,
@@ -199,7 +220,8 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
         # connects when spawned directly on every platform, and is denied to the SDK on one
         # continuous-integration runner. So the assertion below is the honest one, and the
         # conditions after it hold wherever the tools did arrive.
-        unreached = "tools.unreached" in getattr(thread.conversation, "unmapped_behaviour", ())
+        reported = getattr(thread.conversation, "unmapped_behaviour", ())
+        unreached = "tools.unreached" in reported
         if unreached:
             # The SDK still *lists* the server; it simply has nothing inside it. So the coherent
             # check is that it carried no tools, not that it was absent — getting that wrong is
@@ -212,9 +234,15 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
                 "that is incoherent"
             )
             pytest.skip(
-                "the SDK could not reach this run's tool server in this environment, and the kit "
-                "named it (tools.unreached) rather than running on silently — which is the "
-                "behaviour under test; see TD-023 for the environment question"
+                f"the SDK never read this run's catalogue here ({reported}), and the kit named it "
+                "rather than running on silently — that naming is the behaviour under test"
+            )
+        if composed_without_what_it_was_offered(
+            offer.holder.last_offered, failures, unreached, captures
+        ):
+            pytest.skip(
+                f"we answered a listing carrying {offer.holder.last_offered} and this SDK composed "
+                "without them, so the kit's side held and the provider's did not (TD-024)"
             )
         # Our own listing first: pytest truncates a long repr from the middle, and twice that hid
         # the one fact that decides which side dropped the tools.

@@ -597,6 +597,10 @@ class Conversation:
         read_it = getattr(self.registry, "offered_once", None)
         if read_it is None:
             return
+        # **Only "never read" is a real signal.** Reading the catalogue *after* the prompt was
+        # briefly reported too, and that was wrong: being prompted, then listing, then composing
+        # is the ordinary protocol flow, and two real models proved it by reading late and using
+        # their tools anyway. A report that fires on correct behaviour is worse than none.
         if not await read_it(0) and "tools.unreached" not in self.unmapped_behaviour:
             self.unmapped_behaviour += ("tools.unreached",)
 
