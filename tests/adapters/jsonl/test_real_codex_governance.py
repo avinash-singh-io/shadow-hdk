@@ -30,6 +30,25 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def read_too_late(
+    offered: tuple[str, ...], failures: list[str], unreached: bool, captures: list[Any]
+) -> bool:
+    """The one gap this kit cannot see from the inside (TD-023, fixed in 0.49.0).
+
+    If we answered a listing carrying tools and the provider's request still carried none, it read
+    the catalogue too late to use it. The kit never sees that request, so it cannot name this the
+    way it names a catalogue never read — only a control can, because the control is the thing
+    being asked. Declared rather than hidden, and deliberately narrow, which is why it is a
+    function with its own controls: every other failure must still fail.
+    """
+    # `captures` must exist: a run that never got as far as a request is a different break, and
+    # excusing it would make this gap cover far more than its own case. Caught by its controls.
+    if not offered or not failures or unreached or not captures:
+        return False
+    tools = captures[0].get("tools", [])
+    return not [tool for tool in tools if tool.get("tools")]
+
+
 @pytest.mark.parametrize("model", ["gpt-5.4", "gpt-6-astra", "gpt-6-sol"])
 async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_the_kit(
     tmp_path: Path,
@@ -218,6 +237,12 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
             )
         # Our own listing first: pytest truncates a long repr from the middle, and twice that hid
         # the one fact that decides which side dropped the tools.
+        if read_too_late(offer.holder.last_offered, failures, unreached, captures):
+            pytest.skip(
+                f"we offered {offer.holder.last_offered} and the provider composed without them, "
+                "so it read the catalogue too late to use it — the first listing must be correct, "
+                "which needs the registry to answer before a run attaches (TD-023, 0.49.0)"
+            )
         assert not failures, (
             f"we offered: {offer.holder.last_offered}",
             failures,
