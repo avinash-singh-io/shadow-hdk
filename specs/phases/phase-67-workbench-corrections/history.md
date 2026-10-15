@@ -100,3 +100,22 @@ the third. Recommendation recorded for owner confirmation: keep the owned engine
 reference pattern onto it, and retire the replacement candidate rather than finish accepting it.
 
 ---
+
+### [DISCOVERY] 2026-10-15 — What the field settled on, and where this pack sits against it
+Topics: browser-engine, element-references, live-view, phase-68
+Affects-phases: phase-67-workbench-corrections, phase-68
+Affects-specs: none
+Detail: Surveyed how current agent systems drive browsers, at the owner's request, before deciding
+the engine. The settled pattern is an accessibility tree read first and addressed by numbered
+handles, with screenshots on demand rather than as the primary observation, because a handle to a
+named element survives a re-render that a coordinate does not, and because a tree costs a fraction
+of a screenshot's tokens. One tool pairs them by labelling an annotated screenshot with the same
+handles. Systems that let a person watch split between a CDP screencast of the owned page and a
+VNC view of a whole virtual desktop, and the ones that also let a person take over forward input
+events back over the same channel. This pack is already on the settled pattern and its origin
+boundary is ahead of it — a widely used server's own documentation warns that its allowed-origins
+option is not a security boundary, where this one was proven against redirects, subresources and
+WebSocket CONNECT. What the pack lacks is the watching half, filed as ENH-053 with the transport
+decided and the reasons recorded, so phase 68 starts from the decision rather than the survey.
+
+---
