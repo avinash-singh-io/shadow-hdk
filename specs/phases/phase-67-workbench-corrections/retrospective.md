@@ -24,6 +24,11 @@ The first full run's only failures were old release-number expectations, correct
 
 ## Verification Evidence
 
+> **Superseded for 0.48.0 by _Acceptance re-run — 2026-10-15_ at the end of this file.** The run
+> recorded immediately below predates the element-handle work, the replacement candidate's
+> retirement and the catalogue bound controls, so it does not accept the current tree. It is kept
+> because it is what the owner stop checkpoint was taken against.
+
 SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0
 
 ```text
@@ -160,3 +165,82 @@ owned active test/mutation/browser/gateway runner. Mutation runners use saved by
 and earlier restored controls remain recorded; no active mutation needed restoration at stop.
 All remaining source changes are preserved as legitimate candidate WIP, not reverted to HEAD.
 Goal paused by owner. No new implementation, release gate, merge, tag or publish is run.
+
+## Acceptance re-run — 2026-10-15
+
+Supersedes the evidence above and the stop checkpoint below for the current tree. Every command
+was re-run from this checkout after the element handles landed, the replacement candidate was
+retired and the catalogue bound controls were added.
+
+SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0
+
+```text
+2375 passed, 29 skipped, 25 deselected, 85 warnings in 303.85s (0:05:03)
+```
+
+uv run ruff check — exit 0 · uv run ruff format --check — exit 0 · uv run mypy — exit 0
+
+```text
+All checks passed!
+536 files already formatted
+Success: no issues found in 555 source files
+```
+
+uv run pytest -m benchmark -q -s — exit 0
+
+```text
+{'fixture': 'workbench-v1', 'files': 100000, 'ignored_files': 100000, 'seconds': {'glob': 0.5292, 'grep': 0.517, 'snapshot_cold': 0.6387, 'snapshot_unchanged': 0.5754, 'snapshot_one_edit': 0.5877, 'restore': 0.6906}}
+  100 sequential steps: 76.9 ms (0.769 ms/step, best of 9), 203 events
+  50-way fan-out: 30.6 ms (best of 9), 103 events
+  100 steps in 10 nested subgraphs: 77.6 ms (0.776 ms/step, best of 9), 203 events
+5 passed, 2424 deselected in 30.40s
+```
+
+schema and TypeScript client: generation produced no diff, so the committed contracts match this
+source; `tsc --noEmit` and the build both exit 0.
+
+```text
+wrote 29 contracts under clients/typescript/src/schemas and clients/typescript/src/schemas.ts
+git status --short clients/typescript/ — empty
+npm run check — exit 0
+npm run build — exit 0
+```
+
+wheel and sdist built at 0.48.0; version lockstep consistent across the distribution, the Linux
+helper pin and the helper crate. Asserted against the built artifact rather than the tree: the
+retired engine, its native client, asset resolution and download step are absent, and the handle
+implementation is present.
+
+```text
+Successfully built dist/shadow_hdk-0.48.0.tar.gz
+Successfully built dist/shadow_hdk-0.48.0-py3-none-any.whl
+retired files in the wheel: none
+handle markers in the wheel's engine: 3
+browser pack files shipped: 7 (was 11)
+```
+
+installed wheel: Python 3.12 controls outside the checkout — exit 0
+
+```text
+installed package: /tmp/hdk480-venv/lib/python3.12/site-packages/shadow_hdk/__init__.py
+installed version: 0.48.0
+retired engine import: ImportError (correct)
+handles_in('- button "Save" [ref=e5]') -> {'@e5': {'role': 'button', 'name': 'Save'}}
+137 passed in 95.60s (0:01:35)
+```
+
+Two exclusions from that selection, stated rather than silent. `tests/test_versions.py` inspects
+repository files (`native/sandbox/Cargo.toml`) that no installed package carries, so it is a
+checkout control and not an installed one. `test_real_codex_governance.py` is excluded under
+TD-023: it passes from a checkout and fails from a copied tree, and the mechanism is unexplained,
+so it is recorded as unexplained rather than benign. CI runs it from a checkout, where it passes.
+A first attempt at these controls also failed nine browser cases because the fresh environment's
+engine resolves a different Chromium build than the isolated path held; the refusal was correct
+behaviour from `install_browser=False`, and the build was installed rather than the check relaxed.
+
+installed base wheel: Python 3.12 optional-engine smoke — exit 0
+
+```text
+playwright installed: False
+Failed -> Install shadow-hdk[browser] to use the optional browser component.
+```
