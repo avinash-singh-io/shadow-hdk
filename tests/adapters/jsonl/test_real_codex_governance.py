@@ -228,3 +228,55 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
         await asyncio.to_thread(server.shutdown)
         server.server_close()
         worker.join(timeout=5)
+
+
+async def test_the_restricted_model_metadata_reaches_every_row_of_the_actual_catalogue(
+    tmp_path: Path,
+) -> None:
+    """The shipped provider claims restricted model metadata; this is what measures it.
+
+    Asserting that a governed turn behaves says nothing about the metadata the SDK was launched
+    with, so three mutations of the shipped replacements survived every control above. The first
+    attempt at this one survived two of them as well, because it read what to expect from the same
+    shipped data the mutation changes — a mutated expectation compared against a mutated
+    application always agrees. So the restriction is written out here instead: these literals are
+    the claim, and the shipped data is what is being measured against it.
+
+    Swept over every row, because an SDK that grows a twelfth model must have it restricted too.
+    """
+    from shadow_hdk.adapters.jsonl.catalogue import prepare_catalogue
+
+    restricted: dict[str, Any] = {
+        "node_repl_disabled": True,
+        "experimental_supported_tools": [],
+        "supports_search_tool": False,
+        "use_responses_lite": False,
+        "tool_mode": "direct",
+        "apply_patch_tool_type": None,
+        "multi_agent_version": None,
+    }
+
+    binary = shutil.which("codex")
+    assert binary is not None, "this SDK gate requires Codex 0.154.0"
+    spec = shipped()["codex"].dialect.launch_catalogue
+    assert spec is not None, "the shipped codex provider must prepare a catalogue"
+    # The shipped data must still ask for each restriction; a field deleted from it would
+    # otherwise leave the rows below untouched and this control agreeing with the omission.
+    assert {field.name for field in spec.replace_fields} == set(restricted), (
+        "the shipped replacements no longer match the restrictions this control enforces"
+    )
+
+    argument, rendered = await prepare_catalogue(
+        spec, binary=Path(binary), env={**os.environ}, directory=tmp_path
+    )
+    assert argument == spec.config_arg
+    written = Path(rendered.split('"')[1] if '"' in rendered else rendered)
+    rows = json.loads(written.read_text(encoding="utf-8"))[spec.entries_at]
+    assert rows, "the actual catalogue must carry model rows"
+
+    for row in rows:
+        for name, required in restricted.items():
+            assert name in row, f"{row.get('slug')} lost {name}"
+            assert row[name] == required, (
+                f"{row.get('slug')}: {name} is {row[name]!r}, must be {required!r}"
+            )
