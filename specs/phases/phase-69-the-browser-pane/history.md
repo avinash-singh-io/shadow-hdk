@@ -59,3 +59,20 @@ was removed rather than kept, since unprovable code is the kind that gets believ
 bite now.
 
 ---
+
+### [FEATURE] 2026-10-16 — A person's input into the page
+Topics: browser-pane, control-lease, origin-boundary
+Affects-phases: phase-69-the-browser-pane
+Affects-specs: none
+Detail: Clicks and keys through the page's own debugging session, which is what keeps a person
+inside the governed browser — the page they type into is the page whose traffic passes the origin
+gateway, and that is the reason the pane is a screencast rather than a desktop. Refused unless the
+lease is theirs, asked before anything is dispatched: a product able to send input without holding
+the keyboard would have a pane that bypasses what the pane exists to make visible.
+Three details that are the difference between working and nearly working. A click presses *and*
+releases, since a press alone leaves the page holding a button nobody is pressing. Typing goes
+character by character rather than as one paste, so a page that reacts per keystroke behaves as it
+would under real hands. And an unknown action is refused by name before the browser's state is
+consulted, so a caller's mistake is not hidden behind "no page is open". Five mutations bite.
+
+---
