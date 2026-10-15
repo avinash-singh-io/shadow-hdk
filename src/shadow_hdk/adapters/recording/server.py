@@ -69,6 +69,10 @@ class RecordingServer(Routing):
         self._offered = asyncio.Event()
         """Set when a listing is first answered — the event that means the tools actually reached
         whoever asked, rather than merely that something connected (TD-023)."""
+        self.last_offered: tuple[str, ...] = ()
+        """The names in the listing most recently answered. What the kit last said it had, which is
+        the other half of any argument about why a provider is not using a tool: an empty listing
+        answered is this side's problem, and a full one ignored is the provider's."""
         self._notifiers: set[Callable[[str], Awaitable[None]]] = set()
         """One per live connection: how to send that connection a notification (BUG-032)."""
 
@@ -123,8 +127,9 @@ class RecordingServer(Routing):
         self._offered.set()
         context = self.context
         if context is None:
+            self.last_offered = ()
             return []
-        return [
+        offering = [
             types.Tool(
                 name=registration.component.interface.name,
                 description=registration.component.interface.description or None,
@@ -134,6 +139,8 @@ class RecordingServer(Routing):
             for registration in await context.visible()
             if self.shows(registration.component.interface.name)
         ]
+        self.last_offered = tuple(tool.name for tool in offering)
+        return offering
 
     # ------------------------------------------------------------------ what it does
 

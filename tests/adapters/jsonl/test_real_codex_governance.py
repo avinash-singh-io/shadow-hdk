@@ -161,6 +161,9 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
         codex, launch_args=(*codex.launch_args, *(arg for c in config for arg in ("-c", c)))
     )
     environment = await LocalEnvironment.open(root, mode="full")
+    # Held so the control can say what *this* side offered. An empty listing answered is a
+    # problem here; a full listing ignored is the provider's (TD-023).
+    offer = SocketOffer(withhold={"turn"})
     sink = ListSink()
     thread = None
     try:
@@ -168,7 +171,7 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
             agent=JsonlProvider(
                 provider, binary=Path(binary), env={**os.environ, "CODEX_HOME": str(home)}
             ),
-            registry=SocketOffer(withhold={"turn"}),
+            registry=offer,
             ports=Ports(
                 components=(environment,), governance=AllowAll(), sink=sink, clock=FixedClock()
             ),
@@ -206,7 +209,11 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
                 "named it (tools.unreached) rather than running on silently — which is the "
                 "behaviour under test; see TD-023 for the environment question"
             )
-        assert not failures, (failures, getattr(thread.conversation._session, "stderr", ""))
+        assert not failures, (
+            failures,
+            f"we offered: {offer.holder.last_offered}",
+            getattr(thread.conversation._session, "stderr", ""),
+        )
         assert len(captures) == 2, thread.record.turns[-1].text
         names = {t["name"] for t in captures[0]["tools"]}
         assert names == {
