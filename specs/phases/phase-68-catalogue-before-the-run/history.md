@@ -46,3 +46,22 @@ measured, which would have quietly reopened TD-007 on a new path. Now asserted, 
 host setting those names cannot speak for the policy.
 
 ---
+
+### [ARCH_CHANGE] 2026-10-16 — The registry answers before a run, and the tolerance is gone
+Topics: catalogue-visibility, tool-attachment, offer-port, codex
+Affects-phases: phase-68-catalogue-before-the-run
+Affects-specs: specs/architecture/adapters.md#batteries
+Detail: The registry answers from a catalogue when no run is attached, handed over by the
+conversation at open and asked of the registry by name so an in-process offer and any older one are
+untouched (D14). The turn is told as empty rather than fabricated, because a policy should be able
+to see that there is not one yet.
+The mutation pass repeated 0.48.0's lesson almost exactly: deleting the call from the open path left
+every control green, because each invoked the wiring method directly. A method existing is not a
+method being called, which is how that release's wait came to be inert. A control now drives the
+real open path, and the catalogue's identity is asserted too, since that was the other thing
+nothing measured. Four mutations bite.
+With the first listing correct, the gap 0.48.0 had to declare cannot occur, so the declaration and
+its narrowness controls are deleted rather than left as dead tolerance — a tolerance kept past its
+cause is how the next regression hides.
+
+---

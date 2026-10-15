@@ -71,12 +71,13 @@ from shadow_hdk.kernel.threads import agent_now
 from shadow_hdk.kernel.usage import Usage
 from shadow_hdk.kernel.workspace import Root, Workspace
 from shadow_hdk.runtime.approvals import Parked
-from shadow_hdk.runtime.bindings import Ports, RunOptions, current_run
+from shadow_hdk.runtime.bindings import Catalogue, Ports, RunOptions, current_run
 from shadow_hdk.runtime.cancel import Cancellation
 from shadow_hdk.runtime.environment import Environment
 from shadow_hdk.runtime.loop import resume as resume_run
 from shadow_hdk.runtime.loop import run
 from shadow_hdk.runtime.offer import InProcessOffer, Narrowing, Offer
+from shadow_hdk.runtime.registry import Registry
 from shadow_hdk.runtime.resources import release_resources, settle_resources
 from shadow_hdk.runtime.session import HOST_RESERVED, LeaseMeter
 
@@ -494,7 +495,35 @@ class Conversation:
 
         self._holder = asyncio.create_task(hold())
         self._sources = await ready
+        self._let_the_registry_answer_before_a_run()
         self._session = await self._open_provider()
+
+    def _let_the_registry_answer_before_a_run(self) -> None:
+        """Give the registry a catalogue it can answer from before a run attaches (TD-023).
+
+        A listing used to be served only out of the attached run, and a run attaches inside the
+        turn — so a resident provider that asks for its tools at startup was told, correctly, that
+        there were none, and composed its first request from that. Everything the answer needs is
+        known here: the components, the policy, the mode and the host's attributes. Only the run is
+        not, and the catalogue judges by the same predicate a run does, so this is a different
+        moment rather than a second rule.
+
+        Asked of the registry by name, so an in-process offer — which serves no catalogue over a
+        wire — and any offer predating this are left alone (D14). The turn is told as empty because
+        there is no turn yet: a policy should be able to see that rather than be handed a
+        fabricated one.
+        """
+        reads_from = getattr(self.registry, "reads_from", None)
+        if reads_from is None:
+            return
+        reads_from(
+            Catalogue(
+                self._ports,
+                Registry(self._ports.components, trust=self._ports.trust),
+                identity=self.id,
+                attributes=self.context_for(""),
+            )
+        )
 
     async def _open_provider(self) -> AgentSession:
         """The provider's session, opened on the tools, workspace and behaviour — and resumed on

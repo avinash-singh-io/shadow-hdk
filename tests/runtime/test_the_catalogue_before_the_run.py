@@ -12,6 +12,8 @@ So there is one predicate with two context sources, and the control that matters
 asserting both paths agree.
 """
 
+from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -119,3 +121,98 @@ async def test_the_policy_is_told_the_posture_and_the_component_with_no_run() ->
         assert told["component"] == registration.id, told
         assert told["posture"] == registration.component.provenance.posture, told
         assert told["posture"] != "pretend", "the host must not speak for the policy (D30, TD-007)"
+
+
+async def test_a_registry_with_no_run_attached_answers_the_catalogue() -> None:
+    """The point of the whole phase: a provider that asks at startup gets the real tools.
+
+    Before this, a listing was served only out of the attached run, and a run attaches inside the
+    turn — so the answer was honestly empty and a provider that composed from it had none of the
+    host's tools. The registry now falls back to a catalogue read with no run.
+    """
+    from shadow_hdk.adapters.recording import SocketOffer
+
+    components = (tools(),)
+    ports = Ports(components=components, governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+    offer = SocketOffer(withhold={"turn"})
+    assert await offer.holder.tools() == [], "with nothing supplied it must still answer honestly"
+
+    offer.reads_from(Catalogue(ports, Registry(components, trust=ports.trust), identity="t1"))
+    offered = [tool.name for tool in await offer.holder.tools()]
+    assert offered, "a listing before any turn must carry the run's tools"
+    assert "turn" not in offered, "what the offer withholds stays withheld on this path too"
+
+
+async def test_the_conversation_gives_its_registry_a_catalogue_at_open() -> None:
+    """Wired at open, where the components and the mode are known and only the run is not.
+
+    Asked of the registry by name, so an offer that cannot answer before a run — an in-process one,
+    or any predating this — is left alone (D14). The catalogue is told the conversation's own
+    identity and attributes, with an empty turn, because there is no turn yet and a policy should
+    be able to see that rather than be handed a fabricated one.
+    """
+    from shadow_hdk.runtime.conversation import Conversation
+
+    given: list[Any] = []
+    components = (tools(),)
+    ports = Ports(components=components, governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+    conversation: Any = SimpleNamespace(
+        id="thread-9",
+        _ports=ports,
+        registry=SimpleNamespace(reads_from=given.append),
+        context_for=lambda turn: {"thread": "thread-9", "turn": turn},
+    )
+    Conversation._let_the_registry_answer_before_a_run(conversation)
+    assert len(given) == 1, given
+    catalogue = given[0]
+    assert [r.id for r in await catalogue.visible()], "it must answer with the run's tools"
+
+    # An offer that cannot answer before a run is left alone rather than broken.
+    conversation.registry = SimpleNamespace()
+    Conversation._let_the_registry_answer_before_a_run(conversation)
+    assert len(given) == 1, "nothing more should have been handed over"
+
+
+async def test_opening_the_conversation_actually_hands_the_catalogue_over() -> None:
+    """That a method exists is not that it is called — how 0.48.0's own wait came to be inert.
+
+    A mutation deleting the call from the open path left every control above green, because they
+    all invoke the method directly. So this one drives `_start`, the real open path, and asserts the
+    registry was given a catalogue there. The catalogue is also asked who it speaks for, since a
+    wrong identity is the other thing nothing was measuring.
+    """
+    from shadow_hdk.runtime.conversation import Conversation
+
+    given: list[Any] = []
+    components = (tools(),)
+    ports = Ports(components=components, governance=AllowAll(), sink=ListSink(), clock=FixedClock())
+
+    class Offer:
+        def reads_from(self, catalogue: Any) -> None:
+            given.append(catalogue)
+
+        @asynccontextmanager
+        async def served(self) -> Any:
+            yield ()
+
+    conversation: Any = SimpleNamespace(
+        id="thread-7",
+        _ports=ports,
+        registry=Offer(),
+        context_for=lambda turn: {"thread": "thread-7", "turn": turn},
+        _open_provider=lambda: _nothing(),
+    )
+    # The real wiring method, bound to this stand-in, so `_start` exercises it rather than a double.
+    conversation._let_the_registry_answer_before_a_run = lambda: (
+        Conversation._let_the_registry_answer_before_a_run(conversation)
+    )
+    await Conversation._start(conversation)
+    assert len(given) == 1, "opening must hand the registry a catalogue"
+    assert given[0].context().run_id == "thread-7", given[0].context()
+    assert given[0].context().attributes.get("turn") == "", (
+        "there is no turn yet, and it must say so"
+    )
+
+
+async def _nothing() -> None:
+    return None

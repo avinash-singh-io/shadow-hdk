@@ -69,6 +69,9 @@ class RecordingServer(Routing):
         self._offered = asyncio.Event()
         """Set when a listing is first answered — the event that means the tools actually reached
         whoever asked, rather than merely that something connected (TD-023)."""
+        self._catalogue: Any = None
+        """A catalogue readable with no run attached, where the host supplied one (TD-023). Only
+        ever consulted when there is no run, so a turn's own listing is never second-guessed."""
         self.last_offered: tuple[str, ...] = ()
         """The names in the listing most recently answered. What the kit last said it had, which is
         the other half of any argument about why a provider is not using a tool: an empty listing
@@ -79,6 +82,10 @@ class RecordingServer(Routing):
     def refuse(self) -> None:
         """One more connection turned away at the door."""
         self.refused_connections += 1
+
+    def reads_from(self, catalogue: Any) -> None:
+        """Supply a catalogue to answer from when no run is attached (TD-023)."""
+        self._catalogue = catalogue
 
     def reach(self) -> None:
         """One more connection let in. Hand `reach` to `serve_over_socket` to keep it.
@@ -125,12 +132,17 @@ class RecordingServer(Routing):
         # connection at the door proves the relay started and authenticated, and nothing more: a
         # provider that connected and then never asked still composes its first request without
         # these tools. This is the event a run waits for before writing a prompt.
-        context = self.context
+        context: Any = self.context
         if context is None:
-            # **An honest empty answer, and deliberately not an arrival** (TD-023). A listing is
-            # served out of the attached run, and a run attaches inside the turn, so a provider
-            # that asks before then is correctly told there is nothing yet. Treating that as the
-            # catalogue having been read is what made the first version of this wait vacuous.
+            # **The catalogue before the run** (TD-023). A listing used to be served only out of
+            # the attached run, and a run attaches inside the turn, so a provider asking at
+            # startup was told — honestly — that there was nothing yet, and then composed its
+            # first request from that. Where a host has supplied a catalogue readable without a
+            # run, answer from it instead; the predicate is the one a run uses, so this is a
+            # different moment and not a different rule. With nothing supplied the honest empty
+            # answer stands, and is still deliberately not an arrival.
+            context = self._catalogue
+        if context is None:
             self.last_offered = ()
             return []
         offering = [
