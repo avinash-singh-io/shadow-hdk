@@ -189,9 +189,12 @@ class LeaseMeter:
         # provider reported nothing, and a ceiling enforced through that would exhaust a run for
         # arithmetic nobody did — which is worse than no ceiling, because it stops work that was
         # within budget. The same vocabulary as money, because to a product it is the same event.
-        if ceiling.max_tokens is not None and self._tokens_known:
-            if self.tokens_spent() >= ceiling.max_tokens:
-                return "lease_exhausted"
+        if (
+            ceiling.max_tokens is not None
+            and self._tokens_known
+            and self.tokens_spent() >= ceiling.max_tokens
+        ):
+            return "lease_exhausted"
         return None
 
     def tokens_spent(self) -> int:

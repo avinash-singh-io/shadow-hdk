@@ -34,3 +34,23 @@ was charged for — the one mutation that survived the first pass, because the c
 input and output.
 
 ---
+
+### [FEATURE] 2026-10-16 — Compaction fires on the ceiling, and a shipped pattern offers it
+Topics: compaction, token-ceiling, patterns, context-window
+Affects-phases: phase-70-the-token-ceiling
+Affects-specs: specs/architecture/adapters.md#the-agent-adapter
+Detail: The loop folds its own transcript when the token budget is nearly gone, **before** the
+request is built, since afterwards there is no room left to send what the fold produced. The
+threshold rides on the pattern beside the other sizes a product chooses, and defaults to never:
+folding is lossy, and a kit doing it uninvited would discard a thread's past on a number nobody
+picked. Never fired on an unknown count either, which is the same rule the ceiling itself follows.
+H34 closed with it: `compact` was in no shipped pattern's meta tools, so the one way compaction
+could ever happen was unavailable everywhere a product starts from. Offered now by `reflect-until`,
+which is the pattern whose transcript actually grows — it iterates until satisfied — rather than
+everywhere indiscriminately.
+**The call site was written and left uncalled**, and every control passed because each invoked the
+method directly. Third time in this release train: a wait in 0.48.0, a hand-over in 0.49.0, and this.
+The control that catches it reads the turn loop's own source, because a control that calls the method
+cannot tell the difference. Five mutations bite.
+
+---
