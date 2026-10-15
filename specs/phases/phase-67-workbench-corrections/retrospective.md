@@ -175,7 +175,7 @@ retired, the catalogue bound controls were added and TD-023's barrier went in.
 SHADOW_HDK_TEST_CODEX=1 SHADOW_HDK_BROWSER_TESTS=1 SHADOW_HDK_BROWSER_INSTALL_TESTS=1 PLAYWRIGHT_BROWSERS_PATH=/tmp/hdk67-browser-binaries uv run --all-extras pytest -q — exit 0
 
 ```text
-2382 passed, 29 skipped, 25 deselected, 85 warnings in 341.29s (0:05:41)
+2391 passed, 29 skipped, 25 deselected, 85 warnings in 309.78s (0:05:09)
 ```
 
 uv run ruff check — exit 0 · uv run ruff format --check — exit 0 · uv run mypy — exit 0
@@ -244,3 +244,18 @@ installed base wheel: Python 3.12 optional-engine smoke — exit 0
 playwright installed: False
 Failed -> Install shadow-hdk[browser] to use the optional browser component.
 ```
+
+## Exact-head continuous integration — 2026-10-15, green
+
+All eighteen jobs green at `8f1a6ea`: the check matrix on 3.12, 3.13 and 3.14; the bubblewrap and
+seatbelt mechanism legs; the browser controls on Linux and macOS; the governed-SDK controls on both;
+the native helper's formatting, clippy at deny-warnings, tests and probe; and all nine packaging
+jobs including the reproducible build and the installed-wheel check.
+
+This is the first green exact-head run on this branch. The checkpoint's own run of 2026-10-13 failed
+five jobs, and the two governed-SDK jobs failed with the same signature as TD-023, so that gate had
+never passed here. What closed it: element handles on the owned engine with the replacement
+candidate retired, the catalogue's bounds and restricted metadata measured, a type check I had
+skipped, TD-018's sixth instance, and TD-023 — the registry's door counted both ways, the catalogue
+announced when it becomes available, and a turn that never saw a listing carrying tools named. The
+one gap the kit cannot see from inside is declared with its own controls and fixed in 0.49.0.
