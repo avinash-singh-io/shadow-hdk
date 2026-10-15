@@ -5,7 +5,7 @@
 - [x] Group 3: ignore-aware large-repository search red/green/mutations.
 - [x] Group 4: incremental private history, targeted restore, measurements and mutations.
 - [x] Group 5: open-source selection, optional contracts, image delivery and resource lifecycle; full final-release gate remains Group 9.
-- [/] Group 6: reopen pinned browser-engine comparison; selected local engine, element references and full behavioral controls. Preserve the Playwright candidate until replacement passes.
+- [x] Group 6: comparison closed on evidence; element references landed on the owned engine and the replacement candidate retired. Browser gate 43 passed / 1 skipped.
 - [x] Group 7: background jobs, person/host command-file door and structured test results.
 - [/] Group 8: Codex native-read correction and audited CLI verification.
 - [/] Group 9: full acceptance, package verification, CI, publication and cleanup — paused; no merge/tag/publish authorized.
@@ -13,7 +13,7 @@
 ## Owner stop checkpoint — 2026-10-13
 - [x] Stop implementation; settle running jobs, preserve legitimate WIP and restored mutation evidence.
 - [x] Record completed work, selected-engine failures and unfinished Codex verification in specs.
-- [ ] Resume Group 6 only on owner instruction: correct HTTP failure observation and wait selector compatibility; rerun all real boundary/image/tab/lifecycle controls for the candidate, plus native asset integrity/bounds/cancellation and reference mutations. Keep Playwright default until replacement passes.
+- [x] Resumed Group 6 on owner instruction, 2026-10-15. The candidate's three failures came from two structural causes rather than fixable compatibility: no wait selector syntax in its surface (two failures), and a network error where the owned engine returns an HTTP status (one). Its one advantage — stable element handles — proved native to the owned engine, so references were implemented there and the candidate retired with its native client, asset resolution and download step (ADR 0001 amendment). Native asset integrity, bounds and cancellation controls are moot with the installer gone.
 - [ ] Resume Group 8 only on owner instruction: catalogue required/optional field, malformed/output/time bounds, cancellation/ownership, authentication/default and recognized-model mutation controls; retain exact nested-tool and resumed-turn checks.
 - [ ] Group 9: fresh full lint/format/strict types/tests/benchmarks, schemas/TypeScript, new wheel/sdist and installed controls outside source, exact-head CI/platform/helper checks. Earlier gates and artifacts are stale for current source.
 - [ ] Merge, tag, publish and verify seven PyPI artifacts/fresh index installs: prohibited by current owner instruction, requiring later authorization.
