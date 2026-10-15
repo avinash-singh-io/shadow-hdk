@@ -201,17 +201,26 @@ async def test_native_tools_and_repository_discovery_are_absent_and_read_uses_th
         # conditions after it hold wherever the tools did arrive.
         unreached = "tools.unreached" in getattr(thread.conversation, "unmapped_behaviour", ())
         if unreached:
-            assert not captures or "mcp__shadow_hdk" not in {
-                t["name"] for t in captures[0].get("tools", [])
-            }, "the run reported unreachable tools while the SDK had them; that is incoherent"
+            # The SDK still *lists* the server; it simply has nothing inside it. So the coherent
+            # check is that it carried no tools, not that it was absent — getting that wrong is
+            # what turned this honest branch into a failure on its first run.
+            served = [
+                t for t in (captures[0].get("tools", []) if captures else []) if t.get("tools")
+            ]
+            assert not served, (
+                f"the run reported unreachable tools while the SDK was offered {served}; "
+                "that is incoherent"
+            )
             pytest.skip(
                 "the SDK could not reach this run's tool server in this environment, and the kit "
                 "named it (tools.unreached) rather than running on silently — which is the "
                 "behaviour under test; see TD-023 for the environment question"
             )
+        # Our own listing first: pytest truncates a long repr from the middle, and twice that hid
+        # the one fact that decides which side dropped the tools.
         assert not failures, (
-            failures,
             f"we offered: {offer.holder.last_offered}",
+            failures,
             getattr(thread.conversation._session, "stderr", ""),
         )
         assert len(captures) == 2, thread.record.turns[-1].text

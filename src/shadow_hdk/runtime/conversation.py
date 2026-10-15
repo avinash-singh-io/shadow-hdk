@@ -545,11 +545,30 @@ class Conversation:
         """
         if not self._sources or not getattr(session, "launched_tool_servers", False):
             return
+        if getattr(self.registry, "offered_once", None) is None:
+            return
+        await self.registry.changed()
+
+    async def _say_whether_the_catalogue_was_read(self, session: AgentSession) -> None:
+        """After the turn, name the case where the provider never read the catalogue.
+
+        **Checked afterwards, because it cannot be checked before.** Measured: this provider asks
+        for its tools when it is given a prompt, not when it starts — so waiting for a listing
+        before writing the prompt waits for something that cannot happen yet. The first version of
+        this did exactly that and deadlocked for the whole deadline on every turn, which the suite
+        showed as fifty seconds where it had been six.
+
+        So the announcement goes before the prompt, where it can be acted on, and the question is
+        asked after the turn, where it has an answer. A turn that never saw a listing carrying
+        tools ran without the host's tools, and that is named rather than left to look like an
+        agent that chose to call nothing.
+        """
+        if not self._sources or not getattr(session, "launched_tool_servers", False):
+            return
         read_it = getattr(self.registry, "offered_once", None)
         if read_it is None:
             return
-        await self.registry.changed()
-        if not await read_it(TOOLS_REACHABLE_SECONDS):
+        if not await read_it(0) and "tools.unreached" not in self.unmapped_behaviour:
             self.unmapped_behaviour += ("tools.unreached",)
 
     def _let_the_provider_wait_for_us(self, session: AgentSession) -> None:
@@ -797,9 +816,10 @@ class Conversation:
                 registry.attach(context)
                 try:
                     # Only now is there a catalogue to list, so only now can a resident provider
-                    # be told to read it and be waited for (TD-023).
+                    # be told it exists (TD-023). Whether it read it is answerable after.
                     await self._let_the_catalogue_be_seen(session)
                     done = await session.turn(prompt)
+                    await self._say_whether_the_catalogue_was_read(session)
                 finally:
                     registry.detach()
                 if done.reasoning and context.recorded("reasoning") == 0:

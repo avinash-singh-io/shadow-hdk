@@ -278,3 +278,25 @@ since the components and the mode are known then and only the run is not. That i
 visibility is computed outside a run, and it is named here rather than rushed into a release.
 
 ---
+
+### [ARCH_CHANGE] 2026-10-15 — Announce before the prompt, ask after the turn; and the wait that was never reachable
+Topics: codex, governed-launch, tool-attachment, honesty-fields, group-9
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: Two further defects, both in the fix itself and both found by the gate rather than by
+reading it. First, the wait was never running: it was implemented on the server and asked of the
+offer, which does not delegate it, so the name resolved to nothing and the whole barrier was
+inert — a method accepted and unreachable, which is this repository's signature defect committed
+inside the code written to prevent it. Every unit control passed, because each used a stand-in
+that did have the method; the tell was a job finishing too quickly to have waited at all. The
+shipped class is now asked the questions the run actually asks, so the two cannot drift again.
+Second, once it ran, the wait proved to sit where it cannot succeed. Measured: this provider asks
+for its tools when handed a prompt, not when it starts, so waiting before the prompt waits for
+what cannot happen yet — it spent the whole deadline on every turn and took one file from six
+seconds to fifty. The announcement therefore stays before the prompt, where it can be acted on,
+and the question moves to after the turn, where it has an answer. Named once per conversation
+rather than once per turn, which is its own control. The coherence guard was wrong too: the
+provider does list the server, with nothing inside it, so the check is that it carried no tools
+rather than that it was absent.
+
+---

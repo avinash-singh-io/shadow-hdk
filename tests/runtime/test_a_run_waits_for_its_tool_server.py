@@ -49,21 +49,43 @@ def a_session(*, launched: bool = True) -> Any:
     return SimpleNamespace(launched_tool_servers=launched)
 
 
-async def test_the_catalogue_is_announced_before_it_is_waited_for() -> None:
-    """Announcing after waiting would be useless: the provider would have nothing to re-read."""
+async def test_the_catalogue_is_announced_and_not_waited_for_before_the_prompt() -> None:
+    """Measured: this provider asks for its tools when handed a prompt, not when it starts.
+
+    So a wait before the prompt waits for what cannot happen yet. The first version did exactly
+    that and spent the whole deadline on every turn — fifty seconds where the file took six.
+    """
     registry = Registry(read_it=True)
     conversation = conversation_with(sources=("relay",), registry=registry)
     await Conversation._let_the_catalogue_be_seen(conversation, a_session())
-    assert registry.order == ["announced", "waited"], registry.order
-    assert registry.waited is not None and registry.waited > 0
+    assert registry.order == ["announced"], registry.order
+    assert registry.waited is None, "nothing may be waited for before the prompt"
     assert conversation.unmapped_behaviour == ()
 
 
-async def test_a_catalogue_never_read_is_named_not_left_to_look_quiet() -> None:
+async def test_a_catalogue_never_read_is_named_after_the_turn() -> None:
     registry = Registry(read_it=False)
     conversation = conversation_with(sources=("relay",), registry=registry)
     await Conversation._let_the_catalogue_be_seen(conversation, a_session())
+    await Conversation._say_whether_the_catalogue_was_read(conversation, a_session())
     assert registry.announced == 1, "it must still have been announced"
+    assert conversation.unmapped_behaviour == ("tools.unreached",), conversation.unmapped_behaviour
+
+
+async def test_a_catalogue_that_was_read_is_not_named() -> None:
+    registry = Registry(read_it=True)
+    conversation = conversation_with(sources=("relay",), registry=registry)
+    await Conversation._let_the_catalogue_be_seen(conversation, a_session())
+    await Conversation._say_whether_the_catalogue_was_read(conversation, a_session())
+    assert conversation.unmapped_behaviour == ()
+
+
+async def test_many_turns_name_it_once() -> None:
+    """A long conversation must not accumulate the same report per turn."""
+    registry = Registry(read_it=False)
+    conversation = conversation_with(sources=("relay",), registry=registry)
+    for _ in range(3):
+        await Conversation._say_whether_the_catalogue_was_read(conversation, a_session())
     assert conversation.unmapped_behaviour == ("tools.unreached",), conversation.unmapped_behaviour
 
 
@@ -92,3 +114,23 @@ async def test_an_offer_that_cannot_report_is_left_alone() -> None:
     conversation = conversation_with(sources=("relay",), registry=registry)
     await Conversation._let_the_catalogue_be_seen(conversation, a_session())
     assert conversation.unmapped_behaviour == ()
+
+
+async def test_the_shipped_offer_answers_the_question_the_run_actually_asks() -> None:
+    """The run holds the offer, not the server behind it — so the offer must answer.
+
+    This control exists because it was missing. The wait was implemented on the server, the run
+    asked the offer by name, nothing answered, and the barrier was skipped entirely while every
+    unit control above passed against a stand-in that did have the method. A governed turn then
+    ran with no tools. Asked of the shipped class here, so the two cannot drift apart again.
+    """
+    from shadow_hdk.adapters.recording import SocketOffer
+
+    offer = SocketOffer()
+    for question in ("offered_once", "changed", "attach", "detach"):
+        assert hasattr(offer, question), f"the run asks for {question} and the offer must answer"
+    # And it must answer with the server's own verdict, not merely exist.
+    assert await offer.offered_once(0.01) is False, "nothing has listed yet"
+    offer.holder.last_offered = ("read_file",)
+    offer.holder._offered.set()
+    assert await offer.offered_once(0.01) is True
