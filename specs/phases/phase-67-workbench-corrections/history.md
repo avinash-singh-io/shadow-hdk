@@ -119,3 +119,20 @@ WebSocket CONNECT. What the pack lacks is the watching half, filed as ENH-053 wi
 decided and the reasons recorded, so phase 68 starts from the decision rather than the survey.
 
 ---
+
+### [DISCOVERY] 2026-10-15 — A governance control's result depends on where it is run from
+Topics: codex, governed-launch, test-hermeticity, installed-controls
+Affects-phases: phase-67-workbench-corrections
+Affects-specs: none
+Detail: Building installed-wheel controls for 0.48.0 surfaced TD-023. The real-Codex governance
+control passes from the checkout and fails from a copied test tree, where the governed launch
+carries flat function tools — including three that belong to a product and appear in this
+machine's own SDK session rollouts — instead of the single nested namespace tool expected. The
+control sets an isolated home and a temporary workspace, so the route by which those tools
+arrived is unexplained; the repository root does carry a `.codex/` directory the copied tree
+lacks, which is the likeliest cause but is not established. Recorded as unexplained rather than
+benign, because the pack claims a private bootstrap and an isolation gap there would be
+security-relevant. Excluded from the ad-hoc installed selection with the exclusion stated; it is
+unaffected for the release, since CI runs it from a checkout where it passes.
+
+---
