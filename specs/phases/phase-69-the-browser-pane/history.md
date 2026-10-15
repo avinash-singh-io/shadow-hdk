@@ -21,3 +21,20 @@ true of the replacement candidate retired in 0.48.0 and is no longer true of the
 conclusion survives — Playwright exposes it — but the premise was stale and is fixed in the row.
 
 ---
+
+### [FEATURE] 2026-10-16 — The control lease
+Topics: browser-pane, control-lease, governance, honesty-fields
+Affects-phases: phase-69-the-browser-pane
+Affects-specs: specs/architecture/adapters.md#batteries
+Detail: Who holds the keyboard, per resource scope, with the handover on the record. Three choices
+worth keeping. Reading is never withheld: a person at the keyboard does not blind the agent, and an
+agent that cannot read cannot report what it saw happen. The withheld actions are **named** rather
+than derived from the write list, with a control failing if the two disagree — deriving them would
+let a widening of the contract escape the lease silently, which is this repository's most frequent
+defect. And a handover with no run to record into still happens, because the lease is the kit's own
+state and a host taking over between turns must not be refused for having no run.
+Refused rather than failed, and said plainly: who drives is a decision, not an error. The refusal is
+also decided before any browser is provisioned, so a product can rely on it without a running
+Chromium. Six mutations bite.
+
+---

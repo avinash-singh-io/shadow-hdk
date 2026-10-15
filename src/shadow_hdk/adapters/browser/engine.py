@@ -20,6 +20,25 @@ from shadow_hdk.kernel import Completed, Failed, Image, Observation, Refused
 from shadow_hdk.runtime import current_run
 from shadow_hdk.runtime.processes import start_held
 
+PERSON_HOLDS = (
+    "open",
+    "back",
+    "forward",
+    "new_tab",
+    "close_tab",
+    "click",
+    "type",
+    "select",
+    "press",
+    "scroll",
+)
+"""What a person at the keyboard withholds from the agent (ENH-053): everything that acts on the
+page, and nothing that reads it.
+
+**Named, not derived from the write list.** A new action that acts on the page must be added here
+deliberately, and a control fails if the two ever disagree — deriving it would let a widening of
+the contract escape the lease silently, which is this repository's most frequent defect."""
+
 HANDLE = re.compile(r"\[ref=(e\d+)\]")
 """How the engine marks an element in an `ai`-mode accessibility snapshot."""
 
@@ -164,6 +183,9 @@ class PlaywrightEngine:
         self._profiles: dict[str, _Profile] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self._closed: set[str] = set()
+        self._people: set[str] = set()
+        """Scopes whose keyboard a person holds (ENH-053). Per scope, so one person taking over one
+        pane cannot freeze another conversation's agent."""
         self._installing = asyncio.Lock()
 
     @property
@@ -237,11 +259,44 @@ class PlaywrightEngine:
             await profile.close()
             raise
 
+    def driver(self, resource_scope: str) -> str:
+        """Who holds the keyboard for this scope — `agent` unless a person has taken it."""
+        return "person" if resource_scope in self._people else "agent"
+
+    async def hand_to_person(self, resource_scope: str) -> None:
+        """A person takes the keyboard. The agent's acts on the page are refused until it is given
+        back, because while somebody else is driving the agent's governance is not what gates this
+        page, and a run that cannot tell the difference cannot be trusted about what it did."""
+        self._people.add(resource_scope)
+        await self._say_who_drives(resource_scope)
+
+    async def hand_back(self, resource_scope: str) -> None:
+        """The keyboard returns to the agent."""
+        self._people.discard(resource_scope)
+        await self._say_who_drives(resource_scope)
+
+    async def _say_who_drives(self, resource_scope: str) -> None:
+        """Put the handover on the record, where a product that treats a person's input as consent
+        can find it afterwards. A host taking over between turns has no run to tell, and that is
+        not a reason to refuse the handover — the lease is the kit's own state."""
+        context = current_run()
+        if context is None:
+            return
+        await context.activity(
+            "browser_driver",
+            f"The {self.driver(resource_scope)} is now driving the browser in this scope.",
+        )
+
     async def execute(self, action: str, inputs: JsonValue, resource_scope: str) -> Observation:
         try:
             params = parse(action, inputs)
         except ValueError as error:
             return Refused(f"invalid browser inputs: {error}")
+        if action in PERSON_HOLDS and resource_scope in self._people:
+            return Refused(
+                "a person is driving this browser; the agent may read the page but not act on it "
+                "until the keyboard is handed back"
+            )
         async with self._locks.setdefault(resource_scope, asyncio.Lock()):
             if resource_scope in self._closed:
                 return Refused("this browser resource scope is closed")
