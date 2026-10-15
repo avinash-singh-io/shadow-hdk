@@ -50,7 +50,15 @@ async def test_a_thread_on_its_own_budget_keeps_what_it_spent_across_a_resume(
             assert left < 5
             listed = await client.peer.call("thread/list", {})
             (row,) = [t for t in listed["threads"] if t["id"] == tid]
-            assert row["budget"] == {"max_steps": 5, "max_wall_seconds": 3600, "max_cost_cents": 50}
+            # `max_tokens` joined the ceiling in 0.51.0 (ENH-052) and is absent here because this
+            # thread's budget names no token cap — the whole shape is compared on purpose, so a
+            # field appearing or vanishing on the wire is seen rather than assumed.
+            assert row["budget"] == {
+                "max_steps": 5,
+                "max_wall_seconds": 3600,
+                "max_cost_cents": 50,
+                "max_tokens": None,
+            }
             assert row["spent"]["steps"] == 5 - left
 
             await client.peer.call("thread/close", {"thread_id": tid})

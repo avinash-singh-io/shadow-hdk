@@ -185,7 +185,26 @@ class LeaseMeter:
             spent = self._cost + self._carved_cost
             if spent > ceiling.max_cost_cents or (costs and spent >= ceiling.max_cost_cents):
                 return "lease_exhausted"
+        # **Only against numbers somebody gave** (ENH-052). The meter already knows when a
+        # provider reported nothing, and a ceiling enforced through that would exhaust a run for
+        # arithmetic nobody did — which is worse than no ceiling, because it stops work that was
+        # within budget. The same vocabulary as money, because to a product it is the same event.
+        if (
+            ceiling.max_tokens is not None
+            and self._tokens_known
+            and self.tokens_spent() >= ceiling.max_tokens
+        ):
+            return "lease_exhausted"
         return None
+
+    def tokens_spent(self) -> int:
+        """Every token this run has been told about, including what its cache moved."""
+        return (
+            self._input_tokens
+            + self._output_tokens
+            + self._cache_read_tokens
+            + self._cache_write_tokens
+        )
 
     def floor_met(self) -> bool:
         """Has the agent done enough to be allowed to say it cannot finish?"""
@@ -196,10 +215,14 @@ class LeaseMeter:
         cost: int | None = None
         if ceiling.max_cost_cents is not None and self._cost_known:
             cost = max(0, ceiling.max_cost_cents - self._cost - self._carved_cost)
+        tokens: int | None = None
+        if ceiling.max_tokens is not None and self._tokens_known:
+            tokens = max(0, ceiling.max_tokens - self.tokens_spent())
         left = Ceiling(
             max_steps=max(0, ceiling.max_steps - self._steps - self._carved_steps),
             max_wall_seconds=max(0, int(ceiling.max_wall_seconds - self.elapsed_seconds())),
             max_cost_cents=cost,
+            max_tokens=tokens,
         )
         return Lease(left, Floor(min(self._lease.floor.min_steps, left.max_steps)))
 
@@ -222,6 +245,13 @@ class LeaseMeter:
             max_steps=child.max_steps,
             max_wall_seconds=min(child.max_wall_seconds, left.ceiling.max_wall_seconds),
             max_cost_cents=child.max_cost_cents,
+            # **Clamped like the clock, not strict like money** (ENH-052, and BUG-022's shape).
+            # A parent near its token limit would otherwise refuse every child for asking a round
+            # number. Nothing is lost by clamping: a child's tokens are counted by the parent's own
+            # meter, so the parent's ceiling still stops the run whatever the child was promised.
+            max_tokens=child.max_tokens
+            if left.ceiling.max_tokens is None
+            else min(child.max_tokens or left.ceiling.max_tokens, left.ceiling.max_tokens),
         )
         child_lease, _ = left.carve(child)
         self._carved_steps += child.max_steps
