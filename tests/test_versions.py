@@ -18,7 +18,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = "0.50.0"
+EXPECTED = "0.51.0"
 """0.48.0 — optional browser/workbench packs, image observations, owner-scoped resources and
 private CLI bootstrap; socket narrowing, host-named branches, ignore-aware search and incremental
 history. Codex native repository reads are governed. Additive contracts and named behavior changes,

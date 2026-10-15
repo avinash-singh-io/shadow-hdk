@@ -4,6 +4,7 @@
 /* eslint-disable */
 export type MaxCostCents = (number | null)
 export type MaxSteps = number
+export type MaxTokens = (number | null)
 export type MaxWallSeconds = number
 export type MinSteps = number
 
@@ -14,6 +15,7 @@ floor?: Floor
 export interface Ceiling {
 max_cost_cents?: MaxCostCents
 max_steps: MaxSteps
+max_tokens?: MaxTokens
 max_wall_seconds: MaxWallSeconds
 }
 export interface Floor {
