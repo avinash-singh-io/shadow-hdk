@@ -4,16 +4,14 @@ type: Status
 
 # Project Status
 
-> **Latest Release: v0.47.3 — published and verified, 2026-10-04.** Phase 66 is complete.
+> **Latest Release: v0.51.0 — published, 2026-10-16.** Four versions landed in order, each a minor with its own exact-head continuous-integration run green before it: **0.48.0** the workbench corrections with the browser pack and the governed Codex catalogue; **0.49.0** the catalogue before the run, closing TD-023 at its root; **0.50.0** the browser pane — a control lease with the driver on the record, frames out of an owned tab, a person's input, and a served job made browsable; and **0.51.0** the token ceiling with compaction firing on it, closing ENH-052 and the audit's H34. Final gate 2,445 passed, strict types over 567 files. Open and tracked: TD-024 (one environment's SDK composing without tools it was offered), TD-025 (the missing audit text behind ten H-numbers), H33's per-fragment token counts, TD-022 and TD-018's sixth instance.
 > All six versions landed staging → main in order. All six publication workflows are green;
 > every release has all seven PyPI files, a verified fresh index installation, and exact helper
 > resolution on Linux x86_64 and aarch64. The final merged-tree gate passed 2,274 tests, with
 > 8 skipped and 24 live cases deselected; lint, formatting and strict types pass.
 > Product pins remain owned by the product lane. TD-021 remains separate tooling work.
 
-**Latest Release: v0.49.0 — published and verified, 2026-10-16.** Phase 68 is complete. Exact-head CI green on all eighteen jobs, including both governed-SDK jobs — the one that had failed since before the 2026-10-13 checkpoint. All seven PyPI files present, a fresh index install verified outside CI, and the published wheel asserted to carry the pre-run catalogue and both of the questions the run asks its offer. 2,392 passed, strict types over 558 files, benchmarks inside budget, 684 installed-wheel controls outside the checkout. **TD-023 is closed at the root**: the catalogue is correct whenever it is asked, before a run as well as inside one, so a provider's first listing is already right and the declared gap of 0.48.0 is deleted with its controls. What was never this kit's to fix is split out as TD-024.
-
-**Next: Phase 69 — the browser pane** (ENH-053), releasing 0.50.0. A person watching the agent's page and taking the keyboard, by CDP screencast over the owned target rather than a virtual desktop, with a control lease naming who drives on the record and a preview seam joining the background jobs of phase 67 to the governed browser. Then phase 70, ENH-052: a token ceiling on the lease with compaction wired to it.
+**Current Phase: none — v0.51.0 is the latest release.** Phases 67–70 are complete and published; this repository is maintenance-only (see Next Actions).
 
 > **Phase 67 complete — v0.48.0 published and verified, 2026-10-15.** Exact-head CI green on all eighteen jobs, the first on this branch. All seven PyPI files present, a fresh index install verified outside CI, and the shipped wheel asserted to carry the fixes and not the retired engine. 2,391 passed; strict types over 557 files. Closed BUG-241, BUG-242, BUG-243 as published, and TD-023's kit side. Filed TD-022 and TD-018's sixth instance.
 
