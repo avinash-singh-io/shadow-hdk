@@ -4,14 +4,14 @@ type: Status
 
 # Project Status
 
-> **Latest Release: v0.47.3 — published and verified, 2026-10-04.** Phase 66 is complete.
+> **Latest Release: v0.51.0 — published, 2026-10-16.** Four versions landed in order, each a minor with its own exact-head continuous-integration run green before it: **0.48.0** the workbench corrections with the browser pack and the governed Codex catalogue; **0.49.0** the catalogue before the run, closing TD-023 at its root; **0.50.0** the browser pane — a control lease with the driver on the record, frames out of an owned tab, a person's input, and a served job made browsable; and **0.51.0** the token ceiling with compaction firing on it, closing ENH-052 and the audit's H34. Final gate 2,445 passed, strict types over 567 files. Open and tracked: TD-024 (one environment's SDK composing without tools it was offered), TD-025 (the missing audit text behind ten H-numbers), H33's per-fragment token counts, TD-022 and TD-018's sixth instance.
 > All six versions landed staging → main in order. All six publication workflows are green;
 > every release has all seven PyPI files, a verified fresh index installation, and exact helper
 > resolution on Linux x86_64 and aarch64. The final merged-tree gate passed 2,274 tests, with
 > 8 skipped and 24 live cases deselected; lint, formatting and strict types pass.
 > Product pins remain owned by the product lane. TD-021 remains separate tooling work.
 
-**Current Phase: 68 — the catalogue before the run**, branch `phase-68-catalogue-before-the-run`, releasing 0.49.0. Closes the remainder of TD-023: a listing is served out of the attached run and a run attaches inside the turn, so a provider that asks at startup is correctly told there is nothing yet — and 0.48.0's announcement corrects that only when the provider re-reads before composing. The gate showed it composing from the stale list instead, which the kit cannot see from inside. This phase removes the empty answer rather than correcting it afterwards, with the guard that the pre-run and in-run listings must be the same listing (BUG-235 is what drift looks like).
+**Current Phase: none — v0.51.0 is the latest release.** Phases 67–70 are complete and published; this repository is maintenance-only (see Next Actions).
 
 > **Phase 67 complete — v0.48.0 published and verified, 2026-10-15.** Exact-head CI green on all eighteen jobs, the first on this branch. All seven PyPI files present, a fresh index install verified outside CI, and the shipped wheel asserted to carry the fixes and not the retired engine. 2,391 passed; strict types over 557 files. Closed BUG-241, BUG-242, BUG-243 as published, and TD-023's kit side. Filed TD-022 and TD-018's sixth instance.
 
