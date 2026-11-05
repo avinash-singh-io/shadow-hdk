@@ -1,9 +1,9 @@
 # For a product — what the kit answers, and how to compose it
 
-> Written 2026-09-19 for Intent Studio (lane P) against **shadow-hdk 0.31.0**; **brought current
-> for 0.43.0 on 2026-10-02** (ENH-026). The rule the answers serve is unchanged: *the product
-> composes the kit; it never rebuilds a mechanism the kit has; a gap in the kit is fixed in the
-> kit.*
+> Written 2026-09-19 for Intent Studio (lane P) against **shadow-hdk 0.31.0**; brought current
+> for 0.43.0 on 2026-10-02 (ENH-026); **brought current again for 0.51.0 on 2026-10-23** — the
+> latest published release. The rule the answers serve is unchanged: *the product composes the
+> kit; it never rebuilds a mechanism the kit has; a gap in the kit is fixed in the kit.*
 >
 > **Read the next chapter first if you have read this document before.** *Everything a plugin is
 > made of* describes a surface that has existed for a long time and was documented nowhere — a
@@ -11,7 +11,9 @@
 > this refresh happened.
 >
 > Sections 1–10 below answer the ten questions asked in September, against 0.31.0. Where a later
-> release changed an answer it says so inline; nothing in them has been silently rewritten.
+> release changed an answer it says so inline; nothing in them has been silently rewritten. The
+> 0.44.0→0.51.0 changes are gathered in **What changed since 0.43.0** after section 10, so a
+> reader upgrading from the last refresh sees them in one place.
 
 A chapter on what a plugin is made of, then the map, then the ten answers, then the follow-ups.
 
@@ -42,6 +44,10 @@ come from a file the kit shipped, so a plugin's Build agent, Reviewer, Test fixe
 writer had nowhere to live. An agent row is `name` and `system`, optionally `meta_tools`,
 `tool_names`, `ceiling`, `max_turns`, `nudge`, `catalogue_threshold`.
 
+**A stored agent's description now reaches the chooser (0.47.0, H11-D).** The agent chooser reply
+carries the row's human-readable description, with the absent-field fallback and the role
+instructions preserved — so a product's own agent names are legible to a person picking one.
+
 ### Choosing one per run
 
 A **mode names its agent** — `{"id": "reviewing", "policy": "workspace-write", "agent": "reviewer"}`
@@ -60,6 +66,13 @@ says, and a `thread/start {agent}` override goes on winning across both. `Thread
 and `agent_override`; a record written earlier reads them as empty, which means *no agent in
 particular*.
 
+**A CLI host is told when an agent name was not honoured (0.45.0, BUG-236).** D176's refusal never
+ran on a CLI host, so an unknown agent name was accepted in silence and a known one was dropped with
+nothing saying so. `agent_unhonoured` now names it on the thread, the record and the wire. And an
+agent's role and tool list compose into the behaviour a provider is opened with — instructions
+layered agent-first (D168), tool lists intersected and never widened (D178) — in one place, because
+two paths deciding the same thing is what that defect was.
+
 ### Instructions and context
 
 Not store rows — they ride the mode's `Behaviour` (0.41.0): `system`, `append_system`, and
@@ -67,11 +80,18 @@ Not store rows — they ride the mode's `Behaviour` (0.41.0): `system`, `append_
 a key-backed model. `root_instructions(root)` reads a root's own `AGENTS.md`/`CLAUDE.md` as
 fragments **you choose to pass** — the kit still does not let a provider read them behind your back.
 
+**A CLI with no system-prompt flag is told who to be in the turn (0.38.0, ENH-051).** `codex exec`
+maps no flag for `system`/`append_system`, so a product's instructions reached Claude Code and not
+Codex — named on `thread.unmapped_behaviour`, but not delivered. `Dialect.instructions_in_prompt`
+(default false) plus one pure kernel derivation frames a mode's instructions as an `<instructions>`
+block on the first turn only, never for a field the dialect maps a flag for. `codex.toml` switches
+it on; `unmapped_behaviour` stops naming what is now delivered and still names `temperature`.
+
 ### What a run creates comes back
 
 `mint_skill` proposes on your `SinkPort`; you decide whether to keep it. Since 0.38.0 the kit keeps
 a proposal in its own store **only when you passed no sink** — if you passed one, nothing is stored
-on your behalf.
+on your behalf (D156).
 
 ---
 
@@ -157,9 +177,8 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
 - **A key-backed thread's later turns contain its earlier ones (0.44.0).** They did not: every turn
   opened with the role and the new prompt, so turn three could not see turns one and two, and nothing
   said so — a CLI-backed thread never had the problem, because the CLI keeps its own session
-  (BUG-232). The transcript is now the thread's. It is **unbounded** (ENH-052): fitting one to a
-  model's window is a budget and a compaction, neither of which this kit has, so a long thread will
-  reach the window. Cap your own turns, or enable the `compact` meta-tool on your pattern.
+  (BUG-232). The transcript is now the thread's. **It is bounded as of 0.51.0** (ENH-052, H34) — see
+  *What changed since 0.43.0* below; the earlier note that it was unbounded no longer holds.
 - **Attribute names.** Reserved: `posture`, `component`, `inputs` (the step's), `thread`, `turn`,
   `mode` (the conversation's). Anything else — `intent`, `run`, `workspace`, a tenant — is yours.
   `resume(attributes=)` on *every* resume with your current words is the intended use: the
@@ -176,6 +195,10 @@ artifacts *of the harness*, not documents the agent writes. Nothing here waits o
   fresh session with the conversation's memory gone. Since 0.32.1 `set_mode` and `add_root`
   during a running turn refuse with the typed `TurnRunning` (`turn_running` on the wire) — the
   contract is *between turns, or not at all*, and `Thread.turning` says which it is.
+- **A native interruption is repaired (0.47.2, BUG-239).** A missing native interrupt line plus a
+  residual-frame boundary on cancellation meant a cancelled turn could leave the CLI's process in a
+  bad state; the fix keeps the process/session and answers the following turn, measured live on
+  Claude Code 2.1.187 on both source and the installed wheel.
 
 ## 3. Holding a question across a process death
 
@@ -247,14 +270,25 @@ Two things a host must get right, and one is easy to miss:
 
 **Not published, and the observation is structural, not a bug.** The registry's direction is *ours
 → the CLI* (D42): the kit offers the run's tools to Codex through the socket; a CLI's own tools, MCP
-servers and plugins never come back. In the unreleased, paused 0.48.0 candidate, the governed Codex path disables its native
-shell, image, browser and agent tools and launches the SDK in a private directory. Repository
-instructions and skill discovery cannot read the component workspace at startup. Its injected
-file reads appear on the ordinary kit act record. This is measured on Codex CLI 0.154.0,
-including resumed turns for gpt-5.4, gpt-6-astra and gpt-6-sol. Catalogue mutation/edge verification
-and final release acceptance remain unfinished; these focused checks are not a released guarantee.
-Unknown explicit feature switches fail instead of enabling native
-reads. MCP resource discovery still exists, but the kit's relay offers no filesystem resources.
+servers and plugins never come back.
+
+**The governed Codex path is now measured and released (0.48.0).** The earlier note here described
+an unreleased, paused 0.48.0 candidate; that candidate shipped. The governed Codex path disables its
+native shell, image, browser and agent tools and launches the SDK in a private directory.
+Repository instructions and skill discovery cannot read the component workspace at startup. Its
+injected file reads appear on the ordinary kit act record. Measured on Codex CLI 0.154.0, including
+resumed turns for gpt-5.4, gpt-6-astra and gpt-6-sol. Unknown explicit feature switches fail instead
+of enabling native reads. MCP resource discovery still exists, but the kit's relay offers no
+filesystem resources.
+
+**The catalogue is correct whenever it is asked (0.49.0, TD-023 closed at the root).** A listing
+used to be served out of the attached run, and a run attaches inside the turn — so a provider asking
+at startup was correctly told there was nothing yet, and an announcement corrected that only if it
+re-read before composing. The catalogue predicate is now one function read either from a run or from
+an open conversation, and the registry answers from the latter when no run is attached, so a resident
+provider's **first** listing is already right. The gap 0.48.0 had to declare is deleted with its
+narrowness controls. A control asserts the pre-run and in-run listings are identical, which is what
+keeps the listing and the executor from drifting apart (BUG-235).
 
 `--ignore-user-config` excludes the person's configured MCP servers while authentication keeps
 using `CODEX_HOME`. A launch without injected tools keeps the CLI's normal configuration and
@@ -276,6 +310,35 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   `LocalEnvironment` defaults 64,000, `serve`'s composition sets 32,000, some sandbox backends
   4,000 — host-set, and the same on every CLI because it is *our* component running the command,
   not theirs. Inputs are bounded at 64 KiB with a marker (`Item.inputs`).
+- **A change is legible on the record (0.38.0, ENH-044, D154–D156).** `write_file`, `edit_file` and
+  `delete_file` carry a bounded unified diff with exact line counts, plus `created`/`deleted`/
+  `before_unreadable` markers, so a host shows what an agent changed without reading the
+  environment's root — which raced the agent and could not work at all for a contained or remote
+  environment. `move_file` deliberately carries none: no content delta, and `from`/`to` are the
+  whole story. Capturing a change never fails the write (D155).
+- **The diff cap is the host's (0.45.0, D185/D186).** An int or `None`, defaulting to what it always
+  was. A cut diff is kept whole by handle in a bounded hold and fetched through `change_diff`, paging
+  by `handle`/`start`/`length` — `recall`'s idiom rather than a second one. An evicted handle is
+  refused with *it was dropped*, a different fact from *no such handle*. Unified diff from stdlib
+  `difflib` throughout.
+- **The write-class toolset (0.36.0–0.39.0).** `edit_file(path, edits[])` replaces regions in order,
+  all or none, refusing an `old` that is absent or appears more than once, before anything is
+  written; `move_file(from, to)` refuses an existing destination. `apply_patch` (0.39.0) changes
+  regions across many files as one act, every edit validated before any file is written, so a refused
+  patch leaves the workspace exactly as it was — its vocabulary and validation are `edit_file`'s, not
+  a diff parser. Beside it a background shell — `run_background`, `job_output`, `kill_job` — where the
+  **environment owns the job and `close()` ends every one** (D157). The read-class tools `glob`,
+  `grep` and `read_file(offset, limit)` (0.35.0) derive from `list`/`read`, so their profiles carry no
+  writes and the shipped `ask` mode does not stop a person for a search.
+- **Undo, and an agent's own workspace (0.40.0, ENH-043, D161–D165).** A `WorkspaceHistoryPort` with
+  a shipped git adapter, attached wherever a local root has a `.git` — a linked worktree included. A
+  restore is itself an act: `delete`-class, irreversible, and `ask` stops a person before an undo,
+  because an undo that bypasses governance is a hole. When to snapshot stays the product's policy. A
+  snapshot holds what git would track, so ignored files are neither deleted nor resurrected. **None
+  of it touches the product's git state** — a scratch index into a parentless commit under
+  `refs/shadow-hdk/snapshots/*`, never HEAD, a branch, the index or the stash. Beside it, host-side
+  worktrees so several agents work in parallel, each on a `shadow-hdk/<name>` branch it can open a
+  pull request from, with a developer's own worktrees unreachable.
 - **The cloud-safe projection stays the product's, for now.** It is the product's `ObserverPort`,
   which is where the kit puts "what leaves the process"; a second product needing the same policy
   makes it a kit adapter (the admission rule). The two facts a policy would key on already exist:
@@ -319,6 +382,14 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   3. **The `Thread` door in Python** — the same composition in the product's own process, with a
      `Ports` of its own.
   None is a workaround; the first is the one a non-Python product was missing.
+- **A governed run now waits for its tool server (0.48.0, TD-023).** A run could begin with the
+  host's tool server missing from the provider's tool list entirely — the turn began with none of
+  the granted tools, the SDK reported nothing, and the kit checked nothing. The registry's door now
+  counts connections let in as well as those turned away, so a relay that never came is
+  distinguishable from an agent that called nothing; and the conversation waits for the first arrival
+  at the last moment before the first prompt. A wait that ends empty is named `tools.unreached` on
+  the session report rather than refused, because abandoning the run is the host's call. (0.49.0 then
+  removed the empty answer at the root — see section 5.)
 
 ## 8. Session resume
 
@@ -379,6 +450,13 @@ probe. It is kit-shaped (two field runtimes have `mcp list`) but not planned —
   fresh part). A LangChain model reports them from `input_token_details` where its provider does.
   On 0.34.0 the counters reached `Usage` but not a thread's `Spent` (BUG-063, the step→meter
   join); 0.34.1 carries them through.
+- **The counters survive the loop (0.47.3, BUG-240).** Existing cache usage counters were dropped
+  by loop aggregation/output and model-session reconstruction; fixed test-first, with ten
+  source/installed cases and twenty mutations passing.
+- **A token ceiling, and compaction firing on it (0.51.0, ENH-052, H34).** A lease can cap tokens —
+  never against numbers a provider did not give — and the loop folds its transcript before the
+  request is built, with `compact` offered by a shipped pattern at last. This is what bounds the
+  carried transcript section 2 describes.
 
 ## 10. Registration and composition
 
@@ -546,6 +624,18 @@ The backend then speaks the wire (the generated TypeScript client, or any langua
 `approvals/answer` from any later request → `thread/amend` to change a parked plan. Chapter 7 of
 the React demo is this exact arrangement, with the reattach after a drop.
 
+**A PostgreSQL runtime role no longer needs DDL rights (0.44.1, BUG-237).** The adapters used to
+execute their table DDL when a pool first opened and again after every `aclose()`, so a production
+runtime role with no DDL rights failed with SQLSTATE 42501 and the application could not start.
+`CREATE TABLE IF NOT EXISTS` is **not** DDL-free, because PostgreSQL checks the CREATE privilege
+before the existence check. So the schema is no longer executed at runtime: `prepare(url)` and a
+`shadow-hdk-prepare` console script create every table and call LangGraph's own `setup()` under an
+owner role, idempotently, recording the version in a one-row `shadow_hdk_schema_version` table.
+`prepared=True` issues no DDL and verifies with one catalogue query, failing `SchemaNotPrepared` or
+`SchemaBehind` named at startup. `runtime_grants(role)` publishes the restricted role's grants as
+data, SELECT only on the version table. The default flipped in the first 0.45 release, as a named
+behaviour change.
+
 ### What the two doors share
 
 The record, the events, the fold, the questions, the lease, admission, authority — every mechanism
@@ -563,6 +653,44 @@ supported (Epic 0010, Phase 43; WSL2 meanwhile). `full` opens everywhere and say
 
 ---
 
+## What changed since 0.43.0 — the releases this refresh covers
+
+The last refresh was for 0.43.0. Eight releases have landed since, all published and verified:
+**0.44.0, 0.44.1, 0.45.0–0.47.3** (the short-list train), **0.48.0, 0.49.0, 0.50.0, 0.51.0**. The
+latest is **0.51.0** (2026-10-16). What a product building against this document needs to know:
+
+| release | what it changed for a product |
+|---|---|
+| **0.44.0** | The claims are true: `tools_offered` narrows for real (BUG-230); a key-backed model honours the mode's `model` (BUG-231); a key-backed thread's later turns contain its earlier ones (BUG-232); the turn ceiling is the provider's *silence*, not total time, so a person's approval no longer fails the turn (BUG-233); a selected agent survives `set_mode` and resume (BUG-234). |
+| **0.44.1** | A restricted PostgreSQL role can open the adapters — no runtime DDL (BUG-237). |
+| **0.45.0** | `agent_unhonoured` names a dropped agent on a CLI host (BUG-236); an agent's role and tool list compose into the behaviour a provider opens with; the DDL-free default flips on; stored procedure binding (H11-E). |
+| **0.46.0** | Stored plan limits reach child-plan admission (H11-C). |
+| **0.47.0** | A stored agent's description reaches the chooser reply (H11-D). |
+| **0.47.1** | Raw mode fragments no longer crash shared prompt assembly (BUG-238). |
+| **0.47.2** | Native interruption and the cancelled-turn boundary are repaired (BUG-239). |
+| **0.47.3** | Cache usage counters survive loop aggregation and session reconstruction (BUG-240). |
+| **0.48.0** | The workbench corrections; the optional **browser** and **workbench** packs; the governed Codex catalogue measured and released; a governed run waits for its tool server and says `tools.unreached` when it never arrives (TD-023). |
+| **0.49.0** | The catalogue is correct whenever it is asked — a resident provider's first listing is already right (TD-023 closed at the root). |
+| **0.50.0** | The **browser pane** (ENH-053): a control lease per scope with the handover on the record, frames out of an owned tab, a person's input through the page's own debugging session, a served job made browsable. |
+| **0.51.0** | The **token ceiling** with compaction firing on it (ENH-052, H34) — the carried transcript is now bounded. |
+
+### Two new optional packs a product may choose
+
+Both are opt-in extras; an ordinary installation starts no command, inspects no process, launches
+no browser and downloads no binary.
+
+- **`shadow-hdk[browser]`** — `BrowserComponents` with a `PlaywrightEngine` and an `OriginPolicy`.
+  Every action is an ordinary act with JSON inputs and the existing approval preview; navigation,
+  clicking, typing and tab changes declare writes, reads declare reads. A read-only mode can inspect
+  a browser already opened in its scope but cannot open one. The default engine is local, headless
+  Playwright/Chromium, with a private profile and a local origin gateway per resource scope — no
+  person's cookies, credentials or profile. See `docs/browser.md`.
+- **`shadow-hdk[workbench]`** — `WorkbenchComponents` over a `HostDoor`, giving agents `list_jobs`,
+  `read_job` and `test_results` beside the existing command pack's `run_background`/`kill_job`. The
+  person's door calls the same environment directly, with no model or agent. See `docs/workbench.md`.
+
+---
+
 ## Follow-ups this raised — filed on the kit's backlog
 
 | id | what | why it is the kit's |
@@ -571,8 +699,10 @@ supported (Epic 0010, Phase 43; WSL2 meanwhile). `full` opens everywhere and say
 | ENH-030 · ENH-031 | **shipped in 0.32** — the thread door carries a host's components by inversion; the TypeScript host-side `ComponentPort` and the stdio sidecar | the code door a non-Python product was missing; D21's inversion, on the door products use |
 | ENH-023 | **shipped in 0.34** — `Usage.cache_read_tokens` and `cache_write_tokens`, read from the Claude Code and Codex dialects and LangChain's `input_token_details` | two field runtimes report it; a footer cannot be honest about cost without it |
 | ENH-024 | **shipped in 0.34** — a typed `session_gone` refusal when a CLI's resume flag is rejected: `TurnRecord.failure`, `SessionGone`, the wire kind | the product can act on it without reading stderr; it is a measured CLI behaviour, not a product concept |
-| ENH-025 | a capability-inventory evidence axis — a CLI's MCP servers and plugins — on the status probe | routing a Run by what a machine can do; two CLIs expose the list |
-| ENH-026 | this chapter kept true: re-read at every release that touches a port it names | a chapter a product builds against is a contract |
+| ENH-025 | a capability-inventory evidence axis — a CLI's MCP servers and plugins — on the status probe | routing a Run by what a machine can do; two CLIs expose the list. **Still open** |
+| ENH-026 | this chapter kept true: re-read at every release that touches a port it names | a chapter a product builds against is a contract. **Closed 2026-10-02 (phase 64 G4); this refresh is the next pass** |
+| ENH-052 | a carried transcript is unbounded | **closed in published 0.51.0** — a token ceiling with compaction firing on it |
+| ENH-053 | the governed browser can be driven but not watched | **closed in published 0.50.0** — the browser pane |
 
 What stays the product's: the artifact concept and its versions, the cloud-safe projection, the
 persona *names*, the settings ladder that resolves a mode, the routing of work between machines,
@@ -582,3 +712,22 @@ The rule every row above was held to, after the fact: *the kit admits what two f
 show or every product needs; never a product's concept; never sugar for one product over a door
 it already has.* ENH-022 failed it and was withdrawn; ENH-025 is admitted as an evidence axis on
 the provider only — the routing it would serve is the product's.
+
+---
+
+## Notes on this refresh
+
+- **What was stale.** The header said "brought current for 0.43.0"; the latest release is 0.51.0.
+  Section 5 described 0.48.0 as "the unreleased, paused 0.48.0 candidate" — it shipped. Section 2
+  said the carried transcript "is **unbounded** (ENH-052)" — 0.51.0 bounded it. The follow-up table
+  listed ENH-052 and ENH-053 as open — both closed. Nothing in sections 1–10 was rewritten where it
+  was still true; the changes are added inline with their release, and gathered in *What changed
+  since 0.43.0*.
+- **Sources.** `specs/status.md` (latest release v0.51.0, 2026-10-16); `specs/changelog/2026-10.md`
+  (the 0.44.0→0.51.0 entries); `specs/backlog/backlog.md` (ENH-052/053 closure, TD-023/024/025);
+  `docs/browser.md` and `docs/workbench.md` (the two new packs). Every version number and defect id
+  above is quoted from those files, not inferred.
+- **What I could not confirm from the files.** The exact public shape of the token-ceiling and
+  browser-pane APIs (the changelog describes them; the code is not in this folder's docs). If a
+  product needs the precise signatures, they should be read from the 0.51.0 source or the generated
+  client, not from this chapter.
