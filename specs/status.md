@@ -115,7 +115,10 @@ type: Status
 > rule. HDK is maintenance only from here, and **D189** sets its retirement. Lane P reads this file from git — keep it current, and
 > put replies in `specs/epics/`.
 
-> **Last Updated**: 2026-10-02 — **phase 65 complete on its branch: the claims are true.** Lane P's
+> **Last Updated**: 2026-10-23 — **the Next Actions section refreshed.** The prior
+> release-operations handoff (2026-09-20) is retired: its CI/billing item is stale and its items
+> 2–5 are closed. The open work is now the list below. *(Historical, 2026-10-02:)* **phase 65
+> complete on its branch: the claims are true.** Lane P's
 > audit of 2026-10-02 lists forty items; its A-group is claims this kit already made and did not keep.
 > Five were confirmed against the source before the phase opened, and **three originate in our own
 > phases 62 and 64**: `tools_offered` narrowed nothing while two fields reported it honoured
@@ -360,16 +363,33 @@ the new engine becomes the default. Documentation approval has not started Phase
 
 **Current action:** use this repository only for urgent, generic maintenance of the released
 Python/LangGraph line. Start native Phase 46 only from the canonical `shadow` specifications after
-its ordinary brainstorm/start gates. The numbered list below is the prior release-operations
-handoff (2026-09-20), retained for audit; its external CI/billing state needs a fresh check before
-use.
+its ordinary brainstorm/start gates. The prior release-operations handoff (2026-09-20) is retired:
+its CI/billing item is stale and its items 2–5 are closed — see the backlog. The list below is the
+open work as of 2026-10-23.
 
-1. **GitHub billing** — fix it, then `gh run rerun 35470259560` (CI on the release commit) and the `v0.34.0` GitHub release (it triggers the publish workflow: the kit and the helper's wheels, PyPI, the smoke). Until then the tag can stand and `uv publish` from the laptop with the owner's token is the fallback
-2. ENH-021 after the publish: the React demo re-pinned to 0.31.0 with a chapter from the live run — a plan refused with its reasons, a plan approved as one card, the CLI planning through the socket
-3. The owner's confirmations owed: Epic 0009's two amendments (D108/D121 name a step's asks and refusals rather than pre-empting them; ENH-020 folded into Phase 36, shipped in G6); the Claude Code half of the live measurement (signed out here); the ecosystem board's H36 row, Pins and Log
-4. Phase 45 — the rest of what the product asked for, generic (BUG-056 shipped in 0.32.1): ENH-023 (cache tokens on `Usage`), ENH-024 (a typed `session_gone`), ENH-028 (Codex `model`/`effort` measured), ENH-032 (3.12/3.13/3.14 in the matrix; its blocker BUG-057 is closed). Claude Code is signed in again, so the owed half of Phase 36's live proof can run there too
-5. The ecosystem board's Pins rows for 0.30.0 → 0.33.0 (`intent-ecosystem/lanes/board.md`, lane P's repository — the text is in the kit's handover) and ENH-037/038/039 answered back to lane P
-6. Still conditional: a Linux host for the remaining containment proofs, and a lawyer's read on AGPL at arm's length. The Codex relay proof landed in Phase 36 G3
+1. **TD-025 — the framework backlog has no text.** Ten audit items (H19, H31–H36, H38–H40) exist in
+   this repository as numbers only; the audit they came from was never written down. To settle:
+   paste the audit into `specs/planning/` so the numbers resolve, then place or close each item.
+   Until then, treat any reference to an unlisted H-number as a pointer to nothing.
+2. **TD-024 — one environment's SDK composes without tools it was offered.** Measured on the CI
+   macOS runner; the kit's side is complete and proven (0.49.0). To settle: whether the SDK can be
+   made to enumerate before composing, or whether this is simply what that build does on that
+   platform.
+3. **TD-022 — a line-reflow helper with a history of corrupting source is recommended without the
+   warning.** Either make `scripts/reflow-long-lines.py` refuse anything that is not a comment or
+   docstring and prove it with a test, or delete it and let `ruff format` do the job.
+4. **TD-020 — Codex's instructions fold is unmeasured end to end.** Needs an account where Codex
+   accepts a model; lane P supplies it. The two live tests skip until then.
+5. **TD-018 — a returning flake (the TD-015 class).** Audit `adapters/mcp` and `adapters/recording`
+   for wall-clock waits and make the process-death assertions wait on the condition. Do not close
+   this by re-running until green.
+6. **The open tail, no queue:** TD-019, TD-014, TD-013, TD-012; ENH-050, ENH-049, ENH-040,
+   ENH-039, ENH-036, ENH-035, ENH-034, ENH-033, ENH-029, ENH-027, ENH-025, ENH-021, ENH-008,
+   ENH-007, ENH-006, ENH-003, ENH-002; BUG-050, BUG-051, BUG-043.
+7. **ENH-021 — the React demo re-pinned.** `../shadow-hdk-demo` is pinned at 0.29.1; re-pin it to
+   **0.51.0**, the current release, and add the chapter from a live run.
+8. **Still conditional:** a Linux host for the remaining containment proofs, and a lawyer's read on
+   AGPL at arm's length.
 
 ## Key Decisions Made
 

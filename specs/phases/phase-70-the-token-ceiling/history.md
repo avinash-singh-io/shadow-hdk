@@ -54,3 +54,17 @@ The control that catches it reads the turn loop's own source, because a control 
 cannot tell the difference. Five mutations bite.
 
 ---
+
+### [NOTE] 2026-10-23 — `status.md`'s Next Actions refreshed
+Topics: status, backlog, maintenance
+Affects-phases: phase-70-the-token-ceiling
+Affects-specs: specs/status.md#next-actions
+Detail: The section still carried the 2026-09-20 release-operations handoff, and its own note said
+its CI/billing state needed a fresh check — which it did. Item 1 pointed at a rerun of `v0.34.0`'s
+CI, green long since, and items 2–5 were closed in the backlog (the Epic 0009 confirmations,
+ENH-023/024/028/032, ENH-037/038/039). Replaced with the open work as of today — TD-025, TD-024,
+TD-022, TD-020, TD-018, the open tail, and ENH-021 re-pinned to 0.51.0 — and the `Last Updated`
+line moved to 2026-10-23 with the 2026-10-02 entry kept as history. No code change; the changelog
+carries the same note. This is the maintenance-only lane the repository is in, not a phase task.
+
+---
